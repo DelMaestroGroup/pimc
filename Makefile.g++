@@ -1,0 +1,68 @@
+# Generic g++ makefile
+
+CC      = g++
+LD      = g++
+
+ifdef debug
+DEBUG = -D PIMC_DEBUG -g
+endif
+
+ifdef ndim
+DIM = -D NDIM=$(ndim)
+endif
+
+# Edit below to include details on your specific host
+ifdef meron
+OPT = -Wall -O3 -fno-math-errno
+CODEDIR = $$HOME/local
+CFLAGS  = $(OPT) $(TABLE) $(DIM) -I$(CODEDIR)/include $(DEBUG) 
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
+endif
+
+ifdef osx
+OPT = -Wall -O3 -fno-math-errno
+CODEDIR = /opt/local
+CFLAGS  = $(OPT) $(TABLE) $(DIM) -I$(CODEDIR)/include $(DEBUG) 
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
+endif
+
+ifdef sask
+CC      = g++
+LD      = g++
+BOOSTDIR = /Users/agdelma/Projects/boost
+BLITZDIR = /Users/agdelma/Projects/blitz
+CFLAGS  = -Wall -O2 $(DEBUG) $(TABLE) $(DIM) -I$(BOOSTDIR) -I$(BLITZDIR)
+LDFLAGS = -L$(BLITZDIR)/lib -lblitz -L$(BOOSTDIR)/stage/lib -lboost_program_options-gcc40-mt-1_38
+endif
+
+ifdef sharc
+OPT = -Wall -TENV:simd_zmask=OFF -TENV:simd_imask=OFF -TENV:simd_omask=OFF -O3 -fno-math-errno
+CODEDIR = /work/agdelma/local
+CFLAGS  = $(OPT) $(TABLE) $(DIM) -I$(CODEDIR)/include $(DEBUG) 
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
+endif 
+
+RM      = /bin/rm -f
+
+PROG    = pimc.e
+SOURCE  = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp
+OBJS    = $(SOURCE:.cpp=.o)
+HEADERS = common.h pimc.h constants.h container.h path.h worm.h action.h potential.h move.h estimator.h lookuptable.h communicator.h setup.h
+
+# -------------------------------------------------------------------------------
+all: $(PROG)
+
+# Link
+$(PROG): $(OBJS)
+	$(LD) $(OBJS) $(LDFLAGS) -o $(PROG)
+
+# Compile
+$(OBJS): $(HEADERS) $(SOURCE) 
+	$(CC) $(CFLAGS) -c $(SOURCE)
+
+# -------------------------------------------------------------------------------
+
+clean:
+	$(RM) $(PROG) $(OBJS) 
+
+	

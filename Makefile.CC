@@ -1,0 +1,40 @@
+# Makefile for brown on sharcnet
+
+CC      = CC
+LD      = CC
+
+ifdef debug
+DEBUG =-D PIMC_DEBUG -debug -g
+endif
+
+# What is the dimensionality of the simulation?
+ifdef ndim
+DIM =-D NDIM=$(ndim)
+endif
+
+CODEDIR = /work/agdelma/local
+CFLAGS  = $(TABLE) $(DIM) -I$(CODEDIR)/include $(DEBUG) 
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
+
+RM      = /bin/rm -f
+
+PROG    = pimc.e
+SOURCE  = pdrive.cpp pimc.cpp communicator.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp constants.cpp setup.cpp
+OBJS    = $(SOURCE:.cpp=.o)
+HEADERS = common.h pimc.h communicator.h container.h path.h worm.h action.h potential.h move.h estimator.h lookuptable.h constants.h setup.h
+
+# -------------------------------------------------------------------------------
+all: $(PROG)
+
+# Link
+$(PROG): $(OBJS)
+	$(LD) $(OBJS) $(LDFLAGS) -o $(PROG)
+
+# Compile
+$(OBJS): $(HEADERS) $(SOURCE) 
+	$(CC) $(CFLAGS) -c $(SOURCE)
+
+# -------------------------------------------------------------------------------
+
+clean:
+	$(RM) $(PROG) $(OBJS) 
