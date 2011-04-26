@@ -1726,7 +1726,7 @@ CylinderPairCorrelationEstimator::~CylinderPairCorrelationEstimator() {
 ******************************************************************************/
 void CylinderPairCorrelationEstimator::accumulate() {
 	int N1D = num1DParticles(path,maxR);
-	int lnorm = sum(actionPtr->potentialPtr->cylSepHist);
+	double lnorm = 1.0*sum(actionPtr->potentialPtr->cylSepHist);
 	lnorm /= 1.0*(N1D-1)/(1.0*N1D);
 	estimator += 1.0*actionPtr->potentialPtr->cylSepHist / (1.0*lnorm);
 }

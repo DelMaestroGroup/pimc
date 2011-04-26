@@ -149,9 +149,9 @@ Potential::~Potential() {
  *  We multiply by the periodic array, as we will only measure separations 
  *  along spatial dimensions with periodic boundary conditions.
 ******************************************************************************/
-inline void Potential::updateSepHist(const dVec &sep) {
+inline void Potential::updateSepHist(const dVec &_sep) {
 	dVec psep;
-	psep = path.boxPtr->periodic*sep;
+	psep = path.boxPtr->periodic*_sep;
 	int nR = int(sqrt(dot(psep,psep))/dSep);
 	if (nR < NPCFSEP)
 		++sepHist(nR);
@@ -340,10 +340,9 @@ double Potential::Vnn(const int slice) {
 	TinyVector<int,NDIM+1> nnIndex;	// The nearest neighbor boxes of a particle
 	TinyVector<int,NDIM+2> hI1,hI2;	// The hash indices
 
-	dVec sep;						// Their vector separation 
 	dVec pos;						// The position of a particle
 
-	beadLocator bead1,bead2; 		// Interacting beads
+	beadLocator bead1; 		// Interacting beads
 	bead1[0] = slice;
 
 	for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(slice); bead1[1]++) {
@@ -391,7 +390,6 @@ double Potential::gradVSquared(const beadLocator &bead1) {
 		/* The 'forces' and particle separation */
 		dVec Fext1,Fext2;
 		dVec Fint1,Fint2,Fint3;
-		dVec sep;
 
 		int numParticles = path.numBeadsAtSlice(bead1[0]);
 	
@@ -540,7 +538,6 @@ double Potential::gradVnnSquared(const beadLocator &bead1) {
 		/* The 'forces' and particle separation */
 		dVec Fext1,Fext2;
 		dVec Fint1,Fint2,Fint3;
-		dVec sep;
 
 		/* Get the gradient squared part for the external potential*/
 		Fext1 = externalPtr->gradV(path(bead1));
@@ -601,8 +598,6 @@ double Potential::rDotGradV(const int slice) {
 	/* The two interacting particles */
 	beadLocator bead1;
 	bead1[0] = bead2[0] = slice;
-
-	dVec sep;		// The separation vector
 
 	/* We loop over the first bead */
 	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
@@ -943,7 +938,7 @@ FixedAzizPotential::FixedAzizPotential(const Container *_boxPtr) :
 
 	/* Create a local copy of all beads in each grid box plus nearest neighbors.
 	 * This will drastically speed up the computing of potential energies. */
-	for (int n = 0; n < lookupPtr->getTotNumGridBoxes(); n++) {
+	for (n = 0; n < lookupPtr->getTotNumGridBoxes(); n++) {
 		lookupPtr->updateFullInteractionList(n,0);
 		numFixedBeadsInGrid(n) = lookupPtr->fullNumBeads;
 		for (int m = 0; m < lookupPtr->fullNumBeads; m++) 

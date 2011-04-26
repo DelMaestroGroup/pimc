@@ -18,16 +18,15 @@
 /*************************************************************************//**
  * Constructor.
  *
- * We initialize the all the data structures in path, and get a random
+ * We initialize the all the data structures in path given a random
  * initial configuration (classical) depending on the type of potential.
  * @param _boxPtr The pointer to the simulation cell
  * @param _lookup The nearest neighbor lookup table
  * @param _numTimeSlices The number of imaginary time slices
  * @param initialPos The initial configuration of particles
- * @param random The random number generator
 ******************************************************************************/
 Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices, 
-		const Array<dVec,1> &initialPos, MTRand &random) : 
+		const Array<dVec,1> &initialPos) : 
 	numTimeSlices(_numTimeSlices),
 	boxPtr(_boxPtr), 
 	worm(initialPos.size()),

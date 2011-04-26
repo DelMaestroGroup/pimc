@@ -166,15 +166,15 @@ inline int LookupTable::gridNumber(const dVec &pos) {
  * Given the number of a grid box, returns its coordinates as a NDIM-vector.
  */
 inline iVec LookupTable::gridIndex(int n) {
-	iVec gridIndex;
+	iVec _gridIndex;
 	for (int i = 0; i < NDIM; i++) {
 		int scale = 1;
 		for (int j = i+1; j < NDIM; j++) 
 			scale *= numNNGrid[j];
-		gridIndex[i] = (n/scale) % numNNGrid[i];
-		PIMC_ASSERT(gridIndex[i]<numNNGrid[i]);
+		_gridIndex[i] = (n/scale) % numNNGrid[i];
+		PIMC_ASSERT(_gridIndex[i]<numNNGrid[i]);
 	}
-	return gridIndex;
+	return _gridIndex;
 }
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=

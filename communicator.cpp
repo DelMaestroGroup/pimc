@@ -46,12 +46,12 @@ Communicator::~Communicator() {
 /**************************************************************************//**
  *  Test and attempt to open a supplied file.
 ******************************************************************************/
-void Communicator::openFile(const string fileName, fstream *file, 
+void Communicator::openFile(const string fileName, fstream *_file, 
 		ios_base::openmode mode) {
 
 	/* Convert the filename to a c string, and open the file */ 
-	file->open(fileName.c_str(), mode);
-	if (!(*file)) {
+	_file->open(fileName.c_str(), mode);
+	if (!(*_file)) {
 		cerr << "Unable to process file: " << fileName << endl;
 		exit(1);
 	}

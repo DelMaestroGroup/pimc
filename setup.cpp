@@ -482,7 +482,7 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
  * @param boxPtr A pointer to the container
  * @param nnGrid The lookup table nearest neighbor grid
 ******************************************************************************/
-void Setup::outputOptions(int argc, char *argv[], const uint32 seed, 
+void Setup::outputOptions(int argc, char *argv[], const uint32 _seed, 
 		const Container *boxPtr, const iVec &nnGrid) {
 
 	communicate()->logFile() << endl << "# ";
@@ -588,7 +588,7 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 seed,
 		format("%-24s\t:\t%d\n") % "Number EQ Steps" % params["number_eq_steps"].as<uint32>();
 	communicate()->logFile() << 
 		format("%-24s\t:\t%d\n") % "Number Bins Stored" % params["number_bins_stored"].as<int>();
-	communicate()->logFile() << format("%-24s\t:\t%d\n") % "Random Number Seed" % seed;
+	communicate()->logFile() << format("%-24s\t:\t%d\n") % "Random Number Seed" % _seed;
 	communicate()->logFile() << endl;
 	communicate()->logFile() << "---------- End Simulation Parameters ------------" << endl;
 

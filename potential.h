@@ -164,13 +164,11 @@ class FreePotential: public PotentialBase {
 		~FreePotential();
 
 		/** The potential. */
-		double V(const dVec &sep) { return 0.0; };
+		double V(const dVec &sep) { return 0.0*sep[0]; };
 
 		/** The gradient of the potential. */
 		dVec gradV(const dVec &pos) {
-			dVec free;
-			free = 0.0;
-			return (free);
+			return (0.0*pos);
 		}
 };
 
@@ -396,7 +394,7 @@ class LJCylinderPotential : public PotentialBase, public TabulatedPotential {
 		/* The gradient of the LJ Wall potential */
 		dVec gradV(const dVec &);
 
-		/** Initial configuration corresponding to the LJ cylinder potential potential */
+		/** Initial configuration corresponding to the LJ cylinder potential */
 		Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
 
 	private:
@@ -537,4 +535,47 @@ class FixedAzizPotential : public PotentialBase  {
 		double rc2;							// A local copy of the potential cutoff squared
 
 };
+
+// ========================================================================  
+// Carbon Nanotube Potential Class
+// ========================================================================  
+/** 
+ * The smooth non-corregated version of the helium-carbon nanotube potential.
+ * @see http://prb.aps.org/abstract/PRB/v62/i3/p2173_1
+ */
+//class CarbonNanotubePotential : public PotentialBase, public TabulatedPotential {
+//	public:
+//		CarbonNanotubePotential(const double);
+//		~CarbonNanotubePotential();
+//
+//		/** The cylindrically symmetric potential. */
+//		double V(const dVec &r) {
+//			int k = int(sqrt(r[0]*r[0] + r[1]*r[1])/dR);
+//			if (k >= tableLength)
+//				return extV[1];
+//			else
+//				return lookupV(k);
+//		}
+//
+//		/* The gradient of the CNT potential */
+//		dVec gradV(const dVec &);
+//
+//		/** Initial configuration corresponding to the CNT potential */
+//		Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+//
+//	private:
+//		/* All the parameters needed for the LJ wall potential */
+//		double density;
+//		double sigmaHe,sigmaC;
+//		double epsilonHe,epsilonC;
+//
+//		double R;		// Radius of the tube
+//		double dR;		// Discretization for the lookup table
+//
+//		double minV;	// The minimum value of the potential
+//
+//		/* Used to construct the lookup tables */
+//		double valueV (const double);				
+//		double valuedVdr (const double);					
+//};
 #endif

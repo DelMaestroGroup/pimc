@@ -150,7 +150,7 @@ void LookupTable::setupNNGrid() {
 			
 		/* Now we go through the nnShift array, and find the nearest neighbor
 		 * coordinates of each grid box */
-		for (int m = 0; m < numNN; m++) {
+		for (m = 0; m < numNN; m++) {
 			nnIndex[NDIM] = m;
 			gridNN(nnIndex) = gIndex + nnShift(m);
 
@@ -181,7 +181,7 @@ void LookupTable::setupNNGrid() {
 
 		/* Now, for each grid box, we start from the end of the NN list
 		 * and work backwards, setting any duplicates to -1 */
-		for (int m = numNN-1; m >= 0; m--) {
+		for (m = numNN-1; m >= 0; m--) {
 			nnIndex[NDIM] = m;
 			dup = gridNN(nnIndex); 
 			for (int p = m-1; p >= 0; p--) {
@@ -208,7 +208,7 @@ void LookupTable::setupNNGrid() {
 		gIndex = gridIndex(n);
 
 		/* We only consider the 'unique' nearest neighbors */
-		for (int m = (numUniqueNN+1); m < numNN; m++) {
+		for (m = (numUniqueNN+1); m < numNN; m++) {
 
 			for (int i = 0; i < NDIM; i++) 
 				nnIndex[i] = gIndex[i];

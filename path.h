@@ -29,7 +29,7 @@ class LookupTable;
 class Path {
 
 	public:
-		Path (const Container *, LookupTable &, int, const Array<dVec,1>&, MTRand &);
+		Path (const Container *, LookupTable &, int, const Array<dVec,1>&);
 		~Path();
 
 		const int numTimeSlices;		///< A local constant copy of the number of time slices

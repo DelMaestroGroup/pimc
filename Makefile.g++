@@ -21,6 +21,8 @@ endif
 
 ifdef osx
 OPT = -Wall -O3 -fno-math-errno
+#OPT = -Werror 
+#OPT = -Wall -O3 -fno-math-errno -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
 CODEDIR = /opt/local
 CFLAGS  = $(OPT) $(TABLE) $(DIM) -I$(CODEDIR)/include $(DEBUG) 
 LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options

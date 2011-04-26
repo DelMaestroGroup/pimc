@@ -86,8 +86,7 @@ int main (int argc, char *argv[]) {
 		externalPotentialPtr->initialConfig(boxPtr,random,constants()->initialNumParticles());
 
 	/* Setup the path data variable */
-	Path path(boxPtr,lookup,constants()->numTimeSlices(),
-			initialPos,random);
+	Path path(boxPtr,lookup,constants()->numTimeSlices(),initialPos);
 
 	/* The potential object, which needs to know about both the external and 
 	 * interaction potential */
