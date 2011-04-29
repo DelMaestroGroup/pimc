@@ -98,7 +98,7 @@ enum beadState {HEADTAIL,SPECIAL,NONE};
 
 /** Return the integer value of a number raised to a power */
 inline int ipow (int base, int power) {
-	return int(floor(pow(1.0*base,1.0*power) + EPS));
+	return static_cast<int>(floor(pow(1.0*base,1.0*power) + EPS));
 }
 
 /** Minimum of two inputs */

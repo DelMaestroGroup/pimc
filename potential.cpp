@@ -50,7 +50,7 @@ Array<dVec,1> PotentialBase::initialConfig(const Container *boxPtr, MTRand &rand
 	dVec sizeNNGrid;
 
 	for (int i = 0; i < NDIM; i++) {
-		numNNGrid[i] = (int) ceil((boxPtr->side[i] / initSide) - EPS);
+		numNNGrid[i] = static_cast<int>(ceil((boxPtr->side[i] / initSide) - EPS));
 
 		/* Make sure we have at least one grid box */
 		if (numNNGrid[i] < 1)
@@ -1246,7 +1246,7 @@ Array<dVec,1> LJCylinderPotential::initialConfig(const Container *boxPtr, MTRand
 	dVec sizeNNGrid;
 
 	for (int i = 0; i < NDIM; i++) {
-		numNNGrid[i] = (int) ceil((lside[i] / initSide) - EPS);
+		numNNGrid[i] = static_cast<int>(ceil((lside[i] / initSide) - EPS));
 
 		/* Make sure we have at least one grid box */
 		if (numNNGrid[i] < 1)

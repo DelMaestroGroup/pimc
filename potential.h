@@ -384,7 +384,7 @@ class LJCylinderPotential : public PotentialBase, public TabulatedPotential {
 
 		/** The integrated LJ Wall potential. */
 		double V(const dVec &r) {
-			int k = int(sqrt(r[0]*r[0] + r[1]*r[1])/dR);
+			int k = static_cast<int>(sqrt(r[0]*r[0] + r[1]*r[1])/dR);
 			if (k >= tableLength)
 				return extV[1];
 			else
@@ -426,7 +426,7 @@ inline dVec LJCylinderPotential::gradV(const dVec &r) {
 	dVec tempr;
 	tempr = r;
 	tempr[2] = 0.0;
-	int k = int(rnorm/dR);
+	int k = static_cast<int>(rnorm/dR);
 	dVec gV;
 	if (k >= tableLength)
 		gV = (extdVdr[1]/rnorm)*tempr;

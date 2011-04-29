@@ -36,7 +36,7 @@ LookupTable::LookupTable(const Container *_boxPtr, const int _numLookupTimeSlice
 	for (int i = 0; i < NDIM; i++) 
 		hashSize[i] = numNNGrid[i];
 	hashSize[NDIM] = numLookupTimeSlices;
-	hashSize[NDIM+1] = int(_numParticles/totNumGridBoxes) + 5;
+	hashSize[NDIM+1] = static_cast<int>(_numParticles/totNumGridBoxes) + 5;
 
 	/* Resize and initialize the main hash array */
 	hash.resize(hashSize);
@@ -79,7 +79,7 @@ void LookupTable::setupNNGrid() {
 	 * their size */
 	totNumGridBoxes = 1;
 	for (int i = 0; i < NDIM; i++) {
-		numNNGrid[i] = (int) floor((boxPtr->side[i] / constants()->rc()) + EPS);
+		numNNGrid[i] = static_cast<int>(floor((boxPtr->side[i] / constants()->rc()) + EPS));
 
 		/* Make sure we have at least one grid box */
 		if (numNNGrid[i] < 1)
@@ -158,9 +158,9 @@ void LookupTable::setupNNGrid() {
 			 * otherwise we set the outlier to -1 */
 			for (int i = 0; i < NDIM; i++) {
 				if (gridNN(nnIndex)[i] == numNNGrid[i])
-					gridNN(nnIndex)[i] = int(boxPtr->periodic[i]-1);
+					gridNN(nnIndex)[i] = static_cast<int>(boxPtr->periodic[i]-1);
 				else if (gridNN(nnIndex)[i] == -1) 
-					gridNN(nnIndex)[i] = int(boxPtr->periodic[i]*numNNGrid[i] - 1);
+					gridNN(nnIndex)[i] = static_cast<int>(boxPtr->periodic[i]*numNNGrid[i] - 1);
 			} // end i
 
 		} // end m

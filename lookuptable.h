@@ -155,7 +155,8 @@ inline int LookupTable::gridNumber(const dVec &pos) {
 		int scale = 1;
 		for (int j = i+1; j < NDIM; j++) 
 			scale *= numNNGrid[j];
-		gNumber += scale * int( abs( pos[i] + 0.5 * boxPtr->side[i] - EPS ) / (sizeNNGrid[i] + EPS) );
+		gNumber += scale * 
+			static_cast<int>(abs( pos[i] + 0.5 * boxPtr->side[i] - EPS ) / (sizeNNGrid[i] + EPS));
 	}
 	PIMC_ASSERT(gNumber<totNumGridBoxes);
 	return gNumber;
