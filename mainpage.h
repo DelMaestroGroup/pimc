@@ -148,7 +148,7 @@
  * diagonal             0.77606         0.01076
  * @endcode
  *
- * The basic idea of running the program is that one need to setup the simulation cell, by defining
+ * The basic idea of running the program is that one needs to setup the simulation cell, by defining
  * either its specific geometry via the size (@p L) flag, or by a combination of density (@p n) and
  * number of particles (@p N).  At present, two types of simulation cells are possible, a hypercube
  * in 1,2 or 3 dimensions with periodic boundary conditions and a cylinder in 3 dimensions, that is
@@ -198,24 +198,24 @@
  * suitable equilibration period, measurements are made and their results are stored to disk.
  *
  * As discussed above, the driver file for this PIMC program is called pdrive.cpp.  It takes a series
- * of command line options, then uses them to setup ConstantParameters, Container, LookupTable and
- * Communicator objects.  Next, a Potential object is created which describes the potential
- * environment (any walls etc.) and the interactions between bosons. A Path object is then
- * instantiated which holds all the details of the actual world lines of the quantum particles. An
- * Action object is created based on the Potential which holds an approximation of the action to be
- * discretized in the path integral decomposition of the partition function. Finally, the main
- * operating object of the program, of type PathIntegralMonteCarlo is created, which requires both the
- * Path and the @link ActionBase Action @endlink.  This object performs the actual simulation via a
- * series of @link MoveBase Moves @endlink, all of which generate trial world line configurations that
- * exactly sample the kinetic part of the density matrix.  All measurements are made via specific
- * @link EstimatorBase Estimators @endlink with the results being output to disk.
+ * of command line options, which are used by the Setup class to initialize ConstantParameters,
+ * Container, LookupTable and Communicator objects.  Next, a Potential object is created which
+ * describes the potential environment (any walls etc.) and the interactions between bosons. A Path
+ * object is then instantiated which holds all the details of the actual world lines of the quantum
+ * particles. An Action object is created based on the Potential which holds an approximation of the
+ * action to be discretized in the path integral decomposition of the partition function. Finally,
+ * the main operating object of the program, of type PathIntegralMonteCarlo is created, which
+ * requires both the Path and the @link ActionBase Action @endlink.  This object performs the actual
+ * simulation via a series of @link MoveBase Moves @endlink, all of which generate trial world line
+ * configurations that exactly sample the kinetic part of the density matrix.  All measurements are
+ * made via specific @link EstimatorBase Estimators @endlink with the results being output to disk.
  *
  * The main kernel of this program should remain relatively untouched, as it has been extensively
  * tested and optimized.  Generality can come from modifying just a few things.  For example, in
  * order to implement a new type of measurement, one would need to write a derived @link
  * EstimatorBase Estimator @endlink class along with modifying the Communicator class to define an
  * output path.  New types of particles and external environments can be added by adding new @link
- * PotentialBase Potentials @endlink then updating @p pdrive.cpp to allow for their specification at
+ * PotentialBase Potentials @endlink then updating Setup to allow for their specification at
  * the command line.  Finally, radically different systems can be studied by modifying the Container
  * class.
  *

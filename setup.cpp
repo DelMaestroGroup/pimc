@@ -478,7 +478,7 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
  * restart the simulation.
  * @param argc The number of command line arguments
  * @param argv The commmand line string
- * @param seed The random seed
+ * @param _seed The random seed
  * @param boxPtr A pointer to the container
  * @param nnGrid The lookup table nearest neighbor grid
 ******************************************************************************/
