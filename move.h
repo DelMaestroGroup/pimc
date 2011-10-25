@@ -25,7 +25,7 @@ class ActionBase;
  * 
  * There will be a bunch of different types of moves, those which
  * move individual particles, the center of mass of an entire worldine
- * loop etc.  They will all share some basic functionality defined here.
+ * loop etc.  They will all share the basic functionality defined here.
  */
 class MoveBase {
 
