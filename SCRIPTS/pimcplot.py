@@ -12,7 +12,6 @@ import loadgmt,kevent
 from pylab import *
 
 
-# -----------------------------------------------------------------------------
 # Begin Main Program 
 # -----------------------------------------------------------------------------
 def main(): 
@@ -95,8 +94,7 @@ def main():
 
 	ylabel(r'$\langle %s \rangle$' % headers[options.col+1])
 	xlabel("MC Steps")
-
-
+    tight_layout()
 
 	show()
 # ----------------------------------------------------------------------
