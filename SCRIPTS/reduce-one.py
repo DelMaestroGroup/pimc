@@ -33,6 +33,9 @@ def getScalarEst(type,pimc,outName,reduceFlag):
         estimators in question.'''
 
     fileNames = pimc.getFileList(type)
+#    for f in fileNames:
+#        print f
+#    sys.exit()
     headers   = pimchelp.getHeadersFromFile(fileNames[0])
 
     ave = zeros([len(fileNames),len(headers)],float)

@@ -42,7 +42,11 @@ def sortFileNames(fileNames):
         fileTuples.append(tup)
 
     # sort by keys for each column from left to right
-    fileTuples = sorted(fileTuples, key=itemgetter(1,2,3,4,5,6))
+    for n in range(1,7):
+        fileTuples = sorted(fileTuples, key=itemgetter(n))
+    
+    # this is the new fangled way, but it is not backwards compatible
+    #fileTuples = sorted(fileTuples, key=itemgetter(1,2,3,4,5,6))
     
     # get the sorted file names
     sortedFileNames = []
