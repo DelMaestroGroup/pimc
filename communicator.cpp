@@ -97,7 +97,7 @@ void Communicator::init(const bool outputWorldline, const string _initName,
 
 	if (!constants()->canonical()) {
 		ensemble = "gce";
-		dataName = str(format("%06.3f-%07.3f-%06.3f-%7.5f-%09u") % constants()->T() 
+		dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%09u") % constants()->T() 
 				% constants()->L() % constants()->mu() % constants()->tau() % constants()->id());
 	}
 	else {

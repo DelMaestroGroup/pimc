@@ -1429,7 +1429,11 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
 	W *= path.boxPtr->periodic;
 
 	/* Compute the locally scaled W^2/N */
-	locW2oN = dot(W,W)/(1.0*num1DParticles(path,maxR));
+    int numParticles = Num1DParticles(path,maxR);
+    if (numParticles > 0):
+        locW2oN = dot(W,W)/(1.0*num1DParticles(path,maxR));
+    else
+        locW2oN = 0.0;
 
 	/* The average winding number squared */
 	estimator(0) += locW2oN;
@@ -1722,13 +1726,15 @@ CylinderPairCorrelationEstimator::~CylinderPairCorrelationEstimator() {
  *  We simply update the local value of the esitimator with the value from
  *  our potential reference.  
  *
- *  We only compute this for N > 1.
+ *  We only compute this for N1D > 1.
 ******************************************************************************/
 void CylinderPairCorrelationEstimator::accumulate() {
 	int N1D = num1DParticles(path,maxR);
-	double lnorm = 1.0*sum(actionPtr->potentialPtr->cylSepHist);
-	lnorm /= 1.0*(N1D-1)/(1.0*N1D);
-	estimator += 1.0*actionPtr->potentialPtr->cylSepHist / (1.0*lnorm);
+    if (N1D > 1) {
+        double lnorm = 1.0*sum(actionPtr->potentialPtr->cylSepHist);
+        lnorm /= 1.0*(N1D-1)/(1.0*N1D);
+        estimator += 1.0*actionPtr->potentialPtr->cylSepHist / (1.0*lnorm);
+    }
 }
 
 /**************************************************************************//**

@@ -168,7 +168,7 @@ def getFileString(options,reduce=True):
     else:
         flagtau = "*"
     if options.mu is not None:
-        flagmu = "%+07.3f" % options.mu
+        flagmu = "%+08.3f" % options.mu
         out += '-u-%s' % flagmu
     else:
         flagmu = "*"
