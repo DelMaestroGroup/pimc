@@ -25,7 +25,7 @@ endif
 
 CODEDIR = $$HOME/local
 CFLAGS  = $(OPT) $(TABLE) $(DIM) -I$(CODEDIR)/include $(DEBUG)
-LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options-il-mt
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options-il-mt -limf
 
 RM      = /bin/rm -f
 

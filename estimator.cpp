@@ -1429,8 +1429,8 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
 	W *= path.boxPtr->periodic;
 
 	/* Compute the locally scaled W^2/N */
-    int numParticles = Num1DParticles(path,maxR);
-    if (numParticles > 0):
+    int numParticles = num1DParticles(path,maxR);
+    if (numParticles > 0)
         locW2oN = dot(W,W)/(1.0*numParticles);
     else
         locW2oN = 0.0;
