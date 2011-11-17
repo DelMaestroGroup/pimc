@@ -64,8 +64,8 @@ void Communicator::openFile(const string fileName, fstream *_file,
  *  files with the form gce-xxx-T-L-mu-tau-ID.dat, whereas if we are in
  *  the canonical ensemble we label as ce-xxx-T-N-n-tau-ID.dat.
 ******************************************************************************/
-void Communicator::init(const bool outputWorldline, const string _initName,
-		const string _fixedName) {
+void Communicator::init(const double _tau, const bool outputWorldline, const
+        string _initName, const string _fixedName) {
 
 	/* Fill up the file map */
 	file["log"]       = &logFile_;
@@ -98,14 +98,14 @@ void Communicator::init(const bool outputWorldline, const string _initName,
 	if (!constants()->canonical()) {
 		ensemble = "gce";
 		dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%09u") % constants()->T() 
-				% constants()->L() % constants()->mu() % constants()->tau() % constants()->id());
+				% constants()->L() % constants()->mu() % _tau % constants()->id());
 	}
 	else {
 		ensemble = "ce";
 		dataName = str(format("%06.3f-%04d-%06.3f-%7.5f-%09d") % constants()->T()
 				% constants()->initialNumParticles() 
 				% (1.0*constants()->initialNumParticles()/constants()->V()) 
-				% constants()->tau() % constants()->id());
+				% _tau % constants()->id());
 	}
 
 	/* Depending out wheter or not we are restarting the simulations, the open mode

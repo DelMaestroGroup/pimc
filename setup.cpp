@@ -411,12 +411,16 @@ void Setup::setConstants() {
  * Initialize the communicator, we need to know if we are outputing any config
  * files to disk.  The files are labelled differently depending on whether we
  * are in the canonical or grand-canonical ensemble.  We also need to initialize
- * a possible initial state file and a fixed position file.
+ * a possible initial state file and a fixed position file.  Also, since the
+ * value of tau we might specifiy at the command line is not the actual one
+ * used in the simulation (since the number of time slices must be an integer)
+ * we pass it to the communicator for propper labelling of output files.
 ******************************************************************************/
 void Setup::communicator() {
 		
-	communicate()->init((params["output_config"].as<int>() > 0),params["start_with_state"].as<string>(),
-			params["fixed"].as<string>());
+    communicate()->init(params["imaginary_time_step"].as<double>(),
+            (params["output_config"].as<int>() > 0),params["start_with_state"].as<string>(),
+            params["fixed"].as<string>());
 }
 
 /*************************************************************************//**

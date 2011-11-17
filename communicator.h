@@ -31,7 +31,7 @@ class Communicator
 		static Communicator* getInstance();
 
 		/* Initialize the output files */
-		void init(const bool,const string, const string);
+		void init(const double, const bool,const string, const string);
 
 		/* Get methods */
 		fstream & logFile() {return logFile_;}				///< Get log file
