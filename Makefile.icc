@@ -1,4 +1,4 @@
-# Intel makefile for saskeram, westgrid or clumeq
+# Intel makefile
 
 CC = icpc
 LD = icpc
@@ -7,25 +7,26 @@ ifdef debug
 DEBUG =-D PIMC_DEBUG -debug -g
 endif
 
-# What host are we running on?
-ifndef host
-OPT =-fast
-else
-ifeq ($(host), WG)
-OPT =-axP
-else 
-OPT =-ipo -O3
-endif
-endif
-
 # What is the dimensionality of the simulation?
 ifdef ndim
 DIM =-D NDIM=$(ndim)
 endif
 
+# Run on westgrid (orcinus)
+ifdef westgrid
+OPT = -axP -fast
 CODEDIR = $$HOME/local
 CFLAGS  = $(OPT) $(TABLE) $(DIM) -I$(CODEDIR)/include $(DEBUG)
-LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options-il-mt -limf
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -limf
+endif 
+
+# Run on Sharcnet (brown)
+ifdef sharcnet
+OPT = -Wall -TENV:simd_zmask=OFF -TENV:simd_imask=OFF -TENV:simd_omask=OFF -O3 -fno-math-errno -vec-report0 -wd981
+CODEDIR = /work/agdelma/brown/local
+CFLAGS  = $(OPT) $(TABLE) $(DIM) -I$(CODEDIR)/include $(DEBUG) 
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -limf
+endif 
 
 RM      = /bin/rm -f
 
@@ -49,5 +50,3 @@ $(OBJS): $(HEADERS) $(SOURCE)
 
 clean:
 	$(RM) $(PROG) $(OBJS) 
-
-	
