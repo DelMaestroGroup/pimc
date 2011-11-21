@@ -53,6 +53,7 @@ def sortFileNames(fileNames):
     for ft in fileTuples:
         sortedFileNames.append(ft[0])
 
+
     # return the sorted file names
     return sortedFileNames
 

@@ -31,14 +31,6 @@ def main():
 
         for fname in fileNames:
             s = getPars(fname)
-            #if float(s[4]) < 0.0:
-            #    newName = '%s-%s-%06.3f-%07.3f-%08.3f-%7.5f-%09d.dat' %\
-            #            (s[0], s[1], float(s[2]), float(s[3]), float(s[4]),\
-            #             float(s[5]),int(s[6]))
-            #else:
-            #    newName = '%s-%s-%06.3f-%07.3f-%07.3f-%7.5f-%09d.dat' %\
-            #            (s[0], s[1], float(s[2]), float(s[3]), float(s[4]),\
-            #             float(s[5]),int(s[6]))
             newName = '%s-%s-%06.3f-%07.3f-%+08.3f-%7.5f-%09d.dat' %\
                     (s[0], s[1], float(s[2]), float(s[3]), float(s[4]),\
                      float(s[5]),int(s[6]))

@@ -166,7 +166,8 @@ def main():
     newID = int(newID/(1.0*len(pimc.id)))
 
     # Now we keep incrementing the ID number until we are sure it is unique
-    while len(glob.glob('*estimator*-%09d*' % newID)) > 0:
+    while ( (len(glob.glob('*estimator*-%09d*' % newID)) > 0) or
+           (len(glob.glob('MERGED/*estimator*-%09d*' % newID)) > 0) ):
         newID += 1
     
     # Merge all the output files

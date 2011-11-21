@@ -32,15 +32,11 @@ def getScalarEst(type,pimc,outName,reduceFlag):
         estimators in question.'''
 
     fileNames = pimc.getFileList(type)
-#    for f in fileNames:
-#        print f
-#    sys.exit()
     headers   = pimchelp.getHeadersFromFile(fileNames[0])
 
     ave = zeros([len(fileNames),len(headers)],float)
     err = zeros([len(fileNames),len(headers)],float)
     for i,fname in enumerate(fileNames):
-
         # Compute the averages and error
         data = loadtxt(fname)
         ave[i,:],err[i,:] = getStats(data)
@@ -126,8 +122,8 @@ def getKappa(pimc,outName,reduceFlag):
     fileNames = pimc.getFileList('estimator')
     headers   = pimchelp.getHeadersFromFile(fileNames[0])
 
-    ave = zeros([len(fileNames)],float)
-    err = zeros([len(fileNames)],float)
+    aveKappa = zeros([len(fileNames)],float)
+    errKappa = zeros([len(fileNames)],float)
 
     for i,fname in enumerate(fileNames):
 
@@ -141,12 +137,23 @@ def getKappa(pimc,outName,reduceFlag):
         # Compute the average compressibility and its error
         estData = loadtxt(fname)
 
-        N2    = estData[:,headers.index('N^2')] 
         N     = estData[:,headers.index('N')]
-        rho   = estData[:,headers.index('density')]
-        kappa = (N2-N*N)/(T*V)
+        N2    = estData[:,headers.index('N^2')] 
+
+        numBins = len(N)
             
-        ave[i],err[i] = getStats(kappa)
+        # Get the averages
+        aveN,errN = getStats(N)
+        aveN2,errN2 = getStats(N2)
+        aveNN2,errNN2 = getStats(N*N2)
+
+        # Get the covariance
+        # This is finite, so it must be calculated!
+        covNN2 = (aveNN2 - aveN*aveN2)/(1.0*numBins-1.0)
+
+        # Get the value of rho^2 * kappa and the error
+        aveKappa[i] = (aveN2-aveN**2)/(T*V)
+        errKappa[i] = sqrt(errN2**2 + 4.0*errN**2*aveN**2 - 4.0*aveN*covNN2)/(T*V)
     
     # output the estimator data to disk
     outFile = open('%s-%s' % ('kappa',outName),'w');
@@ -159,10 +166,10 @@ def getKappa(pimc,outName,reduceFlag):
     # the data
     for i in range(len(fileNames)):
         outFile.write('%16.8E' % float(pimc.params[pimc.id[i]][reduceFlag[1]]))
-        outFile.write('%16.8E%16.8E\n' % (ave[i],err[i]))
+        outFile.write('%16.8E%16.8E\n' % (aveKappa[i],errKappa[i]))
     outFile.close()
 
-    return ave,err
+    return aveKappa,errKappa
 
 
 # -----------------------------------------------------------------------------
@@ -239,9 +246,11 @@ def main():
     if len(glob.glob('CYLINDER')) > 0:
         x3,ave3,err3 = getVectorEst('radial',pimc,outName,reduceFlag,'r [A]','rho(r)')
 
-    # Now we do the number distribution function if we are in the GCE
+    # Compute the number distribution function and compressibility if we are in
+    # the grand canonical ensemble
     if options.gce:
         x4,ave4,err4 = getVectorEst('number',pimc,outName,reduceFlag,'N','P(N)')
+        kappa,kappaErr = getKappa(pimc,outName,reduceFlag)
 
     # Do we show plots?
     if options.plot:
@@ -257,8 +266,7 @@ def main():
     
         numParams = len(param)
         markers = loadgmt.getMarkerList()
-        colors  = loadgmt.getColorList('cw/1','cw1-029',40)
-        headLab = ['E/N','K/N','V/N','diagonal']
+        headLab = ['E/N','K/N','V/N','N', 'diagonal']
         dataCol = []
         for head in headLab:
             n = 0
@@ -268,13 +276,16 @@ def main():
                     break
                 n += 1
         yLabelCol = ['Energy / N', 'Kinetic Energy / N', 'Potential Energy / N',\
-                'Diagonal Fraction']
+                'Number Particles', 'Diagonal Fraction']
+
+        colors  = loadgmt.getColorList('cw/1','cw1-029',max(numParams,len(headLab)))
     
         # ============================================================================
-        # Figure 1-4  -- Various thermodynamic quantities
+        # Figure -- Various thermodynamic quantities
         # ============================================================================
+        figNum = 1
         for n in range(len(dataCol)):
-            figure(n+1)
+            figure(figNum)
             connect('key_press_event',kevent.press)
     
             errorbar(param, scAve1[:,dataCol[n]], yerr=scErr1[:,dataCol[n]],\
@@ -283,26 +294,30 @@ def main():
     
             xlabel('%s'%options.reduce)
             ylabel(yLabelCol[n])
+            tight_layout()
             #savefig('tba-energy.eps')
+            figNum += 1
     
         # ============================================================================
-        # Figure 5 -- The superfluid density
+        # Figure -- The superfluid density
         # ============================================================================
-        figure(5)
+        figure(figNum)
         connect('key_press_event',kevent.press)
     
         errorbar(param, scAve2[:,0], yerr=scErr2[:,0],\
-                color=colors[5],marker=markers[5],markeredgecolor=colors[5],\
+                color=colors[0],marker=markers[0],markeredgecolor=colors[0],\
                 markersize=8,linestyle='None',capsize=4)
     
+        tight_layout()
         xlabel('%s'%options.reduce)
         ylabel('Superfluid Density')
     
         # ============================================================================
-        # Figure 6  -- The one body density matrix
+        # Figure -- The one body density matrix
         # ============================================================================
         if options.obdm:
-            figure(6)
+            figNum += 1
+            figure(figNum)
             connect('key_press_event',kevent.press)
             ax = subplot(111)
     
@@ -314,130 +329,77 @@ def main():
                 #axis([0,21,1.0E-5,1.1])
             xlabel('r [Angstroms]')
             ylabel('One Body Density Matrix')
-            leg = legend(loc='best')
-            leg.draw_frame(False)
+            tight_layout()
+            legend(loc='best', frameon=False, prop={'size':16},ncol=2)
             #savefig('tba-obdm.eps')
     
         # ============================================================================
-        # Figure 7  -- The two-body pair correlation function
+        # Figure -- The pair correlation function
         # ============================================================================
-        figure(7)
+        figNum += 1
+        figure(figNum)
         connect('key_press_event',kevent.press)
     
         for n in range(numParams):
             lab = '%s = %s' % (options.reduce,param[n])
             errorbar(x2[n,:], ave2[n,:], yerr=err2[n,:],color=colors[n],marker=markers[0],\
-                    markeredgecolor=colors[n], markersize=8,linestyle='None',label=lab,capsize=4)
+                    markeredgecolor=colors[n], markersize=8,linestyle='None',label=lab,capsize=6)
     
             #   axis([0,256,1.0E-5,1.2])
         xlabel('r [Angstroms]')
         ylabel('Pair Correlation Function')
-        leg = legend(loc='best')
-        leg.draw_frame(False)
+        legend(loc='best', frameon=False, prop={'size':16},ncol=2)
+        tight_layout()
         #savefig('tba-pair.eps')
     
         # We only plot the compressibility if we are in the grand-canonical ensemble
         if options.gce: 
     
             # ============================================================================
-            # Figure 9  -- The Number distribution
+            # Figure -- The Number distribution
             # ============================================================================
-            figure(8) 
+            figNum += 1
+            figure(figNum)
             connect('key_press_event',kevent.press) 
+
+            # Find which column contains the average number of particles
+            for hn,h in enumerate(head1):
+                if h == 'N':
+                    break
+
             for n in range(numParams): 
                 lab = '%s = %s' % (options.reduce,param[n]) 
-                errorbar(x4[n,:], ave4[n,:], err4[n,:],color=colors[n],marker=markers[0],\
-                        markeredgecolor=colors[n], markersize=8,linestyle='None',label=lab) 
+                aN = scAve1[n,hn] 
+                errorbar(x4[n,:]-aN, ave4[n,:], err4[n,:],color=colors[n],marker=markers[0],\
+                         markeredgecolor=colors[n],\
+                         markersize=8,linestyle='None',label=lab,capsize=6) 
     
-                axis([0,200,0.0,1.0])
-            xlabel('N')
+            axis([-30,30,0.0,1.2])
+            xlabel('N-<N>')
             ylabel('P(N)')
-            leg = legend(loc='best')
-            leg.draw_frame(False)
+            tight_layout()
+            legend(loc='best', frameon=False, prop={'size':16},ncol=2)
     
             # ============================================================================
-            # Figure 9  -- The Compressibility
+            # Figure -- The Compressibility
             # ============================================================================
-            figure(9)
+            figNum += 1
+            figure(figNum)
             connect('key_press_event',kevent.press)
-    
-            # Now compute and plot the compressibility
-            kappa,kappaErr = getKappa(pimc,outName,reduceFlag)
-    
-            errorbar(param, kappa, yerr=kappaErr, color=colors[0],marker=markers[0],\
-                    markeredgecolor=colors[0], markersize=8,linestyle='None',capsize=4)
-    
-            xlabel('%s'%options.reduce)
-            ylabel(r'$\rho^2 \kappa$')
-    
-            # ============================================================================
-            # Figure 10  -- The Compressibility (version 2)
-            # ============================================================================
-            figure(10)
-            connect('key_press_event',kevent.press)
-    
-            # We find the relevant columns
-            headLab = ['N^2','N','density','denisty']
-            dataCol = []
-            for head in headLab:
-                n = 0
-                for h in head1:
-                    if head == h:
-                        dataCol.append(n)
-                        break
-                    n += 1
-    
-            kappa = []
-            for n in range(numParams):
-                T = float(pimc.params[pimc.id[n]]['Temperature'])
-                V = float(pimc.params[pimc.id[n]]['Container Volume'])
-                box = pimc.params[pimc.id[n]]['Container Dimensions'].split('x')
-                L = float(box[-1])
-                N2 = scAve1[n,dataCol[0]]
-                N  = scAve1[n,dataCol[1]]
-                kappa.append((N2-N*N)/(T*V))
-    
-    
-            plot(param, kappa, color=colors[0],marker=markers[0],\
-                    markeredgecolor=colors[0], markersize=8,linestyle='None')
-    
-            xlabel('%s'%options.reduce)
-            ylabel(r'$\rho^2 \kappa$')
-    
-            # ============================================================================
-            # Figure 11  -- The Average number of particles
-            # ============================================================================
-            figure(11)
-            connect('key_press_event',kevent.press)
-    
-            # We find the relevant columns
-            headLab = ['N']
-            dataCol = []
-            for head in headLab:
-                n = 0
-                for h in head1:
-                    if head == h:
-                        dataCol.append(n)
-                        break
-                    n += 1
-    
-            aveN    = [] 
-            aveNErr = [] 
-            for n in range(numParams): 
-                aveN.append(scAve1[n,dataCol[0]]) 
-                aveNErr.append(scErr1[n,dataCol[0]]) 
-    
-            errorbar(param, aveN, yerr=aveNErr, color=colors[0],marker=markers[0],\
-                    markeredgecolor=colors[0], markersize=8,linestyle='None',capsize=4)
-    
-            xlabel('%s'%options.reduce)
-            ylabel(r'$\langle N \rangle$') 
 
+            errorbar(param, kappa, yerr=kappaErr, color=colors[0],marker=markers[0],\
+                    markeredgecolor=colors[0], markersize=8,linestyle='None',capsize=6)
+    
+            tight_layout()
+            xlabel('%s'%options.reduce)
+            ylabel(r'$\rho^2 \kappa$')
+    
         # ============================================================================
-        # Figure 12  -- The radial density
+        # Figure -- The radial density
         # ============================================================================
         if len(glob.glob('CYLINDER')) > 0:
-            figure(12)
+            figNum += 1
+            figure(figNum)
             connect('key_press_event',kevent.press)
             ax = subplot(111)
     
@@ -447,10 +409,10 @@ def main():
                         markeredgecolor=colors[n], markersize=8,linestyle='None',label=lab)
     
                 #axis([0,21,1.0E-5,1.1])
+            tight_layout()
             xlabel('r [Angstroms]')
             ylabel('Radial Density')
-            leg = legend(loc='best')
-            leg.draw_frame(False)
+            legend(loc='best', frameon=False, prop={'size':16},ncol=2)
     
         show()
 
