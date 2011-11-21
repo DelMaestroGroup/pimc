@@ -63,7 +63,7 @@ def sharcnet(staticPIMCOps,numOptions,optionValue,outName):
 		for flag,val in optionValue.iteritems():
 			command += '-%s %s ' % (flag,val[n])
 		command += staticPIMCOps
-		scriptFile.write('sleep %d\nsqsub -q serial -o %s -m 1 -r 6d %s' % (10,name,command))
+		scriptFile.write('sleep %d\nsqsub -q serial -o %s --mpp=1G -r 6d %s' % (10,name,command))
 	scriptFile.close();
 	os.system('chmod u+x %s'%fileName)
 
