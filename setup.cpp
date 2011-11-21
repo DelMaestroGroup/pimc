@@ -509,7 +509,7 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 			outputC0 = true;
 		}
 		else if ((argv[n][0] == '-') && (argv[n][1] == 'p')) {
-			communicate()->logFile() << format("-p %03d ") % params["process"].as<int>();
+			communicate()->logFile() << format("-p %03d ") % params["process"].as<uint32>();
 			n++;
 		}
 		else 
