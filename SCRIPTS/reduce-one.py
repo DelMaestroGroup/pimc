@@ -263,7 +263,7 @@ def main():
         param = []
         for ID in pimc.id:
             param.append(float(pimc.params[ID][reduceFlag[1]]))
-    
+
         numParams = len(param)
         markers = loadgmt.getMarkerList()
         headLab = ['E/N','K/N','V/N','N', 'diagonal']
@@ -278,7 +278,7 @@ def main():
         yLabelCol = ['Energy / N', 'Kinetic Energy / N', 'Potential Energy / N',\
                 'Number Particles', 'Diagonal Fraction']
 
-        colors  = loadgmt.getColorList('cw/1','cw1-029',max(numParams,len(headLab)))
+        colors  = loadgmt.getColorList('cw/1','cw1-029',max(numParams,len(headLab))+1)
     
         # ============================================================================
         # Figure -- Various thermodynamic quantities
@@ -323,7 +323,7 @@ def main():
     
             for n in range(numParams):
                 lab = '%s = %s' % (options.reduce,param[n])
-                errorbar(x1[n,:], (ave1[n,:]+1.0E-15), err1[n,:],color=colors[n],marker=markers[n],\
+                errorbar(x1[n,:], (ave1[n,:]+1.0E-15), err1[n,:],color=colors[n],marker=markers[0],\
                         markeredgecolor=colors[n], markersize=8,linestyle='None',label=lab)
     
                 #axis([0,21,1.0E-5,1.1])
