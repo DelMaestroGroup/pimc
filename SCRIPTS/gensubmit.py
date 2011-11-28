@@ -37,7 +37,7 @@ case ${PBS_ARRAYID} in\n''')
 	for n in range(numOptions):
 		command = './pimc.e '
 		for flag,val in optionValue.iteritems():
-			command += '-%s %s ' % (flag,val[n])
+			command += '-p %d -%s %s ' % (n,flag,val[n])
 		command += staticPIMCOps
 		pbsFile.write('%d)\nsleep %d\n%s;;\n' % (n,2*n,command))
 	
@@ -61,7 +61,7 @@ def sharcnet(staticPIMCOps,numOptions,optionValue,outName):
 		name = '''out/pimc-%J'''
 		command = './pimc.e '
 		for flag,val in optionValue.iteritems():
-			command += '-%s %s ' % (flag,val[n])
+			command += '-p %d -%s %s ' % (n,flag,val[n])
 		command += staticPIMCOps
 		scriptFile.write('sleep %d\nsqsub -q serial -o %s --mpp=1G -r 6d %s' % (10,name,command))
 	scriptFile.close();

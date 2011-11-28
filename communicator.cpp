@@ -6,6 +6,7 @@
  */
 
 #include "communicator.h"
+//#include <boost/filesystem.hpp>
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -58,6 +59,34 @@ void Communicator::openFile(const string fileName, fstream *_file,
 }
 
 /**************************************************************************//**
+ *  Make sure that the current PIMCID doesn't already exist.
+ *  
+ *  We use boost::filesystem to make sure that the current ID doesn't yet
+ *  exist.  If it does, we increment the ID until we have a unique one.
+******************************************************************************/
+//void Communicator::getUniqueID() {
+//
+//
+//    /* Create a test name (we use the log file here) and see if there are any
+//     * matches. */
+//    string testName;
+//    testName = str(format("OUTPUT/*log-*-%09u.dat") % constants()->id());
+//    boost::filesystem::path logpath(testName);
+//
+//    cout << logpath << endl;
+//
+//    while(boost::filesystem::exists(logpath)) {
+//
+//        /* Increment the ID */
+//        constants()->incID();
+//
+//        /* Try again*/
+//        testName = str(format("OUTPUT/*log-*-%09u.dat") % constants()->id());
+//        logpath = boost::filesystem::path(testName);
+//    }
+//}
+
+/**************************************************************************//**
  *  Initialize all input/output files.
  *  
  *  If we are in the grand-canonical ensemble, then initialize all output
@@ -94,6 +123,11 @@ void Communicator::init(const double _tau, const bool outputWorldline, const
 		cylFile["pair"]      = &cylPairFile_;
 		cylFile["potential"] = &cylPotentialFile_;
 	}
+
+    /* If we are not restarting, make sure we have generated a unique ID
+     * number. */
+	if (!constants()->restart()) 
+        getUniqueID();
 
 	if (!constants()->canonical()) {
 		ensemble = "gce";
