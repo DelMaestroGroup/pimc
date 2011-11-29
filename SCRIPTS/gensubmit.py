@@ -11,7 +11,7 @@ import os,sys
 from optparse import OptionParser
 
 # -----------------------------------------------------------------------------
-def westgrid(staticPIMCOps,numOptions,optionValue,outName):
+def westgrid(staticPIMCOps,shiftp,numOptions,optionValue,outName):
 	''' Write a pbs submit script for westgrid. '''
 
 	# Open the pbs file and write its header
@@ -35,9 +35,13 @@ case ${PBS_ARRAYID} in\n''')
 	
 	# Create the command string and make the case structure
 	for n in range(numOptions):
-		command = './pimc.e '
+		if optionValue.has_key('p'):
+			command = './pimc.e '
+		else:
+			command = './pimc.e -p %d ' % (n+shiftp)
+
 		for flag,val in optionValue.iteritems():
-			command += '-p %d -%s %s ' % (n,flag,val[n])
+			command += '-%s %s ' % (flag,val[n])
 		command += staticPIMCOps
 		pbsFile.write('%d)\nsleep %d\n%s;;\n' % (n,2*n,command))
 	
@@ -47,7 +51,7 @@ case ${PBS_ARRAYID} in\n''')
 	print '\nSubmit jobs with: qsub -t 0-%d %s\n' % (numOptions-1,fileName)
 
 # -----------------------------------------------------------------------------
-def sharcnet(staticPIMCOps,numOptions,optionValue,outName):
+def sharcnet(staticPIMCOps,shiftp,numOptions,optionValue,outName):
 	''' Write a submit script for sharcnet. '''
 
 	# Open the script file and write its header
@@ -59,16 +63,20 @@ def sharcnet(staticPIMCOps,numOptions,optionValue,outName):
 	# Create the command string and output to submit file
 	for n in range(numOptions):
 		name = '''out/pimc-%J'''
-		command = './pimc.e '
+		if optionValue.has_key('p'):
+			command = './pimc.e '
+		else:
+			command = './pimc.e -p %d ' % (n+shiftp)
+			
 		for flag,val in optionValue.iteritems():
-			command += '-p %d -%s %s ' % (n,flag,val[n])
+			command += '-%s %s ' % (flag,val[n])
 		command += staticPIMCOps
-		scriptFile.write('sleep %d\nsqsub -q serial -o %s --mpp=1G -r 6d %s' % (10,name,command))
+		scriptFile.write('sleep %d\nsqsub -q serial -o %s --mpp=1G -r 6d %s\n' % (10,name,command))
 	scriptFile.close();
 	os.system('chmod u+x %s'%fileName)
 
 # -----------------------------------------------------------------------------
-def scinet(staticPIMCOps,numOptions,optionValue,outName):
+def scinet(staticPIMCOps,shiftp,numOptions,optionValue,outName):
 	''' Write a pbs submit script for scinet. '''
 
 	if numOptions != 8:
@@ -130,6 +138,20 @@ def main():
 	# The first line of the file contains all static pimc options
 	staticPIMCOps = inLines[0]
 
+	# We check if a 'process' flag has been set.  If so, we remove it 
+	# from the list and store its value
+	findInput = staticPIMCOps.split();
+	n = 0
+	shiftp = 0
+	for input in findInput:
+		if input == '-p':
+			shiftp = int(findInput[n+1])
+			findInput.pop(n)
+			findInput.pop(n)
+			break
+		n += 1
+	staticPIMCOps = ' '.join(findInput)
+
 	# The next lines contains the short-name of the pimc option
 	# and a list of values.  
 	optionValue = {}
@@ -137,8 +159,34 @@ def main():
 	for line in inLines[1:]:
 		option = line.split()
 		flag = option.pop(0)
-		optionValue[flag] = option
-		numOptions.append(len(option))
+		# Now we determine if we have a range or if we have actually included the values
+		if option[0].find(':') != -1:
+
+			# determine if we have floats or ints
+			if option[0].find('.') != -1:
+				type_converter = lambda x: float(x)
+			else:
+				type_converter = lambda x: int(x)
+
+			dataRange = option[0].split(':')
+
+			# Parse the range string
+			dataMin = type_converter(dataRange[0])
+			dataMax = type_converter(dataRange[1])
+			dataStep = type_converter(dataRange[2])
+
+			# construct the option list
+			vals = [dataMin]
+			while vals[-1] < dataMax:
+				vals.append(vals[-1]+dataStep)
+
+			# assign the option list
+			optionValue[flag] = vals
+			numOptions.append(len(vals))
+		else:
+			# store the typed out values
+			optionValue[flag] = option
+			numOptions.append(len(option))
 	
 	# We try to extract the temperature and volume to make an output string
 	outName = ''
@@ -165,13 +213,13 @@ def main():
 		numOptions = numOptions[0]
 
 	if options.cluster == 'westgrid':
-		westgrid(staticPIMCOps,numOptions,optionValue,outName)
+		westgrid(staticPIMCOps,shiftp,numOptions,optionValue,outName)
 
 	if options.cluster == 'sharcnet':
-		sharcnet(staticPIMCOps,numOptions,optionValue,outName)
+		sharcnet(staticPIMCOps,shiftp,numOptions,optionValue,outName)
 
 	if options.cluster == 'scinet':
-		scinet(staticPIMCOps,numOptions,optionValue,outName)
+		scinet(staticPIMCOps,shiftp,numOptions,optionValue,outName)
 	
 	
 
