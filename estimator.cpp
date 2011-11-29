@@ -1200,16 +1200,19 @@ void CylinderEnergyEstimator::accumulate() {
 	totK  += (classicalKinetic + gV2);
 
 	/* Now we accumulate the average total, kinetic and potential energy, 
-	 * as well as their values per particles. */
-	estimator(0) += totK;
-	estimator(1) += totV;
-	estimator(2) += totK + totV;
+	 * as well as their values per particles, provided we have at least one
+     * particle in the central region. */
+    if (numParticles > 0) {
+        estimator(0) += totK;
+        estimator(1) += totV;
+        estimator(2) += totK + totV;
 
-	estimator(3) += totK + totV - constants()->mu()*numParticles;
+        estimator(3) += totK + totV - constants()->mu()*numParticles;
 
-	estimator(4) += totK/(1.0*numParticles);
-	estimator(5) += totV/(1.0*numParticles);
-	estimator(6) += (totK + totV)/(1.0*numParticles);
+        estimator(4) += totK/(1.0*numParticles);
+        estimator(5) += totV/(1.0*numParticles);
+        estimator(6) += (totK + totV)/(1.0*numParticles);
+    }
 }
 
 // ---------------------------------------------------------------------------
