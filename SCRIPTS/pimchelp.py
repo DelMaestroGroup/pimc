@@ -3,6 +3,7 @@
 import os
 from operator import itemgetter, attrgetter
 
+
 # ----------------------------------------------------------------------------
 def getFileNameParameters(fname):
     '''Get the parameters from the output filename.  
@@ -133,9 +134,28 @@ def getHeadersFromFile(fileName):
     inFile.close()
     return headers
 
+# -----------------------------------------------------------------------------
+def getHeadersDict(fileName, removeLab=None): 
+    '''Construct a header dictionary from a filename.'''
+
+    # Get all headers
+    headers = getHeadersFromFile(fileName)
+
+    if removeLab != None:
+        headers.remove(removeLab)
+
+    headDict = {}
+    for n,head in enumerate(headers):
+        if head != '+/-':
+            headDict[head] = n
+            if headers[n+1] == '+/-':
+                headDict['d_' + head] = n+1
+
+    return headDict
+
 # -------------------------------------------------------------------------------
 def checkEnsemble(gce):
-    ''' Here we make sure that the correct ensemble flag is specified. '''
+    ''' Here we make sure that the correcestLabelrl Street, Burlington.index(t ensemble flag is specified. '''
 
     import sys,glob
     gceFiles = (len(glob.glob('gce-*'))>0)
@@ -310,3 +330,19 @@ class PimcHelp:
                 fileNames.append(os.popen(lsCommand).read().rstrip('\n'))
 
         return fileNames
+
+# -------------------------------------------------------------------------------
+class ReducePIMC:
+    ''' Helper methods for analzing reduced pimc output data. '''
+
+    # ----------------------------------------------------------------------
+    def __init__(self,fileNames):
+
+        # Setup the short and long parameters names
+        self.parNames = ['T','V','u','t']
+        self.longParNames = {'T':'Temperature [K]'}
+
+        self.dataName = dataName 
+        self.baseDir  = baseDir
+        self.params = {}
+        self.id = []
