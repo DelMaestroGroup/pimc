@@ -155,7 +155,7 @@ def getHeadersDict(fileName, removeLab=None):
 
 # -------------------------------------------------------------------------------
 def checkEnsemble(gce):
-    ''' Here we make sure that the correcestLabelrl Street, Burlington.index(t ensemble flag is specified. '''
+    ''' Here we make sure that the correct ensemble flag is specified. '''
 
     import sys,glob
     gceFiles = (len(glob.glob('gce-*'))>0)
@@ -332,17 +332,259 @@ class PimcHelp:
         return fileNames
 
 # -------------------------------------------------------------------------------
-class ReducePIMC:
-    ''' Helper methods for analzing reduced pimc output data. '''
+# CLASS SCALAR REDUCE
+# -------------------------------------------------------------------------------
+class ScalarReduce:
+    ''' Helper methods for analzing reduced pimc scalar output data. '''
 
     # ----------------------------------------------------------------------
     def __init__(self,fileNames):
+        '''Analyze the input files and get all the estimator data.'''
 
-        # Setup the short and long parameters names
-        self.parNames = ['T','V','u','t']
-        self.longParNames = {'T':'Temperature [K]'}
+        # Attempt to load numpy
+        try:
+            import numpy as np
+            numpy_loaded = True
+        except ImportError:
+            numpy_loaded = False 
 
-        self.dataName = dataName 
-        self.baseDir  = baseDir
-        self.params = {}
-        self.id = []
+        # Define the main parameter dictionary
+        self.param_ = {}
+
+        # Parameter and estimator name descriptions
+        self.descrip = Description()
+
+        # Determine the reduction variable and get its values
+        self.reduceLabel = fileNames[0].partition('reduce')[0][-2]
+        data = np.loadtxt(fileNames[0])
+        self.param_[self.reduceLabel] = data[:,0]
+
+        # Determine the number of estimators
+        self.numEstimators = len(data[0,:])-1
+
+        # Get the estimator column indices
+        self.estIndex = getHeadersDict(fileNames[0], removeLab=self.reduceLabel)
+
+        # Extract all other relevant parameters
+        for nf,fileName in enumerate(fileNames):
+            dataString = fileName.partition('reduce')[-1].rstrip('.dat').split('-')
+            while '' in dataString:
+                dataString.remove('')
+            
+            # fill up the param dictionary with values
+            for n,dataLabel in enumerate(dataString):
+                if dataLabel in self.descrip.paramNames:
+                    if nf == 0:
+                        self.param_[dataLabel]= [float(dataString[n+1])]
+                    else:
+                        self.param_[dataLabel].append(float(dataString[n+1]))
+
+        # Now we find the number of unique values of all the parameters
+        self.numParams = {}
+        for parName,parVals in self.param_.iteritems():
+            self.numParams[parName] = len(set(parVals))
+
+        # create an array with the fixed parameters
+        self.fixParNames = self.param_.keys()
+        self.fixParNames.remove(self.reduceLabel)
+        
+        # find the name/label of the changing parameter
+        if len(fileNames) == 1:
+            self.varLabel = self.fixParNames[0]
+        else:
+            for parName in self.fixParNames:
+                if self.numParams[parName] > 1:
+                    self.varLabel = parName
+                    break;
+        
+        # Initialize and fill up the main estimator data array
+        self.estimator_ = np.zeros([self.numParams[self.varLabel], 
+                                   self.numParams[self.reduceLabel], 
+                                   self.numEstimators], dtype=float)
+
+        for n,fileName in enumerate(fileNames):
+            data = np.loadtxt(fileName)
+            self.estimator_[n,:,: ] = data[:,1:]
+
+    # ----------------------------------------------------------------------
+    def getNumVarParams(self):
+        '''Return the number of variable parameters.'''
+        return self.numParams[self.varLabel]
+
+    # ----------------------------------------------------------------------
+    def param(self):
+        '''Return the independent parameter over which we are reducing. '''
+        return self.param_[self.reduceLabel]
+
+    # ----------------------------------------------------------------------
+    def estimator(self,estLabel,ivar):
+        '''Return a dependent estimator with a given var number.'''
+        return self.estimator_[ivar,:,self.estIndex[estLabel]]
+
+    # ----------------------------------------------------------------------
+    def estimatorError(self,estLabel,ivar):
+        '''Return a dependent estimator error with a given var number.'''
+        return self.estimator_[ivar,:,self.estIndex['d_' + estLabel]]
+
+    # ----------------------------------------------------------------------
+    def getVarLabel(self,ivar):
+        '''Construct a label for the varying parameter.'''
+
+        labName = self.descrip.paramShortName[self.varLabel]
+        labVal  = self.param_[self.varLabel][ivar]
+        labUnit = self.descrip.paramUnit[self.varLabel]
+
+        return labName + ' = ' + str(labVal) + ' ' + labUnit
+
+# -------------------------------------------------------------------------------
+# CLASS VECTOR REDUCE
+# -------------------------------------------------------------------------------
+class VectorReduce:
+    ''' Helper methods for analzing reduced pimc vector output data. '''
+
+    # ----------------------------------------------------------------------
+    def __init__(self,fileNames):
+        '''Analyze the input files and get all the estimator data.'''
+
+        # Attempt to load numpy
+        try:
+            import numpy as np
+            numpy_loaded = True
+        except ImportError:
+            numpy_loaded = False 
+
+        # Define the main parameter dictionary
+        self.param_ = {}
+
+        # Parameter and estimator name descriptions
+        self.descrip = Description()
+
+        # Determine the reduction variable and get its values
+        self.reduceLabel = fileNames[0].partition('reduce')[0][-2]
+        data = np.loadtxt(fileNames[0])
+        self.param_[self.reduceLabel] = data[:,0]
+
+        # Determine the number of estimators
+        self.numEstimators = len(data[0,:])-1
+
+        # Get the estimator column indices
+        self.estIndex = getHeadersDict(fileNames[0], removeLab=self.reduceLabel)
+
+        # Extract all other relevant parameters
+        for nf,fileName in enumerate(fileNames):
+            dataString = fileName.partition('reduce')[-1].rstrip('.dat').split('-')
+            while '' in dataString:
+                dataString.remove('')
+            
+            # fill up the param dictionary with values
+            for n,dataLabel in enumerate(dataString):
+                if dataLabel in self.descrip.paramNames:
+                    if nf == 0:
+                        self.param_[dataLabel]= [float(dataString[n+1])]
+                    else:
+                        self.param_[dataLabel].append(float(dataString[n+1]))
+
+        # Now we find the number of unique values of all the parameters
+        self.numParams = {}
+        for parName,parVals in self.param_.iteritems():
+            self.numParams[parName] = len(set(parVals))
+
+        # create an array with the fixed parameters
+        self.fixParNames = self.param_.keys()
+        self.fixParNames.remove(self.reduceLabel)
+        
+        # find the name/label of the changing parameter
+        if len(fileNames) == 1:
+            self.varLabel = self.fixParNames[0]
+        else:
+            for parName in self.fixParNames:
+                if self.numParams[parName] > 1:
+                    self.varLabel = parName
+                    break;
+        
+        # Initialize and fill up the main estimator data array
+        self.estimator_ = np.zeros([self.numParams[self.varLabel], 
+                                   self.numParams[self.reduceLabel], 
+                                   self.numEstimators], dtype=float)
+
+        for n,fileName in enumerate(fileNames):
+            data = np.loadtxt(fileName)
+            self.estimator_[n,:,: ] = data[:,1:]
+
+    # ----------------------------------------------------------------------
+    def getNumVarParams(self):
+        '''Return the number of variable parameters.'''
+        return self.numParams[self.varLabel]
+
+    # ----------------------------------------------------------------------
+    def param(self):
+        '''Return the independent parameter over which we are reducing. '''
+        return self.param_[self.reduceLabel]
+
+    # ----------------------------------------------------------------------
+    def estimator(self,estLabel,ivar):
+        '''Return a dependent estimator with a given var number.'''
+        return self.estimator_[ivar,:,self.estIndex[estLabel]]
+
+    # ----------------------------------------------------------------------
+    def estimatorError(self,estLabel,ivar):
+        '''Return a dependent estimator error with a given var number.'''
+        return self.estimator_[ivar,:,self.estIndex['d_' + estLabel]]
+
+    # ----------------------------------------------------------------------
+    def getVarLabel(self,ivar):
+        '''Construct a label for the varying parameter.'''
+
+        labName = self.descrip.paramShortName[self.varLabel]
+        labVal  = self.param_[self.varLabel][ivar]
+        labUnit = self.descrip.paramUnit[self.varLabel]
+
+        return labName + ' = ' + str(labVal) + ' ' + labUnit
+
+
+# -------------------------------------------------------------------------------
+# CLASS DESCRIPTION
+# -------------------------------------------------------------------------------
+class Description:
+    '''A class which holds descriptions of all the variables used in the path
+    ingegral simulations.'''
+
+    # ----------------------------------------------------------------------
+    def __init__(self,NDIM=3):
+        ''' Defines all maps and dictionaries used in the analysis.'''
+
+        self.paramNames = ['T','V','u','t','N','n']
+
+        self.paramShortName = {'T':'T',
+                               'V':'V',
+                               'u':r'$\mu$',
+                               't':r'$\tau$',
+                               'N':'N',
+                               'n':r'$\rho$'}
+
+        self.paramUnit = {'T':'K',
+                          'V':r'$\mathrm{\AA}$',
+                          'u':'K',
+                          't':'1/K',
+                          'N':'',
+                          'n':r'$\mathrm{\AA}^{-%d}$' % NDIM}
+
+        self.paramLongName = {'T':'Temperature [K]', 
+                              'V':'System Size [$\mathrm{\AA}$]',
+                              'u':'Chemical Potential [K]', 
+                              't':'Imaginary Time Step [1/K]',
+                              'N':'Number of Particles',
+                              'n':r'Number Density [$\mathrm{\AA}^{-%d}$]' % NDIM}
+
+        self.estimatorLongName = {'K':'Kinetic Energy [K]',
+                                  'V':'Potential Energy [K]',
+                                  'E':'Energy [K]',
+                                  'E_mu':r'$E - \mu N$',
+                                  'K/N':'Kinetic Energy per Particle [K]',
+                                  'V/N':'Potential Energy per Particle [K]',
+                                  'E/N':'Energy per Particle [K]',
+                                  'N':'Number of Particles',
+                                  'N^2':r'(Number of Particles)$^2$',
+                                  'density':r'Number Density [$\mathrm{\AA}^{-%d}$]' % NDIM,
+                                  'diagonal':'Diagonal Fraction',
+                                  'kappa':r'$\rho^2 \kappa [units]$'}
