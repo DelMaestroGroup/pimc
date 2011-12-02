@@ -124,11 +124,6 @@ void Communicator::init(const double _tau, const bool outputWorldline, const
 		cylFile["potential"] = &cylPotentialFile_;
 	}
 
-    /* If we are not restarting, make sure we have generated a unique ID
-     * number. */
-	if (!constants()->restart()) 
-        getUniqueID();
-
 	if (!constants()->canonical()) {
 		ensemble = "gce";
 		dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%09u") % constants()->T() 
