@@ -3,6 +3,18 @@
 import os
 from operator import itemgetter, attrgetter
 
+# ----------------------------------------------------------------------
+def getVectorEstimatorName(self,fileName):
+    '''Determine the name of a reduced estimator.'''
+
+    # Get the actual file name and then split at the '-' returning the first
+    # word
+    if fileName.find('/') != -1:
+        estName = fileName.split('/')[-1].split('-')[0]
+    else
+        estName = fileName.split('-')[0]
+
+    return estName
 
 # ----------------------------------------------------------------------------
 def getFileNameParameters(fname):
@@ -443,8 +455,8 @@ class VectorReduce:
     ''' Helper methods for analzing reduced pimc vector output data. '''
 
     # ----------------------------------------------------------------------
-    def __init__(self,fileNames):
-        '''Analyze the input files and get all the estimator data.'''
+    def __init__(self,fileNames,estName):
+        '''Analyze the input files and get all the vector estimator data.'''
 
         # Attempt to load numpy
         try:
@@ -461,14 +473,17 @@ class VectorReduce:
 
         # Determine the reduction variable and get its values
         self.reduceLabel = fileNames[0].partition('reduce')[0][-2]
-        data = np.loadtxt(fileNames[0])
+
+        # We temporarily load the estimator file to get the values of the reduce
+        # variable.  This is easier than globbing it from the vector file
+        estName = self.getVectorEstimatorName(fileNames[0])
+        data = np.loadtxt(fileNames[0].replace(estName,'estimator'))
+
+        # Get the reduce variable
         self.param_[self.reduceLabel] = data[:,0]
 
         # Determine the number of estimators
         self.numEstimators = len(data[0,:])-1
-
-        # Get the estimator column indices
-        self.estIndex = getHeadersDict(fileNames[0], removeLab=self.reduceLabel)
 
         # Extract all other relevant parameters
         for nf,fileName in enumerate(fileNames):
@@ -502,14 +517,15 @@ class VectorReduce:
                     self.varLabel = parName
                     break;
         
-        # Initialize and fill up the main estimator data array
-        self.estimator_ = np.zeros([self.numParams[self.varLabel], 
-                                   self.numParams[self.reduceLabel], 
-                                   self.numEstimators], dtype=float)
+#        # Initialize and fill up the main estimator data array
+#        self.estimator_ = np.zeros([self.numParams[self.varLabel], 
+#                                   self.numParams[self.reduceLabel], 
+#                                   self.numEstimators], dtype=float)
+#
+#        for n,fileName in enumerate(fileNames):
+#            data = np.loadtxt(fileName)
+#            self.estimator_[n,:,: ] = data[:,1:]
 
-        for n,fileName in enumerate(fileNames):
-            data = np.loadtxt(fileName)
-            self.estimator_[n,:,: ] = data[:,1:]
 
     # ----------------------------------------------------------------------
     def getNumVarParams(self):
@@ -587,4 +603,6 @@ class Description:
                                   'N^2':r'(Number of Particles)$^2$',
                                   'density':r'Number Density [$\mathrm{\AA}^{-%d}$]' % NDIM,
                                   'diagonal':'Diagonal Fraction',
-                                  'kappa':r'$\rho^2 \kappa [units]$'}
+                                  'kappa':r'$\rho^2 \kappa [units]$',
+                                  'pair':'Pair Correlation Function [units]',
+                                  'radial':'Radial Number Density [$1/\mathrm{\AA}$]'}
