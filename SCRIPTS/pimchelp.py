@@ -4,14 +4,14 @@ import os
 from operator import itemgetter, attrgetter
 
 # ----------------------------------------------------------------------
-def getVectorEstimatorName(self,fileName):
+def getVectorEstimatorName(fileName):
     '''Determine the name of a reduced estimator.'''
 
     # Get the actual file name and then split at the '-' returning the first
     # word
     if fileName.find('/') != -1:
         estName = fileName.split('/')[-1].split('-')[0]
-    else
+    else:
         estName = fileName.split('-')[0]
 
     return estName
@@ -412,7 +412,7 @@ class ScalarReduce:
         # Initialize and fill up the main estimator data array
         self.estimator_ = np.zeros([self.numParams[self.varLabel], 
                                    self.numParams[self.reduceLabel], 
-                                   self.numEstimators], dtype=float)
+                                   self.numEstimators])
 
         for n,fileName in enumerate(fileNames):
             data = np.loadtxt(fileName)
@@ -476,7 +476,6 @@ class VectorReduce:
 
         # We temporarily load the estimator file to get the values of the reduce
         # variable.  This is easier than globbing it from the vector file
-        estName = self.getVectorEstimatorName(fileNames[0])
         data = np.loadtxt(fileNames[0].replace(estName,'estimator'))
 
         # Get the reduce variable
@@ -516,15 +515,21 @@ class VectorReduce:
                 if self.numParams[parName] > 1:
                     self.varLabel = parName
                     break;
+
+        # Now we must determine how many vector coordinates there are in our
+        # vector estimator
+        data = np.loadtxt(fileNames[0])
+        self.numVectorRows = np.size(data,0)
         
-#        # Initialize and fill up the main estimator data array
-#        self.estimator_ = np.zeros([self.numParams[self.varLabel], 
-#                                   self.numParams[self.reduceLabel], 
-#                                   self.numEstimators], dtype=float)
-#
-#        for n,fileName in enumerate(fileNames):
-#            data = np.loadtxt(fileName)
-#            self.estimator_[n,:,: ] = data[:,1:]
+        # Initialize and fill up the main estimator data array
+        self.estimator_ = np.zeros([self.numParams[self.varLabel], 
+                                    self.numVectorRows,
+                                    3*self.numParams[self.reduceLabel]]) 
+
+        for n,fileName in enumerate(fileNames):
+            data = np.loadtxt(fileName)
+            self.estimator_[n,:,:] = data
+
 
 
     # ----------------------------------------------------------------------
@@ -533,29 +538,60 @@ class VectorReduce:
         return self.numParams[self.varLabel]
 
     # ----------------------------------------------------------------------
+    def getNumReduceParams(self):
+        '''Return the number of variable parameters.'''
+        return self.numParams[self.reduceLabel]
+
+    # ----------------------------------------------------------------------
     def param(self):
         '''Return the independent parameter over which we are reducing. '''
         return self.param_[self.reduceLabel]
 
-    # ----------------------------------------------------------------------
-    def estimator(self,estLabel,ivar):
-        '''Return a dependent estimator with a given var number.'''
-        return self.estimator_[ivar,:,self.estIndex[estLabel]]
+#    # ----------------------------------------------------------------------
+#    def varParam(self):
+#        '''Return the variable parameter array. '''
+#        return self.param_[self.reduceLabel]
 
     # ----------------------------------------------------------------------
-    def estimatorError(self,estLabel,ivar):
-        '''Return a dependent estimator error with a given var number.'''
-        return self.estimator_[ivar,:,self.estIndex['d_' + estLabel]]
+    def x(self,varIndex,reduceIndex):
+        ''' Return the independent vector variable.
+
+           varIndex:    the index of the variable parameters
+           reduceIndex: the index of the reduce parameter
+        '''
+
+        return self.estimator_[varIndex,:,3*reduceIndex]
 
     # ----------------------------------------------------------------------
-    def getVarLabel(self,ivar):
-        '''Construct a label for the varying parameter.'''
+    def estimator(self,varIndex,reduceIndex):
+        ''' Return the dependent vector estimator.
 
-        labName = self.descrip.paramShortName[self.varLabel]
-        labVal  = self.param_[self.varLabel][ivar]
-        labUnit = self.descrip.paramUnit[self.varLabel]
+           varIndex:    the index of the variable parameters
+           reduceIndex: the index of the reduce parameter
+        '''
 
-        return labName + ' = ' + str(labVal) + ' ' + labUnit
+        return self.estimator_[varIndex,:,3*reduceIndex+1]
+
+    # ----------------------------------------------------------------------
+    def estimatorError(self,varIndex,reduceIndex):
+        ''' Return the dependent vector estimator error.
+
+           varIndex:    the index of the variable parameters
+           reduceIndex: the index of the reduce parameter
+        '''
+
+        return self.estimator_[varIndex,:,3*reduceIndex+2]
+
+
+    # ----------------------------------------------------------------------
+#    def getVarLabel(self,ivar):
+#        '''Construct a label for the varying parameter.'''
+#
+#        labName = self.descrip.paramShortName[self.varLabel]
+#        labVal  = self.param_[self.varLabel][ivar]
+#        labUnit = self.descrip.paramUnit[self.varLabel]
+#
+#        return labName + ' = ' + str(labVal) + ' ' + labUnit
 
 
 # -------------------------------------------------------------------------------
@@ -605,4 +641,8 @@ class Description:
                                   'diagonal':'Diagonal Fraction',
                                   'kappa':r'$\rho^2 \kappa [units]$',
                                   'pair':'Pair Correlation Function [units]',
-                                  'radial':'Radial Number Density [$1/\mathrm{\AA}$]'}
+                                  'radial':'Radial Number Density [$1/\mathrm{\AA}$]',
+                                  'number':'Number Distribution'}
+
+        self.estimatorXLongName = {'number':'Number of Particles',
+                                   'pair':r'Separation [$\mathrm{\AA}$]'}

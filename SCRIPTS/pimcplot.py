@@ -5,6 +5,9 @@
 # 
 # Plot rough estimators vs. MC steps for files supplied as input
 
+import matplotlib
+matplotlib.use('TKAgg')
+
 import os,sys
 import pyutils
 from optparse import OptionParser

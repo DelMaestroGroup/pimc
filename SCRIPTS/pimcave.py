@@ -43,7 +43,6 @@ def main():
         pimcid = estLines[0]
         headers = estLines[1].split()
         estFile.close()
-        print headers
 
         # If we have data, compute averages and error
         if numLines-options.skip > 0:
@@ -61,7 +60,6 @@ def main():
             print pimcid, '# Number Samples %6d' %  numData
             if not normalize:
                 for n,ave in enumerate(estAve):
-                    print len(headers), len(estAve)
                     if len(headers) - 1 ==  len(estAve):
                         label = headers[n+1]
                     else:
