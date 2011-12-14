@@ -584,14 +584,24 @@ class VectorReduce:
 
 
     # ----------------------------------------------------------------------
-#    def getVarLabel(self,ivar):
-#        '''Construct a label for the varying parameter.'''
-#
-#        labName = self.descrip.paramShortName[self.varLabel]
-#        labVal  = self.param_[self.varLabel][ivar]
-#        labUnit = self.descrip.paramUnit[self.varLabel]
-#
-#        return labName + ' = ' + str(labVal) + ' ' + labUnit
+    def getReduceLabel(self,reduceIndex):
+        '''Construct a label for the reduce parameter.'''
+
+        labName = self.descrip.paramShortName[self.reduceLabel]
+        labValue = self.param_[self.reduceLabel][reduceIndex]
+        labUnit = self.descrip.paramUnit[self.reduceLabel]
+
+        return labName + ' = ' + str(labValue) + ' ' + labUnit
+
+    # ----------------------------------------------------------------------
+    def getVarLabel(self,varIndex):
+        '''Construct a label for the variable parameter.'''
+
+        labName = self.descrip.paramShortName[self.varLabel]
+        labValue  = self.param_[self.varLabel][varIndex]
+        labUnit = self.descrip.paramUnit[self.varLabel]
+
+        return labName + ' = ' + str(labValue) + ' ' + labUnit
 
 
 # -------------------------------------------------------------------------------
@@ -642,7 +652,10 @@ class Description:
                                   'kappa':r'$\rho^2 \kappa [units]$',
                                   'pair':'Pair Correlation Function [units]',
                                   'radial':'Radial Number Density [$1/\mathrm{\AA}$]',
-                                  'number':'Number Distribution'}
+                                  'number':'Number Distribution',
+                                  'obdm':'One Body Density Matrix'}
 
         self.estimatorXLongName = {'number':'Number of Particles',
-                                   'pair':r'Separation [$\mathrm{\AA}$]'}
+                                   'pair':r'r [$\mathrm{\AA}$]',
+                                   'obdm':r'r [$\mathrm{\AA}$]'}
+        
