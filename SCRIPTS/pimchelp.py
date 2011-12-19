@@ -166,15 +166,15 @@ def getHeadersDict(fileName, removeLab=None):
     return headDict
 
 # -------------------------------------------------------------------------------
-def checkEnsemble(gce):
+def checkEnsemble(canonical):
     ''' Here we make sure that the correct ensemble flag is specified. '''
 
     import sys,glob
     gceFiles = (len(glob.glob('gce-*'))>0)
     ceFiles = (len(glob.glob('ce-*'))>0)
 
-    if (gceFiles and not ceFiles) and not gce:
-        sys.exit('Need to include -g for the grand canonical ensemble!')
+    if (ceFiles and not gceFiles) and not canonical:
+        sys.exit('Need to include --canonical for the canonical ensemble!')
 
 # -------------------------------------------------------------------------------
 def getFileString(options,reduce=True):
@@ -189,37 +189,41 @@ def getFileString(options,reduce=True):
         out += '-T-%s' % flagT
     else:
         flagT = "*"
+
     if options.N is not None:
         flagN = "%04d" % options.N
         out += '-N-%s' % flagN
     else:
         flagN = "*"
+
     if options.n is not None:
         flagn = "%06.3f" % options.n
         out += '-n-%s' % flagn
     else:
         flagn = "*"
+
     if options.tau is not None:
         flagtau = "%7.5f" % options.tau
         out += '-t-%s' % flagtau
     else:
         flagtau = "*"
+
     if options.mu is not None:
         flagmu = "%+08.3f" % options.mu
         out += '-u-%s' % flagmu
     else:
         flagmu = "*"
 
-    if options.V is not None:
-        flagV = "%07.3f" % options.V
-        out += '-V-%s' % flagV
+    if options.L is not None:
+        flagL = "%07.3f" % options.L
+        out += '-L-%s' % flagL
     else:
-        flagV = "*"
+        flagL = "*"
 
-    if options.gce:
-        dataName = '%s-%s-%s-%s-*.dat' % (flagT,flagV,flagmu,flagtau)
-    else:
+    if options.canonical:
         dataName = '%s-%s-%s-%s-*.dat' % (flagT,flagN,flagn,flagtau)
+    else:
+        dataName = '%s-%s-%s-%s-*.dat' % (flagT,flagL,flagmu,flagtau)
 
     if reduce:
         outName = '%s-reduce%s' % (options.reduce,out)
@@ -232,20 +236,20 @@ class PimcHelp:
     ''' Helper methods for analzing pimc output data. '''
 
     # ----------------------------------------------------------------------
-    def __init__(self,dataName,gce,baseDir=''):
+    def __init__(self,dataName,canonical,baseDir=''):
 
         self.dataName = dataName 
         self.baseDir  = baseDir
         self.params = {}
         self.id = []
-        if not gce:
+        if canonical:
             self.prefix='ce'
         else:
             self.prefix='gce'
 
         # The data file and all output file names
         self.dataType = ['estimator','obdm','pair','pcycle','super','worm','radial']
-        if gce:
+        if not canonical:
             self.dataType.append('number')
         self.outType  = ['estimator','number','obdm','pair','pcycle','super','worm','radial','log','state']
 
@@ -280,6 +284,10 @@ class PimcHelp:
                     params = True
 
         logFile.close()
+
+        # Add an element to the parameter map for the linear dimension (Lz) of
+        # the container
+        paramsMap['Container Length'] = paramsMap['Container Dimensions'].split('x')[-1]
 
         return paramsMap
 
@@ -350,7 +358,7 @@ class ScalarReduce:
     ''' Helper methods for analzing reduced pimc scalar output data. '''
 
     # ----------------------------------------------------------------------
-    def __init__(self,fileNames):
+    def __init__(self,fileNames,varLabel=None):
         '''Analyze the input files and get all the estimator data.'''
 
         # Attempt to load numpy
@@ -402,7 +410,10 @@ class ScalarReduce:
         
         # find the name/label of the changing parameter
         if len(fileNames) == 1:
-            self.varLabel = self.fixParNames[0]
+            if varLabel == None:
+                self.varLabel = self.fixParNames[0]
+            else:
+                self.varLabel = varLabel
         else:
             for parName in self.fixParNames:
                 if self.numParams[parName] > 1:
@@ -436,7 +447,7 @@ class ScalarReduce:
     # ----------------------------------------------------------------------
     def estimatorError(self,estLabel,ivar):
         '''Return a dependent estimator error with a given var number.'''
-        return self.estimator_[ivar,:,self.estIndex['d_' + estLabel]]
+        return 5.0*self.estimator_[ivar,:,self.estIndex['d_' + estLabel]]
 
     # ----------------------------------------------------------------------
     def getVarLabel(self,ivar):
@@ -455,7 +466,7 @@ class VectorReduce:
     ''' Helper methods for analzing reduced pimc vector output data. '''
 
     # ----------------------------------------------------------------------
-    def __init__(self,fileNames,estName):
+    def __init__(self,fileNames,estName,varLabel=None):
         '''Analyze the input files and get all the vector estimator data.'''
 
         # Attempt to load numpy
@@ -509,7 +520,10 @@ class VectorReduce:
         
         # find the name/label of the changing parameter
         if len(fileNames) == 1:
-            self.varLabel = self.fixParNames[0]
+            if varLabel == None:
+                self.varLabel = self.fixParNames[0]
+            else:
+                self.varLabel = varLabel
         else:
             for parName in self.fixParNames:
                 if self.numParams[parName] > 1:
@@ -588,20 +602,22 @@ class VectorReduce:
         '''Construct a label for the reduce parameter.'''
 
         labName = self.descrip.paramShortName[self.reduceLabel]
+        labFormat = self.descrip.paramFormat[self.reduceLabel]
         labValue = self.param_[self.reduceLabel][reduceIndex]
         labUnit = self.descrip.paramUnit[self.reduceLabel]
 
-        return labName + ' = ' + str(labValue) + ' ' + labUnit
+        return labName + ' = ' + labFormat % labValue + ' ' + labUnit
 
     # ----------------------------------------------------------------------
     def getVarLabel(self,varIndex):
         '''Construct a label for the variable parameter.'''
 
         labName = self.descrip.paramShortName[self.varLabel]
+        labFormat = self.descrip.paramFormat[self.varLabel]
         labValue  = self.param_[self.varLabel][varIndex]
         labUnit = self.descrip.paramUnit[self.varLabel]
 
-        return labName + ' = ' + str(labValue) + ' ' + labUnit
+        return labName + ' = ' + labFormat % labValue + ' ' + labUnit
 
 
 # -------------------------------------------------------------------------------
@@ -615,28 +631,46 @@ class Description:
     def __init__(self,NDIM=3):
         ''' Defines all maps and dictionaries used in the analysis.'''
 
-        self.paramNames = ['T','V','u','t','N','n']
+        lengthTUnit = r'$\left[\mathrm{\AA}\right]$'
+        lengthUnit = r'$\mathrm{\AA}$'
+
+        self.paramNames = ['T','V','u','t','N','n','R','L']
 
         self.paramShortName = {'T':'T',
                                'V':'V',
                                'u':r'$\mu$',
                                't':r'$\tau$',
                                'N':'N',
-                               'n':r'$\rho$'}
+                               'n':r'$\rho$',
+                               'R':'R',
+                               'L':'L'}
 
         self.paramUnit = {'T':'K',
-                          'V':r'$\mathrm{\AA}$',
+                          'V':r'$\mathrm{\AA^{%d}}$' % NDIM,
                           'u':'K',
-                          't':'1/K',
+                          't':r'$K^{-1}$',
                           'N':'',
-                          'n':r'$\mathrm{\AA}^{-%d}$' % NDIM}
+                          'n':r'$\mathrm{\AA}^{-%d}$' % NDIM,
+                          'R':lengthUnit,
+                          'L':lengthUnit}
 
-        self.paramLongName = {'T':'Temperature [K]', 
-                              'V':'System Size [$\mathrm{\AA}$]',
-                              'u':'Chemical Potential [K]', 
-                              't':'Imaginary Time Step [1/K]',
+        self.paramFormat = {'T':r'%4.2f',
+                            'V':r'%3d',
+                            'u':r'%+3.1f',
+                            't':r'%5.3f',
+                            'N':'%3d',
+                            'n':r'%f',
+                            'R':r'%f',
+                            'L':r'%f'}
+
+        self.paramLongName = {'T':'Temperature  [K]', 
+                              'V':r'Volume  $\left[\mathrm{\AA^{%d}}\right]$' % NDIM,
+                              'u':'Chemical Potential  [K]', 
+                              't':'Imaginary Time Step  [1/K]',
                               'N':'Number of Particles',
-                              'n':r'Number Density [$\mathrm{\AA}^{-%d}$]' % NDIM}
+                              'n':r'Density  $\left[\mathrm{\AA}^{-%d}\right$' % NDIM,
+                              'R':'Pore Radius  %s ' % lengthTUnit,
+                              'L':'Length %s' % lengthTUnit}
 
         self.estimatorLongName = {'K':'Kinetic Energy [K]',
                                   'V':'Potential Energy [K]',
@@ -647,15 +681,15 @@ class Description:
                                   'E/N':'Energy per Particle [K]',
                                   'N':'Number of Particles',
                                   'N^2':r'(Number of Particles)$^2$',
-                                  'density':r'Number Density [$\mathrm{\AA}^{-%d}$]' % NDIM,
+                                  'density':r'Density $\left[\mathrm{\AA}^{-%d}\right]$' % NDIM,
                                   'diagonal':'Diagonal Fraction',
                                   'kappa':r'$\rho^2 \kappa [units]$',
                                   'pair':'Pair Correlation Function [units]',
-                                  'radial':'Radial Number Density [$1/\mathrm{\AA}$]',
+                                  'radial':r'Radial Density $\left[\mathrm{\AA}^{-1}\right]$',
                                   'number':'Number Distribution',
                                   'obdm':'One Body Density Matrix'}
 
         self.estimatorXLongName = {'number':'Number of Particles',
-                                   'pair':r'r [$\mathrm{\AA}$]',
-                                   'obdm':r'r [$\mathrm{\AA}$]'}
-        
+                                   'pair':'r  %s' % lengthTUnit,
+                                   'obdm':'r  %s' % lengthTUnit,
+                                   'radial':'r  %s' % lengthTUnit}

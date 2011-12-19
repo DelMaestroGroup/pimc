@@ -11,6 +11,18 @@ import pyutils
 import pimchelp
 import numpy as np
 import pylab as pl
+import plotoptions
+
+# --------------------------------------------------------------------------------
+def getIndex(A,N,NDIM):
+    ''' Returns the reconstructed index of a 2d array'''
+    index = []
+    for i in range(NDIM):
+        fact = 1
+        for j in range(i+1,NDIM):
+            fact *= N[j]
+        index.append((A/fact) % N[i])
+    return index
 
 # -----------------------------------------------------------------------------
 # Begin Main Program 
@@ -20,33 +32,38 @@ def main():
     # setup the argument parser
     parser = argparse.ArgumentParser(description='Plot a vector estimator.')
     parser.add_argument('fileNames', help='Reduced scalar estimator files', nargs='+')
-    parser.add_argument('--estimator','-e', help='A list of estimator names that \
-                        are to be plotted.', type=str, nargs='+')
-    parser.add_argument('--no_error', help='Turn off error bars.', action='store_true')
-    parser.add_argument('--lines', help='Plot with lines.', action='store_true')
     parser.add_argument('--ndim', '-d', help='Number of spatial dimensions.',
                         type=int, default=3) 
+    parser.add_argument('--plot','-p', help='The plot type. l = lines, p = points, \
+                        e = errorbars', type=str, choices=['l','e','p','lp','le'], 
+                        default='e')
+    parser.add_argument('--label', '-l', help='Parameter name for labels.', type=str)
+    parser.add_argument('--subplot', '-s', help='Dimensions of a subplot matrix.', 
+                        type=int, nargs='+')
+    parser.add_argument('--xlim', '-x', help='x-axis limits', type=float,
+                        nargs='+')
     args = parser.parse_args()
 
     fileNames = args.fileNames
-    estimatorToPlot = args.estimator
-    noErrorBars = args.no_error
     NDIM = args.ndim
-    lines = args.lines
+    varLabel = args.label
+    plotType = args.plot
+    subplot = args.subplot
+    xLim = args.xlim
 
     if len(fileNames) < 1:
         parser.error("Need to specify at least one vector estimator file")
 
     # Analyze the imput files
     estimatorName = pimchelp.getVectorEstimatorName(fileNames[0])
-    reduce = pimchelp.VectorReduce(fileNames,estimatorName)
+    reduce = pimchelp.VectorReduce(fileNames,estimatorName,varLabel)
 
     # Get a color scheme and marker list
-    # http://www.graphviz.org/content/color-names
-    numColors = max(reduce.getNumReduceParams(),5)
-    colors  = loadgmt.getColorList('cb/div','Spectral_05',numColors)
-#    colors.reverse()
-    markers = loadgmt.getMarkerList()
+    numColors = reduce.getNumReduceParams()
+    markers,colors  = plotoptions.markersColors(numColors)
+
+    # get the plot options
+    pOptions = plotoptions.plotOptions(plotType)
 
     # create a description object
     descrip = pimchelp.Description(NDIM)
@@ -56,32 +73,66 @@ def main():
         pl.figure(varIndex+1)
         for reduceIndex in range(reduce.getNumReduceParams()):
             lab = reduce.getReduceLabel(reduceIndex)
-            if lines:
-                pl.plot(reduce.x(varIndex,reduceIndex),
-                        reduce.estimator(varIndex,reduceIndex),
-                        marker=None, label=lab, linestyle='-',
-                        markeredgewidth=0,markersize=0,
-                        color=colors[reduceIndex], linewidth=2.0)
-
-            else:
+            pOptions['color'] = colors[reduceIndex]
+            if 'e' in plotType:
                 eb = pl.errorbar(reduce.x(varIndex,reduceIndex),
                                  reduce.estimator(varIndex,reduceIndex),
                                  yerr=reduce.estimatorError(varIndex,reduceIndex), 
-                                 marker=markers[0], markersize=10,
                                  markerfacecolor=colors[reduceIndex],
-                                 markeredgewidth=0.2, markeredgecolor='k', capsize=10, 
-                                 ecolor=colors[reduceIndex], elinewidth=1.0, label=lab, 
-                                 linestyle='-', color='k', linewidth=0.2)
+                                 ecolor=colors[reduceIndex], label=lab, 
+                                 **pOptions)
                 
                 # Set the width of the cap lines
                 for cap in eb[1]:
                     cap.set_mew(1.0)
+            else:
+                pl.plot(reduce.x(varIndex,reduceIndex),
+                        reduce.estimator(varIndex,reduceIndex),
+                        label=lab, **pOptions)
 
 
         #pl.tight_layout()
         pl.xlabel(descrip.estimatorXLongName[estimatorName])
         pl.ylabel(descrip.estimatorLongName[estimatorName])
-        pl.legend(frameon=False, loc='best')
+        leg = pl.legend(frameon=False, loc='best', prop={'size':18})
+        if xLim != None:
+            pl.xlim(xLim[0],xLim[1])
+
+    if subplot != None:
+        f, ax = pl.subplots(subplot[0], subplot[1], sharex=True, squeeze=False, sharey=True)
+        numReduce = reduce.getNumReduceParams()
+
+        for reduceIndex in range(reduce.getNumReduceParams()):
+            id = getIndex(reduceIndex,subplot,2)
+            pOptions['color'] = colors[reduceIndex]
+            lab = reduce.getReduceLabel(reduceIndex)
+
+            for varIndex in range(reduce.getNumVarParams()):
+                pOptions['marker'] = markers[varIndex]
+
+                if 'e' in plotType:
+                    eb = ax[id[0],id[1]].errorbar(reduce.x(varIndex,reduceIndex),
+                                                  reduce.estimator(varIndex,reduceIndex),
+                                                  yerr=reduce.estimatorError(0,reduceIndex), 
+                                                  markerfacecolor=colors[reduceIndex],
+                                                  ecolor=colors[reduceIndex], label=lab, 
+                                                  **pOptions)
+                    
+                    # Set the width of the cap lines
+                    for cap in eb[1]:
+                        cap.set_mew(1.0)
+                else:
+                    ax[id[0],id[1]].plot(reduce.x(varIndex,reduceIndex),
+                                         reduce.estimator(varIndex,reduceIndex),
+                                         label=lab, **pOptions)
+
+            ax[id[0],id[1]].legend(frameon=False, loc='best', prop={'size':18})
+
+        [ax[-1,n].set_xlabel(descrip.estimatorXLongName[estimatorName]) for n in range(subplot[1])]
+        [ax[n,0].set_ylabel(descrip.estimatorLongName[estimatorName]) for n in range(subplot[0])]
+        f.subplots_adjust(hspace=0.10)
+        f.subplots_adjust(wspace=0.10)
+
     pl.show()
 
 # ----------------------------------------------------------------------

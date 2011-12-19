@@ -130,9 +130,13 @@ def getKappa(pimc,outName,reduceFlag):
         # Now get the temperature, volume and linear system size
         ID = pimc.getID(fname)
         T = float(pimc.params[ID]['Temperature'])
-        V = float(pimc.params[ID]['Container Volume'])
-        box = pimc.params[ID]['Container Dimensions'].split('x')
-        L = float(box[-1])
+
+        # We need to get the correct volume, depending on whether or not we are
+        # looking at the core
+        if len(glob.glob('../CYLINDER')) > 0:
+            V = pi*(1.75)**2*float(pimc.params[ID]['Container Length'])
+        else:
+            V = float(pimc.params[ID]['Container Volume'])
 
         # Compute the average compressibility and its error
         estData = loadtxt(fname)
@@ -178,33 +182,39 @@ def getKappa(pimc,outName,reduceFlag):
 def main(): 
 
     # define the mapping between short names and label names 
-    shortFlags = ['n','T','N','t','u','V']
-    parMap = {'n':'Initial Density', 'T':'Temperature', 'N':'Initial Number Particles',\
-            't':'Imaginary Time Step', 'u':'Chemical Potential', 'V':'Container Volume'}
+    shortFlags = ['n','T','N','t','u','V','L']
+    parMap = {'n':'Initial Density', 'T':'Temperature', 'N':'Initial Number Particles',
+              't':'Imaginary Time Step', 'u':'Chemical Potential', 'V':'Container Volume',
+              'L':'Container Length'}
 
     # setup the command line parser options 
     parser = OptionParser() 
-    parser.add_option("-T", "--temperature", dest="T", type="float", \
-            help="simulation temperature in Kelvin") 
-    parser.add_option("-N", "--number-particles", dest="N", type="int",\
-            help="number of particles") 
-    parser.add_option("-n", "--density", dest="n", type="float",\
-            help="number density in Angstroms^{-d}")
-    parser.add_option("-t", "--imag-time-step", dest="tau", type="float",\
-            help="imaginary time step")
-    parser.add_option("-u", "--chemical-potential", dest="mu", type="float",\
-            help="chemical potential in Kelvin") 
-    parser.add_option("-V", "--volume", dest="V", type="float",\
-            help="volume in Angstroms^d") 
-    parser.add_option("-r", "--reduce", dest="reduce", choices=['T','N','n','u','t','V'],\
-            help="variable name for reduction [T,N,n,u,M,V]") 
-    parser.add_option("-g", "--grand-canonical", action="store_true", dest="gce",\
-            help="are we in the grand canonical ensemble?")
-    parser.add_option("-o", "--obdm", action="store_false", dest="obdm",\
-            help="do we want to measure the obdm?") 
-    parser.add_option("-p", "--plot", action="store_true", dest="plot",\
-            help="do we want to produce data plots?") 
-    parser.set_defaults(gce=False)
+    parser.add_option("-T", "--temperature", dest="T", type="float",
+                      help="simulation temperature in Kelvin") 
+    parser.add_option("-N", "--number-particles", dest="N", type="int",
+                      help="number of particles") 
+    parser.add_option("-n", "--density", dest="n", type="float",
+                      help="number density in Angstroms^{-d}")
+    parser.add_option("-t", "--imag-time-step", dest="tau", type="float",
+                      help="imaginary time step")
+    parser.add_option("-u", "--chemical-potential", dest="mu", type="float",
+                      help="chemical potential in Kelvin") 
+    parser.add_option("-L", "--Lz", dest="L", type="float",
+                      help="Length in Angstroms") 
+    parser.add_option("-V", "--volume", dest="V", type="float",
+                      help="volume in Angstroms^d") 
+    parser.add_option("-r", "--reduce", dest="reduce",
+                      choices=['T','N','n','u','t','L','V'], 
+                      help="variable name for reduction [T,N,n,u,M,L,V]") 
+    parser.add_option("--canonical", action="store_true", dest="canonical",
+                      help="are we in the canonical ensemble?")
+    parser.add_option("-o", "--obdm", action="store_false", dest="obdm",
+                      help="do we want to measure the obdm?") 
+    parser.add_option("-p", "--plot", action="store_true", dest="plot",
+                      help="do we want to produce data plots?") 
+    parser.add_option("-R", "--radius", dest="R", type="float",
+                      help="radius in Angstroms") 
+    parser.set_defaults(canonical=False)
     parser.set_defaults(plot=False)
     parser.set_defaults(obdm=True)
 
@@ -214,10 +224,10 @@ def main():
         parser.error("incorrect number of arguments")
     
     if (not options.reduce):
-        parser.error("need a correct reduce flag (-r,--reduce): [T,N,n,u,t,V]")
+        parser.error("need a correct reduce flag (-r,--reduce): [T,N,n,u,t,L,V]")
 
     # Check that we are in the correct ensemble
-    pimchelp.checkEnsemble(options.gce)
+    pimchelp.checkEnsemble(options.canonical)
 
     dataName,outName = pimchelp.getFileString(options)
     reduceFlag = []
@@ -225,11 +235,14 @@ def main():
     reduceFlag.append(parMap[options.reduce])
 
     # Create the PIMC analysis helper and fill up the simulation parameters maps
-    pimc = pimchelp.PimcHelp(dataName,options.gce)
+    pimc = pimchelp.PimcHelp(dataName,options.canonical)
     pimc.getSimulationParameters()
 
     # Form the full output file name
-    outName += '.dat'
+    if options.R == None:
+        outName += '.dat'
+    else:
+        outName += '-R-%04.1f.dat' % options.R
 
     # We first reduce the scalar estimators and output them to disk
     head1,scAve1,scErr1 = getScalarEst('estimator',pimc,outName,reduceFlag)
@@ -248,7 +261,7 @@ def main():
 
     # Compute the number distribution function and compressibility if we are in
     # the grand canonical ensemble
-    if options.gce:
+    if not options.canonical:
         x4,ave4,err4 = getVectorEst('number',pimc,outName,reduceFlag,'N','P(N)')
         kappa,kappaErr = getKappa(pimc,outName,reduceFlag)
 
@@ -353,7 +366,7 @@ def main():
         #savefig('tba-pair.eps')
     
         # We only plot the compressibility if we are in the grand-canonical ensemble
-        if options.gce: 
+        if not options.canonical:
     
             # ============================================================================
             # Figure -- The Number distribution
@@ -375,7 +388,7 @@ def main():
                          markersize=8,linestyle='None',label=lab,capsize=6) 
     
             axis([-30,30,0.0,1.2])
-            xlabel('N-<N>')
+            xlabel(r'$N-\langle N \rangle$')
             ylabel('P(N)')
             tight_layout()
             legend(loc='best', frameon=False, prop={'size':16},ncol=2)

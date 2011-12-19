@@ -118,27 +118,29 @@ def main():
 
     # setup the command line parser options 
     parser = OptionParser() 
-    parser.add_option("-T", "--temperature", dest="T", type="float", \
-            help="simulation temperature in Kelvin") 
-    parser.add_option("-N", "--number-particles", dest="N", type="int",\
-            help="number of particles") 
-    parser.add_option("-n", "--density", dest="n", type="float",\
-            help="number density in Angstroms^{-d}")
-    parser.add_option("-t", "--imag-time-step", dest="tau", type="float",\
-            help="imaginary time step")
-    parser.add_option("-M", "--number-time-slices", dest="M", type="int",\
-            help="number of time slices")
-    parser.add_option("-u", "--chemical-potential", dest="mu", type="float",\
-            help="chemical potential in Kelvin") 
-    parser.add_option("-V", "--volume", dest="V", type="float",\
-            help="volume in Angstroms^d") 
-    parser.add_option("-g", "--grand-canonical", action="store_true", dest="gce",\
-            help="are we in the grand canonical ensemble?")
-    parser.add_option("-s", "--skip", dest="skip", type="int",\
-            help="how many input lines should we skip?")
+    parser.add_option("-T", "--temperature", dest="T", type="float",
+                      help="simulation temperature in Kelvin") 
+    parser.add_option("-N", "--number-particles", dest="N", type="int",
+                      help="number of particles") 
+    parser.add_option("-n", "--density", dest="n", type="float",
+                      help="number density in Angstroms^{-d}")
+    parser.add_option("-t", "--imag-time-step", dest="tau", type="float",
+                      help="imaginary time step")
+    parser.add_option("-M", "--number-time-slices", dest="M", type="int",
+                      help="number of time slices")
+    parser.add_option("-u", "--chemical-potential", dest="mu", type="float",
+                      help="chemical potential in Kelvin") 
+    parser.add_option("-V", "--volume", dest="V", type="float",
+                      help="volume in Angstroms^d") 
+    parser.add_option("-L", "--Lz", dest="L", type="float",
+                      help="Length in Angstroms") 
+    parser.add_option("--canonical", action="store_true", dest="canonical",
+                      help="are we in the canonical ensemble?")
+    parser.add_option("-s", "--skip", dest="skip", type="int",
+                      help="how many input lines should we skip?")
     parser.set_defaults(skip=0)
 
-    parser.set_defaults(gce=False)
+    parser.set_defaults(canonical=False)
 
     # parse the command line options and get the reduce flag
     (options, args) = parser.parse_args() 
@@ -150,12 +152,12 @@ def main():
         os.system('mkdir MERGED')
     
     # Check that we are in the correct ensemble
-    pimchelp.checkEnsemble(options.gce)
+    pimchelp.checkEnsemble(options.canonical)
 
     dataName = pimchelp.getFileString(options,reduce=False)
 
     # Create the PIMC analysis helper and fill up the simulation parameters maps
-    pimc = pimchelp.PimcHelp(dataName,options.gce)
+    pimc = pimchelp.PimcHelp(dataName,options.canonical)
     pimc.getSimulationParameters()
 
     # We try to find a new PIMCID which is the average of the ones to merge, and
