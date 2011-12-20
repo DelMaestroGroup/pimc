@@ -450,14 +450,16 @@ class ScalarReduce:
         return 5.0*self.estimator_[ivar,:,self.estIndex['d_' + estLabel]]
 
     # ----------------------------------------------------------------------
-    def getVarLabel(self,ivar):
-        '''Construct a label for the varying parameter.'''
+    def getVarLabel(self,varIndex):
+        '''Construct a label for the variable parameter.'''
 
         labName = self.descrip.paramShortName[self.varLabel]
-        labVal  = self.param_[self.varLabel][ivar]
+        labFormat = self.descrip.paramFormat[self.varLabel]
+        labValue  = self.param_[self.varLabel][varIndex]
         labUnit = self.descrip.paramUnit[self.varLabel]
 
-        return labName + ' = ' + str(labVal) + ' ' + labUnit
+        return labName + ' = ' + labFormat % labValue + ' ' + labUnit
+#        return lab.rjust(len(lab))
 
 # -------------------------------------------------------------------------------
 # CLASS VECTOR REDUCE
@@ -660,7 +662,7 @@ class Description:
                             't':r'%5.3f',
                             'N':'%3d',
                             'n':r'%f',
-                            'R':r'%f',
+                            'R':r'% 4.1f',
                             'L':r'%f'}
 
         self.paramLongName = {'T':'Temperature  [K]', 

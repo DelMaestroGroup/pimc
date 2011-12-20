@@ -17,7 +17,7 @@ def plotOptions(plotType):
     # marker properties
     pOps['markersize'] = 9
     pOps['markeredgewidth'] = 1.0
-    pOps['markeredgecolor'] = 'gray'
+    pOps['markeredgecolor'] = 'black'
     pOps['marker'] = 'o'
 
     # line properties
@@ -51,7 +51,7 @@ def markersColors(numColors):
     '''return the markers and colors used for plotting.'''
 
     # http://www.graphviz.org/content/color-names
-    colors  = loadgmt.getColorList('cb/div','Spectral_05',numColors)
+    colors  = loadgmt.getColorList('cb/div','Spectral_06',numColors)
     colors.reverse()
     markers = loadgmt.getMarkerList()
 

@@ -49,7 +49,6 @@ def main():
 
     # Get a color scheme and marker list
     numColors = max(reduce.getNumVarParams(),2)
-    print numColors
     markers,colors  = plotoptions.markersColors(numColors)
 
     # create a description object
