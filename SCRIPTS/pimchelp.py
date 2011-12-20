@@ -633,7 +633,7 @@ class Description:
     def __init__(self,NDIM=3):
         ''' Defines all maps and dictionaries used in the analysis.'''
 
-        lengthTUnit = r'$\left[\mathrm{\AA}\right]$'
+        lengthTUnit = r'$[\mathrm{\AA}]$'
         lengthUnit = r'$\mathrm{\AA}$'
 
         self.paramNames = ['T','V','u','t','N','n','R','L']
@@ -666,11 +666,11 @@ class Description:
                             'L':r'%f'}
 
         self.paramLongName = {'T':'Temperature  [K]', 
-                              'V':r'Volume  $\left[\mathrm{\AA^{%d}}\right]$' % NDIM,
+                              'V':r'Volume  $[\mathrm{\AA^{%d}}]$' % NDIM,
                               'u':'Chemical Potential  [K]', 
                               't':'Imaginary Time Step  [1/K]',
                               'N':'Number of Particles',
-                              'n':r'Density  $\left[\mathrm{\AA}^{-%d}\right$' % NDIM,
+                              'n':r'Density  $[\mathrm{\AA}^{-%d}]$' % NDIM,
                               'R':'Pore Radius  %s ' % lengthTUnit,
                               'L':'Length %s' % lengthTUnit}
 
@@ -683,11 +683,11 @@ class Description:
                                   'E/N':'Energy per Particle [K]',
                                   'N':'Number of Particles',
                                   'N^2':r'(Number of Particles)$^2$',
-                                  'density':r'Density $\left[\mathrm{\AA}^{-%d}\right]$' % NDIM,
+                                  'density':r'Density $[\mathrm{\AA}^{-%d}]$' % NDIM,
                                   'diagonal':'Diagonal Fraction',
                                   'kappa':r'$\rho^2 \kappa [units]$',
                                   'pair':'Pair Correlation Function [units]',
-                                  'radial':r'Radial Density $\left[\mathrm{\AA}^{-1}\right]$',
+                                  'radial':r'Radial Density $[\mathrm{\AA}^{-3}]$',
                                   'number':'Number Distribution',
                                   'obdm':'One Body Density Matrix'}
 

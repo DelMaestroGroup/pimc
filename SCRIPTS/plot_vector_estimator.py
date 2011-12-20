@@ -42,6 +42,8 @@ def main():
                         type=int, nargs='+')
     parser.add_argument('--xlim', '-x', help='x-axis limits', type=float,
                         nargs='+')
+    parser.add_argument('--ylim', '-y', help='y-axis limits', type=float,
+                        nargs='+')
     args = parser.parse_args()
 
     fileNames = args.fileNames
@@ -50,6 +52,7 @@ def main():
     plotType = args.plot
     subplot = args.subplot
     xLim = args.xlim
+    yLim = args.ylim
 
     if len(fileNames) < 1:
         parser.error("Need to specify at least one vector estimator file")
@@ -91,12 +94,14 @@ def main():
                         label=lab, **pOptions)
 
 
-        #pl.tight_layout()
         pl.xlabel(descrip.estimatorXLongName[estimatorName])
         pl.ylabel(descrip.estimatorLongName[estimatorName])
         leg = pl.legend(frameon=False, loc='best', prop={'size':18})
         if xLim != None:
             pl.xlim(xLim[0],xLim[1])
+
+        if yLim != None:
+            pl.ylim(yLim[0],yLim[1])
 
     if subplot != None:
         f, ax = pl.subplots(subplot[0], subplot[1], sharex=True, squeeze=False, sharey=True)
@@ -126,7 +131,12 @@ def main():
                                          reduce.estimator(varIndex,reduceIndex),
                                          label=lab, **pOptions)
 
-            ax[id[0],id[1]].legend(frameon=False, loc='best', prop={'size':18})
+            ax[id[0],id[1]].legend(frameon=False, loc='upper left', prop={'size':18})
+            if xLim != None:
+                ax[id[0],id[1]].set_xlim(xLim[0],xLim[1])
+
+            if yLim != None:
+                ax[id[0],id[1]].set_ylim(yLim[0],yLim[1])
 
         [ax[-1,n].set_xlabel(descrip.estimatorXLongName[estimatorName]) for n in range(subplot[1])]
         [ax[n,0].set_ylabel(descrip.estimatorLongName[estimatorName]) for n in range(subplot[0])]
