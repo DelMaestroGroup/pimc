@@ -447,7 +447,7 @@ class ScalarReduce:
     # ----------------------------------------------------------------------
     def estimatorError(self,estLabel,ivar):
         '''Return a dependent estimator error with a given var number.'''
-        return 5.0*self.estimator_[ivar,:,self.estIndex['d_' + estLabel]]
+        return 1.0*self.estimator_[ivar,:,self.estIndex['d_' + estLabel]]
 
     # ----------------------------------------------------------------------
     def getVarLabel(self,varIndex):
@@ -693,7 +693,8 @@ class Description:
                                   'radial':r'Radial Density $[\mathrm{\AA}^{-3}]$',
                                   'number':'Number Distribution',
                                   'obdm':'One Body Density Matrix',
-                                  'rho_s/rho':r'$\rho_s/\rho$'}
+                                  'rho_s/rho':'Superfluid Fraction'}
+#                                  'rho_s/rho':r'$\rho_s/\rho$'}
 
         self.estimatorXLongName = {'number':'Number of Particles',
                                    'pair':'r  %s' % lengthTUnit,
