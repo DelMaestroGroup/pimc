@@ -636,6 +636,9 @@ class Description:
         lengthTUnit = r'$[\mathrm{\AA}]$'
         lengthUnit = r'$\mathrm{\AA}$'
 
+        # The name for the density dependent on the dimensionality
+        densityName = ['Line', 'Area', 'Volume']
+
         self.paramNames = ['T','V','u','t','N','n','R','L']
 
         self.paramShortName = {'T':'T',
@@ -663,14 +666,14 @@ class Description:
                             'N':'%3d',
                             'n':r'%f',
                             'R':r'% 4.1f',
-                            'L':r'%f'}
+                            'L':r'%3d'}
 
         self.paramLongName = {'T':'Temperature  [K]', 
                               'V':r'Volume  $[\mathrm{\AA^{%d}}]$' % NDIM,
                               'u':'Chemical Potential  [K]', 
                               't':'Imaginary Time Step  [1/K]',
                               'N':'Number of Particles',
-                              'n':r'Density  $[\mathrm{\AA}^{-%d}]$' % NDIM,
+                              'n':r'%s Density  $[\mathrm{\AA}^{-%d}]$' % (densityName[NDIM-1],NDIM),
                               'R':'Pore Radius  %s ' % lengthTUnit,
                               'L':'Length %s' % lengthTUnit}
 
@@ -683,13 +686,14 @@ class Description:
                                   'E/N':'Energy per Particle [K]',
                                   'N':'Number of Particles',
                                   'N^2':r'(Number of Particles)$^2$',
-                                  'density':r'Density $[\mathrm{\AA}^{-%d}]$' % NDIM,
+                                  'density':r'%s Density  $[\mathrm{\AA}^{-%d}]$' % (densityName[NDIM-1],NDIM),
                                   'diagonal':'Diagonal Fraction',
                                   'kappa':r'$\rho^2 \kappa [units]$',
                                   'pair':'Pair Correlation Function [units]',
                                   'radial':r'Radial Density $[\mathrm{\AA}^{-3}]$',
                                   'number':'Number Distribution',
-                                  'obdm':'One Body Density Matrix'}
+                                  'obdm':'One Body Density Matrix',
+                                  'rho_s/rho':r'$\rho_s/\rho$'}
 
         self.estimatorXLongName = {'number':'Number of Particles',
                                    'pair':'r  %s' % lengthTUnit,

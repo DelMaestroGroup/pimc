@@ -32,6 +32,8 @@ def main():
     parser.add_argument('--label', '-l', help='Parameter name for labels.', type=str)
     parser.add_argument('--xlim', '-x', help='x-axis limits', type=float,
                         nargs='+')
+    parser.add_argument('--ylim', '-y', help='y-axis limits', type=float,
+                        nargs='+')
     args = parser.parse_args()
 
     fileNames = args.fileNames
@@ -40,6 +42,7 @@ def main():
     plotType = args.plot
     varLabel = args.label
     xLim = args.xlim
+    yLim = args.ylim
 
     if len(fileNames) < 1:
         parser.error("Need to specify at least one scalar estimator file")
@@ -86,6 +89,9 @@ def main():
         leg = pl.legend(frameon=False, loc='best', prop={'size':18})
         if xLim != None:
             pl.xlim(xLim[0],xLim[1])
+
+        if yLim != None:
+            pl.ylim(yLim[0],yLim[1])
 
     pl.show()
 

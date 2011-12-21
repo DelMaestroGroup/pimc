@@ -44,6 +44,8 @@ def main():
                         nargs='+')
     parser.add_argument('--ylim', '-y', help='y-axis limits', type=float,
                         nargs='+')
+    parser.add_argument('--log', help='Set y-axis log scale',
+                        action='store_true')
     args = parser.parse_args()
 
     fileNames = args.fileNames
@@ -53,6 +55,7 @@ def main():
     subplot = args.subplot
     xLim = args.xlim
     yLim = args.ylim
+    log = args.log
 
     if len(fileNames) < 1:
         parser.error("Need to specify at least one vector estimator file")
@@ -74,6 +77,8 @@ def main():
     # Plot each estimator
     for varIndex in range(reduce.getNumVarParams()):
         pl.figure(varIndex+1)
+
+
         for reduceIndex in range(reduce.getNumReduceParams()):
             lab = reduce.getReduceLabel(reduceIndex)
             pOptions['color'] = colors[reduceIndex]
@@ -103,6 +108,13 @@ def main():
         if yLim != None:
             pl.ylim(yLim[0],yLim[1])
 
+        # Set a log scale
+        if log:
+            ax = pl.subplot(111)
+            ax.set_yscale('log')
+
+
+    # Plot a possible subplot matrix
     if subplot != None:
         f, ax = pl.subplots(subplot[0], subplot[1], sharex=True, squeeze=False, sharey=True)
         numReduce = reduce.getNumReduceParams()

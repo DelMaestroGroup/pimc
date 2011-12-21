@@ -51,7 +51,7 @@ def markersColors(numColors):
     '''return the markers and colors used for plotting.'''
 
     # http://www.graphviz.org/content/color-names
-    colors  = loadgmt.getColorList('cb/div','Spectral_08',numColors)
+    colors  = loadgmt.getColorList('cb/div','Spectral_10',numColors)
     colors.reverse()
     markers = loadgmt.getMarkerList()
 
