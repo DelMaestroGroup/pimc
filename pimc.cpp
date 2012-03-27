@@ -586,32 +586,144 @@ void PathIntegralMonteCarlo::loadState() {
 	path.beads.resize(numTimeSlices,numWorldLines);
 	path.nextLink.resize(numTimeSlices,numWorldLines);
 	path.prevLink.resize(numTimeSlices,numWorldLines);
+    path.worm.beads.resize(numTimeSlices,numWorldLines);
+
+    /* A temporary container for the beads array */
+    Array <dVec,2> tempBeads;
 
 	/* Get the worldline configuration */
-	communicate()->initFile() >> path.beads;
+	communicate()->initFile() >> tempBeads;
 
-	/* Get the link arrays */
-	communicate()->initFile() >> path.nextLink;
-	communicate()->initFile() >> path.prevLink;
+    /* The temporary number of time slices */
+    int tempNumTimeSlices = tempBeads.rows();
 
-	/* Repeat for the worm file */
-	path.worm.beads.resize(numTimeSlices,numWorldLines);
-	communicate()->initFile() >> path.worm.beads;
+    if (tempNumTimeSlices == numTimeSlices) {
+    
+        /* Copy over the beads array */
+        path.beads = tempBeads;
 
-	/* Load the state of the random number generator, only if we are restarting 
-	 * the simulation */
-	if (constants()->restart()) {
-		uint32 randomState[random.SAVE];
-		for (int i = 0; i < random.SAVE; i++) 
-			communicate()->initFile() >> randomState[i];
-		random.load(randomState);
-	}
+        /* Get the link arrays */
+        communicate()->initFile() >> path.nextLink;
+        communicate()->initFile() >> path.prevLink;
 
-	/* Reset the number of on beads */
-	path.worm.resetNumBeadsOn();
+        /* Repeat for the worm file */
+        communicate()->initFile() >> path.worm.beads;
 
-	/* Left pack the input data array */
-	path.leftPack();
+    } // locBeads.rows() == numTimeSlices
+    else if (tempNumTimeSlices < numTimeSlices) {
+
+        /* Initialize the links */
+        firstIndex i1;
+        secondIndex i2;
+        path.prevLink[0] = i1-1;
+        path.prevLink[1] = i2;
+        path.nextLink[0] = i1+1;
+        path.nextLink[1] = i2;
+	
+        /* Here we implement the initial periodic boundary conditions in 
+         * imaginary time */
+        path.prevLink(0,Range::all())[0] = numTimeSlices-1;
+        path.nextLink(numTimeSlices-1,Range::all())[0] = 0;
+
+        /* Reset the worm.beads array */
+        path.worm.beads = 0;
+
+        /* Temporary containers for the links and worm beads */
+        Array <beadLocator,2> tempNextLink;
+        Array <beadLocator,2> tempPrevLink;
+        Array <unsigned int,2> tempWormBeads;
+
+        /* Get the link arrays and worm file */
+        communicate()->initFile() >> tempNextLink;
+        communicate()->initFile() >> tempPrevLink;
+        communicate()->initFile() >> tempWormBeads;
+
+        /* Determine how many actual 'worldlines' there are */
+        int tempNumWorldLines = int(sum(tempWormBeads)/tempNumTimeSlices);
+
+        cout << "Num World Lines = " << tempNumWorldLines << endl;
+
+        /* Prevent double counting of worldlines */
+        Array <bool, 1> doBead(tempNumWorldLines);
+        doBead = true;
+
+        beadLocator startBead,beadIndex;
+        beadLocator newStartBead;
+        newStartBead = 0,0;
+        int ptcl = 0;
+        int slice = 0;
+
+        /* Now we iterate through each worldline exactly once */
+        for (int n = 0; n < tempNumWorldLines; n++) {
+
+            /* The initial bead to be moved */
+            startBead = 0,n;
+
+            /* We make sure we don't try to touch the same worldline twice */
+            if (doBead(n)) {
+
+                beadIndex = startBead;
+
+                /* The world line length, we simply advance until we have looped back on 
+                 * ourselves. */
+                slice = 0;
+                newStartBead = slice,ptcl;
+                do {
+                    /* We turn off any zero-slice beads we have touched */
+                    if (beadIndex[0]==0)
+                        doBead(beadIndex[1]) = false;
+
+                    path.beads(slice % numTimeSlices,ptcl) = tempBeads(beadIndex);
+                    path.worm.beads(slice % numTimeSlices,ptcl) = 1;
+
+                    beadIndex = tempNextLink(beadIndex);
+                    ++slice;
+
+                    /* Do a forward reconnection, provided we are not at the
+                     * last bead */
+                    if ( ((slice % numTimeSlices) == 0) && !all(beadIndex==startBead)) {
+                        path.nextLink(numTimeSlices-1,ptcl) = 0,ptcl+1;
+                        path.prevLink(0,ptcl+1) = numTimeSlices-1,ptcl;
+                        ++ptcl;
+                    }
+                } while (!all(beadIndex==startBead));
+
+                /* Now we have to add the remaining beads and perform the final
+                 * reconnection */
+                for (int tslice = (slice % numTimeSlices); tslice < numTimeSlices; tslice++) {
+                    path.beads(tslice,ptcl) = tempBeads(beadIndex);
+                    path.worm.beads(tslice,ptcl) = 1;
+                }
+                path.nextLink(numTimeSlices-1,ptcl) = newStartBead;
+                path.prevLink(newStartBead) = numTimeSlices-1,ptcl;
+                ++ptcl;
+
+            } // doBead
+        } // n
+
+        /* Free local memory */
+        tempPrevLink.free();
+        tempNextLink.free();
+        tempWormBeads.free();
+        doBead.free();
+    } // locBeads.rows() < numTimeSlices
+    else 
+        assert(tempNumTimeSlices <= numTimeSlices);
+
+    /* Load the state of the random number generator, only if we are restarting 
+     * the simulation */
+    if (constants()->restart()) {
+        uint32 randomState[random.SAVE];
+        for (int i = 0; i < random.SAVE; i++) 
+            communicate()->initFile() >> randomState[i];
+        random.load(randomState);
+    }
+
+    /* Reset the number of on beads */
+    path.worm.resetNumBeadsOn();
+
+    /* Left pack the input data array */
+    path.leftPack();
 
 	/* Go through all beads, and make sure they fit inside the simulation cell.
 	 * At the same time, determine how many active beads there are per slice */
@@ -635,6 +747,13 @@ void PathIntegralMonteCarlo::loadState() {
 
 	/* Close the file */
 	communicate()->initFile().close();
+
+    /* Free up memory */
+    tempBeads.free();
+
+    /* Do a temporary save state and exit */
+    saveState();
+    exit(-1);
 }
 
 /**************************************************************************//**
