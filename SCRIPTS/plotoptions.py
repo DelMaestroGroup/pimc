@@ -50,6 +50,9 @@ def plotOptions(plotType):
 def markersColors(numColors):
     '''return the markers and colors used for plotting.'''
 
+    # He4 Pore PRL Colors
+#    colors = ['#556270','#1C3249','#4ECDC4','#19857D','#C7F464','#FF6B6B','#A62323'] #556270
+
     # http://www.graphviz.org/content/color-names
     colors  = loadgmt.getColorList('cb/div','Spectral_08',numColors)
     colors.reverse()
