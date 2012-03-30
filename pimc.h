@@ -112,6 +112,10 @@ class PathIntegralMonteCarlo {
 		/* Load the PIMC state from disk */
 		void loadState();
 
+		/* Load classical or quantum initial states */
+        void loadClassicalState(Array <dVec,2>&, Array <unsigned int, 2>&, int);
+        void loadQuantumState(Array <dVec,2>&, Array <beadLocator,2>&, Array<beadLocator,2>&, int, int);
+
 		/* Shuffle the offDiag move list, returning it in moves*/
 		void shuffleMoves();
 

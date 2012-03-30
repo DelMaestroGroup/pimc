@@ -6,13 +6,14 @@
 # Plot rough estimators vs. MC steps for files supplied as input
 
 import matplotlib
-matplotlib.use('TKAgg')
+#matplotlib.use('TKAgg')
 
 import os,sys
 import pyutils
-from optparse import OptionParser
 import loadgmt,kevent
 from pylab import *
+import argparse
+import pimchelp
 
 
 # Begin Main Program 
@@ -20,32 +21,34 @@ from pylab import *
 def main(): 
 
     # setup the command line parser options 
-    parser = OptionParser() 
-    parser.add_option("-c", "--column", dest="col", type="int",\
-            help="which column should we plot?")
+    parser = argparse.ArgumentParser(description='Plot Raw MC Equilibration Data for Scalar Estimators.')
+    parser.add_argument('fileNames', help='Scalar estimator files', nargs='+')
+    parser.add_argument('--estimator','-e', help='A list of estimator names that \
+                        are to be plotted.', type=str)
+    args = parser.parse_args()
 
-    # parse the command line options and get the file name
-    (options, args) = parser.parse_args() 
-    if len(args) < 1: 
-        parser.error("need a file name")
+    fileNames = args.fileNames
 
-    if (not options.col):
-        parser.error("need to supply a column to plot!")
-
-    options.col -= 1
-    col = [options.col]
-    
-    fileNames = args
-    numFiles = len(fileNames)
+    if len(fileNames) < 1:
+        parser.error("Need to specify at least one scalar estimator file")
 
     # We count the number of lines in the estimator file to make sure we have
     # some data and grab the headers
-    estFile = open(fileNames[0],'r');
-    estLines = estFile.readlines();
-    numLines = len(estLines) - 2    # We expect two comment lines
-    pimcid = estLines[0]
-    headers = estLines[1].split()
-    estFile.close()
+    headers = pimchelp.getHeadersDict(fileNames[0])
+
+    # If we don't choose an estimator, provide a list of possible ones
+    if not args.estimator:
+        errorString = "Need to specify one of:\n"
+        for head,index in headers.iteritems():
+            errorString += "\"%s\"" % head + "   "
+        parser.error(errorString)
+
+    numFiles = len(fileNames)
+    col = list([headers[args.estimator]])
+
+    label = pimchelp.Description()
+    yLong = label.estimatorLongName[args.estimator]
+    yShort = label.estimatorShortName[args.estimator]
 
     # ============================================================================
     # Figure 1 : column vs. MC Steps
@@ -60,6 +63,7 @@ def main():
 
         dataFile = open(fileName,'r');
         dataLines = dataFile.readlines();
+        dataFile.close()
 
         if len(dataLines) > 2:
             data = loadtxt(fileName,usecols=col)
@@ -68,7 +72,7 @@ def main():
     
             n += 1
 
-    ylabel(r'$%s$' % headers[options.col+1])
+    ylabel(yLong)
     xlabel("MC Steps")
 
     # ============================================================================
@@ -95,7 +99,7 @@ def main():
     
                 n += 1
 
-    ylabel(r'$\langle %s \rangle$' % headers[options.col+1])
+    ylabel(r'$\langle$' + yShort + r'$\rangle$')
     xlabel("MC Steps")
     tight_layout()
 

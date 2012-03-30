@@ -405,7 +405,8 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 ******************************************************************************/
 void PathIntegralMonteCarlo::step() {
 
-	uint32 binSize = 200;		// The number of MC steps in an output bin
+	//uint32 binSize = 200;		// The number of MC steps in an output bin
+	uint32 binSize = 1;		// The number of MC steps in an output bin
 	string moveName;
 
 	/* We run through all moves, making sure that we could have touched each bead at least once */
@@ -553,6 +554,100 @@ void PathIntegralMonteCarlo::saveState() {
 }
 
 /**************************************************************************//**
+ *  Load a classical ground state from file.
+******************************************************************************/
+void PathIntegralMonteCarlo::loadClassicalState(Array <dVec,2> &tempBeads,
+        Array <unsigned int, 2> &tempWormBeads, int numWorldLines) {
+
+    /* We go through each active worldline and create a new classical
+     * configuration */
+    int ptcl = 0;
+    beadLocator beadIndex;
+    for (int n = 0; n < numWorldLines; n++) {
+        beadIndex = 0,n;
+
+        /* Check if the bead is on */
+        if (tempWormBeads(beadIndex)) {
+            
+            /* Assign the classical configuration */
+            path.beads(Range::all(),ptcl) = tempBeads(beadIndex);
+            path.worm.beads(Range::all(),ptcl) = 1;
+            ptcl++;
+        }
+    }
+
+}
+
+/**************************************************************************//**
+ *  Load a quantum ground state from file.
+******************************************************************************/
+void PathIntegralMonteCarlo::loadQuantumState(Array <dVec,2> &tempBeads, 
+        Array <beadLocator,2> &tempNextLink, Array <beadLocator,2> &tempPrevLink,
+        int numTimeSlices, int tempNumWorldLines) {
+
+    /* Prevent double counting of worldlines */
+    Array <bool, 1> doBead(tempNumWorldLines);
+    doBead = true;
+
+    beadLocator startBead,beadIndex;
+    beadLocator newStartBead;
+    newStartBead = 0,0;
+    int ptcl = 0;
+    int slice = 0;
+
+    /* Now we iterate through each worldline exactly once */
+    for (int n = 0; n < tempNumWorldLines; n++) {
+
+        /* The initial bead to be moved */
+        startBead = 0,n;
+
+        /* We make sure we don't try to touch the same worldline twice */
+        if (doBead(n)) {
+
+            beadIndex = startBead;
+
+            /* The world line length, we simply advance until we have looped back on 
+             * ourselves. */
+            slice = 0;
+            newStartBead = slice,ptcl;
+            do {
+                /* We turn off any zero-slice beads we have touched */
+                if (beadIndex[0]==0)
+                    doBead(beadIndex[1]) = false;
+
+                path.beads(slice % numTimeSlices,ptcl) = tempBeads(beadIndex);
+                path.worm.beads(slice % numTimeSlices,ptcl) = 1;
+
+                beadIndex = tempNextLink(beadIndex);
+                ++slice;
+
+                /* Do a forward reconnection, provided we are not at the
+                 * last bead */
+                if ( ((slice % numTimeSlices) == 0) && !all(beadIndex==startBead)) {
+                    path.nextLink(numTimeSlices-1,ptcl) = 0,ptcl+1;
+                    path.prevLink(0,ptcl+1) = numTimeSlices-1,ptcl;
+                    ++ptcl;
+                }
+            } while (!all(beadIndex==startBead));
+
+            /* Now we have to add the remaining beads and perform the final
+             * reconnection */
+            for (int tslice = (slice % numTimeSlices); tslice < numTimeSlices; tslice++) {
+                path.beads(tslice,ptcl) = tempBeads(beadIndex);
+                path.worm.beads(tslice,ptcl) = 1;
+            }
+            path.nextLink(numTimeSlices-1,ptcl) = newStartBead;
+            path.prevLink(newStartBead) = numTimeSlices-1,ptcl;
+            ++ptcl;
+
+        } // doBead
+    } // n
+
+    /* Free local memory */
+    doBead.free();
+}
+
+/**************************************************************************//**
  *  Load a previous state of the simulation from disk.
 ******************************************************************************/
 void PathIntegralMonteCarlo::loadState() {
@@ -641,71 +736,28 @@ void PathIntegralMonteCarlo::loadState() {
         /* Determine how many actual 'worldlines' there are */
         int tempNumWorldLines = int(sum(tempWormBeads)/tempNumTimeSlices);
 
-        cout << "Num World Lines = " << tempNumWorldLines << endl;
+//        loadQuantumState(tempBeads,tempNextLink, tempPrevLink,
+ //               numTimeSlices, tempNumWorldLines);
 
-        /* Prevent double counting of worldlines */
-        Array <bool, 1> doBead(tempNumWorldLines);
-        doBead = true;
+        loadClassicalState(tempBeads,tempWormBeads, numWorldLines);
 
-        beadLocator startBead,beadIndex;
-        beadLocator newStartBead;
-        newStartBead = 0,0;
-        int ptcl = 0;
-        int slice = 0;
-
-        /* Now we iterate through each worldline exactly once */
-        for (int n = 0; n < tempNumWorldLines; n++) {
-
-            /* The initial bead to be moved */
-            startBead = 0,n;
-
-            /* We make sure we don't try to touch the same worldline twice */
-            if (doBead(n)) {
-
-                beadIndex = startBead;
-
-                /* The world line length, we simply advance until we have looped back on 
-                 * ourselves. */
-                slice = 0;
-                newStartBead = slice,ptcl;
-                do {
-                    /* We turn off any zero-slice beads we have touched */
-                    if (beadIndex[0]==0)
-                        doBead(beadIndex[1]) = false;
-
-                    path.beads(slice % numTimeSlices,ptcl) = tempBeads(beadIndex);
-                    path.worm.beads(slice % numTimeSlices,ptcl) = 1;
-
-                    beadIndex = tempNextLink(beadIndex);
-                    ++slice;
-
-                    /* Do a forward reconnection, provided we are not at the
-                     * last bead */
-                    if ( ((slice % numTimeSlices) == 0) && !all(beadIndex==startBead)) {
-                        path.nextLink(numTimeSlices-1,ptcl) = 0,ptcl+1;
-                        path.prevLink(0,ptcl+1) = numTimeSlices-1,ptcl;
-                        ++ptcl;
-                    }
-                } while (!all(beadIndex==startBead));
-
-                /* Now we have to add the remaining beads and perform the final
-                 * reconnection */
-                for (int tslice = (slice % numTimeSlices); tslice < numTimeSlices; tslice++) {
-                    path.beads(tslice,ptcl) = tempBeads(beadIndex);
-                    path.worm.beads(tslice,ptcl) = 1;
+        /* Now we make sure all empty beads are unlinked */
+        beadLocator beadIndex;
+        for (int slice = 0; slice < numTimeSlices; slice++) {
+            for (int ptcl = 0; ptcl < numWorldLines; ptcl++) {
+                beadIndex = slice,ptcl;
+                if (!path.worm.beads(beadIndex)) {
+                    path.nextLink(beadIndex) = XXX;
+                    path.prevLink(beadIndex) = XXX;
                 }
-                path.nextLink(numTimeSlices-1,ptcl) = newStartBead;
-                path.prevLink(newStartBead) = numTimeSlices-1,ptcl;
-                ++ptcl;
-
-            } // doBead
-        } // n
+            }
+        }
 
         /* Free local memory */
         tempPrevLink.free();
         tempNextLink.free();
         tempWormBeads.free();
-        doBead.free();
+
     } // locBeads.rows() < numTimeSlices
     else 
         assert(tempNumTimeSlices <= numTimeSlices);
@@ -750,10 +802,6 @@ void PathIntegralMonteCarlo::loadState() {
 
     /* Free up memory */
     tempBeads.free();
-
-    /* Do a temporary save state and exit */
-    saveState();
-    exit(-1);
 }
 
 /**************************************************************************//**

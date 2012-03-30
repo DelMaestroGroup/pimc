@@ -160,7 +160,7 @@ def getHeadersDict(fileName, removeLab=None):
     for n,head in enumerate(headers):
         if head != '+/-':
             headDict[head] = n
-            if headers[n+1] == '+/-':
+            if n < (len(headers) - 1) and headers[n+1] == '+/-':
                 headDict['d_' + head] = n+1
 
     return headDict
@@ -695,6 +695,24 @@ class Description:
                                   'obdm':'One Body Density Matrix',
                                   'rho_s/rho':'Superfluid Fraction'}
 #                                  'rho_s/rho':r'$\rho_s/\rho$'}
+
+        self.estimatorShortName = {'K':'K [K]',
+                                  'V':'V [K]',
+                                  'E':'E [K]',
+                                  'E_mu':r'$E - \mu N$',
+                                  'K/N':'K/N [K]',
+                                  'V/N':'V/N [K]',
+                                  'E/N':'E/N [K]',
+                                  'N':'N',
+                                  'N^2':r'N$^2$',
+                                  'density':r'$\rho [\mathrm{\AA}^{-%d}]$' % (NDIM),
+                                  'diagonal':'D',
+                                  'kappa':r'$\rho^2 \kappa [units]$',
+                                  'pair':'g(r) [units]',
+                                  'radial':r'Radial Density $[\mathrm{\AA}^{-3}]$',
+                                  'number':'Number Distribution',
+                                  'obdm':'One Body Density Matrix',
+                                  'rho_s/rho':r'$\rho_s/\rho$'}
 
         self.estimatorXLongName = {'number':'Number of Particles',
                                    'pair':'r  %s' % lengthTUnit,
