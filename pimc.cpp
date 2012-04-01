@@ -405,8 +405,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 ******************************************************************************/
 void PathIntegralMonteCarlo::step() {
 
-	//uint32 binSize = 200;		// The number of MC steps in an output bin
-	uint32 binSize = 1;		// The number of MC steps in an output bin
+	uint32 binSize = 200;		// The number of MC steps in an output bin
 	string moveName;
 
 	/* We run through all moves, making sure that we could have touched each bead at least once */
@@ -736,10 +735,13 @@ void PathIntegralMonteCarlo::loadState() {
         /* Determine how many actual 'worldlines' there are */
         int tempNumWorldLines = int(sum(tempWormBeads)/tempNumTimeSlices);
 
-//        loadQuantumState(tempBeads,tempNextLink, tempPrevLink,
- //               numTimeSlices, tempNumWorldLines);
+        /* Load a classical (all time slice positions equal) from the input
+         * file */
+        //loadClassicalState(tempBeads,tempWormBeads, numWorldLines);
 
-        loadClassicalState(tempBeads,tempWormBeads, numWorldLines);
+        /* Load a quantum initial state from a file */
+        loadQuantumState(tempBeads,tempNextLink,tempPrevLink,
+                numTimeSlices,tempNumWorldLines)
 
         /* Now we make sure all empty beads are unlinked */
         beadLocator beadIndex;

@@ -3,10 +3,10 @@
 # Adrian Del Maestro
 # 07.20.2009
 # 
-# Plot rough estimators vs. MC steps for files supplied as input
+# Plot rough estimators vs. MC Bins for files supplied as input
 
 import matplotlib
-#matplotlib.use('TKAgg')
+matplotlib.use('TKAgg')
 
 import os,sys
 import pyutils
@@ -25,6 +25,8 @@ def main():
     parser.add_argument('fileNames', help='Scalar estimator files', nargs='+')
     parser.add_argument('--estimator','-e', help='A list of estimator names that \
                         are to be plotted.', type=str)
+    parser.add_argument('--skip','-s', help='Number of measurements to be skipped \
+                        in the average plot.', type=int, default=0)
     args = parser.parse_args()
 
     fileNames = args.fileNames
@@ -73,10 +75,10 @@ def main():
             n += 1
 
     ylabel(yLong)
-    xlabel("MC Steps")
+    xlabel("MC Bin Number")
 
     # ============================================================================
-    # Figure 2 : running average of column vs. MC Steps
+    # Figure 2 : running average of column vs. MC Bins
     # ============================================================================
     figure(2)
     connect('key_press_event',kevent.press)
@@ -92,15 +94,15 @@ def main():
             data = loadtxt(fileName,usecols=col)
             if size(data) > 1:
                 aveData = []
-                for r in range(1,len(data)+1):
-                    aveData.append(mean(data[0:r]))
+                for r in range(args.skip+1,len(data)+1):
+                    aveData.append(mean(data[args.skip:r]))
 
                 plot(aveData,color=colors[n],linewidth=1.5,marker='None',linestyle='-')
     
                 n += 1
 
     ylabel(r'$\langle$' + yShort + r'$\rangle$')
-    xlabel("MC Steps")
+    xlabel("MC Bin Number")
     tight_layout()
 
     show()
