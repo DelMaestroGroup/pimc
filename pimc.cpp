@@ -741,7 +741,7 @@ void PathIntegralMonteCarlo::loadState() {
 
         /* Load a quantum initial state from a file */
         loadQuantumState(tempBeads,tempNextLink,tempPrevLink,
-                numTimeSlices,tempNumWorldLines)
+                numTimeSlices,tempNumWorldLines);
 
         /* Now we make sure all empty beads are unlinked */
         beadLocator beadIndex;

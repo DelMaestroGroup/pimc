@@ -15,7 +15,44 @@ from pylab import *
 import argparse
 import pimchelp
 
+# -----------------------------------------------------------------------------
+def cumulativeMovingAverage(data):
+    '''Compute the cumulative mean as a function of bin index.'''
+    CMA = zeros_like(data)
+    CMA[0] = data[0]
+    for n in range(len(data)-1):
+        CMA[n+1] = (data[n+1] + n*CMA[n])/(1.0*(n+1))
 
+    return CMA
+
+
+# -----------------------------------------------------------------------------
+#def simpleMovingAverage(period,data):
+#
+#    assert period == int(period) and period > 0, "Period must be an integer >0"
+# 
+#    summ = n = 0.0
+#    values = deque([0.0] * period)     # old value queue
+# 
+#    def sma(x):
+#        nonlocal summ, n
+# 
+#        values.append(x)
+#        summ += x - values.popleft()
+#        n = min(n+1, period)
+#        return summ / n
+# 
+#    return sma
+
+# -----------------------------------------------------------------------------
+def simpleMovingAverage(period,data):
+    assert period == int(period) and period > 0, "Period must be an integer >0"
+
+    import numpy as np
+    weightings = np.repeat(1.0, period) / period 
+    return np.convolve(data, weightings, 'valid')
+
+# -----------------------------------------------------------------------------
 # Begin Main Program 
 # -----------------------------------------------------------------------------
 def main(): 
@@ -27,6 +64,8 @@ def main():
                         are to be plotted.', type=str)
     parser.add_argument('--skip','-s', help='Number of measurements to be skipped \
                         in the average plot.', type=int, default=0)
+    parser.add_argument('--period','-p', help='Period of the simple moving \
+                        average.', type=int, default=5)
     args = parser.parse_args()
 
     fileNames = args.fileNames
@@ -39,7 +78,7 @@ def main():
     headers = pimchelp.getHeadersDict(fileNames[0])
 
     # If we don't choose an estimator, provide a list of possible ones
-    if not args.estimator:
+    if not args.estimator or args.estimator not in headers:
         errorString = "Need to specify one of:\n"
         for head,index in headers.iteritems():
             errorString += "\"%s\"" % head + "   "
@@ -69,13 +108,14 @@ def main():
 
         if len(dataLines) > 2:
             data = loadtxt(fileName,usecols=col)
-            plot(data,marker='s',color=colors[n],markeredgecolor=colors[n],\
+            plot(data[args.skip:],marker='s',color=colors[n],markeredgecolor=colors[n],\
                         markersize=4,linestyle='-',linewidth=1.0)
     
             n += 1
 
     ylabel(yLong)
     xlabel("MC Bin Number")
+
 
     # ============================================================================
     # Figure 2 : running average of column vs. MC Bins
@@ -93,16 +133,21 @@ def main():
 
             data = loadtxt(fileName,usecols=col)
             if size(data) > 1:
-                aveData = []
-                for r in range(args.skip+1,len(data)+1):
-                    aveData.append(mean(data[args.skip:r]))
-
-                plot(aveData,color=colors[n],linewidth=1.5,marker='None',linestyle='-')
+                
+                # Get the cumulative moving average
+                cma = cumulativeMovingAverage(data[args.skip:])
+                sma = simpleMovingAverage(50,data[args.skip:])
+                plot(cma,color=colors[n],linewidth=1.5,marker='None',linestyle='-',
+                    label='cumulative')
+                plot(sma,color=colors[n],linewidth=1.0,marker='None',linestyle='--', 
+                    label='Running(%d)' % args.period)
     
                 n += 1
 
-    ylabel(r'$\langle$' + yShort + r'$\rangle$')
+    #ylabel(r'$\langle$' + yShort + r'$\rangle$')
+    ylabel(yLong)
     xlabel("MC Bin Number")
+    #legend()
     tight_layout()
 
     show()
