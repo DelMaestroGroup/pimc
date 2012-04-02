@@ -6,7 +6,7 @@
 # Plot rough estimators vs. MC Bins for files supplied as input
 
 import matplotlib
-matplotlib.use('TKAgg')
+#matplotlib.use('TKAgg')
 
 import os,sys
 import pyutils
@@ -108,6 +108,10 @@ def main():
 
         if len(dataLines) > 2:
             data = loadtxt(fileName,usecols=col)
+            
+            if not pyutils.isList(data):
+               data = list([data])
+
             plot(data[args.skip:],marker='s',color=colors[n],markeredgecolor=colors[n],\
                         markersize=4,linestyle='-',linewidth=1.0)
     
