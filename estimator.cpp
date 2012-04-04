@@ -407,13 +407,14 @@ SuperfluidFractionEstimator::SuperfluidFractionEstimator (const Path &_path,
 	 * number in all possible dimensions, and the winding number histograms up to 
 	 * windMax windings. These are all diagonal estimators and we have our own
 	 * output file.*/
-	initialize(4+2*windMax+1,_frequency,true,false,true);
+	initialize(4+2*windMax+1+1,_frequency,true,false,true);
 
 	/* Set estimator name */
 	name = "Superfluid Fraction";
 	header = str(format("#%15s%16s%16s%16s") % "rho_s/rho" % "W^2(x)" % "W^2(y)" % "W^2(z)");
 	for (int w = -windMax; w <= windMax; w++)
 		header += str(format("%11sP(%+1d)") % " " % w);
+    header += str(format("%16s") % "Area_rho_s");
 
 	/* Initialize all variables */
 	outFilePtr = &(communicate()->superFile());
@@ -421,6 +422,9 @@ SuperfluidFractionEstimator::SuperfluidFractionEstimator (const Path &_path,
 	/* The pre-factor for the superfluid density is always the same */
 	norm = 1.0;
 	norm(0) = constants()->T() / (2.0 * sum(path.boxPtr->periodic) * constants()->lambda());
+
+    /* The pre-factor for the area esimator */
+    norm(5+2*windMax) = 0.5*constants()->T()*constants()->numTimeSlices()/constants()->lambda();
 }
 
 /*************************************************************************//**
@@ -443,13 +447,25 @@ void SuperfluidFractionEstimator::accumulate() {
 
 	/* Sum up the winding number over all particles */
 	beadLocator beadIndex;
+    double Az, I;
+    dVec pos1,pos2;
+
+    Az = I = 0.0;
 	dVec W,vel;
 	W = 0.0;
 	for (int slice = 0; slice < numTimeSlices; slice++) {
 		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+
+            /* The winding number estimator */
 			beadIndex = slice,ptcl;
 			vel = path.getVelocity(beadIndex);
 			W += vel;
+
+            /* The area estimator */
+			pos1 = path(beadIndex);
+			pos2 = path(path.next(beadIndex));
+			Az += pos1[0]*pos2[1]-pos2[0]*pos1[1];
+            I +=  pos1[0]*pos2[0] + pos1[1]*pos2[1];
 		}
 	}
 
@@ -480,6 +496,9 @@ void SuperfluidFractionEstimator::accumulate() {
 			estimator(4+n) += 1.0;
 		++n;
 	}
+
+    /* The Area Estimator */
+    estimator(5+2*windMax) += Az*Az/I;
 }
 
 // ---------------------------------------------------------------------------

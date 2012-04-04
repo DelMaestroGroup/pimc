@@ -693,7 +693,8 @@ class Description:
                                   'radial':r'Radial Density $[\mathrm{\AA}^{-3}]$',
                                   'number':'Number Distribution',
                                   'obdm':'One Body Density Matrix',
-                                  'rho_s/rho':'Superfluid Fraction'}
+                                  'rho_s/rho':'Superfluid Fraction',
+                                  'Area_rho_s':'Area Superfluid Fraction'}
 #                                  'rho_s/rho':r'$\rho_s/\rho$'}
 
         self.estimatorShortName = {'K':'K [K]',
@@ -712,7 +713,8 @@ class Description:
                                   'radial':r'Radial Density $[\mathrm{\AA}^{-3}]$',
                                   'number':'Number Distribution',
                                   'obdm':'One Body Density Matrix',
-                                  'rho_s/rho':r'$\rho_s/\rho$'}
+                                  'rho_s/rho':r'$\rho_s/\rho$',
+                                  'Area_rho_s':'Area Superfluid Fraction'}
 
         self.estimatorXLongName = {'number':'Number of Particles',
                                    'pair':'r  %s' % lengthTUnit,
