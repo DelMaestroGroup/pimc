@@ -46,10 +46,10 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	superfluidFraction(_path,1),
 	permutationCycle(_path,1),
 	oneBodyDensityMatrix(_path,_actionPtr,_random,15000),
-	pairCorrelation(_path,_actionPtr,1000),
-	radialDensity(_path,10000),
+	pairCorrelation(_path,_actionPtr,1),
+	radialDensity(_path,1),
 	wormProperties(_path,50000),
-	numberDistribution(_path,10000),
+	numberDistribution(_path,1),
 	cylEnergy(_path,_actionPtr,maxR,10000),
 	cylNumberParticles(_path,maxR,10000),
 	cylSuperFluidFraction(_path,maxR,10000),
@@ -737,11 +737,11 @@ void PathIntegralMonteCarlo::loadState() {
 
         /* Load a classical (all time slice positions equal) from the input
          * file */
-        //loadClassicalState(tempBeads,tempWormBeads, numWorldLines);
+        loadClassicalState(tempBeads,tempWormBeads, numWorldLines);
 
         /* Load a quantum initial state from a file */
-        loadQuantumState(tempBeads,tempNextLink,tempPrevLink,
-                numTimeSlices,tempNumWorldLines);
+        //loadQuantumState(tempBeads,tempNextLink,tempPrevLink,
+         //       numTimeSlices,tempNumWorldLines);
 
         /* Now we make sure all empty beads are unlinked */
         beadLocator beadIndex;

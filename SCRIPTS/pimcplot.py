@@ -22,27 +22,7 @@ def cumulativeMovingAverage(data):
     CMA[0] = data[0]
     for n in range(len(data)-1):
         CMA[n+1] = (data[n+1] + n*CMA[n])/(1.0*(n+1))
-
     return CMA
-
-
-# -----------------------------------------------------------------------------
-#def simpleMovingAverage(period,data):
-#
-#    assert period == int(period) and period > 0, "Period must be an integer >0"
-# 
-#    summ = n = 0.0
-#    values = deque([0.0] * period)     # old value queue
-# 
-#    def sma(x):
-#        nonlocal summ, n
-# 
-#        values.append(x)
-#        summ += x - values.popleft()
-#        n = min(n+1, period)
-#        return summ / n
-# 
-#    return sma
 
 # -----------------------------------------------------------------------------
 def simpleMovingAverage(period,data):
@@ -51,6 +31,7 @@ def simpleMovingAverage(period,data):
     import numpy as np
     weightings = np.repeat(1.0, period) / period 
     return np.convolve(data, weightings, 'valid')
+    #return array([sum(data[i:i+period])/(1.0*period) for i in xrange(len(data)-period+1)])
 
 # -----------------------------------------------------------------------------
 # Begin Main Program 
@@ -87,9 +68,17 @@ def main():
     numFiles = len(fileNames)
     col = list([headers[args.estimator]])
 
+    # Attempt to find a 'pretty name' for the label, otherwise just default to
+    # the column heading
     label = pimchelp.Description()
-    yLong = label.estimatorLongName[args.estimator]
-    yShort = label.estimatorShortName[args.estimator]
+    try:
+        yLong = label.estimatorLongName[args.estimator]
+    except:
+        yLong = args.estimator
+    try:
+        yShort = label.estimatorShortName[args.estimator]
+    except:
+        yShort = args.estimator
 
     # ============================================================================
     # Figure 1 : column vs. MC Steps
@@ -148,10 +137,8 @@ def main():
     
                 n += 1
 
-    #ylabel(r'$\langle$' + yShort + r'$\rangle$')
     ylabel(yLong)
     xlabel("MC Bin Number")
-    #legend()
     tight_layout()
 
     show()
