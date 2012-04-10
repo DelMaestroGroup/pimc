@@ -54,6 +54,8 @@ def markersColors(numColors):
 #    colors = ['#556270','#1C3249','#4ECDC4','#19857D','#C7F464','#FF6B6B','#A62323'] #556270
 
     # http://www.graphviz.org/content/color-names
+    if numColors == 1:
+        numColors+=1;
     colors  = loadgmt.getColorList('cb/div','Spectral_08',numColors)
     colors.reverse()
     markers = loadgmt.getMarkerList()

@@ -489,7 +489,7 @@ class VectorReduce:
 
         # We temporarily load the estimator file to get the values of the reduce
         # variable.  This is easier than globbing it from the vector file
-        data = np.loadtxt(fileNames[0].replace(estName,'estimator'))
+        data = np.loadtxt(fileNames[0].replace(estName,'estimator'),ndmin=2)
 
         # Get the reduce variable
         self.param_[self.reduceLabel] = data[:,0]

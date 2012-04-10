@@ -77,7 +77,7 @@ def main():
     # Plot each estimator
     for varIndex in range(reduce.getNumVarParams()):
         pl.figure(varIndex+1)
-
+        #ax = pl.subplot(111)
 
         for reduceIndex in range(reduce.getNumReduceParams()):
             lab = reduce.getReduceLabel(reduceIndex)
@@ -102,6 +102,13 @@ def main():
         pl.xlabel(descrip.estimatorXLongName[estimatorName])
         pl.ylabel(descrip.estimatorLongName[estimatorName])
         leg = pl.legend(frameon=False, loc='best', prop={'size':18})
+
+#        # Add a colorbar
+#        cmap = loadgmt.getcmap('cb/div','Spectral_08')
+#        T = reduce.param()[::2]
+#        cb = pl.colorbar(loadgmt.getMap(cmap,T),ax=ax,ticks=T)
+#        cb.ax.set_ylabel('Temperature',rotation=-90)
+
         if xLim != None:
             pl.xlim(xLim[0],xLim[1])
 
