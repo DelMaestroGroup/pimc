@@ -694,8 +694,8 @@ class Description:
                                   'number':'Number Distribution',
                                   'obdm':'One Body Density Matrix',
                                   'rho_s/rho':'Superfluid Fraction',
-                                  'Area_rho_s':'Area Superfluid Fraction'}
-#                                  'rho_s/rho':r'$\rho_s/\rho$'}
+                                  'Area_rho_s':'Area Superfluid Fraction',
+                                  'rho_s/rho|Z':r'$\rho_s/\rho_0$'}
 
         self.estimatorShortName = {'K':'K [K]',
                                   'V':'V [K]',
@@ -714,6 +714,7 @@ class Description:
                                   'number':'Number Distribution',
                                   'obdm':'One Body Density Matrix',
                                   'rho_s/rho':r'$\rho_s/\rho$',
+                                  'rho_s/rho|Z':r'$\rho_s/\rho_0$',
                                   'Area_rho_s':'Area Superfluid Fraction'}
 
         self.estimatorXLongName = {'number':'Number of Particles',

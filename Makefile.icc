@@ -12,6 +12,15 @@ ifdef ndim
 DIM =-D NDIM=$(ndim)
 endif
 
+ifdef osx
+CC = /usr/bin/icpc
+LD = /usr/bin/icpc
+CODEDIR = /usr/local
+CFLAGS  = $(OPT) $(TABLE) $(DIM) $(DEBUG) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
+OPT = -Wall -O3 -vec-report1
+endif
+
 # Run on westgrid (orcinus)
 ifdef westgrid
 OPT = -axP -fast

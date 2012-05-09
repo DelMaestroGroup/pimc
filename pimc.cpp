@@ -45,18 +45,18 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	numberParticles(_path,1),
 	superfluidFraction(_path,1),
 	permutationCycle(_path,1),
-	oneBodyDensityMatrix(_path,_actionPtr,_random,15000),
+	oneBodyDensityMatrix(_path,_actionPtr,_random,15),
 	pairCorrelation(_path,_actionPtr,1),
 	radialDensity(_path,1),
-	wormProperties(_path,50000),
+	wormProperties(_path,10),
 	numberDistribution(_path,1),
-	cylEnergy(_path,_actionPtr,maxR,10000),
-	cylNumberParticles(_path,maxR,10000),
-	cylSuperFluidFraction(_path,maxR,10000),
-	cylPairCorrelation(_path,_actionPtr,maxR,10000),
-	cylOneBodyDensityMatrix(_path,_actionPtr,_random,maxR,15000),
-	cylNumberDistribution(_path,maxR,10000),
-	cylRadialPotential(_path,_actionPtr,_random,maxR,10000)
+	cylEnergy(_path,_actionPtr,maxR,1),
+	cylNumberParticles(_path,maxR,1),
+	cylSuperFluidFraction(_path,maxR,1),
+	cylPairCorrelation(_path,_actionPtr,maxR,1),
+	cylOneBodyDensityMatrix(_path,_actionPtr,_random,maxR,15),
+	cylNumberDistribution(_path,maxR,1),
+	cylRadialPotential(_path,_actionPtr,_random,maxR,1)
 {
 	/* Are we starting from a saved state? */
 	startWithState = _startWithState;
@@ -385,7 +385,6 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 					/* Reset the counters */
 					numDiagonal = 0;
 					numConfig = 0;
-
 				}
 
 			} // particle loop
@@ -416,11 +415,11 @@ void PathIntegralMonteCarlo::step() {
 			double x = random.rand();
 			moveName = runMoves(x,sweep);
 
-//			/* We measure the one body density matrix here to ensure adequate statistics */
-//			oneBodyDensityMatrix.sample();
-//
-//			if (constants()->extPotentialType().find("tube") != string::npos)
-//				cylOneBodyDensityMatrix.sample();
+			/* We measure the one body density matrix here to ensure adequate statistics */
+			oneBodyDensityMatrix.sample();
+
+			if (constants()->extPotentialType().find("tube") != string::npos)
+				cylOneBodyDensityMatrix.sample();
 
 		} // n
 
@@ -732,16 +731,13 @@ void PathIntegralMonteCarlo::loadState() {
         communicate()->initFile() >> tempPrevLink;
         communicate()->initFile() >> tempWormBeads;
 
-        /* Determine how many actual 'worldlines' there are */
-        int tempNumWorldLines = int(sum(tempWormBeads)/tempNumTimeSlices);
-
         /* Load a classical (all time slice positions equal) from the input
          * file */
         loadClassicalState(tempBeads,tempWormBeads, numWorldLines);
 
         /* Load a quantum initial state from a file */
         //loadQuantumState(tempBeads,tempNextLink,tempPrevLink,
-         //       numTimeSlices,tempNumWorldLines);
+         //       numTimeSlices,int(sum(tempWormBeads)/tempNumTimeSlices));
 
         /* Now we make sure all empty beads are unlinked */
         beadLocator beadIndex;
