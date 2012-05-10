@@ -43,7 +43,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	diagonalFraction(_path,1),
 	energy(_path,_actionPtr,1),
 	numberParticles(_path,1),
-	superfluidFraction(_path,10),
+	superfluidFraction(_path,1),
 	permutationCycle(_path,1),
 	oneBodyDensityMatrix(_path,_actionPtr,_random,15),
 	pairCorrelation(_path,_actionPtr,1),
