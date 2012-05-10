@@ -13,7 +13,7 @@ endif
 
 CODEDIR = /work/agdelma/local/pathscale
 PATHOPT = -Wall -TENV:simd_zmask=OFF -TENV:simd_imask=OFF -TENV:simd_omask=OFF -O3 -OPT:Ofast -fno-math-errno
-CFLAGS  = -D __PATHSCALE -ansi $(TABLE) $(DIM) -I$(CODEDIR)/include $(DEBUG) $(PATHOPT)
+CFLAGS  = -D __PATHSCALE -ansi $(DIM) -I$(CODEDIR)/include $(DEBUG) $(PATHOPT)
 LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
 
 RM      = /bin/rm -f

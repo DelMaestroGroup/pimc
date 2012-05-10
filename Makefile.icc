@@ -12,20 +12,22 @@ ifdef ndim
 DIM =-D NDIM=$(ndim)
 endif
 
+# Edit below to include details on your specific host
+
 ifdef osx
 CC = /usr/bin/icpc
 LD = /usr/bin/icpc
 CODEDIR = /usr/local
-CFLAGS  = $(OPT) $(TABLE) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
 OPT = -Wall -O3 -vec-report1
+CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
 endif
 
 # Run on westgrid (orcinus)
 ifdef westgrid
 OPT = -axP -fast
 CODEDIR = $$HOME/local
-CFLAGS  = $(OPT) $(TABLE) $(DIM) -I$(CODEDIR)/include $(DEBUG)
+CFLAGS  = $(OPT) $(DIM) -I$(CODEDIR)/include $(DEBUG)
 LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -limf
 endif 
 
@@ -33,7 +35,7 @@ endif
 ifdef sharcnet
 OPT = -Wall -TENV:simd_zmask=OFF -TENV:simd_imask=OFF -TENV:simd_omask=OFF -O3 -fno-math-errno -vec-report0 -wd981
 CODEDIR = /work/agdelma/brown/local
-CFLAGS  = $(OPT) $(TABLE) $(DIM) -I$(CODEDIR)/include $(DEBUG) 
+CFLAGS  = $(OPT) $(DIM) -I$(CODEDIR)/include $(DEBUG) 
 LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -limf
 endif 
 

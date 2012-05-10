@@ -405,7 +405,12 @@ SORT_MEMBER_DOCS       = YES
 
 SORT_BRIEF_DOCS        = NO
 
-# If the SORT_MEMBERS_CTORS_1ST tag is set to YES then doxygen will sort the (brief and detailed) documentation of class members so that constructors and destructors are listed first. If set to NO (the default) the constructors will appear in the respective orders defined by SORT_MEMBER_DOCS and SORT_BRIEF_DOCS. This tag will be ignored for brief docs if SORT_BRIEF_DOCS is set to NO and ignored for detailed docs if SORT_MEMBER_DOCS is set to NO.
+# If the SORT_MEMBERS_CTORS_1ST tag is set to YES then doxygen will sort the
+# (brief and detailed) documentation of class members so that constructors and
+# destructors are listed first. If set to NO (the default) the constructors
+# will appear in the respective orders defined by SORT_MEMBER_DOCS and
+# SORT_BRIEF_DOCS. This tag will be ignored for brief docs if SORT_BRIEF_DOCS
+# is set to NO and ignored for detailed docs if SORT_MEMBER_DOCS is set to NO.
 
 SORT_MEMBERS_CTORS_1ST = NO
 

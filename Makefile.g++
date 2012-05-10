@@ -1,4 +1,4 @@
-# Generic g++ makefile
+# Generic pimc g++ makefile
 
 CC      = g++
 LD      = g++
@@ -12,22 +12,23 @@ DIM = -D NDIM=$(ndim)
 endif
 
 # Edit below to include details on your specific host
+
 ifdef meron
 OPT = -Wall -O3 -fno-math-errno
 CODEDIR = $$HOME/local
-CFLAGS  = $(OPT) $(TABLE) $(DIM) $(DEBUG) -I$(CODEDIR)/include
+CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
 LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
 endif
 
 ifdef osx
-CODEDIR = /opt/local
-CFLAGS  = $(OPT) $(TABLE) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
 ifdef strict
 OPT = -Wall -O3 -fno-math-errno -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
 else
 OPT = -Wall -O3 -ftree-vectorize -fno-math-errno
 endif
+CODEDIR = /opt/local
+CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
 endif
 
 ifdef sask
@@ -35,14 +36,14 @@ CC      = g++
 LD      = g++
 BOOSTDIR = /Users/agdelma/Projects/boost
 BLITZDIR = /Users/agdelma/Projects/blitz
-CFLAGS  = -Wall -O2 $(DEBUG) $(TABLE) $(DIM) -I$(BOOSTDIR) -I$(BLITZDIR)
+CFLAGS  = -Wall -O2 $(DEBUG) $(DIM) -I$(BOOSTDIR) -I$(BLITZDIR)
 LDFLAGS = -L$(BLITZDIR)/lib -lblitz -L$(BOOSTDIR)/stage/lib -lboost_program_options-gcc40-mt-1_38
 endif
 
 ifdef sharcnet
 OPT = -Wall -TENV:simd_zmask=OFF -TENV:simd_imask=OFF -TENV:simd_omask=OFF -O3 -fno-math-errno
 CODEDIR = /work/agdelma/local
-CFLAGS  = $(OPT) $(TABLE) $(DIM) $(DEBUG) -I$(CODEDIR)/include
+CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
 LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
 endif 
 
@@ -68,5 +69,3 @@ $(OBJS): $(HEADERS) $(SOURCE)
 
 clean:
 	$(RM) $(PROG) $(OBJS) 
-
-	
