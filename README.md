@@ -24,7 +24,9 @@ Installation {#installation}
 ============
 
 This program has been successfully compiled and run on both Intel and AMD systems using
-g++, pathscale and icpc. Before installing, one needs to ensure that all dependencies are met.
+g++, pathscale and icpc. Before installing, one needs to ensure that all
+dependencies are met.  We recommend that the required libraries (boost and
+blitz) are installed in a `local` folder inside your home directory: `~/local`.
 
 Dependencies {#dependencies}
 ------------
@@ -38,33 +40,51 @@ C++ compiler.  for icpc or pathscale, the changes should be obvious.
 
 ### Blitz ###
 
-1. Download and decompress blitz++
-2. Move into the source directory
+1. Download and decompress blitz++ into `~/local/src/`
+2. Move into the source (src) directory
 3. Execute
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-./configure cxx=g++ --prefix=$home/local
+./configure cxx=g++ --prefix=PREFIX
 make lib
 make install
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+where `PREFIX` is the location you want to install the libraries, we suggest
+`$HOME/local` where `$HOME` is your expanded home directory.
 
 ### Boost ###
 
 For detailed instructions on installing boost with compiled libraries please see <a
-href="http://www.boost.org/doc/libs/1_49_0/more/getting_started/unix-variants.html">here</a>.
+href="http://www.boost.org/doc/libs/1_49_0/more/getting_started/unix-variants.html">here</a>
+starting with Section 5.2.
 
-1. Download and decompress boost as well as boost-jam
-2. Move into the boost-jam source directory
+1. Download and decompress boost into `~/local/src/`
+2. Change to the directory `tools/build/v2/` inside the boost source directory
 3. Execute
 ~~~
-./build.sh gcc
+bootstrap.sh
 ~~~
-4. Move the newly created bjam file in the bin.arch directory to the top level boost directory
-5. Move into the boost directory
+4. Run
+~~~
+b2 install --prefix=PREFIX
+~~~
+where `PREFIX` is defined above.  This installs the `b2` program to `PREFIX/bin`.
+5. Move up to the top level of the boost source directory
 6. Execute
 ~~~
-./bjam install --prefix=$home/local --toolset=gcc --with-program_options
+PREFIX/bin b2 install --prefix=PREFIX --toolset=gcc --with-program_options
 ~~~
-7. Update your `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH`) variable to include `$home/local/lib`
+You should now have a `PREFIX/include` directory containing the header files
+for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain
+the following files
+~~~
+libblitz.a  libblitz.la  libboost_program_options.a libboost_program_options.dylib 
+~~~
+7. Update your `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH`) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` eg.
+~~~
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:PREFIX/lib
+~~~
+8. Source your `.bashrc` or `.bash_profile`.
+
 
 Path Integral Monte Carlo {#pimc}
 -------------------------
