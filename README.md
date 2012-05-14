@@ -51,11 +51,21 @@ make install
 where `PREFIX` is the location you want to install the libraries, we suggest
 `$HOME/local` where `$HOME` is your expanded home directory.
 
+*Note:* If attempting to compile with gcc version 4.3 or later you may encounter errors
+when attempting to build blitz++.  To fix this, before issuing `make lib` and/or
+`make install` one needs to add headers to a couple of files.  Move to
+`$HOME/local/src/blitz-0.9/blitz` (or similarly, `PREFIX/src/blitz-0.9/blitz`) and
+add the line 
+
+    #include <cstdlib>
+
+to the top of the files `funcs.h` and `mathfunc.h` and save. 
+
 ### Boost ###
 
 For detailed instructions on installing boost with compiled libraries please see <a
-href="http://www.boost.org/doc/libs/1_49_0/more/getting_started/unix-variants.html">here</a>
-starting with Section 5.2.
+href="http://www.boost.org/doc/libs/1_49_0/more/getting_started/unix-variants.html#or-build-custom-binaries">Section 5.2</a> 
+of the official Boost documentation.
 
 1. Download and decompress boost into `~/local/src/`
 2. Change to the directory `tools/build/v2/` inside the boost source directory
@@ -71,7 +81,7 @@ where `PREFIX` is defined above.  This installs the `b2` program to `PREFIX/bin`
 5. Move up to the top level of the boost source directory
 6. Execute
 ~~~
-PREFIX/bin b2 install --prefix=PREFIX --toolset=gcc --with-program_options
+PREFIX/bin/b2 install --prefix=PREFIX --toolset=gcc --with-program_options
 ~~~
 You should now have a `PREFIX/include` directory containing the header files
 for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain
