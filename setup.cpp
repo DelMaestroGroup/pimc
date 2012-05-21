@@ -256,8 +256,33 @@ bool Setup::parseOptions() {
 		return 1;
 	}
 
+    /* Make sure the correct output file structure exists */
+    //createOutputDirectory();
+
 	return false;
 }
+/**************************************************************************//**
+ * Setup the output directories.
+ *
+ * Probe the filesystem and create output directories if required.
+******************************************************************************/
+//#include <sys/stat.h>
+//void Setup::createOutputDirectory() {
+//
+//    struct stat st;
+//
+//    /* Check to see if ./OUTPUT exists; if not, create. */
+//    string outputPath = "OUTPUT";
+//    if(stat(outputPath.c_str(),&st) != 0)
+//        mkdir(outputPath.c_str(),0777);
+//
+//    /* If we have a cylider geometry, make sure the .OUTPUT/CYLINDER directory
+//     * exists */
+//    outputPath = "OUTPUT/CYLINDER";
+//    if ( (params["cell_type"].as<string>() == "cylinder") &&
+//            (stat(outputPath.c_str(),&st) != 0) )
+//        mkdir(outputPath.c_str(),0777);
+//}
 
 /**************************************************************************//**
  * Return the random seed.

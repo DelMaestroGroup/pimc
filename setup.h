@@ -89,6 +89,9 @@ class Setup {
 		 * parameters programattically */
 		template<typename TType> void setOption(string, const TType);
 		template<typename TType> void insertOption(string, const TType);
+
+        /* Ensure the correct directory stucture has been created */
+//        void createOutputDirectory();
 };
 
 /** Use boost::program_options funky method for setting parameters */

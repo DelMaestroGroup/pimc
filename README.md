@@ -33,10 +33,11 @@ Dependencies {#dependencies}
 
 The code is written in C++ and makes use of both the <a
 href="http://www.oonumerics.org/blitz/">blitz++</a> and and <a
-href="http://www.boost.org/">boost</a> libraries which can be downloaded from their respective
-websites.  Specifically, you will need to compile the boost_program_options library.  Let us
-assume that you will be installing both blitz and boost in the folder `$HOME/local` using the GNU
-C++ compiler.  for icpc or pathscale, the changes should be obvious.
+href="http://www.boost.org/">boost</a> libraries which can be downloaded from
+their respective websites.  Specifically, you will need to compile the
+boost_program_options and boost_filesystem libraries.  Let us assume that you
+will be installing both blitz and boost in the folder `$HOME/local` using the
+GNU C++ compiler.  for icpc or pathscale, the changes should be obvious.
 
 ### Blitz ###
 
@@ -71,25 +72,21 @@ of the official Boost documentation.
 2. Change to the directory `tools/build/v2/` inside the boost source directory
 3. Execute
 ~~~
-bootstrap.sh
+./bootstrap.sh --with-toolset=gcc
 ~~~
-4. Run
+4. Move up to the top level of the boost source directory
+5. Execute
 ~~~
-b2 install --prefix=PREFIX
-~~~
-where `PREFIX` is defined above.  This installs the `b2` program to `PREFIX/bin`.
-5. Move up to the top level of the boost source directory
-6. Execute
-~~~
-PREFIX/bin/b2 install --prefix=PREFIX --toolset=gcc --with-program_options
+tools/build/v2/bin/b2 install --prefix=PREFIX --toolset=gcc --with-program_options --with-filesystem
 ~~~
 You should now have a `PREFIX/include` directory containing the header files
 for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain
 the following files
 ~~~
-libblitz.a  libblitz.la  libboost_program_options.a libboost_program_options.dylib 
+libblitz.a   libboost_filesystem.a      libboost_program_options.a libboost_system.a
+libblitz.la  libboost_filesystem.dylib  libboost_program_options.dylib libboost_system.dylib
 ~~~
-7. Update your `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH`) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` eg.
+6. Update your `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH`) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` eg.
 ~~~
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:PREFIX/lib
 ~~~

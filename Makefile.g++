@@ -11,13 +11,14 @@ ifdef ndim
 DIM = -D NDIM=$(ndim)
 endif
 
+
 # Edit below to include details on your specific host
 
 ifdef meron
 OPT = -Wall -O3 -fno-math-errno
 CODEDIR = $$HOME/local
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system
 endif
 
 ifdef osx
@@ -28,7 +29,7 @@ OPT = -Wall -O3 -ftree-vectorize -fno-math-errno
 endif
 CODEDIR = /opt/local
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system
 endif
 
 ifdef sask
@@ -44,7 +45,7 @@ ifdef sharcnet
 OPT = -Wall -TENV:simd_zmask=OFF -TENV:simd_imask=OFF -TENV:simd_omask=OFF -O3 -fno-math-errno
 CODEDIR = /work/agdelma/local
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system
 endif 
 
 RM      = /bin/rm -f

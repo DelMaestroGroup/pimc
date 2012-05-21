@@ -6,7 +6,7 @@
  */
 
 #include "communicator.h"
-//#include <boost/filesystem.hpp>
+#include <boost/filesystem.hpp>
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -64,27 +64,36 @@ void Communicator::openFile(const string fileName, fstream *_file,
  *  We use boost::filesystem to make sure that the current ID doesn't yet
  *  exist.  If it does, we increment the ID until we have a unique one.
 ******************************************************************************/
-//void Communicator::getUniqueID() {
-//
-//
-//    /* Create a test name (we use the log file here) and see if there are any
-//     * matches. */
-//    string testName;
-//    testName = str(format("OUTPUT/*log-*-%09u.dat") % constants()->id());
-//    boost::filesystem::path logpath(testName);
-//
-//    cout << logpath << endl;
-//
-//    while(boost::filesystem::exists(logpath)) {
-//
-//        /* Increment the ID */
-//        constants()->incID();
-//
-//        /* Try again*/
-//        testName = str(format("OUTPUT/*log-*-%09u.dat") % constants()->id());
-//        logpath = boost::filesystem::path(testName);
-//    }
-//}
+void Communicator::getUniqueID(const double _tau) {
+
+    /* Create a test name (we use the log file here) and see if there are any
+     * matches. */
+    string logName;
+    logName = str(format("OUTPUT/%s-log-%s.dat") % ensemble % dataName);
+    boost::filesystem::path logPath(logName);
+
+    while(boost::filesystem::exists(logPath)) {
+
+        /* Increment the ID */
+        constants()->incid();
+
+        /* Try again */
+        logName = str(format("OUTPUT/%s-log-%s.dat") % ensemble % dataName);
+        logPath = boost::filesystem::path(logName);
+    }
+
+    /* Now we need to update the dataName variable to reflect the new PIMCID */
+	if (!constants()->canonical()) {
+		dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%09u") % constants()->T() 
+				% constants()->L() % constants()->mu() % _tau % constants()->id());
+	}
+	else {
+		dataName = str(format("%06.3f-%04d-%06.3f-%7.5f-%09d") % constants()->T()
+				% constants()->initialNumParticles() 
+				% (1.0*constants()->initialNumParticles()/constants()->V()) 
+				% _tau % constants()->id());
+	}
+}
 
 /**************************************************************************//**
  *  Initialize all input/output files.
@@ -137,8 +146,20 @@ void Communicator::init(const double _tau, const bool outputWorldline, const
 				% _tau % constants()->id());
 	}
 
+    /* Check to make sure the correct directory structure for OUTPUT files is
+     * in place.  We do this using boost::filesystem */
+    boost::filesystem::path outputPath("OUTPUT");
+    boost::filesystem::create_directory(outputPath);
+
+    /* If we have cylinder output files, add the required directory:
+     * OUTPUT/CYLINDER */
+	if (constants()->extPotentialType().find("tube") != string::npos) {
+        boost::filesystem::path cylPath("OUTPUT/CYLINDER");
+        boost::filesystem::create_directory(cylPath);
+    }
+
 	/* Depending out wheter or not we are restarting the simulations, the open mode
-	 * changes and first line changes. */
+	 * changes and header line changes. */
 	ios_base::openmode mode;
 	string header;
 	if (constants()->restart()) {
@@ -147,11 +168,37 @@ void Communicator::init(const double _tau, const bool outputWorldline, const
 	}
 	else {
 		mode = ios::out;
+
+        /* Now we make sure we have a unique PIMCID using the log file */
+        getUniqueID(_tau);
+
+        /* Update the header line */
 		header =  str(format("# PIMCID: %09d\n") % constants()->id());
 	}
 
+    /* The catch-all filename */
+	string fileName; 
+
+	/* We define a possible initialization file */
+	if (constants()->restart()) {
+		file["init"]  = &initFile_;
+		fileName = str(format("OUTPUT/%s-%s-%s.dat") % ensemble % "state" % dataName);
+
+        /* Check to make sure that the file exists */
+        boost::filesystem::path initName(fileName);
+        if (!boost::filesystem::exists(initName)) {
+            cerr << "Trying to restart from an unknown PIMCID: " << constants()->id() << endl;
+            cerr << fileName << " does not exist!" << endl;
+            exit(1);
+        }
+		openFile(fileName,&initFile_,ios::in);
+	}
+	else if (!_initName.empty()) {
+		file["init"] = &initFile_;
+		openFile(_initName,&initFile_,ios::in);
+	}
+
 	/* Now we go through all files and open them up */
-	string fileName;
 	for (map<string,fstream*>::iterator filePtr = file.begin(); 
 			filePtr != file.end(); filePtr++) {
 		fileName = str(format("OUTPUT/%s-%s-%s.dat") % ensemble % filePtr->first % dataName);
@@ -169,17 +216,6 @@ void Communicator::init(const double _tau, const bool outputWorldline, const
 
 	/* Save the name of the state file */
 	stateName = str(format("OUTPUT/%s-state-%s.dat") % ensemble % dataName);
-
-	/* We define a possible init file */
-	if (constants()->restart()) {
-		file["init"]  = &initFile_;
-		fileName = str(format("OUTPUT/%s-%s-%s.dat") % ensemble % "state" % dataName);
-		openFile(fileName,&initFile_,ios::in);
-	}
-	else if (!_initName.empty()) {
-		file["init"] = &initFile_;
-		openFile(_initName,&initFile_,ios::in);
-	}
 
 	/* Initialize a possible fixed coordinate file */
 	if (!_fixedName.empty()) {

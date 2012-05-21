@@ -103,7 +103,11 @@ class Communicator
 		map <string,fstream*> file;	    // The file map
 		map <string,fstream*> cylFile;	// The cylinder file map
 
+        /* Opens a file */
 		void openFile(const string , fstream *, ios_base::openmode);
+
+        /* Makes sure we have a unique PIMCID */
+        void getUniqueID(const double);
 };
 
 

@@ -18,9 +18,9 @@ ifdef osx
 CC = /usr/bin/icpc
 LD = /usr/bin/icpc
 CODEDIR = /usr/local
-OPT = -Wall -O3 -vec-report1
+OPT = -Wall -O3 -vec-report1 -fno-math-errno
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system -limf
 endif
 
 # Run on westgrid (orcinus)
@@ -28,7 +28,7 @@ ifdef westgrid
 OPT = -axP -fast
 CODEDIR = $$HOME/local
 CFLAGS  = $(OPT) $(DIM) -I$(CODEDIR)/include $(DEBUG)
-LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -limf
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system -limf
 endif 
 
 # Run on Sharcnet (brown)
@@ -36,7 +36,7 @@ ifdef sharcnet
 OPT = -Wall -TENV:simd_zmask=OFF -TENV:simd_imask=OFF -TENV:simd_omask=OFF -O3 -fno-math-errno -vec-report0 -wd981
 CODEDIR = /work/agdelma/brown/local
 CFLAGS  = $(OPT) $(DIM) -I$(CODEDIR)/include $(DEBUG) 
-LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -limf
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system -limf
 endif 
 
 RM      = /bin/rm -f
