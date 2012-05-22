@@ -352,7 +352,7 @@ bool Setup::worldlines() {
 	double tau;
 	if (!params.count("number_time_slices")) {
 		tau = params["imaginary_time_step"].as<double>();
-		numTimeSlices = int(1.0/(params["temperature"].as<double>() * tau));
+		numTimeSlices = static_cast<int>(1.0/(params["temperature"].as<double>() * tau) + EPS);
 		if ((numTimeSlices % 2) != 0)
 			numTimeSlices--;
 		insertOption("number_time_slices",numTimeSlices);
