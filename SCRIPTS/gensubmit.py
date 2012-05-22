@@ -11,7 +11,7 @@ import os,sys
 from optparse import OptionParser
 
 # -----------------------------------------------------------------------------
-def westgrid(staticPIMCOps,shiftp,numOptions,optionValue,outName):
+def westgrid(staticPIMCOps,numOptions,optionValue,outName):
     ''' Write a pbs submit script for westgrid. '''
 
     # Open the pbs file and write its header
@@ -32,18 +32,18 @@ cd $PBS_O_WORKDIR
 echo \"Starting run at: `date`\"
 
 case ${PBS_ARRAYID} in\n''')
-    
+
     # Create the command string and make the case structure
     for n in range(numOptions):
-        if optionValue.has_key('p'):
+        if (optionValue.has_key('p') or staticPIMCOps.find('-p') != -1):
             command = './pimc.e '
         else:
-            command = './pimc.e -p %d ' % (n+shiftp)
+            command = './pimc.e -p %d ' % (n)
 
         for flag,val in optionValue.iteritems():
             command += '-%s %s ' % (flag,val[n])
         command += staticPIMCOps
-        pbsFile.write('%d)\nsleep %d\n%s;;\n' % (n,2*n,command))
+        pbsFile.write('%d)\nsleep %d\n%s\n;;\n' % (n,2*n,command))
     
     pbsFile.write('esac\necho \"Finished run at: `date`\"')
     pbsFile.close();
@@ -51,7 +51,7 @@ case ${PBS_ARRAYID} in\n''')
     print '\nSubmit jobs with: qsub -t 0-%d %s\n' % (numOptions-1,fileName)
 
 # -----------------------------------------------------------------------------
-def sharcnet(staticPIMCOps,shiftp,numOptions,optionValue,outName):
+def sharcnet(staticPIMCOps,numOptions,optionValue,outName):
     ''' Write a submit script for sharcnet. '''
 
     # Open the script file and write its header
@@ -66,7 +66,7 @@ def sharcnet(staticPIMCOps,shiftp,numOptions,optionValue,outName):
         if optionValue.has_key('p'):
             command = './pimc.e '
         else:
-            command = './pimc.e -p %d ' % (n+shiftp)
+            command = './pimc.e -p %d ' % (n)
             
         for flag,val in optionValue.iteritems():
             command += '-%s %s ' % (flag,val[n])
@@ -76,7 +76,7 @@ def sharcnet(staticPIMCOps,shiftp,numOptions,optionValue,outName):
     os.system('chmod u+x %s'%fileName)
 
 # -----------------------------------------------------------------------------
-def scinet(staticPIMCOps,shiftp,numOptions,optionValue,outName):
+def scinet(staticPIMCOps,numOptions,optionValue,outName):
     ''' Write a pbs submit script for scinet. '''
 
     if numOptions != 8:
@@ -136,21 +136,7 @@ def main():
     inLines = inFile.readlines();
 
     # The first line of the file contains all static pimc options
-    staticPIMCOps = inLines[0]
-
-    # We check if a 'process' flag has been set.  If so, we remove it 
-    # from the list and store its value
-    findInput = staticPIMCOps.split();
-    n = 0
-    shiftp = 0
-    for input in findInput:
-        if input == '-p':
-            shiftp = int(findInput[n+1])
-            findInput.pop(n)
-            findInput.pop(n)
-            break
-        n += 1
-    staticPIMCOps = ' '.join(findInput)
+    staticPIMCOps = inLines[0].rstrip('\n')
 
     # The next lines contains the short-name of the pimc option
     # and a list of values.  
@@ -200,7 +186,7 @@ def main():
     n = 0
     for input in findInput:
         if input == '-L':
-            outName += '-%06.3f' % float(findInput[n+1])
+            outName += '-%07.3f' % float(findInput[n+1])
             break
         n += 1
 
@@ -213,15 +199,13 @@ def main():
         numOptions = numOptions[0]
 
     if options.cluster == 'westgrid':
-        westgrid(staticPIMCOps,shiftp,numOptions,optionValue,outName)
+        westgrid(staticPIMCOps,numOptions,optionValue,outName)
 
     if options.cluster == 'sharcnet':
-        sharcnet(staticPIMCOps,shiftp,numOptions,optionValue,outName)
+        sharcnet(staticPIMCOps,numOptions,optionValue,outName)
 
     if options.cluster == 'scinet':
-        scinet(staticPIMCOps,shiftp,numOptions,optionValue,outName)
-    
-    
+        scinet(staticPIMCOps,numOptions,optionValue,outName)
 
 # ----------------------------------------------------------------------
 if __name__ == "__main__": 
