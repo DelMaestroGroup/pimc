@@ -27,6 +27,9 @@ OPT = -Wall -O3 -fno-math-errno -W -Wshadow -fno-common -ansi -pedantic -Wconver
 else
 OPT = -Wall -O3 -ftree-vectorize -fno-math-errno
 endif
+ifdef debug
+OPT = -Wall
+endif
 CODEDIR = /opt/local
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
 LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system

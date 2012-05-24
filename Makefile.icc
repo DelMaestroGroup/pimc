@@ -18,7 +18,7 @@ ifdef osx
 CC = /usr/bin/icpc
 LD = /usr/bin/icpc
 CODEDIR = /usr/local
-OPT = -Wall -O3 -vec-report1 -fno-math-errno
+OPT = -Wall -fast -vec-report1 -fno-math-errno
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
 LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system -limf
 endif
