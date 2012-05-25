@@ -25,7 +25,7 @@ ifdef osx
 ifdef strict
 OPT = -Wall -O3 -fno-math-errno -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
 else
-OPT = -Wall -O3 -ftree-vectorize -fno-math-errno
+OPT = -Wall -O3 -ftree-vectorize -fno-math-errno -funroll-loops 
 endif
 ifdef debug
 OPT = -Wall

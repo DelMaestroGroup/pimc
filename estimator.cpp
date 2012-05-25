@@ -717,8 +717,8 @@ OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path,
 
 	sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
 
-	/* We chooose the maximum separation to be sqrt(NDIM)*L/2 */
-	dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NOBDMSEP);
+	/* We chooose the maximum separation to be sqrt(NDIM)*min(L)/2 */
+	dR = 0.5*sqrt(sum(path.boxPtr->periodic))*(blitz::min(path.boxPtr->side)) / (1.0*NOBDMSEP);
 
 	/* This is an off-diagonal estimator that gets its own file */
 	initialize(NOBDMSEP,_frequency,false,true,true);
@@ -764,7 +764,7 @@ void OneBodyDensityMatrixEstimator::sample() {
 			 (abs(path.worm.getNumBeadsOn()+path.worm.gap-numBeads0) <= 2) ) {
 			totNumAccumulated++;
 			numAccumulated++;
-			accumulate();
+			//accumulate();
 		}
 	}
 }
