@@ -30,7 +30,7 @@ endif
 ifdef debug
 OPT = -Wall
 endif
-CODEDIR = /opt/local
+CODEDIR = /usr/local
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
 LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system
 endif

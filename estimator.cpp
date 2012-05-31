@@ -764,7 +764,7 @@ void OneBodyDensityMatrixEstimator::sample() {
 			 (abs(path.worm.getNumBeadsOn()+path.worm.gap-numBeads0) <= 2) ) {
 			totNumAccumulated++;
 			numAccumulated++;
-			//accumulate();
+			accumulate();
 		}
 	}
 }

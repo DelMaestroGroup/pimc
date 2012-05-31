@@ -911,7 +911,7 @@ FixedAzizPotential::FixedAzizPotential(const Container *_boxPtr) :
 			 * be included here */
 			if (state == 'F') {
 				numFixedParticles++;
-				if (numFixedParticles >= fixedParticles.size())
+				if (numFixedParticles >= int(fixedParticles.size()))
 					fixedParticles.resizeAndPreserve(numFixedParticles);
 
 				/* Put the initial position in the container */

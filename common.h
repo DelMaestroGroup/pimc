@@ -21,7 +21,7 @@
 #include <map>
 
 #include <blitz/array.h>
-#include <blitz/tinyvec-et.h>
+//#include <blitz/tinyvec-et.h>
 
 #include <boost/format.hpp>
 

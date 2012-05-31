@@ -133,7 +133,7 @@ void Setup::getOptions(int argc, char *argv[])
 		("worm_constant,C", po::value<double>()->default_value(1.0), "worm acceptance constant")
 		("Delta,D", po::value<double>(),"center of mass shift")
 		("Mbar,M", po::value<int>(), "worm update length, Mbar")
-		("number_eq_steps,E", po::value<uint32>()->default_value(0), 
+		("number_eq_steps,E", po::value<uint32>()->default_value(1), 
 		 "number of equilibration steps")
 		("number_bins_stored,S", po::value<int>()->default_value(1), 
 		 "number of estimator bins stored")
@@ -190,11 +190,12 @@ bool Setup::parseOptions() {
 	if (!( (params.count("density") && params.count("number_particles")) ||
 	 	 (definedCell && params.count("number_particles")) ||
 		 (definedCell && params.count("density")) ) ) {
-		cout << endl << "PIMC Error: Cannot create the simulation cell!" << endl << endl;
-		cout << "Need: [number_particles (N) AND density (n)] OR " << endl;
-		cout << "      [number_particles (N) AND size (L,Li)] OR" << endl;
-		cout << "      [size (L,Li) AND density (n)]" << endl << endl;
-		cout << cellOptions << endl;
+		cerr << endl << "PIMC ERROR: Cannot create the simulation cell!" << endl << endl;
+		cerr << "Action: define a valid simulation cell." << endl;
+		cerr << "Need: [number_particles (N) AND density (n)] OR " << endl;
+		cerr << "      [number_particles (N) AND size (L) or Lx,Ly,Lz] OR" << endl;
+		cerr << "      [size (L) or Lx,Ly,Lz AND density (n)]" << endl << endl;
+		cerr << cellOptions << endl;
 		return true;
 	}
 
@@ -202,16 +203,17 @@ bool Setup::parseOptions() {
 	if (!( (params["cell_type"].as<string>() == "cylinder")  || 
 	       (params["cell_type"].as<string>() == "prism") ))
 	{
-		cout << "Cell Type (b) must be one of:" << endl
+		cerr << endl << "PIMC ERROR: Invalid simulation cell type." << endl << endl;
+		cerr << "Action: change cell_type (b) to one of:" << endl
 			<< "\t[prism,cylinder]" << endl;
 		return true;
 	}
 
 	/* Can we create the worldlines? */
 	if (!(params.count("number_time_slices") || (params.count("imaginary_time_step")))) {
-		cout << endl << "PIMC Error: Cannot create imaginary time paths!" << endl << endl;
-		cout << "Need: number_time_slices (P) OR imaginary_time_step (t)" << endl << endl;
-		cout << algorithmicOptions << endl;
+		cerr << endl << "PIMC ERROR: Cannot create imaginary time paths!" << endl << endl;
+		cerr << "Action: define number_time_slices (P) OR imaginary_time_step (t)" << endl << endl;
+		cerr << algorithmicOptions << endl;
 		return true;
 	}
 
@@ -225,7 +227,8 @@ bool Setup::parseOptions() {
 		}
 	}
 	if (!validPotential) {
-		cout << "Interaction potential (I) must be one of:" << endl
+		cerr << endl << "PIMC ERROR: Invalid interaction potential!" << endl << endl;
+		cerr << "Action: set interaction_potential (I) to one of:" << endl
 			 << "\t[" << interactionNames << "]" <<  endl;
 		return true;
 	}
@@ -239,50 +242,28 @@ bool Setup::parseOptions() {
 		}
 	}
 	if (!validPotential) {
-		cout << "External potential (X) must be one of:" << endl
+		cerr << endl << "PIMC ERROR: Invalid external potential!" << endl << endl;
+		cerr << "Action: set external_potential (X) must to one of:" << endl
 			 << "\t[" << externalNames << "]" << endl;
 		return true;
 	}
 
 	/* We can only use the cylinder potentials for a 3D system */
 	if ((params["external_potential"].as<string>().find("tube") != string::npos) && (NDIM != 3)) {
-		cout << "Can only use tube potentials for a 3D system!" << endl;
+		cerr << endl << "PIMC ERROR: Can only use tube potentials for a 3D system!" << endl << endl;
+		cerr << "Action: change the potential or recompile with ndim=3." << endl;
 		return 1;
 	}
 
 	/* Need to specify a radius for the tube potentials */
 	if ( (params["external_potential"].as<string>().find("tube") != string::npos) && (!params.count("radius")) ) {
-		cout << "Must specfity a radius (r) for the tube potentials!" << endl;
+		cerr << endl << "PIMC ERROR: Incomplete specification for external potential!" << endl << endl;
+		cerr << "Action: specfity a radius (r) for the tube potentials." << endl;
 		return 1;
 	}
 
-    /* Make sure the correct output file structure exists */
-    //createOutputDirectory();
-
 	return false;
 }
-/**************************************************************************//**
- * Setup the output directories.
- *
- * Probe the filesystem and create output directories if required.
-******************************************************************************/
-//#include <sys/stat.h>
-//void Setup::createOutputDirectory() {
-//
-//    struct stat st;
-//
-//    /* Check to see if ./OUTPUT exists; if not, create. */
-//    string outputPath = "OUTPUT";
-//    if(stat(outputPath.c_str(),&st) != 0)
-//        mkdir(outputPath.c_str(),0777);
-//
-//    /* If we have a cylider geometry, make sure the .OUTPUT/CYLINDER directory
-//     * exists */
-//    outputPath = "OUTPUT/CYLINDER";
-//    if ( (params["cell_type"].as<string>() == "cylinder") &&
-//            (stat(outputPath.c_str(),&st) != 0) )
-//        mkdir(outputPath.c_str(),0777);
-//}
 
 /**************************************************************************//**
  * Return the random seed.
@@ -386,14 +367,16 @@ bool Setup::worldlines() {
 	if (Mbar%2)
 		Mbar++;
 	if (Mbar > numTimeSlices) {
-		cout << "Swap length (M) > number time slices (P)!" << endl;
-		return true;
+		cerr << endl << "PIMC ERROR: Update length > number time slices!" << endl << endl;
+        cerr << "Action: Increase number_time_slices (P) OR" <<  endl;
+        cerr << "        Increase Mbar (M) OR"  << endl;
+        cerr << "        Decrease imaginary_time_step (t)" << endl; 
+        return true;
 	}
 	setOption("Mbar",Mbar);
 
 	return false;
 }
-
 
 /**************************************************************************//**
  * Setup the simulation constants.
