@@ -203,7 +203,7 @@ string PathIntegralMonteCarlo::runMoves(const double x, const int sweep) {
 		}
 		else {
 			cout << "Cumulative Diagonal Probability" << endl;
-			cout << format("x = %16.14E\n" % x);
+			cout << format("x = %16.14E\n") % x;
 		}
 	}
 	/* Now we try all other moves */
@@ -251,7 +251,7 @@ string PathIntegralMonteCarlo::runMoves(const double x, const int sweep) {
 		}
 		else {
 			cout << "Cumulative Off-Diagonal Probability!" << endl;
-			cout << format("x = %16.14E\n" % x);
+			cout << format("x = %16.14E\n") % x;
 		}
 	} 
 	return moveName;
