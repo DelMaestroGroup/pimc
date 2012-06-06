@@ -43,14 +43,32 @@ now.
 We use many of the boost header-only libraries, but two libraries will need to
 be compiled: boost_program_options and boost_filesystem libraries.  Let us
 assume that you will be installing both blitz and boost in the folder
-`$HOME/local` using the GNU C++ compiler.  for icpc or pathscale, the changes
-should be obvious.
+`$HOME/local` using the GNU C++ compiler.  For icpc or pathscale, the changes
+should be obvious, and in particular for the Intel compiler you will need to use
+`intel-linux` as the toolset.
+
+If you don't have a `$HOME/local` you should create this directory now via
+
+    mkdir $HOME/local
 
 ### Blitz ###
 
-1. Download and decompress blitz++ into `~/local/src/`
-2. Move into the source (src) directory
-3. Execute
+Unless you need to use the blitz++'s internal debug functionality initiated
+through \#`define BZ_DEBUG` which is set by including `debug=1` when compiling
+the path integral code, blitz can be used as a 'header only' library and does
+not need to be compiled.  This is the most common use case.  However, as it
+doesn't take very long to compile one can proceed as follows:
+
+1. Move into your source directory (create if necessary).
+~~~
+cd `$HOME/local/src` 
+~~~
+2. Get the latest version of blitz++ from the mercurial repository
+~~~
+hg clone http://blitz.hg.sourceforge.net:8000/hgroot/blitz/blitz blitz
+~~~
+3. Move into the blitz source directory
+4. Execute
 ~~~
 ./configure cxx=g++ --prefix=PREFIX
 make lib
@@ -59,7 +77,7 @@ make install
 where `PREFIX` is the location you want to install the libraries, we suggest
 `$HOME/local` where `$HOME` is your expanded home directory.
 
-*Note:* If attempting to compile with gcc version 4.3 or later you may encounter errors
+*Note:* If attempting to compile blitz-0.9 with gcc version 4.3 or later you may encounter errors
 when attempting to build blitz++.  To fix this, before issuing `make lib` and/or
 `make install` one needs to add headers to a couple of files.  Move to
 `$HOME/local/src/blitz-0.9/blitz` (or similarly, `PREFIX/src/blitz-0.9/blitz`) and
@@ -87,15 +105,19 @@ of the official Boost documentation.
 tools/build/v2/b2 install --prefix=PREFIX --toolset=gcc --with-program_options --with-filesystem
 ~~~
 The `b2` executable may also be in `tools/build/v2/bin/` depending on your
-machine's configuration.  You should now have a `PREFIX/include` directory
-containing the header files for `blitz`, `boost` and `random` and your
-`PREFIX/lib` directory will contain the following files (the `.dylib` files will
-only appear on Mac OS X)
+machine's configuration.  If you would like to compile boost with different
+compilers on your machine and would like to enforce a detailed labelling scheme
+for the libraries include `--layout=versioned` when calling `b2` above. See 
+[here](http://stackoverflow.com/questions/8940249/boost-how-bjam-constructs-a-library-name "Versioned Library Layout")
+for more detail.  
+6.  You should now have a `PREFIX/include` directory containing the header files
+for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will
+contain the following files (the `.dylib` files will only appear on Mac OS X)
 ~~~
 libblitz.a   libboost_filesystem.a      libboost_program_options.a libboost_system.a
 libblitz.la  libboost_filesystem.dylib  libboost_program_options.dylib libboost_system.dylib
 ~~~
-6. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on Mac OS X) variable
+7. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on Mac OS X) variable
 inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` eg.  
 ~~~
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:PREFIX/lib

@@ -18,10 +18,11 @@ endif
 ifdef osx
 CC = /usr/bin/icpc
 LD = /usr/bin/icpc
+BOOSTVER = -il-mt-1_49
 CODEDIR = /usr/local
 OPT = -Wall -fast -fno-math-errno
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options -lboost_filesystem -lboost_system -limf
+LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER) -limf
 endif
 
 # Run on westgrid (orcinus)
