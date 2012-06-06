@@ -32,23 +32,30 @@ Dependencies {#dependencies}
 ------------
 
 The code is written in C++ and makes use of both the <a
-href="http://www.oonumerics.org/blitz/">blitz++</a> and and <a
-href="http://www.boost.org/">boost</a> libraries which can be downloaded from
-their respective websites.  Specifically, you will need to compile the
-boost_program_options and boost_filesystem libraries.  Let us assume that you
-will be installing both blitz and boost in the folder `$HOME/local` using the
-GNU C++ compiler.  for icpc or pathscale, the changes should be obvious.
+href="http://www.oonumerics.org/blitz/">blitz++</a> and <a
+href="http://www.boost.org/">boost</a> libraries.  Unfortunately the blitz++
+library hosted on the official website (version 0.9) is somewhat out of date and
+a more recent version with bug-fixes is developed using a mercurial repository.
+If you don't have <a href="http://mercurial.selenic.com/"
+title="mercurial">mercurial</a> installed on your machine you should do that
+now.
+
+We use many of the boost header-only libraries, but two libraries will need to
+be compiled: boost_program_options and boost_filesystem libraries.  Let us
+assume that you will be installing both blitz and boost in the folder
+`$HOME/local` using the GNU C++ compiler.  for icpc or pathscale, the changes
+should be obvious.
 
 ### Blitz ###
 
 1. Download and decompress blitz++ into `~/local/src/`
 2. Move into the source (src) directory
 3. Execute
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
 ./configure cxx=g++ --prefix=PREFIX
 make lib
 make install
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
 where `PREFIX` is the location you want to install the libraries, we suggest
 `$HOME/local` where `$HOME` is your expanded home directory.
 
@@ -77,21 +84,26 @@ of the official Boost documentation.
 4. Move up to the top level of the boost source directory
 5. Execute
 ~~~
-tools/build/v2/bin/b2 install --prefix=PREFIX --toolset=gcc --with-program_options --with-filesystem
+tools/build/v2/b2 install --prefix=PREFIX --toolset=gcc --with-program_options --with-filesystem
 ~~~
-You should now have a `PREFIX/include` directory containing the header files
-for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain
-the following files
+The `b2` executable may also be in `tools/build/v2/bin/` depending on your
+machine's configuration.  You should now have a `PREFIX/include` directory
+containing the header files for `blitz`, `boost` and `random` and your
+`PREFIX/lib` directory will contain the following files (the `.dylib` files will
+only appear on Mac OS X)
 ~~~
 libblitz.a   libboost_filesystem.a      libboost_program_options.a libboost_system.a
 libblitz.la  libboost_filesystem.dylib  libboost_program_options.dylib libboost_system.dylib
 ~~~
-6. Update your `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH`) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` eg.
+6. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on Mac OS X) variable
+inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` eg.  
 ~~~
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:PREFIX/lib
 ~~~
 8. Source your `.bashrc` or `.bash_profile`.
-
+~~~
+source ~/.bashrc
+~~~
 
 Path Integral Monte Carlo {#pimc}
 -------------------------

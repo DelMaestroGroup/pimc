@@ -102,7 +102,10 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	attemptDiagProb.push_back(attemptDiagProb.at(0) + constants()->insertAttemptProb());
 	attemptDiagProb.push_back(attemptDiagProb.at(1) + constants()->stagingAttemptProb());
 	attemptDiagProb.push_back(attemptDiagProb.at(2) + constants()->comAttemptProb());
+
+    /* Make sure it adds up to 1 */
 	PIMC_ASSERT(attemptDiagProb.back()-1.0 < EPS);
+    attemptDiagProb.back() = 1.0 + EPS;
 
 	/* The cumulative off diagonal probability vector */
 	attemptOffDiagProb.push_back(constants()->closeAttemptProb());
@@ -116,7 +119,9 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	attemptOffDiagProb.push_back(attemptOffDiagProb.at(7) + constants()->stagingAttemptProb());
 	attemptOffDiagProb.push_back(attemptOffDiagProb.at(8) + constants()->comAttemptProb());
 
+    /* Make sure it adds up to 1 */
 	PIMC_ASSERT(attemptOffDiagProb.back()-1.0 < EPS);
+    attemptOffDiagProb.back() = 1.0 + EPS;
 
 	/* Add all the estimators. The energy estimator has to be
 	 * the first one added. */
@@ -197,8 +202,8 @@ string PathIntegralMonteCarlo::runMoves(const double x, const int sweep) {
 			moveName = centerOfMass.name;
 		}
 		else {
-			cout << "Problem with Cumulative Diagonal Probability!" << endl;
-			cout << "x = %f" << x <<  endl;
+			cout << "Cumulative Diagonal Probability" << endl;
+			cout << format("x = %16.14E\n" % x);
 		}
 	}
 	/* Now we try all other moves */
@@ -245,8 +250,8 @@ string PathIntegralMonteCarlo::runMoves(const double x, const int sweep) {
 			moveName = centerOfMass.name;
 		}
 		else {
-			cout << "Problem with Cumulative Off-Diagonal Probability!" << endl;
-			cout << "x = %f" << x <<  endl;
+			cout << "Cumulative Off-Diagonal Probability!" << endl;
+			cout << format("x = %16.14E\n" % x);
 		}
 	} 
 	return moveName;
