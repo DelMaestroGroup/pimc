@@ -147,10 +147,12 @@ ifdef target_hostname
 OPT = -Wall -O3 -fno-math-errno
 CODEDIR = $$HOME/local
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_system
 endif
 ~~~
-where `target_hostname` is replaced with a unique identifier for your machine, let's call it foo.
+where `target_hostname` is replaced with a unique identifier for your machine,
+let's call it foo. If you want to run blitz in debug mode you will need to
+explicitely link to the blitz library with `-lblitz` added to `LDFLAGS` above.
 2. Edit the `CODEDIR` variable to point to the location where you have
    installed blitz and boost above.  We suggest `$HOME/local`
 3. Edit the `OPT` variable to reflect yoru local compile options.

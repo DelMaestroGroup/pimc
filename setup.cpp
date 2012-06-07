@@ -123,7 +123,7 @@ void Setup::getOptions(int argc, char *argv[])
 		("density,n", po::value<double>(), str(format("initial density [angstroms^{-%d}]") % NDIM).c_str())
 		("number_particles,N", po::value<int>(), "number of particles")
 		("temperature,T", po::value<double>(), "temperature [kelvin]")
-		("chemical_potential,u", po::value<double>()->default_value(1.0), "chemical potential [kelvin]")
+		("chemical_potential,u", po::value<double>()->default_value(0.0), "chemical potential [kelvin]")
 		;
 
 	algorithmicOptions.add_options()
@@ -154,7 +154,7 @@ void Setup::getOptions(int argc, char *argv[])
  * This probably needs more work to test all possible outcomes.
  * @return true if we exit, false if we continue
 ******************************************************************************/
-#include <boost/mpl/map.hpp>
+//#include <boost/mpl/map.hpp>
 bool Setup::parseOptions() {
 
 	/* Do we need help? */
@@ -169,6 +169,12 @@ bool Setup::parseOptions() {
 			<< endl << endl;
 		return true;
 	}
+
+    /* Have we defined a temperature? */
+    if (!params.count("temperature")) {
+		cerr << endl << "PIMC ERROR: No temperature defined!" << endl << endl;
+		cerr << "Action: specify temperature (T)" << endl;
+    }
 
 	/* Have we physically defined a simulation cell? */
 	definedCell = false;

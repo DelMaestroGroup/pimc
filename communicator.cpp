@@ -198,12 +198,16 @@ void Communicator::init(const double _tau, const bool outputWorldline, const
 		openFile(_initName,&initFile_,ios::in);
 	}
 
-	/* Now we go through all files and open them up */
+	/* Now we go through all files and open them up except for a possible init
+     * file */
 	for (map<string,fstream*>::iterator filePtr = file.begin(); 
 			filePtr != file.end(); filePtr++) {
-		fileName = str(format("OUTPUT/%s-%s-%s.dat") % ensemble % filePtr->first % dataName);
-		openFile(fileName,filePtr->second,mode);
-		*(filePtr->second) << header;
+        /* Check to make sure we are not init */
+        if (filePtr->first != "init") {
+            fileName = str(format("OUTPUT/%s-%s-%s.dat") % ensemble % filePtr->first % dataName);
+            openFile(fileName,filePtr->second,mode);
+            *(filePtr->second) << header;
+        }
 	}
 
 	/* Now do the same for any possible cylinder files */

@@ -152,7 +152,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 
 	/* If we are restarting, we load the last saved state from disk, otherwise
 	 * output the estimator headers. */
-	if (constants()->restart()) 
+	if (constants()->restart())
 		loadState();
 	else {
 
