@@ -64,8 +64,12 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	/* We keep simulating until we have stored a certain number of measurements */
 	numStoredBins = 0;
 
+    /* Initialize the number of sweeps and updates per sweep to zero */
+    numSteps = 0;
+    numUpdates = 0;
+
 	/* Calculate the number of sweeps to make sure we touch every bead */
-	numSweeps = int(ceil((1.0*constants()->numTimeSlices()/(1.0*constants()->Mbar()))));
+	numImagTimeSweeps = int(ceil((1.0*constants()->numTimeSlices()/(1.0*constants()->Mbar()))));
 
 	/* These counters are used in the equilibration process */
 	numConfig      = 0;
@@ -197,7 +201,7 @@ string PathIntegralMonteCarlo::runMoves(const double x, const int sweep) {
 			moveName = staging.name;
 		}
 		else if (x < attemptDiagProb.at(3)) {
-			if (sweep == 0) 
+			if ((sweep % numParticles)== 0) 
 				success = centerOfMass.attemptMove();
 			moveName = centerOfMass.name;
 		}
@@ -245,7 +249,7 @@ string PathIntegralMonteCarlo::runMoves(const double x, const int sweep) {
 			moveName = staging.name;
 		}
 		else if (x < attemptOffDiagProb.at(9)) {
-			if (sweep == 0)
+			if ((sweep % numParticles)== 0) 
 				success = centerOfMass.attemptMove();
 			moveName = centerOfMass.name;
 		}
@@ -315,7 +319,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 			} // CoM Move
 			else {
 				/* Attemp the staging Move */
-				for (int sweep = 0; sweep < numSweeps; sweep++) 
+				for (int sweep = 0; sweep < numImagTimeSweeps; sweep++) 
 						staging.attemptMove();
 
 			} //staging move
@@ -331,7 +335,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 		if (!savedState) 
 			saveState();
 
-		for (int sweep = 0; sweep < numSweeps; sweep++) {
+		for (int sweep = 0; sweep < numImagTimeSweeps; sweep++) {
 
 			for (int n = 0; n < constants()->initialNumParticles(); n++) {
 
@@ -346,7 +350,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 
 				/* Every 200*checkNum steps, we check the diagonal fraction and update the
 				 * worm constant for the second 1/3 of equilibration */
-				int checkNum = constants()->initialNumParticles()*numSweeps;
+				int checkNum = constants()->initialNumParticles()*numImagTimeSweeps;
 				if ( (constants()->C0() > 0.0) && (numConfig > 200*checkNum) && 
 						(equilFrac < 2.0/3.0) ) {
 
@@ -400,6 +404,92 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 }
 
 /**************************************************************************//**
+ *  Equilibration.
+ * 
+ *  The equilibration method, where we perform fully diagonal moves 1/3 of the
+ *  time, finding an optimal, COM step, then for another 1/3 we perform 
+ *  all moves adjusting C0 to yield a diagonal fraction near 0.75 and and for 
+ *  the final 1/3 we just equilibrate.
+******************************************************************************/
+void PathIntegralMonteCarlo::equilStep_test(const uint32 iStep, const bool relaxC0) {
+
+	double x;
+
+	/* How far are we into the equilibration? */
+	double equilFrac = (1.0*iStep) / (1.0*constants()->numEqSteps());
+
+    /* Increment the number of steps */
+    numSteps++;
+    
+    /* How many updates should we perform? */
+    numUpdates = int(ceil(path.worm.getNumBeadsOn()/(1.0*constants()->Mbar())));
+    numParticles = path.getTrueNumParticles();
+
+    for (int n = 0; n < numUpdates; n++) {
+		
+        /* Generate random number and run through all moves */
+        x = random.rand();
+        runMoves(x,n);
+
+        /* We accumulate the number of diagonal configurations */
+        numConfig++;
+        if (path.worm.isConfigDiagonal) 
+            ++numDiagonal;
+
+        /* Every 200 steps, we check the diagonal fraction and update the
+         * worm constant for the first 1/3 of equilibration */
+        if ( (relaxC0) && (numSteps > 200) && (equilFrac < 1.0/3.0) ) {
+
+            double diagFrac = 1.0*numDiagonal / (1.0*numConfig);
+
+            cout << format("%4.2f\t%8.5f\t") % diagFrac % constants()->C0();
+
+            /* Adjust the worm constant to ensure that the diagonal fraction
+             * is between 0.75 and 0.85, but don't let it get too small or too large*/
+            if (constants()->C0() > 1.0E-5) {
+                if (diagFrac < 0.2)
+                    constants()->shiftC0(-0.5);
+                else if (diagFrac >= 0.2 && diagFrac < 0.3)
+                    constants()->shiftC0(-0.4);
+                else if (diagFrac >= 0.3 && diagFrac < 0.4)
+                    constants()->shiftC0(-0.3);
+                else if (diagFrac >= 0.4 && diagFrac < 0.5)
+                    constants()->shiftC0(-0.2);
+                else if (diagFrac >= 0.5 && diagFrac < 0.6)
+                    constants()->shiftC0(-0.1);
+                else if (diagFrac >= 0.6 && diagFrac < 0.75)
+                    constants()->shiftC0(-0.05);
+            }
+
+            if (constants()->C0() < 1.0E4) {
+                if (diagFrac <= 0.9 && diagFrac > 0.85)
+                    constants()->shiftC0(0.05);
+                else if (diagFrac <= 0.95 && diagFrac > 0.9)
+                    constants()->shiftC0(0.1);
+                else if (diagFrac > 0.95)
+                    constants()->shiftC0(0.2);
+            }
+
+            cout << format("%8.5f\t%5d\t%8.6f\n") % constants()->C0() 
+                % path.getTrueNumParticles() 
+                % (1.0*path.getTrueNumParticles()/path.boxPtr->volume);
+
+            /* Reset the counters */
+            numDiagonal = 0;
+            numConfig = 0;
+            numSteps = 0;
+
+        } // relaxC0
+
+    } // sweeps loop	
+
+    /* Save a state to disk every 200 equilibrium steps */
+    if ((iStep > 0) && (iStep % 200) == 0)
+        saveState();
+
+}
+
+/**************************************************************************//**
  *  PIMC step.
  * 
  *  This method performs the metropolis sampling, which is actually a 
@@ -409,26 +499,25 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 ******************************************************************************/
 void PathIntegralMonteCarlo::step() {
 
-	uint32 binSize = 200;		// The number of MC steps in an output bin
+	uint32 binSize = 100;		// The number of MC steps in an output bin
 	string moveName;
 
+    numUpdates = int(ceil(path.worm.getNumBeadsOn()/(1.0*constants()->Mbar())));
+    numParticles = path.getTrueNumParticles();
+
 	/* We run through all moves, making sure that we could have touched each bead at least once */
-	for (int sweep = 0; sweep < numSweeps; sweep++) {
+    for (int n = 0; n < numUpdates ; n++) {
 
-		for (int n = 0; n < constants()->initialNumParticles(); n++) {
+        double x = random.rand();
+        moveName = runMoves(x,n);
 
-			double x = random.rand();
-			moveName = runMoves(x,sweep);
+        /* We measure the one body density matrix here to ensure adequate statistics */
+        //oneBodyDensityMatrix.sample();
 
-			/* We measure the one body density matrix here to ensure adequate statistics */
-			oneBodyDensityMatrix.sample();
+        //if (constants()->extPotentialType().find("tube") != string::npos)
+        //		cylOneBodyDensityMatrix.sample();
 
-			if (constants()->extPotentialType().find("tube") != string::npos)
-				cylOneBodyDensityMatrix.sample();
-
-		} // n
-
-	} // sweep
+	} // n
 
 	/* Perform all measurements */
 	for (vector<EstimatorBase*>::iterator estimatorPtr = estimator.begin();

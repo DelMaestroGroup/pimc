@@ -35,6 +35,7 @@ class PathIntegralMonteCarlo {
 
 		/* The equilibration relaxation */
 		void equilStep(const uint32, const bool);
+		void equilStep_test(const uint32, const bool);
 
 		/* The actual monte carlo step */
 		void step();
@@ -56,7 +57,10 @@ class PathIntegralMonteCarlo {
 
 	private:
 		int configNumber;			// The output configuration number
-		int numSweeps;				// The number of updates we perform per particle
+        int numImagTimeSweeps;      // Partitioning used for updates
+        int numSteps;               // The number of steps performed during equilibration
+        int numUpdates;             // The maximum number of updates per step.
+        int numParticles;           // The number of particles
 		bool savedState;			// We have saved at least one state
 		bool fixedNumLevels;		// Have we fixed the number of levels
 		bool startWithState;		// Are we starting from a saved state
