@@ -48,7 +48,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	oneBodyDensityMatrix(_path,_actionPtr,_random,15),
 	pairCorrelation(_path,_actionPtr,1),
 	radialDensity(_path,1),
-	wormProperties(_path,10),
+	wormProperties(_path,100),
 	numberDistribution(_path,1),
 	cylEnergy(_path,_actionPtr,maxR,1),
 	cylNumberParticles(_path,maxR,1),
@@ -398,6 +398,10 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 
 			} // particle loop
 
+//            cout << format("%9.5f\t%5d\t%8.6f\n") % constants()->C0() 
+//                % path.getTrueNumParticles() 
+//                % (1.0*path.getTrueNumParticles()/path.boxPtr->volume);
+//
 		} // sweeps loop
 
 	} // 2/3 off-diagonal equilibration 
@@ -486,7 +490,6 @@ void PathIntegralMonteCarlo::equilStep_test(const uint32 iStep, const bool relax
     /* Save a state to disk every 200 equilibrium steps */
     if ((iStep > 0) && (iStep % 200) == 0)
         saveState();
-
 }
 
 /**************************************************************************//**
