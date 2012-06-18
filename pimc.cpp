@@ -276,135 +276,130 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 	/* How far are we into the equilibration? */
 	double equilFrac = (1.0*iStep) / (1.0*constants()->numEqSteps());
 
+    numParticles = path.getTrueNumParticles();
+
 	/* For the first 1/3 of equilibration steps, we only do diagonal moves */
 	if (equilFrac < 1.0/3.0 && !startWithState) {
 
-		/* We loop over all particles */
-		for (int n = 0; n < constants()->initialNumParticles(); n++) {
-
+        for (int n = 0; n < numParticles; n++) {
+            
 			x = random.rand();
 
-			/* Here we do the diagonal pre-equilibration moves, and allow for 
-			 * optimization of simulation parameters */
-			if (x < constants()->comAttemptProb()) {
-				centerOfMass.attemptMove();
-				numCoM += 1;
+            /* Here we do the diagonal pre-equilibration moves, and allow for 
+             * optimization of simulation parameters */
+            if (x < constants()->comAttemptProb()) {
+                centerOfMass.attemptMove();
+                numCoM += 1;
 
-				/* We check how many CoM moves we have tried.  Every 200 moves, we see if we need
-				 * to adjust Delta, provided we are in the pre-equilibration diagonal state. */
-				if ( (numCoM >= 200) 
-						&& (constants()->Delta() < 0.5*blitz::min(path.boxPtr->side)) 
-						&& (constants()->Delta() > 0.01*blitz::min(path.boxPtr->side)) ) {
+                /* We check how many CoM moves we have tried.  Every 200 moves, we see if we need
+                 * to adjust Delta, provided we are in the pre-equilibration diagonal state. */
+                if ( (numCoM >= 200) 
+                        && (constants()->Delta() < 0.5*blitz::min(path.boxPtr->side)) 
+                        && (constants()->Delta() > 0.01*blitz::min(path.boxPtr->side)) ) {
 
-					int numCoMAttempted = numCoM*path.getNumParticles();
-					numCoMAccepted = centerOfMass.getNumAccepted() - numCoMAccepted;
-					double CoMRatio = 1.0*numCoMAccepted / (1.0*numCoMAttempted);
-					if (CoMRatio < 0.2)
-						constants()->shiftDelta(-0.6);
-					else if (CoMRatio < 0.3)
-						constants()->shiftDelta(-0.4);
-					else if (CoMRatio < 0.4)
-						constants()->shiftDelta(-0.2);
-					else if (CoMRatio > 0.6)
-						constants()->shiftDelta(0.2);
-					else if (CoMRatio > 0.7)
-						constants()->shiftDelta(0.4);
-					else if (CoMRatio > 0.8)
-						constants()->shiftDelta(0.6);
+                    int numCoMAttempted = numCoM*path.getNumParticles();
+                    numCoMAccepted = centerOfMass.getNumAccepted() - numCoMAccepted;
+                    double CoMRatio = 1.0*numCoMAccepted / (1.0*numCoMAttempted);
+                    if (CoMRatio < 0.2)
+                        constants()->shiftDelta(-0.6);
+                    else if (CoMRatio < 0.3)
+                        constants()->shiftDelta(-0.4);
+                    else if (CoMRatio < 0.4)
+                        constants()->shiftDelta(-0.2);
+                    else if (CoMRatio > 0.6)
+                        constants()->shiftDelta(0.2);
+                    else if (CoMRatio > 0.7)
+                        constants()->shiftDelta(0.4);
+                    else if (CoMRatio > 0.8)
+                        constants()->shiftDelta(0.6);
 
-					/* Reset the accepted counter */
-					numCoMAccepted = centerOfMass.getNumAccepted();
-					numCoM = 0;
-				}
-			} // CoM Move
-			else {
-				/* Attemp the staging Move */
-				for (int sweep = 0; sweep < numImagTimeSweeps; sweep++) 
-						staging.attemptMove();
+                    /* Reset the accepted counter */
+                    numCoMAccepted = centerOfMass.getNumAccepted();
+                    numCoM = 0;
+                }
+            } // CoM Move
+            else {
+                /* Attemp the staging Move */
+                for (int sweep = 0; sweep < numImagTimeSweeps; sweep++) 
+                    staging.attemptMove();
 
-			} //staging move
-
-		} // initialNumParticles
+            } //staging move
+        } // numParticles
 
 	} // equilFrac < 1/3 and !startWithState
+
+    /* Start the 2/3 off diagonal portion of the equilibration */
 	else {
 
-		/* Start the 2/3 off diagonal portion of the equilibration */
-		
-		/* Save a diagonal configuration to disk */
-		if (!savedState) 
-			saveState();
+        /* How many updates should we perform? */
+        numUpdates = int(ceil(path.worm.getNumBeadsOn()/(1.0*constants()->Mbar())));
 
-		for (int sweep = 0; sweep < numImagTimeSweeps; sweep++) {
+        /* Increment the number of off-diagonal steps */
+        numSteps++;
 
-			for (int n = 0; n < constants()->initialNumParticles(); n++) {
+        for (int n = 0; n < numUpdates; n++) {
 
-				/* Generate random number and run through all moves */
-				x = random.rand();
-				runMoves(x,sweep);
+            /* Generate random number and run through all moves */
+            x = random.rand();
+            runMoves(x,n);
 
-				/* We accumulate the number of diagonal configurations */
-				numConfig++;
-				if (path.worm.isConfigDiagonal) 
-					++numDiagonal;
+            /* We accumulate the number of diagonal configurations */
+            numConfig++;
+            if (path.worm.isConfigDiagonal) 
+                ++numDiagonal;
 
-				/* Every 200*checkNum steps, we check the diagonal fraction and update the
-				 * worm constant for the second 1/3 of equilibration */
-				int checkNum = constants()->initialNumParticles()*numImagTimeSweeps;
-				if ( (constants()->C0() > 0.0) && (numConfig > 200*checkNum) && 
-						(equilFrac < 2.0/3.0) ) {
+            /* Every 200 steps, we check the diagonal fraction and update the
+             * worm constant for the first 1/3 of equilibration */
+            if ( (relaxC0) && (numSteps > 200) && (equilFrac < 2.0/3.0) ) {
 
-					double diagFrac = 1.0*numDiagonal / (1.0*numConfig);
+                double diagFrac = 1.0*numDiagonal / (1.0*numConfig);
 
-					cout << format("%4.2f\t%8.5f\t") % diagFrac % constants()->C0();
+                cout << format("%4.2f\t%8.5f\t") % diagFrac % constants()->C0();
 
-					if (relaxC0) {
-						/* Adjust the worm constant to ensure that the diagonal fraction
-						 * is between 0.75 and 0.85, but don't let it get too small or too large*/
-						if (constants()->C0() > 1.0E-5) {
-							if (diagFrac < 0.2)
-								constants()->shiftC0(-0.5);
-							else if (diagFrac >= 0.2 && diagFrac < 0.3)
-								constants()->shiftC0(-0.4);
-							else if (diagFrac >= 0.3 && diagFrac < 0.4)
-								constants()->shiftC0(-0.3);
-							else if (diagFrac >= 0.4 && diagFrac < 0.5)
-								constants()->shiftC0(-0.2);
-							else if (diagFrac >= 0.5 && diagFrac < 0.6)
-								constants()->shiftC0(-0.1);
-							else if (diagFrac >= 0.6 && diagFrac < 0.75)
-								constants()->shiftC0(-0.05);
-						}
+                /* Adjust the worm constant to ensure that the diagonal fraction
+                 * is between 0.75 and 0.85, but don't let it get too small or too large*/
+                if (constants()->C0() > 1.0E-5) {
+                    if (diagFrac < 0.2)
+                        constants()->shiftC0(-0.5);
+                    else if (diagFrac >= 0.2 && diagFrac < 0.3)
+                        constants()->shiftC0(-0.4);
+                    else if (diagFrac >= 0.3 && diagFrac < 0.4)
+                        constants()->shiftC0(-0.3);
+                    else if (diagFrac >= 0.4 && diagFrac < 0.5)
+                        constants()->shiftC0(-0.2);
+                    else if (diagFrac >= 0.5 && diagFrac < 0.6)
+                        constants()->shiftC0(-0.1);
+                    else if (diagFrac >= 0.6 && diagFrac < 0.75)
+                        constants()->shiftC0(-0.05);
+                }
 
-						if (constants()->C0() < 1.0E4) {
-							if (diagFrac <= 0.9 && diagFrac > 0.85)
-								constants()->shiftC0(0.05);
-							else if (diagFrac <= 0.95 && diagFrac > 0.9)
-								constants()->shiftC0(0.1);
-							else if (diagFrac > 0.95)
-								constants()->shiftC0(0.2);
-						}
+                if (constants()->C0() < 1.0E4) {
+                    if (diagFrac <= 0.9 && diagFrac > 0.85)
+                        constants()->shiftC0(0.05);
+                    else if (diagFrac <= 0.95 && diagFrac > 0.9)
+                        constants()->shiftC0(0.1);
+                    else if (diagFrac > 0.95)
+                        constants()->shiftC0(0.2);
+                }
 
-					} // relaxC0
+                cout << format("%8.5f\t%5d\t%8.6f\n") % constants()->C0() 
+                    % path.getTrueNumParticles() 
+                    % (1.0*path.getTrueNumParticles()/path.boxPtr->volume);
 
-					cout << format("%8.5f\t%5d\t%8.6f\n") % constants()->C0() 
-						% path.getTrueNumParticles() 
-						% (1.0*path.getTrueNumParticles()/path.boxPtr->volume);
+                /* Reset the counters */
+                numDiagonal = 0;
+                numConfig = 0;
+                numSteps = 0;
 
-					/* Reset the counters */
-					numDiagonal = 0;
-					numConfig = 0;
-				}
+            } // relaxC0
 
-			} // particle loop
+        } // numUpdates 
 
-//            cout << format("%9.5f\t%5d\t%8.6f\n") % constants()->C0() 
-//                % path.getTrueNumParticles() 
-//                % (1.0*path.getTrueNumParticles()/path.boxPtr->volume);
-//
-		} // sweeps loop
+    } // 2/3 off-diagonal equilibration
 
-	} // 2/3 off-diagonal equilibration 
+    /* Save a state to disk every 200 equilibrium steps */
+    if ((iStep > 0) && (iStep % 200) == 0)
+        saveState();
 }
 
 /**************************************************************************//**
@@ -415,7 +410,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
  *  all moves adjusting C0 to yield a diagonal fraction near 0.75 and and for 
  *  the final 1/3 we just equilibrate.
 ******************************************************************************/
-void PathIntegralMonteCarlo::equilStep_test(const uint32 iStep, const bool relaxC0) {
+void PathIntegralMonteCarlo::equilStepOffDiagonal(const uint32 iStep, const bool relaxC0) {
 
 	double x;
 

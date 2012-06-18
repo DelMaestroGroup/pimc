@@ -35,7 +35,9 @@ class PathIntegralMonteCarlo {
 
 		/* The equilibration relaxation */
 		void equilStep(const uint32, const bool);
-		void equilStep_test(const uint32, const bool);
+
+		/* The equilibration relaxation with off diagonal updates */
+		void equilStepOffDiagonal(const uint32, const bool);
 
 		/* The actual monte carlo step */
 		void step();

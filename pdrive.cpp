@@ -102,7 +102,7 @@ int main (int argc, char *argv[]) {
 		/* Equilibrate */
 		cout << format("[PIMCID: %09d] - Equilibration Stage.") % constants()->id() << endl;
 		for (uint32 n = 0; n < constants()->numEqSteps(); n++) 
-			pimc.equilStep_test(n,setup.params.count("relax"));
+			pimc.equilStep(n,setup.params.count("relax"));
 
 		/* Output simulation details/parameters */
 		setup.outputOptions(argc,argv,seed,boxPtr,lookup.getNumNNGrid());
