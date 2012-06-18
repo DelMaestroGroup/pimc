@@ -104,9 +104,9 @@ void Setup::getOptions(int argc, char *argv[])
 
 	potentialOptions.add_options()
 		("interaction_potential,I", po::value<string>()->default_value("aziz"), 
-		 str(format("interaction potential type [%s]") % interactionNames).c_str())
+		 str(format("interaction potential type {%s}") % interactionNames).c_str())
 		("external_potential,X", po::value<string>()->default_value("free"),
-		 str(format("external potential type [%s]") % externalNames).c_str())
+		 str(format("external potential type {%s}") % externalNames).c_str())
 		("delta_width,a", po::value<double>()->default_value(1.0E-3),
 		 "delta function potential width")
 		("delta_strength,c", po::value<double>()->default_value(10.0),
@@ -120,7 +120,7 @@ void Setup::getOptions(int argc, char *argv[])
 	physicalOptions.add_options()
 		("canonical", "perform a canonical simulation")
 		("mass,m", po::value<double>()->default_value(4.0030),"particle mass [amu]")
-		("density,n", po::value<double>(), str(format("initial density [angstroms^{-%d}]") % NDIM).c_str())
+		("density,n", po::value<double>(), str(format("initial density [angstroms^(-%d)]") % NDIM).c_str())
 		("number_particles,N", po::value<int>(), "number of particles")
 		("temperature,T", po::value<double>(), "temperature [kelvin]")
 		("chemical_potential,u", po::value<double>()->default_value(0.0), "chemical potential [kelvin]")
@@ -129,7 +129,7 @@ void Setup::getOptions(int argc, char *argv[])
 	algorithmicOptions.add_options()
 		("relax", "perform a worm constant relaxation")
 		("number_time_slices,P", po::value<int>(), "number of time slices")
-		("imaginary_time_step,t", po::value<double>(), "imaginary time step [kelvin^{-1}]")
+		("imaginary_time_step,t", po::value<double>(), "imaginary time step [kelvin^(-1)]")
 		("worm_constant,C", po::value<double>()->default_value(1.0), "worm acceptance constant")
 		("Delta,D", po::value<double>(),"center of mass shift")
 		("Mbar,M", po::value<int>(), "worm update length, Mbar")
@@ -154,7 +154,6 @@ void Setup::getOptions(int argc, char *argv[])
  * This probably needs more work to test all possible outcomes.
  * @return true if we exit, false if we continue
 ******************************************************************************/
-//#include <boost/mpl/map.hpp>
 bool Setup::parseOptions() {
 
 	/* Do we need help? */
@@ -507,6 +506,7 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 
 	/* Construct the command that would be required to restart the simulation */
 	bool outputC0 = false;
+	bool outputD = false;
 	bool outputR  = true;
 	for (int n = 0; n < argc; n++) {
 
@@ -526,16 +526,27 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 			communicate()->logFile() << format("-p %03d ") % params["process"].as<uint32>();
 			n++;
 		}
+		else if ((argv[n][0] == '-') && (argv[n][1] == 'D')) {
+            communicate()->logFile() << format("-D %10.4e ") % constants()->Delta();
+			outputD = true;
+			n++;
+		}
+        else if ((argv[n][0] == '-') && (argv[n][1] == '-') && (argv[n][2] == 'r') && 
+                (argv[n][3] == 'e') && (argv[n][4] == 'l') && (argv[n][5] == 'a') && 
+                (argv[n][6] == 'x')) {
+            // Do nothing
+        }
 		else 
 			communicate()->logFile() << argv[n] << " ";
 	}
 
-	if (!params.count("Delta"))
-		communicate()->logFile() << "-D " << constants()->Delta() << " ";
-
 	/* If we haven't specified the worm constant, output it now */
 	if (!outputC0)
 		communicate()->logFile() << format("-C %10.4e ") % constants()->C0();
+
+	/* If we haven't specified Delta, output it now */
+	if (!outputD)
+        communicate()->logFile() << format("-D %10.4e ") % constants()->Delta();
 
 	communicate()->logFile() << endl << endl;
 	communicate()->logFile() << "---------- Begin Simulation Parameters ----------" << endl;
