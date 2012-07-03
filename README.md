@@ -359,4 +359,5 @@ the [Container](@ref Container) class.
 Analysis and Helper Scripts {#scripts}
 ===========================
 
+
 [PIMC Scripts User Guide](sphinx/index.html)
