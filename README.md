@@ -61,14 +61,18 @@ doesn't take very long to compile one can proceed as follows:
 
 1. Move into your source directory (create if necessary).
 ~~~
-cd `$HOME/local/src` 
+cd $HOME/local/src 
 ~~~
 2. Get the latest version of blitz++ from the mercurial repository
 ~~~
 hg clone http://blitz.hg.sourceforge.net:8000/hgroot/blitz/blitz blitz
 ~~~
 3. Move into the blitz source directory
-4. Execute
+4. Generate a configure script by running
+~~~
+autoreconf -fiv
+~~~
+5. Execute
 ~~~
 ./configure cxx=g++ --prefix=PREFIX
 make lib
@@ -339,15 +343,16 @@ the program, of type PathIntegralMonteCarlo is created, which requires both the
 Path and the [Action](@ref ActionBase).  This object performs the actual
 simulation via a series of [Moves](@ref MoveBase), all of which generate trial
 world line configurations that exactly sample the kinetic part of the density
-matrix.  All measurements are made via specific [Estimators](@ref
-EstimatorBase) with the results being output to disk.
+matrix.  All measurements are made via specific [Estimators](@ref EstimatorBase) 
+with the results being output to disk.
 
 The main kernel of this program should remain relatively untouched, as it has
 been extensively tested and optimized.  Generality can come from modifying just
 a few things.  For example, in order to implement a new type of measurement,
 one would need to write a derived [Estimator](@ref EstimatorBase) class along
 with modifying the Communicator class to define an output path.  New types of
-particles and external environments can be added by adding new [Potential](@ref
-PotentialBase) then updating Setup to allow for their specification at the
+particles and external environments can be added by adding new 
+[Potential](@ref PotentialBase) then updating Setup to allow for their specification at the
 command line.  Finally, radically different systems can be studied by modifying
 the [Container](@ref Container) class.
+
