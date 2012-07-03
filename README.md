@@ -356,7 +356,7 @@ particles and external environments can be added by adding new
 command line.  Finally, radically different systems can be studied by modifying
 the [Container](@ref Container) class.
 
-Scripts User Guide {#scripts}
-=================
+Python Scripts User Guide {#scripts}
+=========================
 
 [PIMC Scripts User Guide](sphinx/index.html)
