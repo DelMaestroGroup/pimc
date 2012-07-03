@@ -352,10 +352,11 @@ a few things.  For example, in order to implement a new type of measurement,
 one would need to write a derived [Estimator](@ref EstimatorBase) class along
 with modifying the Communicator class to define an output path.  New types of
 particles and external environments can be added by adding new 
-[Potential](@ref PotentialBase) then updating Setup to allow for their specification at the command
-line.  Finally, radically different systems can be studied by modifying
+[Potential](@ref PotentialBase) then updating Setup to allow for their specification at the
+command line.  Finally, radically different systems can be studied by modifying
 the [Container](@ref Container) class.
 
 Analysis and Helper Scripts {#scripts}
 ===========================
+
 [PIMC Scripts User Guide](sphinx/index.html)
