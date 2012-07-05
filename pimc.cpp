@@ -795,7 +795,7 @@ void PathIntegralMonteCarlo::loadState() {
         communicate()->initFile() >> path.worm.beads;
 
     } // locBeads.rows() == numTimeSlices
-    else if (tempNumTimeSlices < numTimeSlices) {
+    else {
 
         /* Initialize the links */
         firstIndex i1;
@@ -828,8 +828,10 @@ void PathIntegralMonteCarlo::loadState() {
         loadClassicalState(tempBeads,tempWormBeads, numWorldLines);
 
         /* Load a quantum initial state from a file */
-        //loadQuantumState(tempBeads,tempNextLink,tempPrevLink,
-         //       numTimeSlices,int(sum(tempWormBeads)/tempNumTimeSlices));
+        //if (tempNumTimeSlices < numTimeSlices) {
+        //    loadQuantumState(tempBeads,tempNextLink,tempPrevLink,
+        //            numTimeSlices,int(sum(tempWormBeads)/tempNumTimeSlices));
+        //}
 
         /* Now we make sure all empty beads are unlinked */
         beadLocator beadIndex;
@@ -848,9 +850,7 @@ void PathIntegralMonteCarlo::loadState() {
         tempNextLink.free();
         tempWormBeads.free();
 
-    } // locBeads.rows() < numTimeSlices
-    else 
-        assert(tempNumTimeSlices <= numTimeSlices);
+    } // locBeads.rows() != numTimeSlices
 
     /* Load the state of the random number generator, only if we are restarting 
      * the simulation */
