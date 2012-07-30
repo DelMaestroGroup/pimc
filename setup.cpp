@@ -507,15 +507,9 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 	/* Construct the command that would be required to restart the simulation */
 	bool outputC0 = false;
 	bool outputD = false;
-	bool outputR  = true;
 	for (int n = 0; n < argc; n++) {
 
-		if (outputR && ((argv[n][0] == '-') && ( (argv[n][1] == 'E') || (argv[n][1] == 's')))) {
-			communicate()->logFile() << format("-R %09d ") % constants()->id();
-			n++;
-			outputR = false;
-		}
-		else if ((argv[n][0] == '-') && (argv[n][1] == 's'))
+		if ((argv[n][0] == '-') && (argv[n][1] == 's'))
 			n++;
 		else if ((argv[n][0] == '-') && (argv[n][1] == 'C')) {
 			communicate()->logFile() << format("-C %10.4e ") % constants()->C0();
@@ -539,6 +533,9 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 		else 
 			communicate()->logFile() << argv[n] << " ";
 	}
+
+    /* Output the restart flag */
+    communicate()->logFile() << format("-R %09d ") % constants()->id();
 
 	/* If we haven't specified the worm constant, output it now */
 	if (!outputC0)
