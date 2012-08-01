@@ -214,26 +214,26 @@ by using the `--help flag`.
 
 The output of the above command should yield:
 
-    [PIMCID: pimcid] - Equilibration Stage.
-    0.57     1.00000         0.90000           16   0.021980
-    0.60     0.90000         0.81000           16   0.021980
-    0.66     0.81000         0.76950           17   0.023354
-    0.79     0.76950         0.76950           16   0.021980
-    0.82     0.76950         0.76950           19   0.026101
-    0.75     0.76950         0.73103           16   0.021980
-    0.70     0.73103         0.69447           17   0.023354
-    0.80     0.69447         0.69447           16   0.021980
-    0.72     0.69447         0.65975           16   0.021980
-    0.76     0.65975         0.65975           18   0.024728
-    0.77     0.65975         0.65975           16   0.021980
-    0.74     0.65975         0.62676           15   0.020606
-    0.69     0.62676         0.59542           14   0.019233
-    0.73     0.59542         0.56565           16   0.021980
-    0.85     0.56565         0.59394           18   0.024728
-    0.81     0.59394         0.59394           15   0.020606
+    [PIMCID: 113949380] - Equilibration Stage.
+    0.69     1.00000         0.95000           18   0.024728
+    0.65     0.95000         0.90250           18   0.024728
+    0.76     0.90250         0.90250           19   0.026101
+    0.77     0.90250         0.90250           19   0.026101
+    0.75     0.90250         0.90250           19   0.026101
+    0.76     0.90250         0.90250           18   0.024728
+    0.72     0.90250         0.85737           16   0.021980
+    0.64     0.85737         0.81451           16   0.021980
+    0.61     0.81451         0.77378           14   0.019233
+    0.65     0.77378         0.73509           15   0.020606
+    0.68     0.73509         0.69834           17   0.023354
+    0.73     0.69834         0.66342           20   0.027475
+    0.71     0.66342         0.63025           20   0.027475
+    0.75     0.63025         0.63025           18   0.024728
+    0.76     0.63025         0.63025           16   0.021980
+    0.66     0.63025         0.59874           16   0.021980
 
 
-during the relaxation process where `pimcid` will be replaced with an integer
+during the relaxation process where `PIMCID` will be replaced with an integer
 and 20 measurements will be output to disk.  To analyze the results the code
 includes a number of python programs located in the `SCRIPTS` directory.  Many
 of these depend on some general utility modules that should be added to this
@@ -260,19 +260,19 @@ After this has been completed, you can analyze the results of your run via
 where `pimcid` needs to be replaced with the unique identifier generated on
 your machine.  The results should yield:
 
+    # PIMCID: 113949380
     # Number Samples     20
-    K                  347.06803        12.39602
-    V                 -469.38790        12.51445
-    E                 -122.31988         7.88706
-    E_mu              -122.67036         7.88832
-    K/N                 19.69534         0.50710
-    V/N                -26.62204         0.38998
-    E/N                 -6.92669         0.41966
-    N                   17.52425         0.22106
-    N^2                308.90575         7.74563
-    density              0.02407         0.00030
-    diagonal             0.77606         0.01076
-
+    K                  334.22508        18.36103
+    V                 -424.77086        17.87384
+    E                  -90.54578        11.42075
+    E_mu               -90.88134        11.42230
+    K/N                 19.68682         0.79364
+    V/N                -25.03205         0.60712
+    E/N                 -5.34523         0.64317
+    N                   16.77800         0.33017
+    N^2                284.39400        10.78095
+    density              0.02305         0.00045
+    diagonal             0.73917         0.01785
 
 The basic idea of running the program is that one needs to setup the simulation
 cell, by defining either its specific geometry via the size (`L`) flag, or by a
