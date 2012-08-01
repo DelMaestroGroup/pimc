@@ -359,4 +359,5 @@ the [Container](@ref Container) class.
 Python Script User Guide {#scripts}
 =========================
 
+
 [PIMC Scripts User Guide](sphinx/index.html)
