@@ -11,6 +11,7 @@ import matplotlib
 import os,sys
 import pyutils
 import argparse
+import re
 
 # -----------------------------------------------------------------------------
 # Begin Main Program 
@@ -34,7 +35,22 @@ def main():
         foundArray = False
         innerDim = -1
         data = []
-        for line in oldStateFile.readlines():
+
+        # We first correct for a bug in the way blitz++ outputs arrays which
+        # could lead to numbers like %f%f without a space in between them.  This
+        # happens for very large or small numbers next to each other.
+        oldStateText = oldStateFile.read()
+        def splitNumber(matchObj):
+            firstNum = matchObj.group(1)
+            secondNum = matchObj.group(2)
+            if secondNum[0] == '.':
+                secondNum = firstNum[-1] + secondNum
+                firstNum = firstNum[:-1]
+            return  firstNum + ' ' + secondNum
+        correctedStateText = re.sub('([-+]?[0-9]*\.[0-9]+)([+-]?[0-9]*\.[0-9]+)',splitNumber,oldStateText)
+
+        # We now iterate through the corrected file
+        for line in correctedStateText.splitlines():
 
             if foundArray:
                 # Start of array
@@ -49,29 +65,15 @@ def main():
                         innerDim = int(line1[0])
                     line1 = line1.replace("%d [" % innerDim,"")
                     line1 = line1.replace("]","")
-                    line1 = line1.replace("-"," -")
-                    temp = line1.split()
+                    data += line1.split()
 
-                    # Correct for poor blitz output which could allow two numbers to
-                    # be included in single record
-                    numList = []
-                    for n,t in enumerate(temp):
-                        if t.count('.') == 2:
-                            decPosition = t[::-1].index('.')
-                            secondNum = t[decPosition-1:]
-                            firstNum = t.rstrip(secondNum)
-                            numList.append(firstNum)
-                            numList.append(secondNum)
-                        else:
-                            numList.append(t)
-
-                    data += numList
                 else:
                     innerDim = 1
                     line1 = line.lstrip()
                     line1 = line1.replace("]","")
                     data += line1.split()
 
+                # Create the new data output format
                 if len(data) == innerDim*numRows*numCols:
                     newState += "(0,%d) x (0,%d)\n" % (numRows-1,numCols-1)
                     if innerDim > 1:
@@ -120,9 +122,11 @@ def main():
                 numCols = int(line.split('x')[1])
                 foundArray = True
             else:
-                newState += line
+                newState += line + '\n'
 
         newState = newState.rstrip()
+
+        # output the new state
         print newState
         oldStateFile.close()
 
