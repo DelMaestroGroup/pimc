@@ -50,6 +50,9 @@ class Container {
 		/** Random position inside a box. */
 		virtual dVec randPosition(MTRand &) const = 0; 					
 
+		/** Random updated position inside a box. */
+		virtual dVec randUpdate(MTRand &, const dVec &) const = 0;
+
 	protected:
 		dVec pSide;							///< Periodic * side
 };
@@ -72,6 +75,7 @@ class Prism: public Container {
 		}
 
 		dVec randPosition(MTRand &) const; 					
+		dVec randUpdate(MTRand &, const dVec &) const;
 };
 
 // ========================================================================  
@@ -92,5 +96,9 @@ class Cylinder: public Container {
 
 		/* The various types of random positions inside the cylinder */
 		dVec randPosition(MTRand &) const; 					
+		dVec randUpdate(MTRand &, const dVec &) const;
+
+		dVec randUpdateJumpShell(MTRand &, const dVec &) const;
+		dVec randUpdateSmall(MTRand &, const dVec &) const;
 };
 #endif

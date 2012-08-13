@@ -141,7 +141,6 @@ class ConstantParameters
 		double stagingAttemptProb_;
 };
 
-
 /**************************************************************************//**
  * Global public access to the constants.
 ******************************************************************************/

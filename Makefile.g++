@@ -56,9 +56,9 @@ endif
 RM      = /bin/rm -f
 
 PROG    = pimc.e
-SOURCE  = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp
+SOURCE  = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp cmc.cpp
 OBJS    = $(SOURCE:.cpp=.o)
-HEADERS = common.h pimc.h constants.h container.h path.h worm.h action.h potential.h move.h estimator.h lookuptable.h communicator.h setup.h
+HEADERS = common.h pimc.h constants.h container.h path.h worm.h action.h potential.h move.h estimator.h lookuptable.h communicator.h setup.h cmc.h
 
 # -------------------------------------------------------------------------------
 all: $(PROG)

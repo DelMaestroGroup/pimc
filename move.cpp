@@ -10,6 +10,7 @@
 #include "action.h"
 #include "lookuptable.h"
 #include "communicator.h"
+#include "cmc.h"
 
 uint32 MoveBase::totAttempted = 0;
 uint32 MoveBase::totAccepted = 0;

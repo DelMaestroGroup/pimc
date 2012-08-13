@@ -16,6 +16,7 @@
 #include "lookuptable.h"
 #include "communicator.h"
 #include "setup.h"
+#include "cmc.h"
 
 /**
  * Main driver.
@@ -80,6 +81,14 @@ int main (int argc, char *argv[]) {
 	/* Must use the copy constructor as we return a copy */
 	Array<dVec,1> initialPos = 
 		externalPotentialPtr->initialConfig(boxPtr,random,constants()->initialNumParticles());
+
+    /* Perform a classical grand canonical pre-equilibration to obtain a
+     * suitable initial state */
+    ClassicalMonteCarlo CMC(externalPotentialPtr,interactionPotentialPtr,random,boxPtr,
+            initialPos);
+    CMC.run();
+
+    exit(-1);
 
 	/* Setup the path data variable */
 	Path path(boxPtr,lookup,constants()->numTimeSlices(),initialPos);

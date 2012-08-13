@@ -6,6 +6,7 @@
  */
 
 #include "container.h"
+#include "constants.h"
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -104,6 +105,19 @@ dVec Prism::randPosition(MTRand &random) const {
 		randPos[i] = side[i]*(-0.5 + random.randExc());
 	return randPos;
 }
+
+/**************************************************************************//**
+ *  Return a random position close to the supplied one.
+******************************************************************************/
+dVec Prism::randUpdate (MTRand &random, const dVec &pos) const {
+	dVec randPos;
+    randPos = pos;
+    for (int i = 0; i < NDIM; i++) 
+        randPos[i] += 5.0*constants()->Delta()*(-0.5 + random.rand());
+    putInside(randPos);
+	return randPos;
+}
+
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -229,6 +243,56 @@ dVec Cylinder::randPosition(MTRand &random) const {
 	return randPos;
 }
 
+/**************************************************************************//**
+ *  Return a random position close to the supplied one.
+******************************************************************************/
+dVec Cylinder::randUpdate (MTRand &random, const dVec &pos) const {
+	dVec randPos;
+    if (random.rand() < 0.5) 
+        randPos = randUpdateJumpShell(random,pos);
+    else 
+        randPos = randUpdateSmall(random,pos);
+	return randPos;
+}
+
+/**************************************************************************//**
+ *  Return a random position close to the supplied one. Shell Jump
+******************************************************************************/
+dVec Cylinder::randUpdateJumpShell (MTRand &random, const dVec &pos) const {
+	dVec randPos;
+    randPos = pos;
+    double theta = atan2(pos[1],pos[0]);
+    double oldr = sqrt(pos[0]*pos[0] + pos[1]*pos[1]);
+    double newr;
+
+    if (random.rand() > 0.5)
+        newr = oldr + (1.00 + 2.50*random.rand());
+    else
+        newr = oldr - (1.00 + 2.50*random.rand());
+
+    if (newr < 0.0)
+        newr *= -1.0;
+
+    double ranTheta = M_PI*constants()->Delta()*(-1.0 + 2.0*random.rand())/oldr;
+    randPos[0] = newr*cos(theta + ranTheta);
+    randPos[1] = newr*sin(theta + ranTheta);
+    randPos[2] += constants()->Delta()*(-0.5 + random.rand());
+
+    putInside(randPos);
+	return randPos;
+}
+// THIS IS WHAT WAS HERE BEFORE
+/**************************************************************************//**
+ *  Return a random position close to the supplied one. Same Shell.
+******************************************************************************/
+dVec Cylinder::randUpdateSmall (MTRand &random, const dVec &pos) const {
+	dVec randPos;
+    randPos = pos;
+    for (int i = 0; i < NDIM; i++) 
+        randPos[i] += constants()->Delta()*(-0.5 + random.rand());
+    putInside(randPos);
+	return randPos;
+}
 /**************************************************************************//**
  *  Make sure that a suplied vector is put inside the cylinder.
 ******************************************************************************/
