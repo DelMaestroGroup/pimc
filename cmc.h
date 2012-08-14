@@ -53,7 +53,7 @@ class ClassicalMonteCarlo{
         void insertMove();
         void deleteMove();
         void updateMove();
-        void measure(int);
+        void measure(int &);
 
         double getTotalEnergy();
 
