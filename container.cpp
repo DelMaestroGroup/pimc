@@ -113,11 +113,10 @@ dVec Prism::randUpdate (MTRand &random, const dVec &pos) const {
 	dVec randPos;
     randPos = pos;
     for (int i = 0; i < NDIM; i++) 
-        randPos[i] += 5.0*constants()->Delta()*(-0.5 + random.rand());
+        randPos[i] += 4.0*constants()->Delta()*(-0.5 + random.rand());
     putInside(randPos);
 	return randPos;
 }
-
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

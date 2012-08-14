@@ -55,8 +55,11 @@ class ClassicalMonteCarlo{
         void updateMove();
         void measure(int);
 
+        double getTotalEnergy();
+
         double aveEnergy;
         double aveNumParticles;
+        double aveEoN;
 };
 
 #endif
