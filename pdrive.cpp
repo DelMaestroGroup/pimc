@@ -82,13 +82,11 @@ int main (int argc, char *argv[]) {
 	Array<dVec,1> initialPos = 
 		externalPotentialPtr->initialConfig(boxPtr,random,constants()->initialNumParticles());
 
-    /* Perform a classical grand canonical pre-equilibration to obtain a
-     * suitable initial state */
+    /* Perform a classical canonical pre-equilibration to obtain a suitable
+     * initial state */
     ClassicalMonteCarlo CMC(externalPotentialPtr,interactionPotentialPtr,random,boxPtr,
             initialPos);
-    CMC.run();
-
-    exit(-1);
+    CMC.run(constants()->numEqSteps(),0);
 
 	/* Setup the path data variable */
 	Path path(boxPtr,lookup,constants()->numTimeSlices(),initialPos);

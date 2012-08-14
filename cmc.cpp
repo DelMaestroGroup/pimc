@@ -36,15 +36,12 @@ ClassicalMonteCarlo::ClassicalMonteCarlo (PotentialBase *_externalPtr,
     /* Set the fugacity z*/
     z = exp(constants()->mu()/constants()->T())/pow(constants()->dBWavelength(),NDIM);
 
-    cout << "# mu = " << constants()->mu() << endl;
-    cout << "# dB = " << constants()->dBWavelength() << endl;
-
     /* Compute the initial total potential energy */
     energy = getTotalEnergy();
 
     /* Initialize acceptance tracking */
-    numUpdateTotal = 0;
-    numUpdateAccept = 0;
+    numMoveTotal = 0;
+    numMoveAccept = 0;
 
     numDeleteTotal = 0;
     numDeleteAccept = 0;
@@ -72,7 +69,6 @@ ClassicalMonteCarlo::~ClassicalMonteCarlo ()
 double ClassicalMonteCarlo::getTotalEnergy()
 {
     double locEnergy = 0.0;
-    dVec sep;
     sep = 0.0;
     for (int part1 = 0; part1 < numParticles; part1++) {
         locEnergy += externalPtr->V(config(part1));
@@ -88,23 +84,28 @@ double ClassicalMonteCarlo::getTotalEnergy()
 
 /**************************************************************************//**
  * Perform the monte carlo simulation.
- *
 ******************************************************************************/
-void ClassicalMonteCarlo::run() {
+void ClassicalMonteCarlo::run(uint32 numMCSteps, bool gce) {
 
-    int numMCSteps = 1000000;
     int numMeasure = 0;
+    double x;
     for(int n = 1; n < numMCSteps; n++) {
         int m = 0;
         do {
-            double x = random.rand();
-            if (x < 1.0/3.0)
-                updateMove();
-            else if (x < 2.0/3.0)
-                deleteMove();
-            else
-                insertMove();
+            if (gce)
+                x = random.rand();
+            else 
+                x = 0.0;
 
+            /* Perform updates */
+            if (x < 1.0/3.0)
+                moveParticle();
+            else if (x < 2.0/3.0)
+                deleteParticle();
+            else
+                insertParticle();
+
+            /* Update observables */
             aveEnergy += energy;
             aveNumParticles += numParticles;
             aveEoN += energy/(1.0*numParticles);
@@ -113,33 +114,35 @@ void ClassicalMonteCarlo::run() {
             m++;
         } while (m < numParticles);
 
-        if ((n % 50) == 0) 
-            measure(numMeasure);
+//        if ((n % 50) == 0) 
+ //           measure(numMeasure);
     }
+
+    /* Update the config array */
+    config.resizeAndPreserve(numParticles);
 }
 
 /**************************************************************************//**
  * Perform a simple positional update
  *
 ******************************************************************************/
-void ClassicalMonteCarlo::updateMove() {
+void ClassicalMonteCarlo::moveParticle() {
 
-    dVec oldPos,sep;
+    dVec oldPos;
     oldPos = 0.0;
-    sep = 0.0;
-    double oldE,newE,deltaE;
+    double oldV,newV;
 
-    numUpdateTotal++;
+    numMoveTotal++;
 
     int p = random.randInt(numParticles-1);
 
     /* Compute the old energy of particle p*/
-    oldE = externalPtr->V(config(p));
+    oldV = externalPtr->V(config(p));
     for (int p2 = 0; p2 < numParticles; p2++) {
         if (p != p2) {
             sep = config(p)-config(p2);
             boxPtr->putInside(sep);
-            oldE += interactionPtr->V(sep);
+            oldV += interactionPtr->V(sep);
         }
     }
 
@@ -149,21 +152,21 @@ void ClassicalMonteCarlo::updateMove() {
     config(p) = boxPtr->randUpdate(random,oldPos);
 
     /* Compute the new energy of particle p*/
-    newE = externalPtr->V(config(p));
+    newV = externalPtr->V(config(p));
     for (int p2 = 0; p2 < numParticles; p2++) {
         if (p != p2) {
             sep = config(p)-config(p2);
             boxPtr->putInside(sep);
-            newE += interactionPtr->V(sep);
+            newV += interactionPtr->V(sep);
         }
     }
 
-    deltaE = newE - oldE;
+    deltaV = newV - oldV;
 
     /* Now the metropolis step */
-    if (random.rand() < exp(-deltaE/constants()->T())) {
-        energy += deltaE;
-        numUpdateAccept++;
+    if (random.rand() < exp(-deltaV/constants()->T())) {
+        energy += deltaV;
+        numMoveAccept++;
     }
     else {
         config(p) = oldPos;
@@ -174,30 +177,28 @@ void ClassicalMonteCarlo::updateMove() {
  * Perform a simple insert move.
  *
 ******************************************************************************/
-void ClassicalMonteCarlo::insertMove() {
+void ClassicalMonteCarlo::insertParticle() {
 
-    dVec newPos,sep;
+    dVec newPos;
     newPos = 0.0;
-    sep = 0.0;
-    double deltaE;
 
     numInsertTotal++;
 
     newPos = boxPtr->randPosition(random);
 
     /* Compute the old energy of particle p*/
-    deltaE = externalPtr->V(newPos);
+    deltaV = externalPtr->V(newPos);
     for (int p2 = 0; p2 < numParticles; p2++) {
         sep = newPos-config(p2);
         boxPtr->putInside(sep);
-        deltaE += interactionPtr->V(sep);
+        deltaV += interactionPtr->V(sep);
     }
 
     double factor = z*boxPtr->volume/(numParticles+1);
 
     /* Now the metropolis step */
-    if (random.rand() < factor*exp(-deltaE/constants()->T())) {
-        energy += deltaE;
+    if (random.rand() < factor*exp(-deltaV/constants()->T())) {
+        energy += deltaV;
         if (config.extent(firstDim) < (numParticles+1))
             config.resizeAndPreserve(numParticles+1);
         config(numParticles) = newPos;
@@ -210,31 +211,27 @@ void ClassicalMonteCarlo::insertMove() {
  * Perform a simple delete move.
  *
 ******************************************************************************/
-void ClassicalMonteCarlo::deleteMove() {
-
-    dVec sep;
-    sep = 0.0;
-    double deltaE;
+void ClassicalMonteCarlo::deleteParticle() {
 
     numDeleteTotal++;
 
     int p = random.randInt(numParticles-1);
 
     /* Compute the old energy of particle p*/
-    deltaE = -externalPtr->V(config(p));
+    deltaV = -externalPtr->V(config(p));
     for (int p2 = 0; p2 < numParticles; p2++) {
         if (p != p2) {
             sep = config(p)-config(p2);
             boxPtr->putInside(sep);
-            deltaE -= interactionPtr->V(sep);
+            deltaV -= interactionPtr->V(sep);
         }
     }
 
     double factor = numParticles/(z*boxPtr->volume);
 
     /* Now the metropolis step */
-    if (random.rand() < factor*exp(-deltaE/constants()->T())) {
-        energy += deltaE;
+    if (random.rand() < factor*exp(-deltaV/constants()->T())) {
+        energy += deltaV;
         config(p) = config(numParticles-1);
         numParticles--;
         numDeleteAccept++;
@@ -249,7 +246,7 @@ void ClassicalMonteCarlo::measure(int &numMeasure) {
     cout << aveEnergy/(numMeasure) << "\t" << aveNumParticles/(numMeasure) 
          << "\t" << (3.0/2.0)*constants()->T() + aveEoN/(numMeasure)
          << "\t" << aveNumParticles/(numMeasure*boxPtr->volume)
-         << "\t" << 1.0*numUpdateAccept/(1.0*numUpdateTotal) 
+         << "\t" << 1.0*numMoveAccept/(1.0*numMoveTotal) 
          << "\t" << 1.0*numInsertAccept/(1.0*numInsertTotal)
          << "\t" << 1.0*numDeleteAccept/(1.0*numDeleteTotal) << endl;
     aveEnergy = 0.0;
