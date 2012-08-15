@@ -89,7 +89,7 @@ void ClassicalMonteCarlo::run(uint32 numMCSteps, bool gce) {
 
     int numMeasure = 0;
     double x;
-    for(int n = 1; n < numMCSteps; n++) {
+    for(uint32 n = 1; n < numMCSteps; n++) {
         int m = 0;
         do {
             if (gce)
