@@ -49,6 +49,22 @@ def main():
             return  firstNum + ' ' + secondNum
         correctedStateText = re.sub('([-+]?[0-9]*\.[0-9]+)([+-]?[0-9]*\.[0-9]+)',splitNumber,oldStateText)
 
+        # now we test again in case there are three numbers squashed together
+        # like %f%f%f
+        correctedStateText = re.sub('([-+]?[0-9]*\.[0-9]+)([+-]?[0-9]*\.[0-9]+)',splitNumber,correctedStateText)
+
+        # now we test for any possible numbers in scientific notation
+        def splitScientificNumber(matchObj):
+            firstNum = matchObj.group('firstNum')
+            secondNum = matchObj.group('secondNum')
+            if secondNum[0] == '.':
+                secondNum = firstNum[-1] + secondNum
+                firstNum = firstNum[:-1]
+            return  firstNum + ' ' + secondNum
+
+        correctedStateText = re.sub('(?P<firstNum>[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9][0-9])?)(?P<secondNum>[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9][0-9])?)',splitScientificNumber,correctedStateText)
+        correctedStateText = re.sub('(?P<firstNum>[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9][0-9])?)(?P<secondNum>[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9][0-9])?)',splitScientificNumber,correctedStateText)
+
         # We now iterate through the corrected file
         for line in correctedStateText.splitlines():
 
@@ -65,8 +81,7 @@ def main():
                         innerDim = int(line1[0])
                     line1 = line1.replace("%d [" % innerDim,"")
                     line1 = line1.replace("]","")
-                    data += line1.split()
-
+                    data += line1.spit()
                 else:
                     innerDim = 1
                     line1 = line.lstrip()

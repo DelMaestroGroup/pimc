@@ -56,6 +56,15 @@ inline void MoveBase::printMoveState(string state) {
 	Array <beadLocator,1> wormBeads;	// Used for debugging
 	wormBeads.resize(path.worm.length+1);
 	wormBeads = XXX;
+
+	/* Output the worldline configuration */
+	communicate()->debugFile() << "Move State: " << state 
+		<< " (" << path.getTrueNumParticles() << ")" << endl;
+	communicate()->debugFile() << "head " << path.worm.head[0] << " " << path.worm.head[1]
+        << " tail " << path.worm.tail[0] << " " << path.worm.tail[1]
+        << " length " << path.worm.length 
+        << " gap " << path.worm.gap << endl;
+
 	if (!path.worm.isConfigDiagonal) {
 		beadLocator beadIndex;
 		beadIndex = path.worm.tail;
@@ -67,9 +76,6 @@ inline void MoveBase::printMoveState(string state) {
 		} while(!all(beadIndex==path.next(path.worm.head)));
 	}
 
-	/* Output the worldline configuration */
-	communicate()->debugFile() << "Move State: " << state 
-		<< "(" << path.getTrueNumParticles() << ")" << endl;
 	path.printWormConfig(wormBeads);
 	path.printLinks<fstream>(communicate()->debugFile());
 	wormBeads.free();
@@ -978,6 +984,8 @@ void RemoveMove::keepMove() {
 	numAcceptedLevel(numLevels)++;
 	totAccepted++;
 
+	printMoveState("About to remove a worm.");
+
 	/* We delete the worm from our data sets and reset all
 	 * worm properties.  */
 	beadLocator beadIndex;
@@ -986,7 +994,6 @@ void RemoveMove::keepMove() {
 		beadIndex = path.delBeadGetPrev(beadIndex);
 	} while (!all(beadIndex==XXX));
 
-	printMoveState("About to remove a worm.");
 
 	path.worm.reset();
 
