@@ -17,8 +17,8 @@ method to a kernel that will never need to be touched by the end user.  The code
 extended to study a wide variety of situations by including new types of containers, potentials
 estimators and communicators.
 
-If you have questions, bug reports or plan to use this code for any scientific research, please
-contact me at Adrian.DelMaestro@uvm.edu.
+If you have questions, bug reports or plan to use this code for scientific
+research, please contact me at Adrian.DelMaestro@uvm.edu.
 
 Installation {#installation}
 ============
@@ -147,29 +147,42 @@ In order to compile with g++:
 ~~~
 and copy and paste the following:
 ~~~
-ifdef target_hostname
+ifdef target
 OPT = -Wall -O3 -fno-math-errno
 CODEDIR = $$HOME/local
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_system
+LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options -lboost_filesystem -lboost_system
 endif
 ~~~
-where `target_hostname` is replaced with a unique identifier for your machine,
+where `target` is replaced with a unique identifier for your machine,
 let's call it foo. If you want to run blitz in debug mode you will need to
 explicitely link to the blitz library with `-lblitz` added to `LDFLAGS` above.
 2. Edit the `CODEDIR` variable to point to the location where you have
    installed blitz and boost above.  We suggest `$HOME/local`
 3. Edit the `OPT` variable to reflect yoru local compile options.
-4. The make process will then take three options:
+4. If you installed boost with the `--layout=versioned` command above and you
+   have multiple versions installed on your machine, you may need to append
+   the particular version you want to link to in the names of the boost
+   libraries.  This is most easily done by adding a new variable to your
+   Makefile: `BOOSTVER = -gcc42-mt-1_49` where here we have compiled boost
+   v1.49 with gcc v4.2.  This will need to be updated for your particular
+   configuration.  Then, replace the `LDFLAGS` variable with 
+~~~
+LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
+~~~
+5. The make process will then take three options:
  - `debug=1` turn on debugging options
  - `ndim=1,2,3` the number of spatial dimensions
- - `foo=1` the hostname 
-5. To compile for bulk (3D) helium in production mode on host foo:
+ - `target=1` compile for host target
+5. To compile for bulk (3D) helium in production mode on host target:
 ~~~
-make -f Makefile.g++ ndim=3 foo=1
+make -f Makefile.g++ ndim=3 target=1
 ~~~
 which will produce the executable `pimc.e`
- 
+
+If you run into problems, failures with linking etc., common errors may include
+not properly setting your `LD_LIBRARY_PATH` or not starting from a clean build
+directory (issue `make -f Makefile.g++ clean`).
 
 Usage       {#usage}
 =====

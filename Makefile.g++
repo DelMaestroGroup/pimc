@@ -19,7 +19,7 @@ ifdef meron
 OPT = -Wall -O3 -fno-math-errno
 CODEDIR = $$HOME/local
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_system
+LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options -lboost_filesystem -lboost_system
 endif
 
 ifdef osx
