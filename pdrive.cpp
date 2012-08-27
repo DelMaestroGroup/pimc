@@ -12,7 +12,6 @@
 #include "potential.h"
 #include "action.h"
 #include "pimc.h"
-#include "move.h"
 #include "lookuptable.h"
 #include "communicator.h"
 #include "setup.h"
