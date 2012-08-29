@@ -182,7 +182,7 @@ PathIntegralMonteCarlo::~PathIntegralMonteCarlo () {
 ******************************************************************************/
 string PathIntegralMonteCarlo::runMoves(const double x, const int sweep) { 
 
-	bool success = false;		// Was a move successful?
+    success = false;
 	string moveName = "NONE";
 
 	/* First we try the moves that can operate on the diagonal ensemble */

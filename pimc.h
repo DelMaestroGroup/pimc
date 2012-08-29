@@ -66,6 +66,7 @@ class PathIntegralMonteCarlo {
 		bool savedState;			// We have saved at least one state
 		bool fixedNumLevels;		// Have we fixed the number of levels
 		bool startWithState;		// Are we starting from a saved state
+        bool success;               // Track move success/failure
 
 		MTRand &random;				// The global random number generator
 		Path &path;					// The actual wordline paths

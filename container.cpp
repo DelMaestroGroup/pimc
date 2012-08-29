@@ -272,7 +272,7 @@ dVec Cylinder::randUpdateJumpShell (MTRand &random, const dVec &pos) const {
     if (newr < 0.0)
         newr *= -1.0;
 
-    double ranTheta = M_PI*constants()->Delta()*(-1.0 + 2.0*random.rand())/oldr;
+    double ranTheta = M_PI*(-0.05 + 0.1*random.rand());
     randPos[0] = newr*cos(theta + ranTheta);
     randPos[1] = newr*sin(theta + ranTheta);
     randPos[2] += constants()->Delta()*(-0.5 + random.rand());
@@ -280,6 +280,7 @@ dVec Cylinder::randUpdateJumpShell (MTRand &random, const dVec &pos) const {
     putInside(randPos);
 	return randPos;
 }
+
 // THIS IS WHAT WAS HERE BEFORE
 /**************************************************************************//**
  *  Return a random position close to the supplied one. Same Shell.

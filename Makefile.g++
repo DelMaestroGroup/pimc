@@ -3,6 +3,9 @@
 CC      = g++
 LD      = g++
 
+#CC = /opt/local/bin/g++-mp-4.7
+#LD = /opt/local/bin/g++-mp-4.7
+
 ifdef debug
 DEBUG = -D PIMC_DEBUG -g
 LDEBUG = -lblitz

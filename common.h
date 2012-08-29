@@ -5,7 +5,7 @@
  * @brief Global common header with shared dependencies and methods.
  * @details We use blitz++ for all arrays and used boost::format to simplify
  * input and output.
- * @see http://www.oonumerics.org/blitz/
+ * @see http://sourceforge.net/projects/blitz/
  * @see http://www.boost.org/doc/libs/1_34_1/libs/format/index.html 
  */
 
@@ -21,7 +21,6 @@
 #include <map>
 
 #include <blitz/array.h>
-
 #include <boost/format.hpp>
 
 /* Debugging librarys and definitions. There is only an effect if

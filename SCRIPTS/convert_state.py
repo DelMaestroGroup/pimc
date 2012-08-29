@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # convert_state.py
 # Adrian Del Maestro
 # 06.18.2012
@@ -68,76 +67,80 @@ def main():
         # We now iterate through the corrected file
         for line in correctedStateText.splitlines():
 
-            if foundArray:
-                # Start of array
-                if line.startswith("["):
-                    line = line.lstrip("[")
+            # Skip blank lines or those with a single open/close bracket
+            if line.strip() and (line.strip() not in  ['[',']']):
 
-                # if we find more square opening brackets we have a multi-dimensional array
-                if "[" in line:
-                    # determine the dimension of the innermost array
-                    line1 = line.lstrip()
-                    if innerDim == -1:
-                        innerDim = int(line1[0])
-                    line1 = line1.replace("%d [" % innerDim,"")
-                    line1 = line1.replace("]","")
-                    data += line1.spit()
-                else:
-                    innerDim = 1
-                    line1 = line.lstrip()
-                    line1 = line1.replace("]","")
-                    data += line1.split()
+                if foundArray:
+                    # Start of array
+                    if line.startswith("["):
+                        line = line.lstrip("[")
 
-                # Create the new data output format
-                if len(data) == innerDim*numRows*numCols:
-                    newState += "(0,%d) x (0,%d)\n" % (numRows-1,numCols-1)
-                    if innerDim > 1:
-                        n = 0
-                        for row in range(numRows):
-                            if row == 0:
-                                newState += "[ "
-                            else:
-                                newState += "  "
+                    # if we find more square opening brackets we have a multi-dimensional array
+                    if "[" in line:
+                        # determine the dimension of the innermost array
+                        line1 = line.lstrip()
+                        if innerDim == -1:
+                            innerDim = int(line1[0])
+                        line1 = line1.replace("%d [" % innerDim,"")
+                        line1 = line1.replace("]","")
+                        temp = line1.split()
+                        data += line1.split()
+                    elif line:
+                        innerDim = 1
+                        line1 = line.lstrip()
+                        line1 = line1.replace("]","")
+                        data += line1.split()
 
-                            for col in range(numCols):
-                                newState += "("
-                                for d in range(innerDim):
-                                    newState += data[n]
-                                    if d < (innerDim-1):
-                                        newState += ","
-                                    else:
-                                        newState += ") "
+                    # Create the new data output format
+                    if len(data) == innerDim*numRows*numCols:
+                        newState += "(0,%d) x (0,%d)\n" % (numRows-1,numCols-1)
+                        if innerDim > 1:
+                            n = 0
+                            for row in range(numRows):
+                                if row == 0:
+                                    newState += "[ "
+                                else:
+                                    newState += "  "
+
+                                for col in range(numCols):
+                                    newState += "("
+                                    for d in range(innerDim):
+                                        newState += data[n]
+                                        if d < (innerDim-1):
+                                            newState += ","
+                                        else:
+                                            newState += ") "
+                                        n += 1
+                                if row < numRows-1:
+                                    newState += "\n"
+                                else:
+                                    newState += "]\n\n"
+                        else:
+                            n = 0
+                            for row in range(numRows):
+                                if row == 0:
+                                    newState += "[ "
+                                else:
+                                    newState += "  "
+
+                                for col in range(numCols):
+                                    newState += "%s " % data[n]
                                     n += 1
-                            if row < numRows-1:
-                                newState += "\n"
-                            else:
-                                newState += "]\n"
-                    else:
-                        n = 0
-                        for row in range(numRows):
-                            if row == 0:
-                                newState += "[ "
-                            else:
-                                newState += "  "
 
-                            for col in range(numCols):
-                                newState += "%s " % data[n]
-                                n += 1
+                                if row < numRows-1:
+                                    newState += "\n"
+                                else:
+                                    newState += "]\n\n"
+                        data = []
+                        foundArray = False
+                        innerDim = -1
 
-                            if row < numRows-1:
-                                newState += "\n"
-                            else:
-                                newState += "]\n"
-                    data = []
-                    foundArray = False
-                    innerDim = -1
-
-            elif 'x' in line:
-                numRows = int(line.split('x')[0])
-                numCols = int(line.split('x')[1])
-                foundArray = True
-            else:
-                newState += line + '\n'
+                elif 'x' in line:
+                    numRows = int(line.split('x')[0])
+                    numCols = int(line.split('x')[1])
+                    foundArray = True
+                else:
+                    newState += line + '\n'
 
         newState = newState.rstrip()
 
