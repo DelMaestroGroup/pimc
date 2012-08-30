@@ -66,9 +66,9 @@ DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
 
 ifeq ($(opts), basic)
-OPTS = -Wall -fno-math-errno -O3 -ftree-vectorize -funroll-loops
+OPTS = -Wall -O3 -mtune=native
 else ifeq ($(opts), strict)
-OPTS = -Wall -fno-math-errno -O3 -ftree-vectorize -funroll-loops -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
+OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
 endif #basic, elseif strict
 
 BOOSTVER ?= -gcc42-mt-1_49
@@ -131,9 +131,9 @@ PROG   = pimc.e
 SOURCE = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp cmc.cpp
 OBJS   = $(SOURCE:.cpp=.o)
 
-COMPILE_PCH  = $(CXX) $(CXXFLAGS)
-COMPILE_WPCH = $(COMPILE_PCH) -include common.h
-LINK         = $(LD) $(OBJS) $(LDFLAGS)
+COMPILE_PCH  = $(CXX) $(CXXFLAGS) -pipe
+COMPILE_WPCH = $(COMPILE_PCH) --include common.h
+LINK         = $(LD) $(OBJS) -pipe $(LDFLAGS)
 
 #Possible fix for older gccs, try without first
 #COMPILE_WPCH += -fpch-preprocess
