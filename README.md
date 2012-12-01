@@ -143,7 +143,7 @@ architectures, please read the details in the makefiles.
 In order to compile with g++:
 1. Open up `Makefile.g++`, find the comment:
 ~~~
-# Edit below to include details on your specific host
+Edit below to include details on your specific host
 ~~~
 and copy and paste the following:
 ~~~
