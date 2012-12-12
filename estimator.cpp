@@ -304,7 +304,8 @@ NumberParticlesEstimator::NumberParticlesEstimator (const Path &_path, int _freq
 	/* Set estimator name and header */
 	name = "Number Particles";
 	header = str(format("%16s%16s%16s") % "N" % "N^2" % "density");
-/* Initialize the output file */
+
+    /* Initialize the output file */
 	outFilePtr = &(communicate()->estimatorFile());
 }
 
@@ -466,6 +467,10 @@ void SuperfluidFractionEstimator::accumulate() {
 			pos2 = path(path.next(beadIndex));
 			Az += pos1[0]*pos2[1]-pos2[0]*pos1[1];
             I +=  pos1[0]*pos2[0] + pos1[1]*pos2[1];
+
+            /* TEMP TEMP TEMP */
+//            communicate()->debugFile() << format("%16.6e\t%16.6e\t%16.6e\t%16d\n") % 
+ //               pos1[0] % pos1[1] % pos1[2] % path.boxPtr->gridIndex(pos1);
 		}
 	}
 

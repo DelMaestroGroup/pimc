@@ -104,7 +104,7 @@ inline void MoveBase::checkMove(int callNum, double diffA) {
 			communicate()->debugFile() << format("%-16s%16.6e\t%16.6e\t%16.6e\n") % name 
 				% diffV % diffA % (diffV - diffA);
 			cout << name << " KEEP " << diffA << endl;
-			exit(-1);
+			exit(EXIT_FAILURE);
 		}
 	}
 
@@ -118,7 +118,7 @@ inline void MoveBase::checkMove(int callNum, double diffA) {
 			communicate()->debugFile() << format("%-16s%16.6e\t%16.6e\n") % name
 				% diffV % diffK;
 			cout << name << " UNDO " << diffV << " " << diffK << endl;
-			exit(-1);
+			exit(EXIT_FAILURE);
 		}
 	}
 

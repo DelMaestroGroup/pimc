@@ -25,6 +25,11 @@ Container::Container() {
 	volume   = 0.0;
 	rcut2    = 0.0;
 	name     = "";
+
+    /* Determine the number of grid boxes in the lookup table */
+    numGrid = 1;
+    for (int i = 0; i < NDIM; i++)
+        numGrid *= NGRIDSEP;
 }
 
 
@@ -64,6 +69,9 @@ Prism::Prism(double density, int numParticles) {
 	/* Calculate the volume of the cube */
 	volume = product(side);
 
+    /* The grid size for the lookup table */
+    gridSize = side/NGRIDSEP;
+
 	name = "Prism";
 }
 
@@ -86,6 +94,9 @@ Prism::Prism(const dVec &_side) {
 
 	/* Calculate the volume of the cube */
 	volume = product(side);
+
+    /* The grid size for the lookup table */
+    gridSize = side/NGRIDSEP;
 
 	name = "Prism";
 }
@@ -118,6 +129,29 @@ dVec Prism::randUpdate (MTRand &random, const dVec &pos) const {
 	return randPos;
 }
 
+/**************************************************************************//**
+ *  Given a particle position, return a single integer which maps to a 
+ *  unique grid position.  Used for correlating estimators with individual
+ *  particle positions.
+ *
+ *  @param pos The particle position
+ *
+ *  @return An integer representing a grid box number
+******************************************************************************/
+int Prism::gridIndex(const dVec &pos) const {
+
+	int gNumber = 0;
+	for (int i = 0; i < NDIM; i++) {  
+		int scale = 1;
+		for (int j = i+1; j < NDIM; j++) 
+			scale *= NGRIDSEP;
+		gNumber += scale * 
+			static_cast<int>(abs( pos[i] + 0.5*side[i] - EPS ) / (gridSize[i] + EPS));
+	}
+	PIMC_ASSERT(gNumber<numGrid);
+	return gNumber;
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // CYLINDER CLASS ------------------------------------------------------------
@@ -137,7 +171,7 @@ Cylinder::Cylinder(const double _rho, const double radius, const int numParticle
 	if (NDIM != 3) {
 		cerr << "You can only create a cylinder in 3 dimensions, change NDIM!" 
 			<< endl;
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	else {
 		/* We can compute the linear length from the density, number of particles
@@ -149,8 +183,7 @@ Cylinder::Cylinder(const double _rho, const double radius, const int numParticle
 			cerr << "L:r is smaller than 2:1!" << endl;
 
 		/* Setup the prism size in each of the three dimensions which the 
-		 * cylinder will be inscribed insde of.  We make it 2R X 2R X L 
-		 * to account for */
+		 * cylinder will be inscribed insde of.  We make it 2R X 2R X L  */
 		side[0] = side[1] = 2.0 * radius;
 		side[2] = L;
 
@@ -171,6 +204,11 @@ Cylinder::Cylinder(const double _rho, const double radius, const int numParticle
 
 		name = "Cylinder";
 
+        /* The grid size for the lookup table */
+        gridSize[0] = 0.5*side[0]/NGRIDSEP;
+        gridSize[1] = 2.0*M_PI/NGRIDSEP;
+        gridSize[2] = side[2]/NGRIDSEP;
+
 	} // end else
 }
 
@@ -188,7 +226,7 @@ Cylinder::Cylinder(const double radius, const double L) {
 	if (NDIM != 3) {
 		cerr << "You can only create a cylinder in 3 dimensions, change NDIM!" 
 			<< endl;
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	else {
 		/* We check to make sure that our aspect ratio is at least 2:1 */
@@ -309,4 +347,33 @@ void Cylinder::putInside(dVec &r) const {
 	/* Now place the z-coordinate in PBC */
 	r[2] -= (r[2] >= 0.5*side[2])*side[2];
 	r[2] += (r[2] < -0.5*side[2])*side[2];
+}
+
+/**************************************************************************//**
+ *  Given a particle position, return a single integer which maps to a 
+ *  unique grid position.  Used for correlating estimators with individual
+ *  particle positions.
+ *
+ *  @param pos The particle position
+ *
+ *  @return An integer representing a grid box number
+******************************************************************************/
+int Cylinder::gridIndex(const dVec &pos) const {
+
+    /* Get the r and theta components */
+    double r = sqrt(pos[0]*pos[0]+ pos[1]*pos[1]);
+    double theta = atan2(pos[1],pos[0]);
+    theta += (theta < 0.0)*2.0*M_PI;
+
+    /* Get the 3d vector index */
+	iVec grid;
+    grid[0] = static_cast<int>(abs(r-EPS)/(gridSize[0]+EPS));
+    grid[1] = static_cast<int>(abs(theta-EPS)/(gridSize[1]+EPS));
+    grid[2] = static_cast<int>(abs(pos[2] + 0.5*side[2] - EPS )/(gridSize[2] + EPS));
+
+    /* return the flattened index */
+    int gNumber = grid[0]*NGRIDSEP*NGRIDSEP + grid[1]*NGRIDSEP + grid[2];
+	PIMC_ASSERT(gNumber<numGrid);
+
+	return gNumber;
 }

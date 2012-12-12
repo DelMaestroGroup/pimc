@@ -36,6 +36,8 @@ class Container {
 
 		string name;						///< The name of the container
 
+        int numGrid;                        ///< The number of grid boxes for the position grid
+
 		/** Place a vector in boundary conditions. */
 		void putInBC(dVec & r) const {
 			for (int i = 0; i < NDIM; ++i) {
@@ -53,8 +55,12 @@ class Container {
 		/** Random updated position inside a box. */
 		virtual dVec randUpdate(MTRand &, const dVec &) const = 0;
 
+        /** Map a position into a grid index */
+        virtual int gridIndex(const dVec &) const = 0;
+
 	protected:
-		dVec pSide;							///< Periodic * side
+		dVec pSide;		    ///< Periodic * side
+        dVec gridSize;      ///< The grid size in each dimension
 };
 
 // ========================================================================  
@@ -76,6 +82,7 @@ class Prism: public Container {
 
 		dVec randPosition(MTRand &) const; 					
 		dVec randUpdate(MTRand &, const dVec &) const;
+        int gridIndex(const dVec &) const;
 };
 
 // ========================================================================  
@@ -100,5 +107,7 @@ class Cylinder: public Container {
 
 		dVec randUpdateJumpShell(MTRand &, const dVec &) const;
 		dVec randUpdateSmall(MTRand &, const dVec &) const;
+
+        int gridIndex(const dVec &) const;
 };
 #endif

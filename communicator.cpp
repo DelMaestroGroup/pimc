@@ -54,7 +54,7 @@ void Communicator::openFile(const string fileName, fstream *_file,
 	_file->open(fileName.c_str(), mode);
 	if (!(*_file)) {
 		cerr << "Unable to process file: " << fileName << endl;
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -158,7 +158,7 @@ void Communicator::init(const double _tau, const bool outputWorldline, const
         boost::filesystem::create_directory(cylPath);
     }
 
-	/* Depending out wheter or not we are restarting the simulations, the open mode
+	/* Depending on whether or not we are restarting the simulations, the open mode
 	 * changes and header line changes. */
 	ios_base::openmode mode;
 	string header;
@@ -189,7 +189,7 @@ void Communicator::init(const double _tau, const bool outputWorldline, const
         if (!boost::filesystem::exists(initName)) {
             cerr << "Trying to restart from an unknown PIMCID: " << constants()->id() << endl;
             cerr << fileName << " does not exist!" << endl;
-            exit(1);
+            exit(EXIT_FAILURE);
         }
 		openFile(fileName,&initFile_,ios::in);
 	}
@@ -202,6 +202,7 @@ void Communicator::init(const double _tau, const bool outputWorldline, const
      * file */
 	for (map<string,fstream*>::iterator filePtr = file.begin(); 
 			filePtr != file.end(); filePtr++) {
+
         /* Check to make sure we are not init */
         if (filePtr->first != "init") {
             fileName = str(format("OUTPUT/%s-%s-%s.dat") % ensemble % filePtr->first % dataName);

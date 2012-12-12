@@ -79,12 +79,12 @@ void ConstantParameters::initConstants(bool _canonical, double _T, double _mu, d
 
 	if (Mbar_ >= numTimeSlices_) {
 		cout << "Update length is too long" << endl;
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 
 	if (Mbar_ <= 1) {
 		cout << "Update length is too short" << endl;
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 
 	/* Computed values */
@@ -117,7 +117,7 @@ void ConstantParameters::initConstants(bool _canonical, double _T, double _mu, d
 	if (abs(totProb - 1.0) > EPS) {
 		cout << "Close + AdvanceHead + RecedeHead + AdvanceTail + RecedeTail + Remove + SwapHead " 
 			 << "+ Staging + CoM Probability != 1" << endl;
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	PIMC_ASSERT(totProb-1.0 < EPS);
 
@@ -126,7 +126,7 @@ void ConstantParameters::initConstants(bool _canonical, double _T, double _mu, d
 	
 	if (abs(totProb - 1.0) > EPS) {
 		cout << "Open + Insert + Staging + Bisection + CoM Probability != 1" << endl;
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	PIMC_ASSERT(totProb-1.0 < EPS);
 }
