@@ -1,8 +1,25 @@
 PIMC Feature List
 =================
 
-Generic Density Tensor Functionality
-------------------------------------
+Re-Factoring of Communicator
+----------------------------
+Goal: Creation of a new class which contains all functionality needed for a
+input/ouptut file.  Communicator could then just contain a map of filenames
+to file objects
+
+### Requirements
+ * Data
+  * File pointer
+  * File label (string)
+  * State (open/close)
+ * Methods
+  * open/close
+  * change state
+
+
+
+DONE: Generic Density Tensor Functionality
+------------------------------------------
 
 ### Outline
 
@@ -35,6 +52,8 @@ Define:
 
     index = i[0]*N[1]*N[2] + i[1]*N[2] + i[2]
 
+    dV = dx*dy*dz
+
 ### Cylinder:
 
 3d: We will use cylindrical polar coordinates (r,theta,z)
@@ -50,5 +69,7 @@ Define:
 	i[2] = (r[2] + 0.5*side[2])/dr[2]
 
 	index = i[0]*N[1]*N[2] + i[1]*N[2] + i[2]
+
+    dV(r) = r*dr*dtheta*dz
 
 

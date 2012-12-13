@@ -19,8 +19,9 @@
 ******************************************************************************/
 Communicator::Communicator() : logFile_(),estimatorFile_(),superFile_(),debugFile_(),
 	stateFile_(),initFile_(), fixedFile_(), wlFile_(),permCycleFile_(),obdmFile_(),
-	pairFile_(),radialFile_(), wormFile_(), numberFile_(), cylEstimatorFile_(), 
-	cylSuperFile_(), cylNumberFile_(), cylObdmFile_(), cylPairFile_(),cylPotentialFile_()
+	pairFile_(),radialFile_(), wormFile_(), numberFile_(), positionFile_(),
+    windDensFile_(), cylEstimatorFile_(), cylSuperFile_(), cylNumberFile_(),
+    cylObdmFile_(), cylPairFile_(),cylPotentialFile_()
 { 
 
 }
@@ -115,6 +116,8 @@ void Communicator::init(const double _tau, const bool outputWorldline, const
 	file["worm"]      = &wormFile_;
 	file["number"]    = &numberFile_;
 	file["state"]     = &stateFile_;
+    file["position"]  = &positionFile_;
+    file["windDens"]  = &windDensFile_;
 
 	/* We only include the radial density estimator if NDIM > 1 */
 	if (NDIM > 1)
@@ -202,7 +205,6 @@ void Communicator::init(const double _tau, const bool outputWorldline, const
      * file */
 	for (map<string,fstream*>::iterator filePtr = file.begin(); 
 			filePtr != file.end(); filePtr++) {
-
         /* Check to make sure we are not init */
         if (filePtr->first != "init") {
             fileName = str(format("OUTPUT/%s-%s-%s.dat") % ensemble % filePtr->first % dataName);
@@ -221,6 +223,10 @@ void Communicator::init(const double _tau, const bool outputWorldline, const
 
 	/* Save the name of the state file */
 	stateName = str(format("OUTPUT/%s-state-%s.dat") % ensemble % dataName);
+	/* Save the name of the position density file */
+	positionName = str(format("OUTPUT/%s-position-%s.dat") % ensemble % dataName);
+	/* Save the name of the winding number density file */
+	windDensName = str(format("OUTPUT/%s-windDens-%s.dat") % ensemble % dataName);
 
 	/* Initialize a possible fixed coordinate file */
 	if (!_fixedName.empty()) {
@@ -264,6 +270,26 @@ void Communicator::resetFixedFile() {
 	if (fixedFile_.is_open()) 
 		fixedFile_.close();
 	openFile(fixedName,&fixedFile_,ios::in);
+}
+
+/**************************************************************************//**
+ *  Reset the Particle Position Density Histogram output file.
+******************************************************************************/
+void Communicator::resetPositionFile(ios_base::openmode mode) {
+	/* If the file is open, close it before re-opening */
+	if (positionFile_.is_open()) 
+		positionFile_.close();
+	openFile(positionName,&positionFile_,mode);
+}
+
+/**************************************************************************//**
+ *  Reset the Winding Number Density Histogram output file.
+******************************************************************************/
+void Communicator::resetWindDensFile(ios_base::openmode mode) {
+	/* If the file is open, close it before re-opening */
+	if (windDensFile_.is_open()) 
+		windDensFile_.close();
+	openFile(windDensName,&windDensFile_,mode);
 }
 
 /**************************************************************************//**

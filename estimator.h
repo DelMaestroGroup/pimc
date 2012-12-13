@@ -133,6 +133,26 @@ class NumberParticlesEstimator: public EstimatorBase {
 };
 
 // ========================================================================  
+// Particle Density Estimator Class 
+// ========================================================================  
+/**
+ * Create histogram of particle positions.
+ * 
+ */
+class ParticlePositionEstimator: public EstimatorBase {
+
+	public:
+		ParticlePositionEstimator(const Path &, int);
+		~ParticlePositionEstimator();
+        
+        void output();              // overload the output
+
+    private:
+        void accumulate();			// Accumulate values
+};
+
+
+// ========================================================================  
 // Number Distribution Estimator Class 
 // ========================================================================  
 /**

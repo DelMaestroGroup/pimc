@@ -47,6 +47,8 @@ class Communicator
 		fstream & radialFile() {return radialFile_;}		///< Get radial density file
 		fstream & wormFile() {return wormFile_;}			///< Get worm properties file
 		fstream & numberFile() {return numberFile_;}		///< Get number distribution file
+        fstream & positionFile() {return positionFile_;}    ///< Get particle position file
+        fstream & windDensFile() {return windDensFile_;}    ///< Get Winding number density
 
 		fstream & debugFile();
 
@@ -62,8 +64,14 @@ class Communicator
 		void resetStateFile(ios_base::openmode);	
 
 		/* Reset the fixed file */
-		void resetFixedFile();	
-		
+		void resetFixedFile();
+
+        /* Reset the Position Histogram file */
+        void resetPositionFile(ios_base::openmode);
+
+        /* Reset the Winding Number Density file */
+        void resetWindDensFile(ios_base::openmode);
+
 	protected:
 		Communicator();									
 		~Communicator();								
@@ -85,6 +93,8 @@ class Communicator
 		fstream radialFile_;		// Radial density
 		fstream wormFile_;			// Worm properties
 		fstream numberFile_;		// The number distribution
+        fstream positionFile_;      // Particle Positions
+        fstream windDensFile_;      // Winding Number Density
 
 		/* All the cylinder estimator files */
 		fstream cylEstimatorFile_;
@@ -99,6 +109,8 @@ class Communicator
 
 		string stateName;			// The name of the state file
 		string fixedName;			// The name of the fixed file
+        string positionName;        // The name of the position density file
+        string windDensName;        // The name of the winding # density file
 
 		map <string,fstream*> file;	    // The file map
 		map <string,fstream*> cylFile;	// The cylinder file map

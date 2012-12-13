@@ -90,6 +90,7 @@ class PathIntegralMonteCarlo {
 		DiagonalFractionEstimator     diagonalFraction;
 		EnergyEstimator               energy;
 		NumberParticlesEstimator      numberParticles;
+        ParticlePositionEstimator     particlePositions;
 		SuperfluidFractionEstimator   superfluidFraction;
 		PermutationCycleEstimator     permutationCycle;
 		OneBodyDensityMatrixEstimator oneBodyDensityMatrix;

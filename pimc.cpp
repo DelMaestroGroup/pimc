@@ -43,6 +43,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	diagonalFraction(_path,1),
 	energy(_path,_actionPtr,1),
 	numberParticles(_path,1),
+	particlePositions(_path,1),
 	superfluidFraction(_path,1),
 	permutationCycle(_path,1),
 	oneBodyDensityMatrix(_path,_actionPtr,_random,15),
@@ -132,6 +133,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	estimator.push_back(&energy);
 	estimator.push_back(&numberParticles);
 	estimator.push_back(&diagonalFraction);
+	estimator.push_back(&particlePositions);
 	estimator.push_back(&superfluidFraction);
 	estimator.push_back(&permutationCycle);
 	estimator.push_back(&pairCorrelation);

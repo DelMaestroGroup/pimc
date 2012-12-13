@@ -58,6 +58,10 @@ class Container {
         /** Map a position into a grid index */
         virtual int gridIndex(const dVec &) const = 0;
 
+        /** The physical size of a NDIM-dimensional grid box */
+        virtual double gridBoxVolume(const int) const = 0;
+
+
 	protected:
 		dVec pSide;		    ///< Periodic * side
         dVec gridSize;      ///< The grid size in each dimension
@@ -83,6 +87,7 @@ class Prism: public Container {
 		dVec randPosition(MTRand &) const; 					
 		dVec randUpdate(MTRand &, const dVec &) const;
         int gridIndex(const dVec &) const;
+        double gridBoxVolume(const int) const;
 };
 
 // ========================================================================  
@@ -109,5 +114,6 @@ class Cylinder: public Container {
 		dVec randUpdateSmall(MTRand &, const dVec &) const;
 
         int gridIndex(const dVec &) const;
+        double gridBoxVolume(const int) const;
 };
 #endif

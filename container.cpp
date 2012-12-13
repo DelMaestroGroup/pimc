@@ -152,6 +152,16 @@ int Prism::gridIndex(const dVec &pos) const {
 	return gNumber;
 }
 
+/**************************************************************************//**
+ *  Given a grid index, return the hyper volume of the associated grid box.
+ *
+ *  @param n The grid index
+ *  @return The hyper volume of the grid box
+******************************************************************************/
+double Prism::gridBoxVolume(const int n) const {
+	return blitz::product(gridSize);
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // CYLINDER CLASS ------------------------------------------------------------
@@ -376,4 +386,17 @@ int Cylinder::gridIndex(const dVec &pos) const {
 	PIMC_ASSERT(gNumber<numGrid);
 
 	return gNumber;
+}
+
+/**************************************************************************//**
+ *  Given a grid index, return the hyper volume of the associated grid box.
+ *
+ *  @param n The grid index
+ *  @return The hyper volume of the grid box
+******************************************************************************/
+double Cylinder::gridBoxVolume(const int n) const {
+
+    /* Get the first grid box index */
+    int nr = (n/(NGRIDSEP*NGRIDSEP)) % NGRIDSEP;
+	return (nr+1)*gridSize[0]*blitz::product(gridSize);
 }

@@ -63,10 +63,11 @@ bool EstimatorBase::measure() {
  * 
  *  Here we simply call accumulate every frequency times sample is called,  
  *  depending on whether we are measuring a diagonal or off-diagonal estimator.
+ *  If frequency == 0, we don't bother to measure it.
 ******************************************************************************/
 void EstimatorBase::sample () {
 	numSampled++;
-	if ((numSampled % frequency) == 0) {
+	if ((frequency) && (numSampled % frequency) == 0) {
 
 		/* We determine based on the current configuration whether or not
 		 * we sample the estimator */
@@ -381,9 +382,84 @@ NumberDistributionEstimator::~NumberDistributionEstimator() {
 void NumberDistributionEstimator::accumulate() {
 
 	/* Get the correct particle Number index, and increment the corresponding bin */
-	int index = path.getTrueNumParticles()-constants()->initialNumParticles() + particleShift;
+	int index = path.getTrueNumParticles()-constants()->initialNumParticles() 
+        + particleShift;
 	if (index >= 0 && index < maxNumParticles)
 		estimator(index) += 1.0;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// PARTICLE DENSITY ESTIMATOR CLASS ---------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  A full NDIM-dimensional particle density hisgram.
+ *
+ *  @note Only tested for cubic boxes
+******************************************************************************/
+ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path,
+        int _frequency) : EstimatorBase(_path) {
+
+    /* store the x,z positions in a flattened array */
+    initialize(path.boxPtr->numGrid,_frequency,true,false,true);
+
+    /* Set estimator name and header. */
+    name = "Particle Position";
+    header = str(format("#%d\n#") % NGRIDSEP);
+
+    /* Initialize the output file */
+    outFilePtr = &(communicate()->positionFile());
+
+    /* The normalization: 1/(dV*M) */
+    for (int n = 0; n < numEst; n++)
+        norm(n) = 1.0/(1.0*path.numTimeSlices*path.boxPtr->gridBoxVolume(n));
+}
+
+/*************************************************************************//**
+ *  Destructor
+******************************************************************************/
+ParticlePositionEstimator::~ParticlePositionEstimator() { 
+}
+
+/*************************************************************************//**
+ *  Overload the output of the base class so that a running average
+ *  is kept rather than keeping all data.
+******************************************************************************/
+void ParticlePositionEstimator::output() {
+
+    /* Prepare the position file for writing over old data */
+    communicate()->resetPositionFile(ios::out|ios::trunc);
+
+    /* Reset the header */
+    (*outFilePtr) << header << endl;
+
+	/* Now write the running average of the estimator to disk */
+	for (int n = 0; n < numEst; n++) 
+        (*outFilePtr) << format("%16.6E\n") % 
+            (norm(n)*estimator(n)/totNumAccumulated);
+}
+
+/*************************************************************************//**
+ *  Accumulate a histogram of all particle positions, with output 
+ *  being the running average of the density per grid space.
+******************************************************************************/
+void ParticlePositionEstimator::accumulate() {
+
+    beadLocator beadIndex;
+
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
+
+            /* update our particle position histogram */
+            int n = path.boxPtr->gridIndex(path(beadIndex));
+            estimator(n) += 1.0;
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -468,9 +544,6 @@ void SuperfluidFractionEstimator::accumulate() {
 			Az += pos1[0]*pos2[1]-pos2[0]*pos1[1];
             I +=  pos1[0]*pos2[0] + pos1[1]*pos2[1];
 
-            /* TEMP TEMP TEMP */
-//            communicate()->debugFile() << format("%16.6e\t%16.6e\t%16.6e\t%16d\n") % 
- //               pos1[0] % pos1[1] % pos1[2] % path.boxPtr->gridIndex(pos1);
 		}
 	}
 
