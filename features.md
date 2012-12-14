@@ -14,7 +14,13 @@ to file objects
   * State (open/close)
  * Methods
   * open/close
-  * change state
+  * reset
+
+### Reset
+
+Reset is used for those files that are not continually kept open but that we
+wish to write over.  To be safe, we should write to a new temporary file, then
+rename after successful completion.
 
 
 

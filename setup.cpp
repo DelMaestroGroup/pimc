@@ -434,6 +434,10 @@ void Setup::communicator() {
     communicate()->init(params["imaginary_time_step"].as<double>(),
             (params["output_config"].as<int>() > 0),params["start_with_state"].as<string>(),
             params["fixed"].as<string>());
+
+    ccommunicate()->init(params["imaginary_time_step"].as<double>(),
+            (params["output_config"].as<int>() > 0),params["start_with_state"].as<string>(),
+            params["fixed"].as<string>());
 }
 
 /*************************************************************************//**

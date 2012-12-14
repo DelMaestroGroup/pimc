@@ -280,6 +280,8 @@ void EnergyEstimator::accumulate() {
 	estimator(4) += totK/(1.0*numParticles);
 	estimator(5) += totV/(1.0*numParticles);
 	estimator(6) += (totK + totV)/(1.0*numParticles);
+
+//    ccommunicate()->file("debug")->stream() << totV << endl;
 }
 
 // ---------------------------------------------------------------------------
