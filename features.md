@@ -1,7 +1,7 @@
 PIMC Feature List
 =================
 
-Re-Factoring of Communicator
+DONE: Re-Factoring of Communicator
 ----------------------------
 Goal: Creation of a new class which contains all functionality needed for a
 input/ouptut file.  Communicator could then just contain a map of filenames
@@ -21,8 +21,6 @@ to file objects
 Reset is used for those files that are not continually kept open but that we
 wish to write over.  To be safe, we should write to a new temporary file, then
 rename after successful completion.
-
-
 
 DONE: Generic Density Tensor Functionality
 ------------------------------------------

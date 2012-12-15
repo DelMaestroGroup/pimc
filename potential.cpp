@@ -104,7 +104,8 @@ void PotentialBase::output(const double maxSep) {
 	sep = 0.0;
 	for (double d = 0; d < maxSep; d+= (maxSep/1000.0)) {
 		sep[0] = d;
-		communicate()->debugFile() << format("%10.4E\t%16.8E\n") % d % V(sep);
+		communicate()->file("debug")->stream() 
+            << format("%10.4E\t%16.8E\n") % d % V(sep);
 	}
 }
 
@@ -899,14 +900,14 @@ FixedAzizPotential::FixedAzizPotential(const Container *_boxPtr) :
 	/* Here we load both the number and location of fixed helium atoms from disk. */
 	numFixedParticles = 0;
 	int n = 0;
-	while (!communicate()->fixedFile().eof()) {
-		if (communicate()->fixedFile().peek() == '#') {
-			communicate()->fixedFile().ignore(512,'\n');
+	while (!communicate()->file("fixed")->stream().eof()) {
+		if (communicate()->file("fixed")->stream().peek() == '#') {
+			communicate()->file("fixed")->stream().ignore(512,'\n');
 		}
 		else {
-			communicate()->fixedFile() >> state;
+			communicate()->file("fixed")->stream() >> state;
 			for (int i = 0; i < NDIM; i++) 
-				communicate()->fixedFile() >> pos[i];
+				communicate()->file("fixed")->stream() >> pos[i];
 
 			/* If the particle is labelled with an 'F' it is fixed and should
 			 * be included here */
@@ -920,7 +921,7 @@ FixedAzizPotential::FixedAzizPotential(const Container *_boxPtr) :
 				fixedParticles(n) = pos;
 				n++;
 			}
-			communicate()->fixedFile().ignore();
+			communicate()->file("fixed")->stream().ignore();
 		}
 	}
 
@@ -1025,20 +1026,17 @@ Array<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, MTRand 
 	char state;					// Update or Fix
 	dVec pos;					// The current position
 
-	/* Reset the file pointer */
-	communicate()->resetFixedFile();
-
 	/* We go through all lines in the fixed input file, discarding any comments
 	 * and assign the initial positions of the particles */
 	int n = 0;
-	while (!communicate()->fixedFile().eof()) {
-		if (communicate()->fixedFile().peek() == '#') {
-			communicate()->fixedFile().ignore(512,'\n');
+	while (!communicate()->file("fixed")->stream().eof()) {
+		if (communicate()->file("fixed")->stream().peek() == '#') {
+			communicate()->file("fixed")->stream().ignore(512,'\n');
 		}
 		else {
-			communicate()->fixedFile() >> state;
+			communicate()->file("fixed")->stream() >> state;
 			for (int i = 0; i < NDIM; i++)
-				communicate()->fixedFile() >> pos[i];
+				communicate()->file("fixed")->stream() >> pos[i];
 
 			/* If the particle is labelled with an 'U' it is updatable and should
 			 * be included */
@@ -1053,12 +1051,12 @@ Array<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, MTRand 
 				initialPos(n) = pos;
 				n++;
 			}
-			communicate()->fixedFile().ignore();
+			communicate()->file("fixed")->stream().ignore();
 		}
 	}
 
 	/* Reset the file pointer */
-	communicate()->fixedFile().seekg(0, ios::beg);
+	communicate()->file("fixed")->stream().seekg(0, ios::beg);
 
 	/* Return the initial Positions */
 	return initialPos;

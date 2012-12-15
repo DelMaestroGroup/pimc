@@ -22,16 +22,19 @@
  * 
  *  Initialize all data members to zero. 
 ******************************************************************************/
-EstimatorBase::EstimatorBase (const Path &_path) : path(_path) {
-
+EstimatorBase::EstimatorBase (const Path &_path, int _frequency, string _label) : 
+    path(_path),
+    name(),
+    label(_label),
+    numSampled(0),
+	numAccumulated(0),
+	totNumAccumulated(0),
+    frequency(_frequency)
+{
 	/* Initialize all variables */
-	numSampled = 0;
-	numAccumulated = 0;
-	totNumAccumulated = 0;
-	frequency = 1;
-	outFilePtr = NULL;
+	outFilePtr = &(communicate()->file(label)->stream());
+
 	endLine = false;
-	name = "";
 
 	canonical = constants()->canonical();
 	numBeads0 = constants()->initialNumParticles()*constants()->numTimeSlices();
@@ -172,21 +175,18 @@ void EstimatorBase::output() {
  * potential and total energy per particle.
 ******************************************************************************/
 EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
-		int _frequency) : EstimatorBase(_path), actionPtr(_actionPtr) {
+		int _frequency, string _label) : 
+    EstimatorBase(_path,_frequency,_label), actionPtr(_actionPtr) {
 
 	/* We compute three diagonal estimators, kinetic, potential and total energy
 	 * per particle */
 	initialize(7,_frequency,true,false,false);
-	norm = 1.0;
 
 	/* Set estimator name and header, we will always report the energy
 	 * first, hence the comment symbol*/
 	name = "Energy";
 	header = str(format("#%15s%16s%16s%16s%16s%16s%16s") 
 			% "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
-
-	/* Initialize the output file */
-	outFilePtr = &(communicate()->estimatorFile());
 }
 
 /*************************************************************************//**
@@ -280,8 +280,6 @@ void EnergyEstimator::accumulate() {
 	estimator(4) += totK/(1.0*numParticles);
 	estimator(5) += totV/(1.0*numParticles);
 	estimator(6) += (totK + totV)/(1.0*numParticles);
-
-//    ccommunicate()->file("debug")->stream() << totV << endl;
 }
 
 // ---------------------------------------------------------------------------
@@ -296,20 +294,17 @@ void EnergyEstimator::accumulate() {
  *  We measure the number of particles, (number of particles)^2 and the
  *  density of particles.
 ******************************************************************************/
-NumberParticlesEstimator::NumberParticlesEstimator (const Path &_path, int _frequency) :
-	EstimatorBase(_path) {
+NumberParticlesEstimator::NumberParticlesEstimator (const Path &_path, 
+        int _frequency, string _label) :
+	EstimatorBase(_path,_frequency,_label) {
 
 	/* We compute three diagonal estimators, the total number of particles,
 	 * total number of particles squared and density. */
 	initialize(3,_frequency,true,false,false);
-	norm = 1.0;
 
 	/* Set estimator name and header */
 	name = "Number Particles";
 	header = str(format("%16s%16s%16s") % "N" % "N^2" % "density");
-
-    /* Initialize the output file */
-	outFilePtr = &(communicate()->estimatorFile());
 }
 
 /*************************************************************************//**
@@ -341,8 +336,9 @@ void NumberParticlesEstimator::accumulate() {
  *  for particle fluctuations up to 50 particles away from the initial value
  *  specified.
 ******************************************************************************/
-NumberDistributionEstimator::NumberDistributionEstimator (const Path &_path, int _frequency) :
-	EstimatorBase(_path) {
+NumberDistributionEstimator::NumberDistributionEstimator (const Path &_path, 
+        int _frequency, string _label) :
+	EstimatorBase(_path,_frequency,_label) {
 
 	/* For now, we assume 50 particles on each side of the mean */
 	particleShift = 50;
@@ -360,16 +356,12 @@ NumberDistributionEstimator::NumberDistributionEstimator (const Path &_path, int
 	/* We compute maxNumParticles diagonal estimators.  This is a vector 
 	 * estimator. */
 	initialize(maxNumParticles,_frequency,true,false,true);
-	norm = 1.0;
 
 	/* Set estimator name and header */
 	name = "Number Distribution";
 	header = str(format("#%15d") % startParticleNumber);
 	for (int n = startParticleNumber+1; n <= endParticleNumber; n++) 
 		header.append(str(format("%16d") % n));
-
-	/* Initialize the output file */
-	outFilePtr = &(communicate()->numberFile());
 }
 
 /*************************************************************************//**
@@ -404,7 +396,8 @@ void NumberDistributionEstimator::accumulate() {
  *  @note Only tested for cubic boxes
 ******************************************************************************/
 ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path,
-        int _frequency) : EstimatorBase(_path) {
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_frequency,_label) {
 
     /* store the x,z positions in a flattened array */
     initialize(path.boxPtr->numGrid,_frequency,true,false,true);
@@ -412,9 +405,6 @@ ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path,
     /* Set estimator name and header. */
     name = "Particle Position";
     header = str(format("#%d\n#") % NGRIDSEP);
-
-    /* Initialize the output file */
-    outFilePtr = &(communicate()->positionFile());
 
     /* The normalization: 1/(dV*M) */
     for (int n = 0; n < numEst; n++)
@@ -434,15 +424,14 @@ ParticlePositionEstimator::~ParticlePositionEstimator() {
 void ParticlePositionEstimator::output() {
 
     /* Prepare the position file for writing over old data */
-    communicate()->resetPositionFile(ios::out|ios::trunc);
-
-    /* Reset the header */
-    (*outFilePtr) << header << endl;
+    communicate()->file("position")->reset();
 
 	/* Now write the running average of the estimator to disk */
 	for (int n = 0; n < numEst; n++) 
         (*outFilePtr) << format("%16.6E\n") % 
             (norm(n)*estimator(n)/totNumAccumulated);
+
+    communicate()->file("position")->rename();
 }
 
 /*************************************************************************//**
@@ -479,7 +468,8 @@ void ParticlePositionEstimator::accumulate() {
  *  distribution.
 ******************************************************************************/
 SuperfluidFractionEstimator::SuperfluidFractionEstimator (const Path &_path, 
-		int _frequency) : EstimatorBase(_path) {
+		int _frequency, string _label) : 
+    EstimatorBase(_path,_frequency,_label) {
 
 	windMax = 10;
 	/* We compute a bunch of estimators here, the superfluid fraction, the winding
@@ -495,11 +485,7 @@ SuperfluidFractionEstimator::SuperfluidFractionEstimator (const Path &_path,
 		header += str(format("%11sP(%+1d)") % " " % w);
     header += str(format("%16s") % "Area_rho_s");
 
-	/* Initialize all variables */
-	outFilePtr = &(communicate()->superFile());
-
 	/* The pre-factor for the superfluid density is always the same */
-	norm = 1.0;
 	norm(0) = constants()->T() / (2.0 * sum(path.boxPtr->periodic) * constants()->lambda());
 
     /* The pre-factor for the area esimator */
@@ -594,7 +580,8 @@ void SuperfluidFractionEstimator::accumulate() {
  *  diagonal ensemble (no worms).
 ******************************************************************************/
 DiagonalFractionEstimator::DiagonalFractionEstimator (const Path &_path, 
-		int _frequency) : EstimatorBase(_path) {
+		int _frequency, string _label) : 
+    EstimatorBase(_path,_frequency,_label) {
 
 	/* The diagonal estimator which is always measured, and is the last quantity
 	 * we output*/
@@ -603,11 +590,6 @@ DiagonalFractionEstimator::DiagonalFractionEstimator (const Path &_path,
 	/* Set estimator name */
 	name = "Diagonal Fraction";
 	header = str(format("%16s") % "diagonal");
-
-	/* Initialize all variables */
-	outFilePtr = &(communicate()->estimatorFile());
-	norm = 1.0;
-	reset();
 }
 
 /*************************************************************************//**
@@ -638,8 +620,9 @@ void DiagonalFractionEstimator::accumulate() {
  *  relative worm gap, worm cost, the separation between head and tail, and
  *  the number of beads / number of time slices.
 ******************************************************************************/
-WormPropertiesEstimator::WormPropertiesEstimator (const Path &_path, int _frequency) : 
-	EstimatorBase(_path) {
+WormPropertiesEstimator::WormPropertiesEstimator (const Path &_path, 
+        int _frequency, string _label) : 
+	EstimatorBase(_path,_frequency,_label) {
 
 	/* We measure the average worm length, gap and cost.  It is an off-diagonal
 	 * estimator that is output to its own file */
@@ -649,11 +632,6 @@ WormPropertiesEstimator::WormPropertiesEstimator (const Path &_path, int _freque
 	name = "Worm Properties";
 	header = str(format("#%15s%16s%16s%16s%16s") % "rel-worm-len" % 
 			"rel-worm-gap" % "worm-cost" % "head-tail-sep" % "particles");
-
-	/* Initialize all variables */
-	outFilePtr = &(communicate()->wormFile());
-	norm = 1.0;
-	reset();
 }
 
 /*************************************************************************//**
@@ -690,7 +668,8 @@ void WormPropertiesEstimator::accumulate() {
  * contain up to 40 particles.
 ******************************************************************************/
 PermutationCycleEstimator::PermutationCycleEstimator(const Path &_path, 
-		int _frequency) : EstimatorBase(_path) {
+		int _frequency, string _label) : 
+    EstimatorBase(_path,_frequency,_label) {
 
 	/* We just choose arbitrarily to only count cycles including up to 40 particles */
 	maxNumCycles = 40;
@@ -705,10 +684,6 @@ PermutationCycleEstimator::PermutationCycleEstimator(const Path &_path,
 	header = str(format("#%15d") % 1);
 	for (int n = 2; n <= maxNumCycles; n++) 
 		header.append(str(format("%16d") % n));
-
-	/* Initialize all variables */
-	outFilePtr = &(communicate()->permCycleFile());
-	norm = 1.0;
 }
 
 /*************************************************************************//**
@@ -788,8 +763,8 @@ void PermutationCycleEstimator::accumulate() {
  *  on the type of simulation cell).
 ******************************************************************************/
 OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path,
-		ActionBase *_actionPtr, MTRand &_random, int _frequency) : 
-	EstimatorBase(_path), 
+		ActionBase *_actionPtr, MTRand &_random, int _frequency, string _label) : 
+	EstimatorBase(_path,_frequency,_label), 
 	lpath(_path),
 	actionPtr(_actionPtr),
 	random(_random)
@@ -810,9 +785,6 @@ OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path,
 	header = str(format("#%15.3E") % 0.0);
 	for (int n = 1; n < NOBDMSEP; n++) 
 		header.append(str(format("%16.3E") % (n*dR)));
-
-	/* Initialize all variables */
-	outFilePtr = &(communicate()->obdmFile());
 
 	numReps = 5;
 	norm = 1.0 / (1.0*numReps);
@@ -1032,8 +1004,8 @@ void OneBodyDensityMatrixEstimator::outputFooter() {
  *  depends on dimension.
 ******************************************************************************/
 PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path, 
-		ActionBase *_actionPtr, int _frequency) : 
-	EstimatorBase(_path),
+		ActionBase *_actionPtr, int _frequency, string _label) : 
+	EstimatorBase(_path,_frequency,_label),
 	actionPtr(_actionPtr)
 {
 	/* The spatial discretization */
@@ -1051,7 +1023,7 @@ PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path,
 		header.append(str(format("%16.3E") % ((n)*dR)));
 
 	/* Initialize all variables */
-	outFilePtr = &(communicate()->pairFile());
+	outFilePtr = &(communicate()->file("pair")->stream());
 
 	/* The normalization factor for the pair correlation function depends 
 	 * on the dimensionality */
@@ -1116,8 +1088,9 @@ void PairCorrelationEstimator::accumulate() {
  * 
  *  The radial density is binned into NRADSEP boxes.
 ******************************************************************************/
-RadialDensityEstimator::RadialDensityEstimator (const Path &_path, int _frequency) : 
-	EstimatorBase(_path)
+RadialDensityEstimator::RadialDensityEstimator (const Path &_path, 
+        int _frequency, string _label) : 
+	EstimatorBase(_path,_frequency,_label)
 {
 	/* The spatial discretization */
 	dR  = 0.5*path.boxPtr->side[0] / (1.0*NRADSEP);
@@ -1133,10 +1106,6 @@ RadialDensityEstimator::RadialDensityEstimator (const Path &_path, int _frequenc
 	for (int n = 1; n < NRADSEP; n++) 
 		header.append(str(format("%16.3E") % ((n)*dR)));
 
-	/* Initialize all variables */
-	outFilePtr = &(communicate()->radialFile());
-
-	/* Normalization factor */
 	norm = 1.0 / (path.boxPtr->side[NDIM-1]*path.numTimeSlices);
 	for (int n = 0; n < NRADSEP; n++) 
 		norm(n) /= (M_PI*(2*n+1)*dR*dR);
@@ -1208,7 +1177,8 @@ int num1DParticles(const Path &path, double maxR) {
  * potential and total energy per particle.
 ******************************************************************************/
 CylinderEnergyEstimator::CylinderEnergyEstimator (const Path &_path, ActionBase *_actionPtr,
-		double _maxR, int _frequency) : EstimatorBase(_path), actionPtr(_actionPtr) {
+		double _maxR, int _frequency, string _label) : 
+    EstimatorBase(_path,_frequency,_label), actionPtr(_actionPtr) {
 
 	/* Assign the cut-off radius */
 	maxR = _maxR;
@@ -1223,9 +1193,6 @@ CylinderEnergyEstimator::CylinderEnergyEstimator (const Path &_path, ActionBase 
 	name = "Cyl Energy";
 	header = str(format("#%15s%16s%16s%16s%16s%16s%16s") 
 			% "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
-
-	/* Initialize the output file */
-	outFilePtr = &(communicate()->cylEstimatorFile());
 }
 
 /*************************************************************************//**
@@ -1327,7 +1294,8 @@ void CylinderEnergyEstimator::accumulate() {
  *  density of particles.
 ******************************************************************************/
 CylinderNumberParticlesEstimator::CylinderNumberParticlesEstimator (const Path &_path, 
-		double _maxR, int _frequency) : EstimatorBase(_path) {
+		double _maxR, int _frequency, string _label) : 
+    EstimatorBase(_path,_frequency,_label) {
 
 	/* Assign the cut-off radius */
 	maxR = _maxR;
@@ -1335,14 +1303,10 @@ CylinderNumberParticlesEstimator::CylinderNumberParticlesEstimator (const Path &
 	/* We compute three diagonal estimators, the total number of particles,
 	 * total number of particles squared and density. */
 	initialize(3,_frequency,true,false,true);
-	norm = 1.0;
 
 	/* Set estimator name and header */
 	name = "Cyl Number Particles";
 	header = str(format("%16s%16s%16s") % "N" % "N^2" % "density");
-
-	/* Initialize the output file */
-	outFilePtr = &(communicate()->cylEstimatorFile());
 }
 
 /*************************************************************************//**
@@ -1375,7 +1339,8 @@ void CylinderNumberParticlesEstimator::accumulate() {
  *  specified.
 ******************************************************************************/
 CylinderNumberDistributionEstimator::CylinderNumberDistributionEstimator 
-	(const Path &_path, double _maxR, int _frequency) : EstimatorBase(_path) {
+	(const Path &_path, double _maxR, int _frequency, string _label) : 
+        EstimatorBase(_path,_frequency,_label) {
 
 	/* Assign the cut-off radius */
 	maxR = _maxR;
@@ -1383,16 +1348,12 @@ CylinderNumberDistributionEstimator::CylinderNumberDistributionEstimator
 	/* For now, we assume a maximum of 200 total particles. */
 	maxNumParticles = 200;
 	initialize(maxNumParticles,_frequency,true,false,true);
-	norm = 1.0;
 
 	/* Set estimator name and header */
 	name = "Cyl Number Distribution";
 	header = str(format("#%15d") % 0);
 	for (int n = 1; n < maxNumParticles; n++) 
 		header.append(str(format("%16d") % n));
-
-	/* Initialize the output file */
-	outFilePtr = &(communicate()->cylNumberFile());
 }
 
 /*************************************************************************//**
@@ -1427,7 +1388,8 @@ void CylinderNumberDistributionEstimator::accumulate() {
  *  distribution.
 ******************************************************************************/
 CylinderSuperfluidFractionEstimator::CylinderSuperfluidFractionEstimator (const Path &_path, 
-		double _maxR, int _frequency) : EstimatorBase(_path) {
+		double _maxR, int _frequency, string _label) : 
+    EstimatorBase(_path,_frequency,_label) {
 
 	/* Assign the cut-off radius */
 	maxR = _maxR;
@@ -1445,11 +1407,7 @@ CylinderSuperfluidFractionEstimator::CylinderSuperfluidFractionEstimator (const 
 	for (int w = -windMax; w <= windMax; w++)
 		header += str(format("%11sP(%+1d)") % " " % w);
 
-	/* Initialize all variables */
-	outFilePtr = &(communicate()->cylSuperFile());
-
 	/* The pre-factor for the superfluid density is always the same */
-	norm = 1.0;
 	norm(0) = constants()->T() / (2.0 * sum(path.boxPtr->periodic) * constants()->lambda());
 }
 
@@ -1575,8 +1533,8 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
  *  on the type of simulation cell).
 ******************************************************************************/
 CylinderOneBodyDensityMatrixEstimator::CylinderOneBodyDensityMatrixEstimator (Path &_path,
-		ActionBase *_actionPtr, MTRand &_random, double _maxR, int _frequency) : 
-	EstimatorBase(_path), 
+		ActionBase *_actionPtr, MTRand &_random, double _maxR, int _frequency, string _label) : 
+	EstimatorBase(_path,_frequency,_label), 
 	lpath(_path),
 	actionPtr(_actionPtr),
 	random(_random)
@@ -1599,9 +1557,6 @@ CylinderOneBodyDensityMatrixEstimator::CylinderOneBodyDensityMatrixEstimator (Pa
 	header = str(format("#%15.3E") % 0.0);
 	for (int n = 1; n < NOBDMSEP; n++) 
 		header.append(str(format("%16.3E") % (n*dR)));
-
-	/* Initialize all variables */
-	outFilePtr = &(communicate()->cylObdmFile());
 
 	numReps = 10;
 	norm = 1.0 / (1.0*numReps);
@@ -1790,8 +1745,8 @@ void CylinderOneBodyDensityMatrixEstimator::accumulate() {
  *  depends on dimension.
 ******************************************************************************/
 CylinderPairCorrelationEstimator::CylinderPairCorrelationEstimator (const Path &_path, 
-		ActionBase *_actionPtr, double _maxR, int _frequency) : 
-	EstimatorBase(_path),
+		ActionBase *_actionPtr, double _maxR, int _frequency, string _label) : 
+	EstimatorBase(_path,_frequency,_label),
 	actionPtr(_actionPtr)
 {
 	/* Assign the cut-off radius */
@@ -1810,9 +1765,6 @@ CylinderPairCorrelationEstimator::CylinderPairCorrelationEstimator (const Path &
 	header = str(format("#%15.3E") % 0.0);
 	for (int n = 1; n < NPCFSEP; n++) 
 		header.append(str(format("%16.3E") % ((n)*dR)));
-
-	/* Initialize all variables */
-	outFilePtr = &(communicate()->cylPairFile());
 
 	/* The normalization factor for the pair correlation function */
 	norm = 0.5*path.boxPtr->side[NDIM-1] / dR;
@@ -1876,8 +1828,8 @@ void CylinderPairCorrelationEstimator::sample () {
  *  external potential felt by the central chain of particles.
 ******************************************************************************/
 CylinderRadialPotentialEstimator::CylinderRadialPotentialEstimator (const Path &_path, 
-		ActionBase *_actionPtr, MTRand &_random, double _maxR, int _frequency) : 
-	EstimatorBase(_path),
+		ActionBase *_actionPtr, MTRand &_random, double _maxR, int _frequency, string _label) : 
+	EstimatorBase(_path,_frequency,_label),
 	actionPtr(_actionPtr),
 	random(_random)
 {
@@ -1899,11 +1851,6 @@ CylinderRadialPotentialEstimator::CylinderRadialPotentialEstimator (const Path &
 	header = str(format("#%15.3E") % 0.0);
 	for (int n = 1; n < NRADSEP; n++) 
 		header.append(str(format("%16.3E") % ((n)*dR)));
-
-	/* Initialize the output file */
-	outFilePtr = &(communicate()->cylPotentialFile());
-
-	norm = 1.0;
 }
 
 /*************************************************************************//**

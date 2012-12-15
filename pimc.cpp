@@ -40,24 +40,24 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	recedeTail(_path,_actionPtr,_random),
 	swapHead(_path,_actionPtr,_random),
 	swapTail(_path,_actionPtr,_random),
-	diagonalFraction(_path,1),
-	energy(_path,_actionPtr,1),
-	numberParticles(_path,1),
-	particlePositions(_path,1),
-	superfluidFraction(_path,1),
-	permutationCycle(_path,1),
-	oneBodyDensityMatrix(_path,_actionPtr,_random,15),
-	pairCorrelation(_path,_actionPtr,1),
-	radialDensity(_path,1),
-	wormProperties(_path,100),
-	numberDistribution(_path,1),
-	cylEnergy(_path,_actionPtr,maxR,1),
-	cylNumberParticles(_path,maxR,1),
-	cylSuperFluidFraction(_path,maxR,1),
-	cylPairCorrelation(_path,_actionPtr,maxR,1),
-	cylOneBodyDensityMatrix(_path,_actionPtr,_random,maxR,15),
-	cylNumberDistribution(_path,maxR,1),
-	cylRadialPotential(_path,_actionPtr,_random,maxR,1)
+	diagonalFraction(_path),
+	energy(_path,_actionPtr),
+	numberParticles(_path),
+	particlePositions(_path,0),
+	superfluidFraction(_path),
+	permutationCycle(_path),
+	oneBodyDensityMatrix(_path,_actionPtr,_random),
+	pairCorrelation(_path,_actionPtr),
+	radialDensity(_path),
+	wormProperties(_path),
+	numberDistribution(_path),
+	cylEnergy(_path,_actionPtr,maxR),
+	cylNumberParticles(_path,maxR),
+	cylSuperFluidFraction(_path,maxR),
+	cylPairCorrelation(_path,_actionPtr,maxR),
+	cylOneBodyDensityMatrix(_path,_actionPtr,_random,maxR),
+	cylNumberDistribution(_path,maxR),
+	cylRadialPotential(_path,_actionPtr,_random,maxR)
 {
 	/* Are we starting from a saved state? */
 	startWithState = _startWithState;
@@ -546,14 +546,14 @@ void PathIntegralMonteCarlo::step() {
 void PathIntegralMonteCarlo::finalOutput() {
 
 	/* Output the acceptance data to the log file */
-	communicate()->logFile() << endl;
-	communicate()->logFile() << endl;
+	communicate()->file("log")->stream() << endl;
+	communicate()->file("log")->stream() << endl;
 
-	communicate()->logFile() << "---------- Begin Acceptance Data ---------------" << endl;
-	communicate()->logFile() << endl;
-	communicate()->logFile() << format("%-29s\t:\t%7.5f\n") % "Total Rate" 
+	communicate()->file("log")->stream() << "---------- Begin Acceptance Data ---------------" << endl;
+	communicate()->file("log")->stream() << endl;
+	communicate()->file("log")->stream() << format("%-29s\t:\t%7.5f\n") % "Total Rate" 
 		% move.front()->getTotAcceptanceRatio();
-	communicate()->logFile() << endl;
+	communicate()->file("log")->stream() << endl;
 
 	/* Ouptut all the move acceptance information to disk */
 	string moveName;
@@ -564,32 +564,32 @@ void PathIntegralMonteCarlo::finalOutput() {
 		if ( (moveName != staging.name) && (moveName != centerOfMass.name)
 				&& (moveName != swapHead.name) && (moveName != swapTail.name) ) {
 			for (int n = 0; n <= constants()->b(); n++) {
-				communicate()->logFile() << format("%-12s Level %-10d\t:\t%7.5f\t(%d/%d)\n") 
+				communicate()->file("log")->stream() << format("%-12s Level %-10d\t:\t%7.5f\t(%d/%d)\n") 
 					% moveName % n % (*movePtr)->getAcceptanceRatioLevel(n) 
 					% (*movePtr)->numAcceptedLevel(n) % (*movePtr)->numAttemptedLevel(n);
 			}
 		}
-		communicate()->logFile() << format("%-29s\t:\t%7.5f\t(%d/%d)\n") % moveName
+		communicate()->file("log")->stream() << format("%-29s\t:\t%7.5f\t(%d/%d)\n") % moveName
 			% (*movePtr)->getAcceptanceRatio() % (*movePtr)->numAccepted
 			% (*movePtr)->numAttempted;
-		communicate()->logFile() << endl;
+		communicate()->file("log")->stream() << endl;
 	}
-	communicate()->logFile() << "---------- End Acceptance Data -----------------" << endl;
+	communicate()->file("log")->stream() << "---------- End Acceptance Data -----------------" << endl;
 
-	communicate()->logFile() << endl;
-	communicate()->logFile() << endl;
+	communicate()->file("log")->stream() << endl;
+	communicate()->file("log")->stream() << endl;
 
 	/* Output the estimator statistics to the log file */
-	communicate()->logFile() << "---------- Begin Estimator Data ----------------" << endl;
-	communicate()->logFile() << endl;
+	communicate()->file("log")->stream() << "---------- Begin Estimator Data ----------------" << endl;
+	communicate()->file("log")->stream() << endl;
 	for (vector <EstimatorBase*>::iterator estimatorPtr = estimator.begin();
 			estimatorPtr != estimator.end(); ++estimatorPtr) {
-		communicate()->logFile() << format("%-29s\t:\t%16d\t%16d\n") % (*estimatorPtr)->name
+		communicate()->file("log")->stream() << format("%-29s\t:\t%16d\t%16d\n") % (*estimatorPtr)->getName()
 			% (*estimatorPtr)->getNumSampled() % (*estimatorPtr)->getTotNumAccumulated();
 
 	}
-	communicate()->logFile() << endl;
-	communicate()->logFile() << "---------- End Estimator Data ------------------" << endl;
+	communicate()->file("log")->stream() << endl;
+	communicate()->file("log")->stream() << "---------- End Estimator Data ------------------" << endl;
 
 }
 
@@ -602,47 +602,48 @@ void PathIntegralMonteCarlo::saveState() {
 	savedState = true;
 
 	/* Prepare the state file for writing */
-	communicate()->resetStateFile(ios::out|ios::trunc);
+	communicate()->file("state")->reset();
 
 	/* We First write the current total number of world lines */
-	communicate()->stateFile() << path.getNumParticles() << endl;
+	communicate()->file("state")->stream() << path.getNumParticles() << endl;
 
 	/* Now write the total acceptance information for all moves */
-	communicate()->stateFile() << format("%16d\t%16d\n") 
+	communicate()->file("state")->stream() << format("%16d\t%16d\n") 
 		% move.front()->totAccepted % move.front()->totAttempted;
 
 	/* Now record the individual move acceptance information,
 	 * first for the diagonal, then off-diagonal*/
 	for (vector<MoveBase*>::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
-		communicate()->stateFile() << format("%16d\t%16d\n") 
+		communicate()->file("state")->stream() << format("%16d\t%16d\n") 
 			% (*movePtr)->numAccepted % (*movePtr)->numAttempted;
 	}
 
 	/* Output the estimator sampling information */
 	for (vector <EstimatorBase*>::iterator estimatorPtr = estimator.begin();
 			estimatorPtr != estimator.end(); ++estimatorPtr) {
-		communicate()->stateFile() << format("%16d\t%16d\n") 
+		communicate()->file("state")->stream() << format("%16d\t%16d\n") 
 			% (*estimatorPtr)->getTotNumAccumulated() 
 			% (*estimatorPtr)->getNumSampled();
 	}
 
 	/* Now we output the actual path and worldline data */
-	communicate()->stateFile() << path.beads << endl;
-	communicate()->stateFile() << path.nextLink << endl;
-	communicate()->stateFile() << path.prevLink << endl;
+	communicate()->file("state")->stream() << path.beads << endl;
+	communicate()->file("state")->stream() << path.nextLink << endl;
+	communicate()->file("state")->stream() << path.prevLink << endl;
 
 	/* Output the worm data */
-	communicate()->stateFile() << path.worm.beads << endl;
+	communicate()->file("state")->stream() << path.worm.beads << endl;
 
 	/* Save the state of the random number generator */
 	uint32 randomState[random.SAVE];
 	random.save(randomState);
 	for (int i = 0; i < random.SAVE; i++) 
-		communicate()->stateFile() << randomState[i] << " ";
-	communicate()->stateFile() << endl;
+		communicate()->file("state")->stream() << randomState[i] << " ";
+	communicate()->file("state")->stream() << endl;
 
-	/* Close the file */
-	communicate()->stateFile().close();
+	/* Rename and copy the file. */
+	communicate()->file("state")->rename();
+//	communicate()->file("state")->stream().close();
 }
 
 /**************************************************************************//**
@@ -750,22 +751,22 @@ void PathIntegralMonteCarlo::loadState() {
 	int numWorldLines;
 	int numTimeSlices = path.numTimeSlices;
 
-	communicate()->initFile() >> numWorldLines;
+	communicate()->file("init")->stream() >> numWorldLines;
 
 	/* Reset the total acceptance information */
-	communicate()->initFile() >> temp >> temp;
+	communicate()->file("init")->stream() >> temp >> temp;
 	move.front()->resetTotAccept();
 
 	/* Reset all the individual move acceptance information */
 	for (vector<MoveBase*>::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
-		communicate()->initFile() >> temp >> temp;
+		communicate()->file("init")->stream() >> temp >> temp;
 		(*movePtr)->resetAccept();
 	}
 
 	/* Reset previous estimator sampling information */
 	for (vector<EstimatorBase*>::iterator estimatorPtr = estimator.begin();
 			estimatorPtr != estimator.end(); ++estimatorPtr) {
-		communicate()->initFile() >> temp >> temp;
+		communicate()->file("init")->stream() >> temp >> temp;
 		(*estimatorPtr)->restart(0,0);
 	}
 
@@ -779,7 +780,7 @@ void PathIntegralMonteCarlo::loadState() {
     Array <dVec,2> tempBeads;
 
 	/* Get the worldline configuration */
-	communicate()->initFile() >> tempBeads;
+	communicate()->file("init")->stream() >> tempBeads;
 
     /* The temporary number of time slices */
     int tempNumTimeSlices = tempBeads.rows();
@@ -790,11 +791,11 @@ void PathIntegralMonteCarlo::loadState() {
         path.beads = tempBeads;
 
         /* Get the link arrays */
-        communicate()->initFile() >> path.nextLink;
-        communicate()->initFile() >> path.prevLink;
+        communicate()->file("init")->stream() >> path.nextLink;
+        communicate()->file("init")->stream() >> path.prevLink;
 
         /* Repeat for the worm file */
-        communicate()->initFile() >> path.worm.beads;
+        communicate()->file("init")->stream() >> path.worm.beads;
 
     } // locBeads.rows() == numTimeSlices
     else {
@@ -821,9 +822,9 @@ void PathIntegralMonteCarlo::loadState() {
         Array <unsigned int,2> tempWormBeads;
 
         /* Get the link arrays and worm file */
-        communicate()->initFile() >> tempNextLink;
-        communicate()->initFile() >> tempPrevLink;
-        communicate()->initFile() >> tempWormBeads;
+        communicate()->file("init")->stream() >> tempNextLink;
+        communicate()->file("init")->stream() >> tempPrevLink;
+        communicate()->file("init")->stream() >> tempWormBeads;
 
         /* Load a classical (all time slice positions equal) from the input
          * file */
@@ -859,7 +860,7 @@ void PathIntegralMonteCarlo::loadState() {
     if (constants()->restart()) {
         uint32 randomState[random.SAVE];
         for (int i = 0; i < random.SAVE; i++) 
-            communicate()->initFile() >> randomState[i];
+            communicate()->file("init")->stream() >> randomState[i];
         random.load(randomState);
     }
 
@@ -890,7 +891,7 @@ void PathIntegralMonteCarlo::loadState() {
 	path.lookup.updateGrid(path);
 
 	/* Close the file */
-	communicate()->initFile().close();
+	communicate()->file("init")->close();
 
     /* Free up memory */
     tempBeads.free();
@@ -979,21 +980,21 @@ void PathIntegralMonteCarlo::outputPDB() {
 	numWorldLines = nwl;
 
 	/* Output the PDB header */
-	communicate()->wlFile() << format("REMARK [CONFIG %04d]\n") % configNumber;
+	communicate()->file("wl")->stream() << format("REMARK [CONFIG %04d]\n") % configNumber;
 
 	/* Output the unit cell information.  It is always cubic.  Everything is scaled by
 	 * an overall factor for better visualization. */
 
 	double scale = 10.0;				
 	int i;
-	communicate()->wlFile() << format("%-6s") % "CRYST1";
+	communicate()->file("wl")->stream() << format("%-6s") % "CRYST1";
 	for (i = 0; i < NDIM; i++) 
-		communicate()->wlFile() << format("%9.3f") % (scale*path.boxPtr->side[i]);
+		communicate()->file("wl")->stream() << format("%9.3f") % (scale*path.boxPtr->side[i]);
 	while (i < 3) {
-		communicate()->wlFile() << format("%9.3f") % 1.0;
+		communicate()->file("wl")->stream() << format("%9.3f") % 1.0;
 		i++;
 	}
-	communicate()->wlFile() << format("%7.2f%7.2f%7.2f %-11s%4d\n") % 90.0 % 90.0 % 90.0 % "P 1" % 1;
+	communicate()->file("wl")->stream() << format("%7.2f%7.2f%7.2f %-11s%4d\n") % 90.0 % 90.0 % 90.0 % "P 1" % 1;
 
 	/* We output the atom block */
 	beadLocator beadIndex;
@@ -1002,34 +1003,34 @@ void PathIntegralMonteCarlo::outputPDB() {
 		do {
 			/* We give the zero-time-slice bead a special name */
 			if (beadIndex[0] == 0) {
-				communicate()->wlFile() << format("%-6s%5d %-4s %03d %9s") % "ATOM" 
+				communicate()->file("wl")->stream() << format("%-6s%5d %-4s %03d %9s") % "ATOM" 
 					% beadNum(beadIndex) % "H0" % wlLength(n) % " ";
 			}
 			else {
-				communicate()->wlFile() << format("%-6s%5d %-4s %03d %9s") % "ATOM" 
+				communicate()->file("wl")->stream() << format("%-6s%5d %-4s %03d %9s") % "ATOM" 
 					% beadNum(beadIndex) % "HE" % wlLength(n) % " ";
 			}
 
 			/* Output the coordinates in 3D */
 			for (i = 0; i < NDIM; i++) {
-				communicate()->wlFile() << format("%8.3f") % (scale*path(beadIndex)[i]);
+				communicate()->file("wl")->stream() << format("%8.3f") % (scale*path(beadIndex)[i]);
 			}
 			while (i < 3) {
-				communicate()->wlFile() << format("%8.3f") % 0.0;
+				communicate()->file("wl")->stream() << format("%8.3f") % 0.0;
 				i++;
 			}
-			communicate()->wlFile() << format("%14s\n") % "HE";
+			communicate()->file("wl")->stream() << format("%14s\n") % "HE";
 
 			beadIndex = path.next(beadIndex);
 		} while (!all(beadIndex==endBead(n)));
 	}
-	communicate()->wlFile() <<("TER\n");
+	communicate()->file("wl")->stream() <<("TER\n");
 
 	/* Now output the connect block */
 	for (int n = 0; n < numWorldLines;  n++) {
 		beadIndex = startBead(n);
 		do {
-			communicate()->wlFile() << format("%-6s%5d") % "CONECT" % beadNum(beadIndex);
+			communicate()->file("wl")->stream() << format("%-6s%5d") % "CONECT" % beadNum(beadIndex);
 			beadLocator prevIndex,nextIndex;
 			prevIndex = path.prev(beadIndex);
 			nextIndex = path.next(beadIndex);
@@ -1042,7 +1043,7 @@ void PathIntegralMonteCarlo::outputPDB() {
 				dVec sep;
 				sep = path(beadIndex) - path(prevIndex);
 				if (dot(sep,sep) < path.boxPtr->rcut2)
-					communicate()->wlFile() << format("%5d") % beadNum(prevIndex);
+					communicate()->file("wl")->stream() << format("%5d") % beadNum(prevIndex);
 			}
 
 			/* Now the next bead */
@@ -1050,14 +1051,14 @@ void PathIntegralMonteCarlo::outputPDB() {
 				dVec sep;
 				sep = path(nextIndex) - path(beadIndex);
 				if (dot(sep,sep) < path.boxPtr->rcut2)
-					communicate()->wlFile() << format("%5d") % beadNum(nextIndex);
+					communicate()->file("wl")->stream() << format("%5d") % beadNum(nextIndex);
 			}
-			communicate()->wlFile() << endl;
+			communicate()->file("wl")->stream() << endl;
 
 			beadIndex = path.next(beadIndex);
 		} while (!all(beadIndex==endBead(n)));
 	}
-	communicate()->wlFile() <<("END\n");
+	communicate()->file("wl")->stream() <<("END\n");
 
 	/* Free up memory */
 	startBead.free();

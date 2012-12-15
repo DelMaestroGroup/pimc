@@ -22,15 +22,14 @@ class Potential;
  * The base class that all estimator classes will be derived from. 
  *
  * Contains the common elements of all estimators, including the ability
- * to initialize, accumulate, output and reset.
+ * to initialize, accumulate, output and reset.  We assume a default measurment
+ * frequency of every time.
  */
 class EstimatorBase {
 
 	public:
-		EstimatorBase (const Path &);
+		EstimatorBase (const Path &, int _frequency=1, string _label="");
 		virtual ~EstimatorBase() = 0;
-
-		string name;	///< The name of the estimator
 
 		/* Sample the estimator */
 		virtual void sample();		
@@ -62,6 +61,9 @@ class EstimatorBase {
 		/** Get the number of samples since the last reset */
 		uint32 getNumSampled() { return numSampled; }
 
+		/** Get the name of the estimator */
+		string getName() { return name; }
+
 	protected:
 		const Path &path;				///< A constant reference to the paths
 
@@ -71,9 +73,11 @@ class EstimatorBase {
 		Array<double,1> norm;			///< The normalization factor for each estimator
 
 		int numEst;						///< The number of individual quantities measured
+		string name;	                ///< The name of the estimator
+        string label;                   ///< The label used for the output file
 		uint32 numSampled;				///< The number of times we have sampled
-		uint32 totNumAccumulated;		///< The total number of accumulated values
 		uint32 numAccumulated;			///< The number of accumulated values
+		uint32 totNumAccumulated;		///< The total number of accumulated values
 		int frequency;					///< The frequency at which we accumulate
 		int numBeads0;					///< The target number of beads for the canonical ensemble
 
@@ -107,7 +111,8 @@ class EstimatorBase {
 class EnergyEstimator: public EstimatorBase {
 
 	public:
-		EnergyEstimator(const Path &, ActionBase *, int);
+		EnergyEstimator(const Path &, ActionBase *, 
+                int _frequency=1, string _label="estimator");
 		~EnergyEstimator();
 
 	private:
@@ -125,7 +130,8 @@ class EnergyEstimator: public EstimatorBase {
 class NumberParticlesEstimator: public EstimatorBase {
 
 	public:
-		NumberParticlesEstimator(const Path &, int);
+		NumberParticlesEstimator(const Path &,
+                int _frequency=1, string _label="estimator");
 		~NumberParticlesEstimator();
 
 	private:
@@ -142,7 +148,8 @@ class NumberParticlesEstimator: public EstimatorBase {
 class ParticlePositionEstimator: public EstimatorBase {
 
 	public:
-		ParticlePositionEstimator(const Path &, int);
+		ParticlePositionEstimator(const Path &, 
+                int _frequency=1, string _label="position");
 		~ParticlePositionEstimator();
         
         void output();              // overload the output
@@ -161,7 +168,8 @@ class ParticlePositionEstimator: public EstimatorBase {
 class NumberDistributionEstimator: public EstimatorBase {
 
 	public:
-		NumberDistributionEstimator(const Path &, int);
+		NumberDistributionEstimator(const Path &,
+                int _frequency=1, string _label="number");
 		~NumberDistributionEstimator();
 
 	private:
@@ -183,7 +191,8 @@ class NumberDistributionEstimator: public EstimatorBase {
 class SuperfluidFractionEstimator: public EstimatorBase {
 
 	public:
-		SuperfluidFractionEstimator(const Path &, int);
+		SuperfluidFractionEstimator(const Path &, 
+                int _frequency=1, string _label="super");
 		~SuperfluidFractionEstimator();
 
 	private:
@@ -202,7 +211,8 @@ class SuperfluidFractionEstimator: public EstimatorBase {
 class DiagonalFractionEstimator: public EstimatorBase {
 
 	public:
-		DiagonalFractionEstimator(const Path &, int);
+		DiagonalFractionEstimator(const Path &,
+                int _frequency=1, string _label="estimator");
 		~DiagonalFractionEstimator();
 
 	private:
@@ -218,7 +228,8 @@ class DiagonalFractionEstimator: public EstimatorBase {
 class PermutationCycleEstimator: public EstimatorBase {
 
 	public:
-		PermutationCycleEstimator(const Path &, int);
+		PermutationCycleEstimator(const Path &,
+                int _frequency=1, string _label="pcycle");
 		~PermutationCycleEstimator();
 
 	private:
@@ -241,7 +252,8 @@ class PermutationCycleEstimator: public EstimatorBase {
 class OneBodyDensityMatrixEstimator: public EstimatorBase {
 
 	public:
-		OneBodyDensityMatrixEstimator(Path &, ActionBase *, MTRand &, int);
+		OneBodyDensityMatrixEstimator(Path &, ActionBase *, MTRand &,
+                int _frequency=20, string _label="obdm");
 		~OneBodyDensityMatrixEstimator();
 
 		void sample();				// Sample the estimator
@@ -286,7 +298,8 @@ class OneBodyDensityMatrixEstimator: public EstimatorBase {
 class PairCorrelationEstimator: public EstimatorBase {
 
 	public:
-		PairCorrelationEstimator(const Path &, ActionBase *, int);
+		PairCorrelationEstimator(const Path &, ActionBase *,
+                int _frequency=1, string _label="pair");
 		~PairCorrelationEstimator();
 
 	private:
@@ -304,7 +317,8 @@ class PairCorrelationEstimator: public EstimatorBase {
 class RadialDensityEstimator: public EstimatorBase {
 
 	public:
-		RadialDensityEstimator(const Path &, int);
+		RadialDensityEstimator(const Path &, 
+                int _frequency=1, string _label="radial");
 		~RadialDensityEstimator();
 
 	private:
@@ -321,7 +335,8 @@ class RadialDensityEstimator: public EstimatorBase {
 class WormPropertiesEstimator: public EstimatorBase {
 
 	public:
-		WormPropertiesEstimator(const Path &, int);
+		WormPropertiesEstimator(const Path &, 
+                int _frequency=100, string _label="worm");
 		~WormPropertiesEstimator();
 
 	private:
@@ -350,7 +365,8 @@ class WormPropertiesEstimator: public EstimatorBase {
 class CylinderEnergyEstimator: public EstimatorBase {
 
 	public:
-		CylinderEnergyEstimator(const Path &, ActionBase *, double, int);
+		CylinderEnergyEstimator(const Path &, ActionBase *, double, 
+                int _frequency=1, string _label="cyl_estimator");
 		~CylinderEnergyEstimator();
 
 	private:
@@ -370,7 +386,8 @@ class CylinderEnergyEstimator: public EstimatorBase {
 class CylinderNumberParticlesEstimator: public EstimatorBase {
 
 	public:
-		CylinderNumberParticlesEstimator(const Path &, double, int);
+		CylinderNumberParticlesEstimator(const Path &, double, 
+                int _frequency=1, string _label="cyl_estimator");
 		~CylinderNumberParticlesEstimator();
 
 	private:
@@ -388,7 +405,8 @@ class CylinderNumberParticlesEstimator: public EstimatorBase {
 class CylinderNumberDistributionEstimator: public EstimatorBase {
 
 	public:
-		CylinderNumberDistributionEstimator(const Path &, double, int);
+		CylinderNumberDistributionEstimator(const Path &, double, 
+                int _frequency=1, string _label="cyl_number");
 		~CylinderNumberDistributionEstimator();
 
 	private:
@@ -408,7 +426,8 @@ class CylinderNumberDistributionEstimator: public EstimatorBase {
 class CylinderSuperfluidFractionEstimator: public EstimatorBase {
 
 	public:
-		CylinderSuperfluidFractionEstimator(const Path &, double, int);
+		CylinderSuperfluidFractionEstimator(const Path &, double, 
+                int _frequency=1, string _label="cyl_super");
 		~CylinderSuperfluidFractionEstimator();
 
 	private:
@@ -434,7 +453,8 @@ class CylinderSuperfluidFractionEstimator: public EstimatorBase {
 class CylinderOneBodyDensityMatrixEstimator: public EstimatorBase {
 
 	public:
-		CylinderOneBodyDensityMatrixEstimator(Path &, ActionBase *, MTRand &, double, int);
+		CylinderOneBodyDensityMatrixEstimator(Path &, ActionBase *, MTRand &, double, 
+                int _frequency=20, string _label="cyl_obdm");
 		~CylinderOneBodyDensityMatrixEstimator();
 
 		void sample();				// Sample the estimator
@@ -479,7 +499,8 @@ class CylinderOneBodyDensityMatrixEstimator: public EstimatorBase {
 class CylinderPairCorrelationEstimator: public EstimatorBase {
 
 	public:
-		CylinderPairCorrelationEstimator(const Path &, ActionBase *, double, int);
+		CylinderPairCorrelationEstimator(const Path &, ActionBase *, double, 
+                int _frequency=1, string _label="cyl_pair");
 		~CylinderPairCorrelationEstimator();
 
 		void sample();				// Sample the estimator
@@ -501,7 +522,8 @@ class CylinderPairCorrelationEstimator: public EstimatorBase {
 class CylinderRadialPotentialEstimator: public EstimatorBase {
 
 	public:
-		CylinderRadialPotentialEstimator(const Path &, ActionBase *, MTRand &, double, int);
+		CylinderRadialPotentialEstimator(const Path &, ActionBase *, MTRand &, double, 
+                int _frequency=1, string _label="cyl_potential");
 		~CylinderRadialPotentialEstimator();
 
 	private:

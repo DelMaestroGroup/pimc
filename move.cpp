@@ -58,9 +58,9 @@ inline void MoveBase::printMoveState(string state) {
 	wormBeads = XXX;
 
 	/* Output the worldline configuration */
-	communicate()->debugFile() << "Move State: " << state 
+	communicate()->file("debug")->stream() << "Move State: " << state 
 		<< " (" << path.getTrueNumParticles() << ")" << endl;
-	communicate()->debugFile() << "head " << path.worm.head[0] << " " << path.worm.head[1]
+	communicate()->file("debug")->stream() << "head " << path.worm.head[0] << " " << path.worm.head[1]
         << " tail " << path.worm.tail[0] << " " << path.worm.tail[1]
         << " length " << path.worm.length 
         << " gap " << path.worm.gap << endl;
@@ -77,7 +77,7 @@ inline void MoveBase::printMoveState(string state) {
 	}
 
 	path.printWormConfig(wormBeads);
-	path.printLinks<fstream>(communicate()->debugFile());
+	path.printLinks<fstream>(communicate()->file("debug")->stream());
 	wormBeads.free();
 #endif
 }
@@ -101,7 +101,7 @@ inline void MoveBase::checkMove(int callNum, double diffA) {
 		newK = actionPtr->kineticAction();
 		double diffV = newV - oldV;
 		if (abs(diffV-diffA) > EPS) {
-			communicate()->debugFile() << format("%-16s%16.6e\t%16.6e\t%16.6e\n") % name 
+			communicate()->file("debug")->stream() << format("%-16s%16.6e\t%16.6e\t%16.6e\n") % name 
 				% diffV % diffA % (diffV - diffA);
 			cout << name << " KEEP " << diffA << endl;
 			exit(EXIT_FAILURE);
@@ -115,7 +115,7 @@ inline void MoveBase::checkMove(int callNum, double diffA) {
 		double diffV = newV - oldV;
 		double diffK = newK - oldK;
 		if ( (abs(diffV) > EPS) || abs(diffK) > EPS) {
-			communicate()->debugFile() << format("%-16s%16.6e\t%16.6e\n") % name
+			communicate()->file("debug")->stream() << format("%-16s%16.6e\t%16.6e\n") % name
 				% diffV % diffK;
 			cout << name << " UNDO " << diffV << " " << diffK << endl;
 			exit(EXIT_FAILURE);
@@ -129,7 +129,7 @@ inline void MoveBase::checkMove(int callNum, double diffA) {
 		newV = actionPtr->potentialAction();
 		newK = actionPtr->kineticAction();
 		double diffV = newV - oldV;
-		communicate()->debugFile() << format("%-16s%16.6e\t%16.6e\n") % name 
+		communicate()->file("debug")->stream() << format("%-16s%16.6e\t%16.6e\n") % name 
 			% ((newK-oldK)/diffA) % ((diffV)/diffA);
 	}
 #endif

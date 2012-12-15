@@ -434,10 +434,6 @@ void Setup::communicator() {
     communicate()->init(params["imaginary_time_step"].as<double>(),
             (params["output_config"].as<int>() > 0),params["start_with_state"].as<string>(),
             params["fixed"].as<string>());
-
-    ccommunicate()->init(params["imaginary_time_step"].as<double>(),
-            (params["output_config"].as<int>() > 0),params["start_with_state"].as<string>(),
-            params["fixed"].as<string>());
 }
 
 /*************************************************************************//**
@@ -506,7 +502,7 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
 void Setup::outputOptions(int argc, char *argv[], const uint32 _seed, 
 		const Container *boxPtr, const iVec &nnGrid) {
 
-	communicate()->logFile() << endl << "# ";
+	communicate()->file("log")->stream() << endl << "# ";
 
 	/* Construct the command that would be required to restart the simulation */
 	bool outputC0 = false;
@@ -516,16 +512,16 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 		if ((argv[n][0] == '-') && (argv[n][1] == 's'))
 			n++;
 		else if ((argv[n][0] == '-') && (argv[n][1] == 'C')) {
-			communicate()->logFile() << format("-C %10.4e ") % constants()->C0();
+			communicate()->file("log")->stream() << format("-C %10.4e ") % constants()->C0();
 			n++;
 			outputC0 = true;
 		}
 		else if ((argv[n][0] == '-') && (argv[n][1] == 'p')) {
-			communicate()->logFile() << format("-p %03d ") % params["process"].as<uint32>();
+			communicate()->file("log")->stream() << format("-p %03d ") % params["process"].as<uint32>();
 			n++;
 		}
 		else if ((argv[n][0] == '-') && (argv[n][1] == 'D')) {
-            communicate()->logFile() << format("-D %10.4e ") % constants()->Delta();
+            communicate()->file("log")->stream() << format("-D %10.4e ") % constants()->Delta();
 			outputD = true;
 			n++;
 		}
@@ -535,91 +531,91 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
             // Do nothing
         }
 		else 
-			communicate()->logFile() << argv[n] << " ";
+			communicate()->file("log")->stream() << argv[n] << " ";
 	}
 
     /* Output the restart flag */
-    communicate()->logFile() << format("-R %09d ") % constants()->id();
+    communicate()->file("log")->stream() << format("-R %09d ") % constants()->id();
 
 	/* If we haven't specified the worm constant, output it now */
 	if (!outputC0)
-		communicate()->logFile() << format("-C %10.4e ") % constants()->C0();
+		communicate()->file("log")->stream() << format("-C %10.4e ") % constants()->C0();
 
 	/* If we haven't specified Delta, output it now */
 	if (!outputD)
-        communicate()->logFile() << format("-D %10.4e ") % constants()->Delta();
+        communicate()->file("log")->stream() << format("-D %10.4e ") % constants()->Delta();
 
-	communicate()->logFile() << endl << endl;
-	communicate()->logFile() << "---------- Begin Simulation Parameters ----------" << endl;
-	communicate()->logFile() << endl;
+	communicate()->file("log")->stream() << endl << endl;
+	communicate()->file("log")->stream() << "---------- Begin Simulation Parameters ----------" << endl;
+	communicate()->file("log")->stream() << endl;
 	if (constants()->canonical())
-		communicate()->logFile() << format("%-24s\t:\t%s\n") % "Ensenble" % "canonical";
+		communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Ensenble" % "canonical";
 	else
-		communicate()->logFile() << format("%-24s\t:\t%s\n") % "Ensenble" % "grand canonical";
-	communicate()->logFile() << format("%-24s\t:\t%s\n") % "Interaction Potential" % 
+		communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Ensenble" % "grand canonical";
+	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Interaction Potential" % 
 		params["interaction_potential"].as<string>();
 	if ( (params["interaction_potential"].as<string>().find("delta") != string::npos) ||
 			(params["interaction_potential"].as<string>().find("lorentzian") != string::npos) ) {
-		communicate()->logFile() << format("%-24s\t:\t%8.3e\n") % "Delta Width" 
+		communicate()->file("log")->stream() << format("%-24s\t:\t%8.3e\n") % "Delta Width" 
 			% params["delta_width"].as<double>();
-		communicate()->logFile() << format("%-24s\t:\t%-7.2f\n") % "Delta Strength" 
+		communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") % "Delta Strength" 
 			% params["delta_strength"].as<double>();
 	}
-	communicate()->logFile() << format("%-24s\t:\t%s\n") 
+	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") 
 		% "External Potential" % params["external_potential"].as<string>();
-	communicate()->logFile() << 
+	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%7.5f\n") % "Temperature" % params["temperature"].as<double>();
-	communicate()->logFile() << 
+	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%7.5f\n") % "Chemical Potential" % constants()->mu();
-	communicate()->logFile() << 
+	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%7.5f\n") % "Particle Mass" % params["mass"].as<double>();
-	communicate()->logFile() << 
+	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%d\n") % "Number Time Slices" % constants()->numTimeSlices();
-	communicate()->logFile() << 
+	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%7.5f\n") % "Imaginary Time Step" % constants()->tau();
-	communicate()->logFile() << 
+	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%d\n") % "Initial Number Particles" % params["number_particles"].as<int>();
-	communicate()->logFile() << 
+	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%7.5f\n") % "Initial Density" 
 		% (1.0*params["number_particles"].as<int>()/boxPtr->volume);
-	communicate()->logFile() << 
+	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%s\n") % "Container Type" % boxPtr->name;
-	communicate()->logFile() << format("%-24s\t:\t") % "Container Dimensions";
+	communicate()->file("log")->stream() << format("%-24s\t:\t") % "Container Dimensions";
 	for (int i = 0; i < NDIM; i++) {
-		communicate()->logFile() << format("%7.5f") % boxPtr->side[i];
+		communicate()->file("log")->stream() << format("%7.5f") % boxPtr->side[i];
 		if (i < (NDIM-1))
-			communicate()->logFile() << " x ";
+			communicate()->file("log")->stream() << " x ";
 		else
-			communicate()->logFile() << endl;
+			communicate()->file("log")->stream() << endl;
 	}
-	communicate()->logFile() << format("%-24s\t:\t%7.5f\n") % "Container Volume" 
+	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Container Volume" 
 		% boxPtr->volume;
-	communicate()->logFile() << format("%-24s\t:\t") % "Lookup Table";
+	communicate()->file("log")->stream() << format("%-24s\t:\t") % "Lookup Table";
 	for (int i = 0; i < NDIM; i++) {
-		communicate()->logFile() << format("%d") % nnGrid[i];
+		communicate()->file("log")->stream() << format("%d") % nnGrid[i];
 		if (i < (NDIM-1))
-			communicate()->logFile() << " x ";
+			communicate()->file("log")->stream() << " x ";
 		else
-			communicate()->logFile() << endl;
+			communicate()->file("log")->stream() << endl;
 	}
-	communicate()->logFile() << format("%-24s\t:\t%7.5f\n") % "Initial Worm Constant" % 
+	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Initial Worm Constant" % 
 		params["worm_constant"].as<double>();
-	communicate()->logFile() << format("%-24s\t:\t%7.5f\n") % "Worm Constant" % constants()->C0();
-	communicate()->logFile() << format("%-24s\t:\t%7.5f\n") % "Inital CoM Shift" % params["Delta"].as<double>();
-	communicate()->logFile() << format("%-24s\t:\t%7.5g\n") % "CoM Shift" % constants()->Delta();
-	communicate()->logFile() << 
+	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Worm Constant" % constants()->C0();
+	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Inital CoM Shift" % params["Delta"].as<double>();
+	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5g\n") % "CoM Shift" % constants()->Delta();
+	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%d\n") % "Bisection Parameter" % constants()->b();
-	communicate()->logFile() << 
+	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%d\n") % "Update Slices (Mbar)" % constants()->Mbar();
-	communicate()->logFile() << 
+	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%7.5f\n") % "Potential Cutoff Length" 
 		% params["potential_cutoff"].as<double>();
-	communicate()->logFile() << 
+	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%d\n") % "Number EQ Steps" % params["number_eq_steps"].as<uint32>();
-	communicate()->logFile() << 
+	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%d\n") % "Number Bins Stored" % params["number_bins_stored"].as<int>();
-	communicate()->logFile() << format("%-24s\t:\t%d\n") % "Random Number Seed" % _seed;
-	communicate()->logFile() << endl;
-	communicate()->logFile() << "---------- End Simulation Parameters ------------" << endl;
+	communicate()->file("log")->stream() << format("%-24s\t:\t%d\n") % "Random Number Seed" % _seed;
+	communicate()->file("log")->stream() << endl;
+	communicate()->file("log")->stream() << "---------- End Simulation Parameters ------------" << endl;
 
 }

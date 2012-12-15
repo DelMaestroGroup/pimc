@@ -446,7 +446,7 @@ void Path::outputConfig(int configNumber) const {
 	numWorldLines = nwl;
 
 	/* Output the header */
-	communicate()->wlFile() << format("# START_CONFIG %06d\n") % configNumber;
+	communicate()->file("wl")->stream() << format("# START_CONFIG %06d\n") % configNumber;
 
 	/* Output the unit cell information.  It is always cubic.  Everything is scaled by
 	 * an overall factor for better visualization. */
@@ -455,28 +455,28 @@ void Path::outputConfig(int configNumber) const {
 	for (int n = 0; n < numWorldLines;  n++) {
 		beadIndex = startBead(n);
 		do {
-			communicate()->wlFile() << format("%8d %8d %8d") % 
+			communicate()->file("wl")->stream() << format("%8d %8d %8d") % 
 				beadIndex[0] % beadIndex[1] % wlLength(n);
 
 			/* Output the coordinates in 3D */
 			int i;
 			for (i = 0; i < NDIM; i++) {
-				communicate()->wlFile() << format("%16.3E") % (beads(beadIndex)[i]);
+				communicate()->file("wl")->stream() << format("%16.3E") % (beads(beadIndex)[i]);
 			}
 			while (i < 3) {
-				communicate()->wlFile() << format("%16.3E") % 0.0;
+				communicate()->file("wl")->stream() << format("%16.3E") % 0.0;
 				i++;
 			}
 
 			/* Output the bead indices of the connecting beads */
-				communicate()->wlFile() << format("%8d %8d %8d %8d\n") % prev(beadIndex)[0] 
+				communicate()->file("wl")->stream() << format("%8d %8d %8d %8d\n") % prev(beadIndex)[0] 
 					% prev(beadIndex)[1] % next(beadIndex)[0] % next(beadIndex)[1];
 
 			/* Advance the bead index */
 			beadIndex = next(beadIndex);
 		} while (!all(beadIndex==endBead(n)));
 	}
-	communicate()->wlFile() << format("# END_CONFIG %06d\n") % configNumber;
+	communicate()->file("wl")->stream() << format("# END_CONFIG %06d\n") % configNumber;
 
 	/* Free up memory */
 	startBead.free();
@@ -496,7 +496,7 @@ void Path::printWormConfig(Array <beadLocator,1> &wormBeads) {
 
 	/* A shortform for the output file */
 	fstream *outFilePtr;			
-	outFilePtr = &(communicate()->debugFile());
+	outFilePtr = &(communicate()->file("debug")->stream());
 
 	for (int m = numTimeSlices-1; m >= 0; m--) {
 		/* First print out the beads */
