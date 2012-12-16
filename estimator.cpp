@@ -113,14 +113,18 @@ void EstimatorBase::initialize(int _numEst) {
 ******************************************************************************/
 void EstimatorBase::prepare() {
 
-    /* Assign the output file pointer */
-	outFilePtr = &(communicate()->file(label)->stream());
+    /* Provided that we will perform at least one measurement, open an output
+     * file and possibly write a header */
+    if (frequency > 0) {
+        /* Assign the output file pointer */
+        outFilePtr = &(communicate()->file(label)->stream());
 
-    /* Write the header to disk if we are not restarting */
-    if (!constants()->restart()) {
-        (*outFilePtr) << header;
-        if (endLine)
-            (*outFilePtr) << endl;
+        /* Write the header to disk if we are not restarting */
+        if (!constants()->restart()) {
+            (*outFilePtr) << header;
+            if (endLine)
+                (*outFilePtr) << endl;
+        }
     }
 
 }
@@ -402,8 +406,8 @@ ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path,
     /* Set estimator name and header. */
     name = "Particle Position";
     header = str(format("#%15d") % NGRIDSEP);
-    for (int i = 0; i < NDIM; i++)
-        header += str(format("%16.8E") % path.boxPtr->gridSize[i]);
+   // for (int i = 0; i < NDIM; i++)
+    //    header += str(format("%16.8E") % path.boxPtr->gridSize[i]);
 
     /* The normalization: 1/(dV*M) */
     for (int n = 0; n < numEst; n++)
@@ -423,14 +427,18 @@ ParticlePositionEstimator::~ParticlePositionEstimator() {
 void ParticlePositionEstimator::output() {
 
     /* Prepare the position file for writing over old data */
-    communicate()->file("position")->reset();
+    communicate()->file(label)->reset();
+
+    (*outFilePtr) << header;
+    if (endLine)
+        (*outFilePtr) << endl;
 
 	/* Now write the running average of the estimator to disk */
 	for (int n = 0; n < numEst; n++) 
         (*outFilePtr) << format("%16.6E\n") % 
             (norm(n)*estimator(n)/totNumAccumulated);
 
-    communicate()->file("position")->rename();
+    communicate()->file(label)->rename();
 }
 
 /*************************************************************************//**
@@ -564,6 +572,108 @@ void SuperfluidFractionEstimator::accumulate() {
 
     /* The Area Estimator */
     estimator(5+2*windMax) += Az*Az/I;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// LOCAL SUPERFLUID DENSITY ESTIMATOR CLASS ----------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor
+ * 
+ *  Initialize the variables needed to measure the local superfluid density 
+ *  as described in: 
+ *  @see E. W. Draeger and D. M. Ceperley, Phys. Rev. Lett. 90, 065301 (2003).
+ *
+******************************************************************************/
+LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
+(const Path &_path, int _frequency, string _label) : 
+    EstimatorBase(_path,_frequency,_label) {
+
+    /* This is a 'local' histogram estimator so we use the defined grid */
+    initialize(path.boxPtr->numGrid);
+
+    /* Set estimator name and header. */
+    name = "Local Superfluid";
+    header = str(format("#%15d") % NGRIDSEP);
+
+    /* The normalization: 1/(dV*M) */
+    for (int n = 0; n < numEst; n++)
+        norm(n) = 1.0/(1.0*path.numTimeSlices*path.boxPtr->gridBoxVolume(n));
+
+    /* The normalization constant for the area estimator. */
+    norm *= 0.5*constants()->T()*constants()->numTimeSlices();
+    norm /= constants()->lambda();
+
+    locAz.resize(numEst);
+    locAz = 0.0;
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+LocalSuperfluidDensityEstimator::~LocalSuperfluidDensityEstimator() { 
+}
+
+/*************************************************************************//**
+ *  Overload the output of the base class so that a running average
+ *  is kept rather than keeping all data.
+******************************************************************************/
+void LocalSuperfluidDensityEstimator::output() {
+
+    /* Prepare the position file for writing over old data */
+    communicate()->file(label)->reset();
+
+    (*outFilePtr) << header;
+    if (endLine)
+        (*outFilePtr) << endl;
+
+	/* Now write the running average of the estimator to disk */
+	for (int n = 0; n < numEst; n++) 
+        (*outFilePtr) << format("%16.6E\n") % 
+            (norm(n)*estimator(n)/totNumAccumulated);
+
+    communicate()->file(label)->rename();
+}
+
+/*************************************************************************//**
+ *  Accumulate superfluid properties.
+ *
+ *  We measure the winding number W, as well as the W^2/N which is used to 
+ *  compute the superfluid fraction.  The probability distribution of winding
+ *  number fluctuations is also computed.
+******************************************************************************/
+void LocalSuperfluidDensityEstimator::accumulate() {
+
+	int numTimeSlices = path.numTimeSlices;
+    locAz = 0.0;
+
+	beadLocator beadIndex;
+    double Az, I;
+    dVec pos1,pos2;
+
+    Az = I = 0.0;
+	for (int slice = 0; slice < numTimeSlices; slice++) {
+		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+
+            /* The area estimator */
+			pos1 = path(beadIndex);
+			pos2 = path(path.next(beadIndex));
+			Az += pos1[0]*pos2[1] - pos2[0]*pos1[1];
+            I +=  pos1[0]*pos2[0] + pos1[1]*pos2[1];
+
+            /* Get the local part of the path area */
+            int n = path.boxPtr->gridIndex(pos1);
+            locAz(n) += pos1[0]*pos2[1] - pos2[0]*pos1[1];
+
+		}
+	}
+
+    /* The Area Estimator */
+    locAz *= Az/I;
+    estimator += locAz;
 }
 
 // ---------------------------------------------------------------------------

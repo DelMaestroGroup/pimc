@@ -87,17 +87,18 @@ class PathIntegralMonteCarlo {
 
 
 		/* The estimators that we will measure */
-		DiagonalFractionEstimator     diagonalFraction;
-		EnergyEstimator               energy;
-		NumberParticlesEstimator      numberParticles;
-        ParticlePositionEstimator     particlePositions;
-		SuperfluidFractionEstimator   superfluidFraction;
-		PermutationCycleEstimator     permutationCycle;
-		OneBodyDensityMatrixEstimator oneBodyDensityMatrix;
-		PairCorrelationEstimator      pairCorrelation;
-		RadialDensityEstimator        radialDensity;
-		WormPropertiesEstimator       wormProperties;
-		NumberDistributionEstimator   numberDistribution;
+		DiagonalFractionEstimator       diagonalFraction;
+		EnergyEstimator                 energy;
+		NumberParticlesEstimator        numberParticles;
+        ParticlePositionEstimator       particlePositions;
+		SuperfluidFractionEstimator     superfluidFraction;
+        LocalSuperfluidDensityEstimator localSuperfluidDensity;
+		PermutationCycleEstimator       permutationCycle;
+		OneBodyDensityMatrixEstimator   oneBodyDensityMatrix;
+		PairCorrelationEstimator        pairCorrelation;
+		RadialDensityEstimator          radialDensity;
+		WormPropertiesEstimator         wormProperties;
+		NumberDistributionEstimator     numberDistribution;
 
 		/* The cylindrical estimators */
 		CylinderEnergyEstimator               cylEnergy;

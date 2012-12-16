@@ -7,8 +7,12 @@ Local Superfluid Density Estimators
 ### Local Winding Number Estimator
 
 ### Local Area Estimator
+
  * Details provided in E. W. Draeger and D. M. Ceperley, Phys. Rev. Lett. 90, 065301 (2003).
  * It appears that one computes the complete area in the n-direction
+
+I have a semi-current version of this working in the code.
+
 
 ### Local Permutation Cycle
 

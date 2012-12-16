@@ -202,6 +202,27 @@ class SuperfluidFractionEstimator: public EstimatorBase {
 };
 
 // ========================================================================  
+// Local Superfluid Density Estimator Class 
+// ========================================================================  
+/**
+ * Compute the local superfluid density.
+ */
+class LocalSuperfluidDensityEstimator: public EstimatorBase {
+
+	public:
+		LocalSuperfluidDensityEstimator(const Path &, 
+                int _frequency=1, string _label="locsuper");
+		~LocalSuperfluidDensityEstimator();
+
+        void output();           ///< overload the output
+
+	private:
+		void accumulate();		// Accumulate values
+        Array <double,1> locAz; // The local path area
+
+};
+
+// ========================================================================  
 // Diagonal Fraction Estimator Class 
 // ========================================================================  
 /** 
