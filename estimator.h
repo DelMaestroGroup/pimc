@@ -43,14 +43,11 @@ class EstimatorBase {
 		/* Output the estimator */
 		virtual void output();					
 
-		/* Output the header to disk */
-		virtual void outputHeader();			
-		
 		/** Ouptut the fooder to disk */
 		virtual void outputFooter() {};
 
-		/* Get the measurment state (for canonical simulations)*/
-		bool measure();
+        /* Evaluate the basic conditions for sampling */
+        bool baseSample();
 
 		/** Get the total number of accumulated measurments */
 		uint32 getTotNumAccumulated() { return totNumAccumulated; }
@@ -63,6 +60,9 @@ class EstimatorBase {
 
 		/** Get the name of the estimator */
 		string getName() { return name; }
+
+		/* Prepare the estimator for i/o */
+		void prepare();
 
 	protected:
 		const Path &path;				///< A constant reference to the paths
@@ -82,7 +82,6 @@ class EstimatorBase {
 		int numBeads0;					///< The target number of beads for the canonical ensemble
 
 		bool diagonal;					///< Is this a diagonal estimator?
-		bool offDiagonal;				///< Is it an off-diagonal estimator?
 		bool endLine;					///< Should we output a carriage return?
 		bool canonical;					///< Are we in the canonical ensemble?
 
@@ -92,7 +91,7 @@ class EstimatorBase {
 		virtual void accumulate() = 0;	
 
 		/* Initialize the estimator */
-		void initialize(const int, const int, const bool, const bool, const bool);
+		void initialize(int);
 };
 
 
@@ -214,6 +213,8 @@ class DiagonalFractionEstimator: public EstimatorBase {
 		DiagonalFractionEstimator(const Path &,
                 int _frequency=1, string _label="estimator");
 		~DiagonalFractionEstimator();
+
+        void sample();          // Overload to always-on sampling
 
 	private:
 		void accumulate();		// Accumulate values

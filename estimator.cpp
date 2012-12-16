@@ -20,7 +20,7 @@
 /**************************************************************************//**
  *  Constructor.
  * 
- *  Initialize all data members to zero. 
+ * Initialize and specify the output file.
 ******************************************************************************/
 EstimatorBase::EstimatorBase (const Path &_path, int _frequency, string _label) : 
     path(_path),
@@ -29,13 +29,11 @@ EstimatorBase::EstimatorBase (const Path &_path, int _frequency, string _label) 
     numSampled(0),
 	numAccumulated(0),
 	totNumAccumulated(0),
-    frequency(_frequency)
+    frequency(_frequency),
+    diagonal(true),
+    endLine(true)
 {
-	/* Initialize all variables */
-	outFilePtr = &(communicate()->file(label)->stream());
-
-	endLine = false;
-
+    /* Two handy local constants */
 	canonical = constants()->canonical();
 	numBeads0 = constants()->initialNumParticles()*constants()->numTimeSlices();
 }
@@ -45,20 +43,36 @@ EstimatorBase::EstimatorBase (const Path &_path, int _frequency, string _label) 
 ******************************************************************************/
 EstimatorBase::~EstimatorBase() { 
 	estimator.free();
+    norm.free();
 }
 
 /**************************************************************************//**
- *  Set the measurement state
+ *  Determine the basic sampling condition.
  * 
- *  We determine if we are able to perform a measurement based on the 
- *  type of simulation (canonical vs. grand canonical) and the current
- *  number of particles.
+ *  We only sample when:
+ *  1) frequency > 0
+ *  2) numSampled is a even factor of frequency
+ *  3) The configuration (diagonal/off diagonal) matches the estimator type.
+ *  4) If we are canonical, then only when we match the desired number of
+ *  particles
 ******************************************************************************/
-bool EstimatorBase::measure() {
-	if ((!canonical) || (path.worm.getNumBeadsOn() == numBeads0))
-		return true;
-	else
-		return false;
+bool EstimatorBase::baseSample() {
+
+    /* Increment the number of attempted samplings */
+    numSampled++;
+
+    if (!frequency)
+        return false;
+    if ((numSampled % frequency) != 0)
+        return false;
+    if (!(path.worm.isConfigDiagonal == diagonal))
+        return false;
+    if (!canonical)
+        return true;
+	if (path.worm.getNumBeadsOn() == numBeads0)
+        return true;
+
+    return false;
 }
 
 /**************************************************************************//**
@@ -68,48 +82,47 @@ bool EstimatorBase::measure() {
  *  depending on whether we are measuring a diagonal or off-diagonal estimator.
  *  If frequency == 0, we don't bother to measure it.
 ******************************************************************************/
-void EstimatorBase::sample () {
-	numSampled++;
-	if ((frequency) && (numSampled % frequency) == 0) {
+void EstimatorBase::sample() {
 
-		/* We determine based on the current configuration whether or not
-		 * we sample the estimator */
-		if ( (path.worm.isConfigDiagonal && diagonal) || 
-			(!path.worm.isConfigDiagonal && offDiagonal) ) {
-
-			/* We only measure at the target number of particles for the canonical ensemble */
-			if (measure()) {
-				totNumAccumulated++;
-				numAccumulated++;
-				accumulate();
-			}
-		}
-	}
+    if (baseSample()) {
+        totNumAccumulated++;
+        numAccumulated++;
+        accumulate();
+    }
 }
 
 /**************************************************************************//**
  *  Initialize estimator. 
  *
- *  Here we initilize the estimator and normalization arrays, determine how
- *  many estimators we are measureing, whether or not they are diagonal
- *  and if we require a end of line after writing to disk.
- *  @param _numEst The number of estimators measured
- *  @param _frequency The measurement frequency
- *  @param _diagonal Do we measure when the configuration is diagonal?
- *  @param _offDiagonal Do we measure when the configuration is off-diagonal?
- *  @param _endLine To we need a end of line after writing to disk?
+ *  Initilize the estimator and normalization arrays.
 ******************************************************************************/
-void EstimatorBase::initialize(const int _numEst, const int _frequency, 
-		const bool _diagonal, const bool _offDiagonal, const bool _endLine) {
-	endLine = _endLine;
-	diagonal = _diagonal;
-	offDiagonal = _offDiagonal;
-	numEst = _numEst;
-	frequency = _frequency;
+void EstimatorBase::initialize(int _numEst) {
+
+    numEst = _numEst;
 	estimator.resize(numEst);
 	norm.resize(numEst);
 	norm = 1.0;
 	reset();
+}
+
+/**************************************************************************//**
+ *  Prepare estimator for i/o. 
+ *
+ *  Assign the output file and write a header depending on whether or not
+ *  we are restarting the simulation.
+******************************************************************************/
+void EstimatorBase::prepare() {
+
+    /* Assign the output file pointer */
+	outFilePtr = &(communicate()->file(label)->stream());
+
+    /* Write the header to disk if we are not restarting */
+    if (!constants()->restart()) {
+        (*outFilePtr) << header;
+        if (endLine)
+            (*outFilePtr) << endl;
+    }
+
 }
 
 /*************************************************************************//**
@@ -127,15 +140,6 @@ void EstimatorBase::restart(const uint32 _numSampled, const uint32 _totNumAccumu
 	numSampled = _numSampled;
 	totNumAccumulated = _totNumAccumulated;
 	reset();
-}
-
-/*************************************************************************//**
- *  Output the estimator headers to disk.
-******************************************************************************/
-void EstimatorBase::outputHeader() {
-	(*outFilePtr) << header;
-	if (endLine)
-		(*outFilePtr) << endl;
 }
 
 /*************************************************************************//**
@@ -178,15 +182,13 @@ EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
 		int _frequency, string _label) : 
     EstimatorBase(_path,_frequency,_label), actionPtr(_actionPtr) {
 
-	/* We compute three diagonal estimators, kinetic, potential and total energy
-	 * per particle */
-	initialize(7,_frequency,true,false,false);
-
 	/* Set estimator name and header, we will always report the energy
 	 * first, hence the comment symbol*/
 	name = "Energy";
 	header = str(format("#%15s%16s%16s%16s%16s%16s%16s") 
 			% "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
+    endLine = false;
+    initialize(7);
 }
 
 /*************************************************************************//**
@@ -298,13 +300,11 @@ NumberParticlesEstimator::NumberParticlesEstimator (const Path &_path,
         int _frequency, string _label) :
 	EstimatorBase(_path,_frequency,_label) {
 
-	/* We compute three diagonal estimators, the total number of particles,
-	 * total number of particles squared and density. */
-	initialize(3,_frequency,true,false,false);
-
 	/* Set estimator name and header */
 	name = "Number Particles";
 	header = str(format("%16s%16s%16s") % "N" % "N^2" % "density");
+    endLine = false;
+    initialize(3);
 }
 
 /*************************************************************************//**
@@ -353,9 +353,7 @@ NumberDistributionEstimator::NumberDistributionEstimator (const Path &_path,
 	if ((constants()->initialNumParticles() - particleShift) < 0)
 		particleShift = constants()->initialNumParticles();
 
-	/* We compute maxNumParticles diagonal estimators.  This is a vector 
-	 * estimator. */
-	initialize(maxNumParticles,_frequency,true,false,true);
+    initialize(maxNumParticles);
 
 	/* Set estimator name and header */
 	name = "Number Distribution";
@@ -399,12 +397,13 @@ ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path,
         int _frequency, string _label) : 
     EstimatorBase(_path,_frequency,_label) {
 
-    /* store the x,z positions in a flattened array */
-    initialize(path.boxPtr->numGrid,_frequency,true,false,true);
+    initialize(path.boxPtr->numGrid);
 
     /* Set estimator name and header. */
     name = "Particle Position";
-    header = str(format("#%d\n#") % NGRIDSEP);
+    header = str(format("#%15d") % NGRIDSEP);
+    for (int i = 0; i < NDIM; i++)
+        header += str(format("%16.8E") % path.boxPtr->gridSize[i]);
 
     /* The normalization: 1/(dV*M) */
     for (int n = 0; n < numEst; n++)
@@ -476,7 +475,7 @@ SuperfluidFractionEstimator::SuperfluidFractionEstimator (const Path &_path,
 	 * number in all possible dimensions, and the winding number histograms up to 
 	 * windMax windings. These are all diagonal estimators and we have our own
 	 * output file.*/
-	initialize(4+2*windMax+1+1,_frequency,true,false,true);
+    initialize(4 + 2*windMax + 1 + 1);
 
 	/* Set estimator name */
 	name = "Superfluid Fraction";
@@ -583,13 +582,12 @@ DiagonalFractionEstimator::DiagonalFractionEstimator (const Path &_path,
 		int _frequency, string _label) : 
     EstimatorBase(_path,_frequency,_label) {
 
-	/* The diagonal estimator which is always measured, and is the last quantity
-	 * we output*/
-	initialize(1,_frequency,true,true,true);
+    initialize(1);
 
 	/* Set estimator name */
 	name = "Diagonal Fraction";
 	header = str(format("%16s") % "diagonal");
+
 }
 
 /*************************************************************************//**
@@ -605,6 +603,20 @@ DiagonalFractionEstimator::~DiagonalFractionEstimator() {
 void DiagonalFractionEstimator::accumulate() {
 	if (path.worm.isConfigDiagonal)
 		estimator(0) += 1.0;
+}
+
+/*************************************************************************//**
+ *  Overload sampling to make sure it is always done, regardless of ensemble.
+******************************************************************************/
+void DiagonalFractionEstimator::sample() {
+
+	numSampled++;
+
+    if (frequency && ((numSampled % frequency) == 0)) {
+        totNumAccumulated++;
+        numAccumulated++;
+        accumulate();
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -626,7 +638,8 @@ WormPropertiesEstimator::WormPropertiesEstimator (const Path &_path,
 
 	/* We measure the average worm length, gap and cost.  It is an off-diagonal
 	 * estimator that is output to its own file */
-	initialize(5,_frequency,false,true,true);
+    initialize(5);
+    diagonal = false;
 
 	/* Set estimator name */
 	name = "Worm Properties";
@@ -676,7 +689,7 @@ PermutationCycleEstimator::PermutationCycleEstimator(const Path &_path,
 	
 	/* The permutatoin cycle estimator has its own file, and consists of 
 	 * maxNumCycles permutation cycles */
-	initialize(maxNumCycles,_frequency,true,false,true);
+    initialize(maxNumCycles);
 
 	/* Set estimator name and header, which contains the permutation cycle
 	 * numbers */
@@ -775,8 +788,9 @@ OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path,
 	/* We chooose the maximum separation to be sqrt(NDIM)*min(L)/2 */
 	dR = 0.5*sqrt(sum(path.boxPtr->periodic))*(blitz::min(path.boxPtr->side)) / (1.0*NOBDMSEP);
 
-	/* This is an off-diagonal estimator that gets its own file */
-	initialize(NOBDMSEP,_frequency,false,true,true);
+	/* This is an off-diagonal estimator*/
+    initialize(NOBDMSEP);
+    diagonal = false;
 
 	/* Set estimator name */
 	name = "One Body Density Matrix";
@@ -805,10 +819,11 @@ OneBodyDensityMatrixEstimator::~OneBodyDensityMatrixEstimator() {
 ******************************************************************************/
 void OneBodyDensityMatrixEstimator::sample() {
 	numSampled++;
-	if ( ((numSampled % frequency) == 0) && 
-			(!path.worm.isConfigDiagonal && offDiagonal) &&
-			(path.worm.gap > 0) && (path.worm.gap <= constants()->Mbar())  &&
-			(actionPtr->eFactor[(lpath.worm.tail[0] % 2)] < EPS) ) {
+	if ( frequency && 
+         ((numSampled % frequency) == 0) &&
+         (path.worm.isConfigDiagonal == diagonal) &&
+         (path.worm.gap > 0) && (path.worm.gap <= constants()->Mbar())  &&
+         (actionPtr->eFactor[(lpath.worm.tail[0] % 2)] < EPS) ) {
 
 		/* If we are canonical, we want the closed configuration to be close
 		 * to our ideal one */
@@ -1012,7 +1027,7 @@ PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path,
 	dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
 
 	/* This is a diagonal estimator that gets its own file */
-	initialize(NPCFSEP,_frequency,true,false,true);
+	initialize(NPCFSEP);
 
 	/* Set estimator name */
 	name = "Pair Correlation Function";
@@ -1021,9 +1036,6 @@ PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path,
 	header = str(format("#%15.3E") % 0.0);
 	for (int n = 1; n < NPCFSEP; n++) 
 		header.append(str(format("%16.3E") % ((n)*dR)));
-
-	/* Initialize all variables */
-	outFilePtr = &(communicate()->file("pair")->stream());
 
 	/* The normalization factor for the pair correlation function depends 
 	 * on the dimensionality */
@@ -1096,7 +1108,7 @@ RadialDensityEstimator::RadialDensityEstimator (const Path &_path,
 	dR  = 0.5*path.boxPtr->side[0] / (1.0*NRADSEP);
 
 	/* This is a diagonal estimator that gets its own file */
-	initialize(NRADSEP,_frequency,true,false,true);
+	initialize(NRADSEP);
 
 	/* Set estimator name */
 	name = "Radial Density";
@@ -1185,8 +1197,8 @@ CylinderEnergyEstimator::CylinderEnergyEstimator (const Path &_path, ActionBase 
 
 	/* We compute three diagonal estimators, kinetic, potential and total energy
 	 * per particle */
-	initialize(7,_frequency,true,false,false);
-	norm = 1.0;
+	initialize(7);
+    endLine = false;
 
 	/* Set estimator name and header, we will always report the energy
 	 * first, hence the comment symbol*/
@@ -1302,7 +1314,7 @@ CylinderNumberParticlesEstimator::CylinderNumberParticlesEstimator (const Path &
 
 	/* We compute three diagonal estimators, the total number of particles,
 	 * total number of particles squared and density. */
-	initialize(3,_frequency,true,false,true);
+	initialize(3);
 
 	/* Set estimator name and header */
 	name = "Cyl Number Particles";
@@ -1347,7 +1359,7 @@ CylinderNumberDistributionEstimator::CylinderNumberDistributionEstimator
 
 	/* For now, we assume a maximum of 200 total particles. */
 	maxNumParticles = 200;
-	initialize(maxNumParticles,_frequency,true,false,true);
+	initialize(maxNumParticles);
 
 	/* Set estimator name and header */
 	name = "Cyl Number Distribution";
@@ -1399,7 +1411,7 @@ CylinderSuperfluidFractionEstimator::CylinderSuperfluidFractionEstimator (const 
 	 * number in all possible dimensions, and the winding number histograms up to 
 	 * windMax windings. These are all diagonal estimators and we have our own
 	 * output file.*/
-	initialize(4+2*windMax+1,_frequency,true,false,true);
+	initialize(4+2*windMax+1);
 
 	/* Set estimator name */
 	name = "Cyl Superfluid Fraction";
@@ -1548,7 +1560,8 @@ CylinderOneBodyDensityMatrixEstimator::CylinderOneBodyDensityMatrixEstimator (Pa
 	dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NOBDMSEP);
 
 	/* This is an off-diagonal estimator that gets its own file */
-	initialize(NOBDMSEP,_frequency,false,true,true);
+	initialize(NOBDMSEP);
+    diagonal = false;
 
 	/* Set estimator name */
 	name = "Cyl One Body Density Matrix";
@@ -1577,10 +1590,11 @@ CylinderOneBodyDensityMatrixEstimator::~CylinderOneBodyDensityMatrixEstimator() 
 ******************************************************************************/
 void CylinderOneBodyDensityMatrixEstimator::sample() {
 	numSampled++;
-	if ( ((numSampled % frequency) == 0) && 
-			(!path.worm.isConfigDiagonal && offDiagonal) &&
-			(path.worm.gap > 0) && (path.worm.gap <= constants()->Mbar())  &&
-			(actionPtr->eFactor[(lpath.worm.tail[0] % 2)] < EPS) ) {
+	if ( frequency && 
+         ((numSampled % frequency) == 0) && 
+         (path.worm.isConfigDiagonal == diagonal) &&
+         (path.worm.gap > 0) && (path.worm.gap <= constants()->Mbar())  &&
+         (actionPtr->eFactor[(lpath.worm.tail[0] % 2)] < EPS) ) {
 		
 		/* We only attempt the partial-close if both the head and tail
 		 * are within the include region. */
@@ -1756,7 +1770,7 @@ CylinderPairCorrelationEstimator::CylinderPairCorrelationEstimator (const Path &
 	dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
 
 	/* This is a diagonal estimator that gets its own file */
-	initialize(NPCFSEP,_frequency,true,false,true);
+	initialize(NPCFSEP);
 
 	/* Set estimator name */
 	name = "Cyl Pair Correlation Function";
@@ -1797,22 +1811,14 @@ void CylinderPairCorrelationEstimator::accumulate() {
  *  Here we overload the cylinder pair correlation function estimator, as
  *  we only measure when we have some relevant particle separations.
 ******************************************************************************/
-void CylinderPairCorrelationEstimator::sample () {
-	numSampled++;
-	if ((numSampled % frequency) == 0) {
+void CylinderPairCorrelationEstimator::sample() {
+    numSampled++;
 
-		/* We determine based on the current configuration whether or not
-		 * we sample the estimator */
-		if ( (path.worm.isConfigDiagonal && diagonal) || 
-			(!path.worm.isConfigDiagonal && offDiagonal) ) {
-
-			if (sum(actionPtr->potentialPtr->cylSepHist) > 0) {
-				totNumAccumulated++;
-				numAccumulated++;
-				accumulate();
-			}
-		}
-	}
+    if (baseSample() && (sum(actionPtr->potentialPtr->cylSepHist) > 0)) {
+        totNumAccumulated++;
+        numAccumulated++;
+        accumulate();
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1838,10 +1844,9 @@ CylinderRadialPotentialEstimator::CylinderRadialPotentialEstimator (const Path &
 
 	/* The spatial discretization */
 	dR  = 0.5*path.boxPtr->side[0] / (1.0*NRADSEP);
-	//dR  = maxR / (1.0*NRADSEP);
 
 	/* This is a diagonal estimator that gets its own file */
-	initialize(NRADSEP,_frequency,true,false,true);
+	initialize(NRADSEP);
 	radPot.resize(NRADSEP);
 
 	/* Set estimator name */

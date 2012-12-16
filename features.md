@@ -1,8 +1,30 @@
 PIMC Feature List
 =================
 
-DONE: Re-Factoring of Communicator
-----------------------------
+Local Superfluid Density Estimators
+-----------------------------------
+
+### Local Winding Number Estimator
+
+### Local Area Estimator
+ * Details provided in E. W. Draeger and D. M. Ceperley, Phys. Rev. Lett. 90, 065301 (2003).
+ * It appears that one computes the complete area in the n-direction
+
+### Local Permutation Cycle
+
+Update Constant Singleton to use Associative Containers
+-------------------------------------------------------
+Goal: Clean up and re-factor the constants() singleton to use a map taking the
+parameter name.  This is more consistent with the latest version of the code
+and should simplify extensions.
+
+### Concerns
+ * map lookups are O(log(n)) should we be concerned by this?
+ * would extra freedom of insertion into map lead to bugs?
+
+MOSTLY DONE: Re-Factoring of Communicator
+-----------------------------------------
+
 Goal: Creation of a new class which contains all functionality needed for a
 input/ouptut file.  Communicator could then just contain a map of filenames
 to file objects
@@ -21,6 +43,9 @@ to file objects
 Reset is used for those files that are not continually kept open but that we
 wish to write over.  To be safe, we should write to a new temporary file, then
 rename after successful completion.
+
+### Possible Issues
+ * fixed file functionality has not been fully tested
 
 DONE: Generic Density Tensor Functionality
 ------------------------------------------

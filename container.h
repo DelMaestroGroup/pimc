@@ -38,6 +38,8 @@ class Container {
 
         int numGrid;                        ///< The number of grid boxes for the position grid
 
+        dVec gridSize;                      ///< The grid size in each dimension
+
 		/** Place a vector in boundary conditions. */
 		void putInBC(dVec & r) const {
 			for (int i = 0; i < NDIM; ++i) {
@@ -64,7 +66,6 @@ class Container {
 
 	protected:
 		dVec pSide;		    ///< Periodic * side
-        dVec gridSize;      ///< The grid size in each dimension
 };
 
 // ========================================================================  

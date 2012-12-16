@@ -156,27 +156,21 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 		estimator.push_back(&cylRadialPotential);
 	}
 
-	/* If we are restarting, we load the last saved state from disk, otherwise
-	 * output the estimator headers. */
-	if (constants()->restart())
+	/* If we are restarting, or loading a state from disk, do so now. */
+	if (startWithState || constants()->restart())
 		loadState();
-	else {
 
-		/* If we are starting from an initial configuration, load it. */
-		if (startWithState)
-			loadState();
-
-		/* Setup all the estimator headers */
-		for (vector<EstimatorBase*>::iterator estimatorPtr = estimator.begin();
-				estimatorPtr != estimator.end(); ++estimatorPtr)
-			(*estimatorPtr)->outputHeader();
-	}
+    /* Setup all the estimators for measurement i/o */
+    for (vector<EstimatorBase*>::iterator estimatorPtr = estimator.begin();
+            estimatorPtr != estimator.end(); ++estimatorPtr)
+        (*estimatorPtr)->prepare();
 }
 
 /**************************************************************************//**
  *  Destructor.
 ******************************************************************************/
 PathIntegralMonteCarlo::~PathIntegralMonteCarlo () {
+
 }
 
 /**************************************************************************//**
