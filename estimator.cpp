@@ -674,7 +674,7 @@ void LocalSuperfluidDensityEstimator::accumulate() {
 	}
 
     /* The Area Estimator */
-    locAz *= Az/I;
+    locAz *= path.getTrueNumParticles()*Az/I;
     estimator += locAz;
 }
 
