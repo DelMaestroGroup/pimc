@@ -266,6 +266,11 @@ Cylinder::Cylinder(const double radius, const double L) {
 
 		name = "Cylinder";
 
+        /* The grid size for the lookup table */
+        gridSize[0] = 0.5*side[0]/NGRIDSEP;
+        gridSize[1] = 2.0*M_PI/NGRIDSEP;
+        gridSize[2] = side[2]/NGRIDSEP;
+
 	} // end else
 }
 
@@ -383,6 +388,7 @@ int Cylinder::gridIndex(const dVec &pos) const {
 
     /* return the flattened index */
     int gNumber = grid[0]*NGRIDSEP*NGRIDSEP + grid[1]*NGRIDSEP + grid[2];
+
 	PIMC_ASSERT(gNumber<numGrid);
 
 	return gNumber;

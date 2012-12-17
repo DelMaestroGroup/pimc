@@ -658,6 +658,8 @@ void LocalSuperfluidDensityEstimator::accumulate() {
 	for (int slice = 0; slice < numTimeSlices; slice++) {
 		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
 
+            beadIndex = slice,ptcl;
+
             /* The area estimator */
 			pos1 = path(beadIndex);
 			pos2 = path(path.next(beadIndex));
