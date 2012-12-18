@@ -53,13 +53,14 @@ Setup::Setup() :
 		interactionNames += *it + ",";
 	interactionNames.erase(interactionNames.end()-1);
 
-	/* Define the allowed interaction potential names */
+	/* Define the allowed external  potential names */
 	externalPotentialName.push_back("free");
 	externalPotentialName.push_back("harmonic");
 	externalPotentialName.push_back("osc_tube");
 	externalPotentialName.push_back("lj_tube");
 	externalPotentialName.push_back("hard_tube");
 	externalPotentialName.push_back("fixed_aziz");
+    externalPotentialName.push_back("gasp_prim");
 
 	/* Create the external potential name string */
 	externalNames = "";
@@ -100,6 +101,8 @@ void Setup::getOptions(int argc, char *argv[])
 		("radius,r", po::value<double>(), "tube radius [angstroms]")
 		("estimator_radius,w", po::value<double>()->default_value(2.0),
 		 "maximum radius for cylinder estimators") 
+        ("barrier_width_y,y", po::value<double>(), "barrier width scale factor in y-direction [Gasparini]")
+        ("barrier_width_z,z", po::value<double>(), "barrier width scale factor in z-direction [Gasparini]")
 		;
 
 	potentialOptions.add_options()
@@ -261,9 +264,26 @@ bool Setup::parseOptions() {
 	}
 
 	/* Need to specify a radius for the tube potentials */
-	if ( (params["external_potential"].as<string>().find("tube") != string::npos) && (!params.count("radius")) ) {
+	if ( (params["external_potential"].as<string>().find("tube") != string::npos) && 
+            (!params.count("radius")) ) {
 		cerr << endl << "PIMC ERROR: Incomplete specification for external potential!" << endl << endl;
-		cerr << "Action: specfity a radius (r) for the tube potentials." << endl;
+		cerr << "Action: specfiy a radius (r) for the tube potentials." << endl;
+		return 1;
+	}
+
+    /* Need to specify a y- barrier width scale factor for Gasparini potential */
+	if ( (params["external_potential"].as<string>().find("gasp_prim") != string::npos) &&
+             (!params.count("barrier_width_y")) ) {
+		cerr << endl << "PIMC ERROR: Incomplete specification for external potential!" << endl << endl;
+		cerr << "Action: specify a y- scale factor (y) for the Gasparini potential." << endl;
+		return 1;
+	}
+
+    /* Need to specify a z- barrier width scale factor for Gasparini potential */
+	if ( (params["external_potential"].as<string>().find("gasp_prim") != string::npos) && 
+            (!params.count("barrier_width_z")) ) {
+		cerr << endl << "PIMC ERROR: Incomplete specification for external potential!" << endl << endl;
+		cerr << "Action: specify a z- scale factor (z) for the Gasparini potential." << endl;
 		return 1;
 	}
 
@@ -421,7 +441,7 @@ void Setup::setConstants() {
 /**************************************************************************//**
  * Setup the communicator.
  *
- * Initialize the communicator, we need to know if we are outputing any config
+ * Initialize the communicator, we need to know if we are outputting any config
  * files to disk.  The files are labelled differently depending on whether we
  * are in the canonical or grand-canonical ensemble.  We also need to initialize
  * a possible initial state file and a fixed position file.  Also, since the
@@ -483,6 +503,9 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
 		externalPotentialPtr = new SingleWellPotential();
 	else if (constants()->extPotentialType() == "fixed_aziz") 
 		externalPotentialPtr = new FixedAzizPotential(boxPtr);
+    else if (constants()->extPotentialType() == "gasp_prim")
+        externalPotentialPtr = new
+            Gasparini_1_Potential(params["barrier_width_z"].as<double>(),params["barrier_width_y"].as<double>(),boxPtr);
 
 	return externalPotentialPtr;
 }

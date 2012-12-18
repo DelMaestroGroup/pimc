@@ -8,6 +8,7 @@
 #include "potential.h"
 #include "path.h"
 #include "lookuptable.h"
+#include "communicator.h"
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -876,7 +877,6 @@ LorentzianPotential::~LorentzianPotential() {
 // FIXED AZIZ POTENTIAL CLASS ------------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-#include "communicator.h"
 
 /**************************************************************************//**
  *  Constructor.
@@ -1423,4 +1423,109 @@ double AzizPotential::valuedVdr(const double r) {
 		double T3 = -( C6*ix6 + C8*ix8 + C10*ix10 ) * dF(x);
 		return ( ( epsilon / rm ) * (T1 + T2 + T3) );
 	}
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// GASPARINI_1_POTENTIAL CLASS -----------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+/**************************************************************************//**
+ * Constructor.
+******************************************************************************/
+Gasparini_1_Potential::Gasparini_1_Potential(double _az, double _ay, const Container *_boxPtr) :
+    PotentialBase(),
+    az(0.5*_boxPtr->side[2]*_az),
+    ay(0.5*_boxPtr->side[1]*_ay),
+    V0(1.0E6)
+{
+    // Empty Constructor
+}
+
+/**************************************************************************//**
+ * Destructor.
+******************************************************************************/
+Gasparini_1_Potential::~Gasparini_1_Potential() {
+    // Empty Destructor
+}
+
+/**************************************************************************//**
+ * Return initial particle configuration.
+ *
+ * Return initial positions to exclude volume in the simulation cell.
+******************************************************************************/
+Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
+        MTRand &random, const int numParticles) {
+
+	/* The particle configuration */
+	Array<dVec,1> initialPos(numParticles);
+
+	/* label the lengths of the sides of the simulation cell */
+    dVec lside;
+    lside[0] = boxPtr->side[0];
+    lside[1] = boxPtr->side[1];
+    lside[2] = boxPtr->side[NDIM-1];
+
+    /* calculate actual volume */
+    double volTot = product(lside);
+
+    /* get linear size per particle for actual volume */
+    double initSide = pow((1.0*numParticles/volTot),-1.0/(1.0*NDIM));
+
+	/* For the ENTIRE SIMULATION CELL (even excluded volume) 
+     * We determine the number of initial grid boxes there are in 
+	 * each dimension and compute their size */
+	int totNumGridBoxes = 1;
+	iVec numNNGrid;
+	dVec sizeNNGrid;
+
+	for (int i = 0; i < NDIM; i++) {
+		numNNGrid[i] = static_cast<int>(ceil((boxPtr->side[i] / initSide) - EPS));
+
+		/* Make sure we have at least one grid box */
+		if (numNNGrid[i] < 1)
+			numNNGrid[i] = 1;
+
+		/* Compute the actual size of the grid */
+		sizeNNGrid[i] = lside[i] / (1.0 * numNNGrid[i]);
+
+		/* Determine the total number of grid boxes */
+		totNumGridBoxes *= numNNGrid[i];
+	}
+
+  	/* Now, we place the particles at the middle of each box
+     * UNLESS that middle falls within our excluded volume */
+	PIMC_ASSERT(totNumGridBoxes>=numParticles);
+	dVec pos;
+    int numIn = 0;
+    double jump = 0.5;
+    
+    while (numIn < numParticles){
+        for (int n = 0; n < totNumGridBoxes; n++) {
+
+            /* put correct number of particles in box, no more */
+            if (numIn >= numParticles)
+                break;
+            
+            iVec gridIndex;
+            /* update grid index */
+            for (int i = 0; i < NDIM; i++) {
+                int scale = 1;
+                for (int j = i+1; j < NDIM; j++) 
+                    scale *= numNNGrid[j];
+                gridIndex[i] = (n/scale) % numNNGrid[i];
+            }
+            /* place particle in position vector, skipping over excluded volume */
+            for (int i = 0; i < NDIM; i++)
+                pos[i] = (gridIndex[i]+jump)*sizeNNGrid[i] - 0.5*lside[i];
+
+            if (((pos[2] < -az) || (pos[2] > az)) && ((pos[1] < -ay) || (pos[1] > ay))){
+                initialPos(numIn) = pos;
+                numIn++;
+            }
+        }
+        jump += 0.1;
+    }
+
+	return initialPos;
 }

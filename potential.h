@@ -11,8 +11,6 @@
 
 #include "common.h"
 #include "constants.h"
-#include "communicator.h"
-
 
 class Path;
 class LookupTable;
@@ -534,6 +532,40 @@ class FixedAzizPotential : public PotentialBase  {
 		LookupTable *lookupPtr;				// A lookup table pointer
 		double rc2;							// A local copy of the potential cutoff squared
 
+};
+
+// ========================================================================  
+// Gasparini_1_Potential Class (Primitive Approximation)
+// ========================================================================  
+/**
+ * Computes potential energy for Gasparini potential.
+ * This is the case of Primitive Approx. (gradV = 0 for all positions)
+ */
+class Gasparini_1_Potential : public PotentialBase {
+	public:
+		Gasparini_1_Potential (double, double, const Container*);
+		~Gasparini_1_Potential ();
+
+        /** The potential */
+        double V(const dVec &r) { 
+            double r2 = 0.0;
+            if ((r[2] >= -az) && (r[2] <= az) && (r[1] >= -ay) && (r[1] <= ay))
+                r2 = 1.0*V0;
+            return r2;
+		}
+
+		/** The gradient of the potential. */
+		dVec gradV(const dVec &r) {
+			return 0.0;
+		}
+    
+        /** Initial configuration corresponding to FixedAziz potential */
+		Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+
+        /* parameters needed for Gasp Potential_1 */
+        const double az;        //scales the length (z)
+        const double ay;        //scales the width (y,x)
+        const double V0;       //scales the potential step
 };
 
 // ========================================================================  

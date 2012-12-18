@@ -27,27 +27,6 @@ import argparse
 from docopt import docopt
 
 # ===================================================================
-def RebuildTensors(Nx,Ny,Nz,data):
-    """
-    Takes in a row-major rank-3 tensor in single array format
-    and returns the rebuilt rank-3 tensor (as 3-D numpy array)
-    """
-    rebXY = pl.zeros([Nz,Nx,Ny])
-    rebXZ = pl.zeros([Nx,Ny,Nz])
-    rebYZ = pl.zeros([Ny,Nx,Nz])
-
-    count = 0
-    for i in range(Nx):
-        for j in range(Ny):
-            for k in range(Nz):
-                rebXY[k][i][j] = data[count]
-                rebXZ[i][j][k] = data[count]
-                rebYZ[j][i][k] = data[count]
-                count += 1
-
-    return rebXY, rebXZ, rebYZ
-
-# ===================================================================
 def main():
 
     # Read in the command line arguments
