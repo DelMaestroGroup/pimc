@@ -161,7 +161,7 @@ void EstimatorBase::output() {
 
 	/* Now write the estimator values to disk */
 	for (int n = 0; n < numEst; n++) 
-		(*outFilePtr) << format("%16.6E") % estimator(n);
+		(*outFilePtr) << format("%16.8E") % estimator(n);
 
 	if (endLine)
 		(*outFilePtr) << endl;
@@ -435,7 +435,7 @@ void ParticlePositionEstimator::output() {
 
 	/* Now write the running average of the estimator to disk */
 	for (int n = 0; n < numEst; n++) 
-        (*outFilePtr) << format("%16.6E\n") % 
+        (*outFilePtr) << format("%16.8E\n") % 
             (norm(n)*estimator(n)/totNumAccumulated);
 
     communicate()->file(label)->rename();
@@ -593,28 +593,40 @@ LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
     EstimatorBase(_path,_frequency,_label) {
 
     /* This is a 'local' histogram estimator so we use the defined grid */
-    initialize(path.boxPtr->numGrid);
+    initialize(2*path.boxPtr->numGrid);
 
     /* Set estimator name and header. */
     name = "Local Superfluid";
-    header = str(format("#%15d") % NGRIDSEP);
+    header = str(format("#%15d\n") % NGRIDSEP);
+    header += str(format("#%15s%16s") % "W:rho_s" % "A:rho_s");
 
     /* The normalization: 1/(dV*M) */
-    for (int n = 0; n < numEst; n++)
+    for (int n = 0; n < numEst/2; n++) {
         norm(n) = 1.0/(1.0*path.numTimeSlices*path.boxPtr->gridBoxVolume(n));
+        norm(n+numEst/2) = 1.0/(1.0*path.numTimeSlices*path.boxPtr->gridBoxVolume(n));
+    }
 
-    /* The normalization constant for the area estimator. */
-    norm *= 0.5*constants()->T()*constants()->numTimeSlices();
-    norm /= constants()->lambda();
+    /* The normalization constant for the winding and area estimator. */
+    for (int n = 0; n < numEst/2; n++) {
+        norm(n) *= 0.5*constants()->T()/(sum(path.boxPtr->periodic) * constants()->lambda());
+        norm(n+numEst/2) *= 0.5*constants()->T()*constants()->numTimeSlices()/constants()->lambda();
+    }
 
-    locAz.resize(numEst);
+    /* Initialize the local arrays */
+    locW.resize(numEst/2);
+    locW = 0.0;
+
+    locAz.resize(numEst/2);
     locAz = 0.0;
+
 }
 
 /*************************************************************************//**
  *  Destructor.
 ******************************************************************************/
 LocalSuperfluidDensityEstimator::~LocalSuperfluidDensityEstimator() { 
+    locW.free();
+    locAz.free();
 }
 
 /*************************************************************************//**
@@ -631,9 +643,10 @@ void LocalSuperfluidDensityEstimator::output() {
         (*outFilePtr) << endl;
 
 	/* Now write the running average of the estimator to disk */
-	for (int n = 0; n < numEst; n++) 
-        (*outFilePtr) << format("%16.6E\n") % 
-            (norm(n)*estimator(n)/totNumAccumulated);
+	for (int n = 0; n < numEst/2; n++) 
+        (*outFilePtr) << format("%16.8E%16.8E\n") % 
+            (norm(n)*estimator(n)/totNumAccumulated) %
+            (norm(n+numEst/2)*estimator(n+numEst/2)/totNumAccumulated);
 
     communicate()->file(label)->rename();
 }
@@ -653,29 +666,44 @@ void LocalSuperfluidDensityEstimator::accumulate() {
 	beadLocator beadIndex;
     double Az, I;
     dVec pos1,pos2;
+	dVec W,vel;
+	W = 0.0;
 
     Az = I = 0.0;
 	for (int slice = 0; slice < numTimeSlices; slice++) {
 		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
 
             beadIndex = slice,ptcl;
-
-            /* The area estimator */
 			pos1 = path(beadIndex);
 			pos2 = path(path.next(beadIndex));
+            int n = path.boxPtr->gridIndex(pos1);
+
+            /* The winding number estimator */
+			vel = path.getVelocity(beadIndex)*path.boxPtr->periodic;
+			W += vel;
+
+            /* The local part of the winding number */
+            locW(n) += vel;
+
+            /* The z-component of the area estimator */
 			Az += pos1[0]*pos2[1] - pos2[0]*pos1[1];
             I +=  pos1[0]*pos2[0] + pos1[1]*pos2[1];
 
             /* Get the local part of the path area */
-            int n = path.boxPtr->gridIndex(pos1);
             locAz(n) += pos1[0]*pos2[1] - pos2[0]*pos1[1];
 
 		}
 	}
 
-    /* The Area Estimator */
     locAz *= path.getTrueNumParticles()*Az/I;
-    estimator += locAz;
+    for (int n = 0; n < numEst/2; n++) {
+        estimator(n) += dot(locW(n),W);
+        estimator(n+numEst/2) += locAz(n);
+    }
+
+    /* The Area Estimator */
+    //locAz *= path.getTrueNumParticles()*Az/I;
+    //estimator += locAz;
 }
 
 // ---------------------------------------------------------------------------

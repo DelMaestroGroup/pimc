@@ -227,24 +227,46 @@ by using the `--help flag`.
 
 The output of the above command should yield:
 
-    [PIMCID: 113949380] - Equilibration Stage.
-    0.69     1.00000         0.95000           18   0.024728
-    0.65     0.95000         0.90250           18   0.024728
-    0.76     0.90250         0.90250           19   0.026101
-    0.77     0.90250         0.90250           19   0.026101
-    0.75     0.90250         0.90250           19   0.026101
-    0.76     0.90250         0.90250           18   0.024728
-    0.72     0.90250         0.85737           16   0.021980
-    0.64     0.85737         0.81451           16   0.021980
-    0.61     0.81451         0.77378           14   0.019233
-    0.65     0.77378         0.73509           15   0.020606
-    0.68     0.73509         0.69834           17   0.023354
-    0.73     0.69834         0.66342           20   0.027475
-    0.71     0.66342         0.63025           20   0.027475
-    0.75     0.63025         0.63025           18   0.024728
-    0.76     0.63025         0.63025           16   0.021980
-    0.66     0.63025         0.59874           16   0.021980
+    [PIMCID: 126039759] - Equilibration Stage.
+    0.63	 1.00000	 0.95000	   17	0.023354
+    0.70	 0.95000	 0.90250	   14	0.019233
+    0.56	 0.90250	 0.81225	   17	0.023354
+    0.74	 0.81225	 0.77164	   17	0.023354
+    0.60	 0.77164	 0.73306	   18	0.024728
+    0.76	 0.73306	 0.73306	   17	0.023354
+    0.74	 0.73306	 0.69640	   14	0.019233
+    0.82	 0.69640	 0.69640	   17	0.023354
+    0.75	 0.69640	 0.69640	   16	0.021980
+    0.71	 0.69640	 0.66158	   18	0.024728
+    0.83	 0.66158	 0.66158	   18	0.024728
+    0.81	 0.66158	 0.66158	   18	0.024728
+    0.76	 0.66158	 0.66158	   18	0.024728
+    0.80	 0.66158	 0.66158	   19	0.026101
+    0.84	 0.66158	 0.66158	   16	0.021980
+    0.69	 0.66158	 0.62850	   17	0.023354
 
+    [PIMCID: 126039759] - Measurement Stage.
+    [PIMCID: 126039759] - Bin #   1 stored to disk.
+    [PIMCID: 126039759] - Bin #   2 stored to disk.
+    [PIMCID: 126039759] - Bin #   3 stored to disk.
+    [PIMCID: 126039759] - Bin #   4 stored to disk.
+    [PIMCID: 126039759] - Bin #   5 stored to disk.
+    [PIMCID: 126039759] - Bin #   6 stored to disk.
+    [PIMCID: 126039759] - Bin #   7 stored to disk.
+    [PIMCID: 126039759] - Bin #   8 stored to disk.
+    [PIMCID: 126039759] - Bin #   9 stored to disk.
+    [PIMCID: 126039759] - Bin #  10 stored to disk.
+    [PIMCID: 126039759] - Bin #  11 stored to disk.
+    [PIMCID: 126039759] - Bin #  12 stored to disk.
+    [PIMCID: 126039759] - Bin #  13 stored to disk.
+    [PIMCID: 126039759] - Bin #  14 stored to disk.
+    [PIMCID: 126039759] - Bin #  15 stored to disk.
+    [PIMCID: 126039759] - Bin #  16 stored to disk.
+    [PIMCID: 126039759] - Bin #  17 stored to disk.
+    [PIMCID: 126039759] - Bin #  18 stored to disk.
+    [PIMCID: 126039759] - Bin #  19 stored to disk.
+    [PIMCID: 126039759] - Bin #  20 stored to disk.
+    [PIMCID: 126039759] - Measurement complete.
 
 during the relaxation process where `PIMCID` will be replaced with an integer
 and 20 measurements will be output to disk.  To analyze the results the code
@@ -273,19 +295,19 @@ After this has been completed, you can analyze the results of your run via
 where `pimcid` needs to be replaced with the unique identifier generated on
 your machine.  The results should yield:
 
-    # PIMCID: 113949380
+    # PIMCID: 126039759
     # Number Samples     20
-    K                  334.22508        18.36103
-    V                 -424.77086        17.87384
-    E                  -90.54578        11.42075
-    E_mu               -90.88134        11.42230
-    K/N                 19.68682         0.79364
-    V/N                -25.03205         0.60712
-    E/N                 -5.34523         0.64317
-    N                   16.77800         0.33017
-    N^2                284.39400        10.78095
-    density              0.02305         0.00045
-    diagonal             0.73917         0.01785
+    K                  343.53393	    20.05191
+    V                 -442.28790	    20.78028
+    E                  -98.75397	    12.00106
+    E_mu               -99.09439	    12.00384
+    K/N                 19.93362	     0.83784
+    V/N                -25.66135	     0.71731
+    E/N                 -5.72773	     0.66731
+    N                   17.02100	     0.37116
+    N^2                292.82900	    12.20056
+    density              0.02338	     0.00051
+    diagonal             0.75272	     0.01867
 
 The basic idea of running the program is that one needs to setup the simulation
 cell, by defining either its specific geometry via the size (`L`) flag, or by a

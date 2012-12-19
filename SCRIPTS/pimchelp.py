@@ -133,25 +133,26 @@ def getParFromPIMCFile(fileName):
     return dataMap
 
 # -----------------------------------------------------------------------------
-def getHeadersFromFile(fileName): 
+def getHeadersFromFile(fileName, skipLines=0): 
     ''' Get the data column headers from a PIMC output file. '''
 
     inFile = open(fileName,'r');
     inLines = inFile.readlines();
-    if inLines[0].find('PIMCID') != -1:
-        headers = inLines[1].split()
+    n = skipLines
+    if inLines[n].find('PIMCID') != -1:
+        headers = inLines[n+1].split()
     else:
-        headers = inLines[0].split()
+        headers = inLines[n].split()
     headers.pop(0)
     inFile.close()
     return headers
 
 # -----------------------------------------------------------------------------
-def getHeadersDict(fileName, removeLab=None): 
+def getHeadersDict(fileName, removeLab=None, skipLines=0): 
     '''Construct a header dictionary from a filename.'''
 
     # Get all headers
-    headers = getHeadersFromFile(fileName)
+    headers = getHeadersFromFile(fileName,skipLines)
 
     if removeLab != None:
         headers.remove(removeLab)

@@ -219,6 +219,7 @@ class LocalSuperfluidDensityEstimator: public EstimatorBase {
 	private:
 		void accumulate();		// Accumulate values
         Array <double,1> locAz; // The local path area
+        Array <dVec,1> locW;    // The local winding number
 
 };
 
