@@ -405,9 +405,7 @@ ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path,
 
     /* Set estimator name and header. */
     name = "Particle Position";
-    header = str(format("#%15d") % NGRIDSEP);
-   // for (int i = 0; i < NDIM; i++)
-    //    header += str(format("%16.8E") % path.boxPtr->gridSize[i]);
+    header = str(format("#%15d\n#%15s") % NGRIDSEP % "density");
 
     /* The normalization: 1/(dV*M) */
     for (int n = 0; n < numEst; n++)
