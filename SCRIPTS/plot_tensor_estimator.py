@@ -36,21 +36,17 @@ def main():
 
     # Open up the tensor file, and determine the number of grid boxes in each
     # dimension and the column headers
-    inFile = open(fileName,'r')
-    N = int(inFile.readline().split()[1])
-    inFile.close()
+    with open(fileName,'r') as inFile:
+        N = int(inFile.readline().split()[1])
 
     # Get the column headers from the data file
     headers = pimchelp.getHeadersDict(fileName,skipLines=1)
 
     # determine which column we will plot
-    if estName and estName in headers:
-        col = headers[estName]
-    else:
-        col = 0
+    plotColumn = headers.get(estName,0)
 
     # Assuming a 3d data set, load the data
-    data = pl.loadtxt(fileName,ndmin=2)[:,col].reshape([N,N,N])
+    data = pl.loadtxt(fileName,ndmin=2)[:,plotColumn].reshape([N,N,N])
         
     # plot histograms in all three projections
     pl.figure(1)
