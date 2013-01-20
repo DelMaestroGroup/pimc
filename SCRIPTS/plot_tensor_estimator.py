@@ -76,7 +76,7 @@ def main():
     pl.ylabel(r'$x\  [\AA]$')
     pl.title('Particle Density Projection (X-Z)')
     pl.colorbar(shrink=0.4)
-   
+  
     pl.figure(3)
     pl.imshow(pl.sum(data,axis=0), cmap=cmap,
               extent=[-0.5*L[2],0.5*L[2],-0.5*L[1],0.5*L[1]])
@@ -84,6 +84,7 @@ def main():
     pl.ylabel(r'$y\  [\AA]$')
     pl.title('Particle Density Projection (Y-Z)')
     pl.colorbar(shrink=0.4)
+#    pl.savefig('plot.svg')
 
    
     pl.show()

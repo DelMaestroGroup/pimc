@@ -598,16 +598,17 @@ LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
     header = str(format("#%15d\n") % NGRIDSEP);
     header += str(format("#%15s%16s") % "W:rho_s" % "A:rho_s");
 
-    /* The normalization: 1/(dV*M) */
-    for (int n = 0; n < numEst/2; n++) {
-        norm(n) = 1.0/(1.0*path.numTimeSlices*path.boxPtr->gridBoxVolume(n));
-        norm(n+numEst/2) = 1.0/(1.0*path.numTimeSlices*path.boxPtr->gridBoxVolume(n));
-    }
+    /* The normalization: 1/(dV) */
+//    for (int n = 0; n < numEst/2; n++) {
+//        norm(n) = 1.0/(path.boxPtr->gridBoxVolume(n));
+//        norm(n+numEst/2) = 1.0/(path.boxPtr->gridBoxVolume(n));
+//    }
 
     /* The normalization constant for the winding and area estimator. */
     for (int n = 0; n < numEst/2; n++) {
-        norm(n) *= 0.5*constants()->T()/(sum(path.boxPtr->periodic) * constants()->lambda());
-        norm(n+numEst/2) *= 0.5*constants()->T()*constants()->numTimeSlices()/constants()->lambda();
+        double dV = path.boxPtr->gridBoxVolume(n);
+        norm(n) = 0.5*constants()->T()/(dV*constants()->lambda());
+        norm(n+numEst/2) = 0.5*constants()->T()/(dV*constants()->lambda());
     }
 
     /* Initialize the local arrays */
@@ -652,17 +653,18 @@ void LocalSuperfluidDensityEstimator::output() {
 /*************************************************************************//**
  *  Accumulate superfluid properties.
  *
- *  We measure the winding number W, as well as the W^2/N which is used to 
- *  compute the superfluid fraction.  The probability distribution of winding
- *  number fluctuations is also computed.
+ *  INSERT REFERENCES AND DESCRIPTION
+ *  
+ *  
 ******************************************************************************/
 void LocalSuperfluidDensityEstimator::accumulate() {
 
 	int numTimeSlices = path.numTimeSlices;
     locAz = 0.0;
+    locW = 0.0;
 
 	beadLocator beadIndex;
-    double Az, I;
+    double Az, I, rp2;
     dVec pos1,pos2;
 	dVec W,vel;
 	W = 0.0;
@@ -676,32 +678,33 @@ void LocalSuperfluidDensityEstimator::accumulate() {
 			pos2 = path(path.next(beadIndex));
             int n = path.boxPtr->gridIndex(pos1);
 
+            /*  The distance from the z-axis squared */
+            rp2 = pos1[0]*pos1[0] + pos1[1]*pos1[1];
+
             /* The winding number estimator */
 			vel = path.getVelocity(beadIndex)*path.boxPtr->periodic;
-			W += vel;
+			//W += vel;
 
             /* The local part of the winding number */
-            locW(n) += vel;
+            locW(n) += dot(vel,vel);
 
             /* The z-component of the area estimator */
 			Az += pos1[0]*pos2[1] - pos2[0]*pos1[1];
-            I +=  pos1[0]*pos2[0] + pos1[1]*pos2[1];
+            //I +=  pos1[0]*pos2[0] + pos1[1]*pos2[1];
 
             /* Get the local part of the path area */
-            locAz(n) += pos1[0]*pos2[1] - pos2[0]*pos1[1];
-
+            locAz(n) += (pos1[0]*pos2[1] - pos2[0]*pos1[1])/rp2;
 		}
 	}
 
-    locAz *= path.getTrueNumParticles()*Az/I;
+    locW /= 1.0*path.getTrueNumParticles();
+    //locAz *= path.getTrueNumParticles()*Az/I;
+    locAz *= Az;
     for (int n = 0; n < numEst/2; n++) {
-        estimator(n) += dot(locW(n),W);
+        //estimator(n) += dot(locW(n),W);
+        estimator(n) += locW(n);
         estimator(n+numEst/2) += locAz(n);
     }
-
-    /* The Area Estimator */
-    //locAz *= path.getTrueNumParticles()*Az/I;
-    //estimator += locAz;
 }
 
 // ---------------------------------------------------------------------------
