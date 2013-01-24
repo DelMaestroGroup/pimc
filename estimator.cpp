@@ -598,13 +598,7 @@ LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
     header = str(format("#%15d\n") % NGRIDSEP);
     header += str(format("#%15s%16s") % "W:rho_s" % "A:rho_s");
 
-    /* The normalization: 1/(dV) */
-//    for (int n = 0; n < numEst/2; n++) {
-//        norm(n) = 1.0/(path.boxPtr->gridBoxVolume(n));
-//        norm(n+numEst/2) = 1.0/(path.boxPtr->gridBoxVolume(n));
-//    }
-
-    /* The normalization constant for the winding and area estimator. */
+    /* The normalization constant for the local winding and area estimators. */
     for (int n = 0; n < numEst/2; n++) {
         double dV = path.boxPtr->gridBoxVolume(n);
         norm(n) = 0.5*constants()->T()/(dV*constants()->lambda());
@@ -612,11 +606,14 @@ LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
     }
 
     /* Initialize the local arrays */
-    locW.resize(numEst/2);
-    locW = 0.0;
+    locWz.resize(numEst/2);
+    locWz = 0.0;
 
     locAz.resize(numEst/2);
     locAz = 0.0;
+
+    locI.resize(numEst/2);
+    locI = 0.0;
 
 }
 
@@ -624,8 +621,9 @@ LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
  *  Destructor.
 ******************************************************************************/
 LocalSuperfluidDensityEstimator::~LocalSuperfluidDensityEstimator() { 
-    locW.free();
+    locWz.free();
     locAz.free();
+    locI.free();
 }
 
 /*************************************************************************//**
@@ -661,15 +659,15 @@ void LocalSuperfluidDensityEstimator::accumulate() {
 
 	int numTimeSlices = path.numTimeSlices;
     locAz = 0.0;
-    locW = 0.0;
+    locWz = 0.0;
+    locI = 0.0;
 
 	beadLocator beadIndex;
-    double Az, I, rp2;
+    double Az,rp2,Wz;
     dVec pos1,pos2;
-	dVec W,vel;
-	W = 0.0;
+	dVec vel;
 
-    Az = I = 0.0;
+    Az = Wz = 0.0;
 	for (int slice = 0; slice < numTimeSlices; slice++) {
 		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
 
@@ -683,27 +681,29 @@ void LocalSuperfluidDensityEstimator::accumulate() {
 
             /* The winding number estimator */
 			vel = path.getVelocity(beadIndex)*path.boxPtr->periodic;
-			//W += vel;
+			Wz += vel[NDIM-1];
 
             /* The local part of the winding number */
-            locW(n) += dot(vel,vel);
+            locWz(n) += vel[NDIM-1];
 
             /* The z-component of the area estimator */
 			Az += pos1[0]*pos2[1] - pos2[0]*pos1[1];
-            //I +=  pos1[0]*pos2[0] + pos1[1]*pos2[1];
 
-            /* Get the local part of the path area */
-            locAz(n) += (pos1[0]*pos2[1] - pos2[0]*pos1[1])/rp2;
+            /* The local part of the path area */
+            locAz(n) += (pos1[0]*pos2[1] - pos2[0]*pos1[1]);
+
+            /* The local comonent of the moment of inertia */
+            locI(n) += pos1[0]*pos2[0] + pos1[1]*pos2[1];
 		}
 	}
 
-    locW /= 1.0*path.getTrueNumParticles();
-    //locAz *= path.getTrueNumParticles()*Az/I;
-    locAz *= Az;
+    locWz *= Wz/path.getTrueNumParticles();
     for (int n = 0; n < numEst/2; n++) {
-        //estimator(n) += dot(locW(n),W);
-        estimator(n) += locW(n);
-        estimator(n+numEst/2) += locAz(n);
+        double Inorm = 1.0;
+        if (abs(locAz(n)) > EPS)
+            Inorm = locI(n);
+        estimator(n) += locWz(n);
+        estimator(n+numEst/2) += Az*locAz(n)/Inorm;
     }
 }
 
