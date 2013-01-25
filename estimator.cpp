@@ -602,7 +602,7 @@ LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
     for (int n = 0; n < numEst/2; n++) {
         double dV = path.boxPtr->gridBoxVolume(n);
         norm(n) = 0.5*constants()->T()/(dV*constants()->lambda());
-        norm(n+numEst/2) = 0.5*constants()->T()/(dV*constants()->lambda());
+        norm(n+numEst/2) = 1.0; //0.5*constants()->T()/(dV*constants()->lambda());
     }
 
     /* Initialize the local arrays */
@@ -703,7 +703,7 @@ void LocalSuperfluidDensityEstimator::accumulate() {
         if (abs(locAz(n)) > EPS)
             Inorm = locI(n);
         estimator(n) += locWz(n);
-        estimator(n+numEst/2) += Az*locAz(n)/Inorm;
+        estimator(n+numEst/2) += Az*locAz(n); //Az*locAz(n)/Inorm;
     }
 }
 

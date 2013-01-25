@@ -31,6 +31,8 @@ from docopt import docopt
 import loadgmt,kevent
 
 cmap = loadgmt.getcmap('dca','alarm.p1.0.1')
+cmap = loadgmt.getcmap('cb/div','Spectral_11')
+cmap = loadgmt.getcmap('cb/div','RdGy_11')
 
 # ===================================================================
 def main():
