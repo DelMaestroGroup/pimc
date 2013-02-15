@@ -217,10 +217,55 @@ class LocalSuperfluidDensityEstimator: public EstimatorBase {
         void output();           ///< overload the output
 
 	private:
+        int numGrid;            // The number of grid points
+        double dR;              // The size of the radial bin
+        Array <double,1> locAz; // The local path area estimator
+        Array <double,1> locA2; // The local area squared
+        Array <double,1> locWz; // The local winding number estimator
+
 		void accumulate();		// Accumulate values
-        Array <double,1> locAz; // The local path area
-        Array <double,1> locI;  // The local moment of inertia
-        Array <double,1> locWz; // The local winding number
+
+};
+
+// ========================================================================  
+// Radial Winding Superfluid Density Estimator Class 
+// ========================================================================  
+/**
+ * Compute the radially averaged local superfluid density.
+ */
+class RadialWindingSuperfluidDensityEstimator: public EstimatorBase {
+
+	public:
+		RadialWindingSuperfluidDensityEstimator(const Path &, 
+                int _frequency=1, string _label="radwind");
+		~RadialWindingSuperfluidDensityEstimator();
+
+	private:
+        double dR;              // The size of the radial bin
+        int numGrid;            // The number of grid points
+        Array <double,1> locWz; // The local winding number estimator
+		void accumulate();		// Accumulate values
+
+};
+
+// ========================================================================  
+// Radial Area Superfluid Density Estimator Class 
+// ========================================================================  
+/**
+ * Compute the radially averaged local superfluid density.
+ */
+class RadialAreaSuperfluidDensityEstimator: public EstimatorBase {
+
+	public:
+		RadialAreaSuperfluidDensityEstimator(const Path &, 
+                int _frequency=1, string _label="radarea");
+		~RadialAreaSuperfluidDensityEstimator();
+
+	private:
+        double dR;              // The size of the radial bin
+        int numGrid;            // The number of grid points
+        Array <double,1> locAz; // The local winding number estimator
+		void accumulate();		// Accumulate values
 
 };
 

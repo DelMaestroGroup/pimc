@@ -29,10 +29,12 @@ import argparse
 import pimchelp
 from docopt import docopt
 import loadgmt,kevent
+import itertools
 
-cmap = loadgmt.getcmap('dca','alarm.p1.0.1')
-cmap = loadgmt.getcmap('cb/div','Spectral_11')
-cmap = loadgmt.getcmap('cb/div','RdGy_11')
+#cmap = loadgmt.getcmap('dca','alarm.p1.0.1')
+#cmap = loadgmt.getcmap('cb/div','Spectral_11')
+#cmap = loadgmt.getcmap('cb/div','RdGy_11')
+cmap = loadgmt.getcmap('gist','earth')
 
 # ===================================================================
 def main():
@@ -53,39 +55,82 @@ def main():
         if args[l]:
             L[n] = float(args[l])
 
+    gridSize = []
+    for cL in L:
+        gridSize.append(cL/(1.0*N))
+    dV = pl.product(gridSize)
+
     # Get the column headers from the data file
     headers = pimchelp.getHeadersDict(fileName,skipLines=1)
 
     # determine which column we will plot
     plotColumn = headers.get(estName,0)
+    print plotColumn
 
     # Assuming a 3d data set, load the data
     data = pl.loadtxt(fileName,ndmin=2)[:,plotColumn].reshape([N,N,N])
+
+    # assuming translational symmetry in the z-axis
+    rhoxy = pl.average(data,axis=2)
+
+    num_rad_sep = 10
+    dr = 0.5*L[0]/num_rad_sep
+    rho = pl.zeros(num_rad_sep)
+    counts = pl.zeros_like(rho)
+    l = range(N)
+    for i,j in itertools.product(l,l):
+        x = -0.5*L[0] + i*gridSize[0]
+        y = -0.5*L[1] + j*gridSize[1]
+        r = pl.sqrt(x*x + y*y)
+        n = int(r/dr)
+        if n < num_rad_sep:
+            if abs(rho[n]) < 10.0: 
+                rho[n] += rhoxy[i,j]
+                counts[n] += 1
         
+    for n in range(num_rad_sep):
+        if counts[n] > 0:
+            rho[n] /= counts[n]
+
     # plot histograms in all three projections
     pl.figure(1)
-    D = pl.sum(data,axis=2)
-    pl.imshow(D, cmap=cmap, extent=[-0.5*L[0],0.5*L[0],-0.5*L[1],0.5*L[1]])
+    pl.imshow(gridSize[2]*pl.sum(data,axis=2), cmap=cmap, 
+              extent=[-0.5*L[0],0.5*L[0],-0.5*L[1],0.5*L[1]])
     pl.xlabel(r'$y\  [\AA]$')
     pl.ylabel(r'$x\  [\AA]$')
     pl.title('Particle Density Projection (X-Y)')
     pl.colorbar(shrink=0.4)
-    
+
+    r = pl.linspace(0,0.5*L[0],num_rad_sep)
+    ar = pl.loadtxt('r.dat')
     pl.figure(2)
-    pl.imshow(pl.sum(data,axis=1), cmap=cmap, 
-              extent=[-0.5*L[2],0.5*L[2],-0.5*L[0],0.5*L[0]])
-    pl.xlabel(r'$z\  [\AA]$')
-    pl.ylabel(r'$x\  [\AA]$')
-    pl.title('Particle Density Projection (X-Z)')
-    pl.colorbar(shrink=0.4)
-  
-    pl.figure(3)
-    pl.imshow(pl.sum(data,axis=0), cmap=cmap,
-              extent=[-0.5*L[2],0.5*L[2],-0.5*L[1],0.5*L[1]])
-    pl.xlabel(r'$z\  [\AA]$')
-    pl.ylabel(r'$y\  [\AA]$')
-    pl.title('Particle Density Projection (Y-Z)')
-    pl.colorbar(shrink=0.4)
+    pl.plot(r,rho,'ro', markersize=8)
+    pl.plot(ar[:,0],ar[:,1],'r-', linewidth=2)
+
+#    pl.figure(2)
+#    pl.imshow(I, cmap=cmap, extent=[-0.5*L[0],0.5*L[0],-0.5*L[1],0.5*L[1]])
+#    pl.xlabel(r'$y\  [\AA]$')
+#    pl.ylabel(r'$x\  [\AA]$')
+#    pl.title('Particle Density Projection (X-Y)')
+#    pl.colorbar(shrink=0.4)
+    
+#    pl.figure(3)
+#   # pl.imshow(R2, cmap=cmap, 
+#   #           extent=[-0.5*L[0],0.5*L[0],-0.5*L[1],0.5*L[1]])
+#    pl.imshow(pl.sum(data,axis=1), cmap=cmap, 
+#              extent=[-0.5*L[2],0.5*L[2],-0.5*L[0],0.5*L[0]])
+#    pl.xlabel(r'$z\  [\AA]$')
+#    pl.ylabel(r'$x\  [\AA]$')
+#    pl.title('Particle Density Projection (X-Z)')
+#    pl.colorbar(shrink=0.4)
+#  
+#    pl.figure(4)
+#    pl.imshow(pl.sum(data,axis=0), cmap=cmap,
+#              extent=[-0.5*L[2],0.5*L[2],-0.5*L[1],0.5*L[1]])
+#    pl.xlabel(r'$z\  [\AA]$')
+#    pl.ylabel(r'$y\  [\AA]$')
+#    pl.title('Particle Density Projection (Y-Z)')
+#    pl.colorbar(shrink=0.4)
 #    pl.savefig('plot.svg')
 
    

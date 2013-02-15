@@ -39,6 +39,30 @@ Container::Container() {
 Container::~Container() {
 }
 
+/**************************************************************************//**
+ *  Given a grid box number, return the associated radius
+ *
+ *  @param n The grid index
+ *  @return The radius squared x^2 + y^2 of the grid box
+******************************************************************************/
+double Container::gridRadius2(const int n) const {
+	iVec _gridIndex;
+	for (int i = 0; i < NDIM; i++) {
+		int scale = 1;
+		for (int j = i+1; j < NDIM; j++) 
+			scale *= NGRIDSEP;
+		_gridIndex[i] = (n/scale) % NGRIDSEP;
+		PIMC_ASSERT(_gridIndex[i]<NGRIDSEP);
+	}
+
+    double r2 = 0.0;
+    for (int i = 0; i < 2; i++) {
+        double ri = -0.5*side[i] + (_gridIndex[i] + 0.5)*gridSize[i];
+        r2 += ri*ri;
+    }
+	return r2;
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // PRISM CLASS ---------------------------------------------------------------
@@ -421,3 +445,4 @@ double Cylinder::gridBoxVolume(const int n) const {
 //	return (nr+1)*gridSize[0]*blitz::product(gridSize);
 	return blitz::product(gridSize);
 }
+

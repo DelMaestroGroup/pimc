@@ -43,22 +43,24 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	diagonalFraction(_path),
 	energy(_path,_actionPtr),
 	numberParticles(_path),
-	particlePositions(_path,1),
+	particlePositions(_path),
 	superfluidFraction(_path),
-	localSuperfluidDensity(_path,1),
-	permutationCycle(_path),
-	oneBodyDensityMatrix(_path,_actionPtr,_random),
-	pairCorrelation(_path,_actionPtr),
+	localSuperfluidDensity(_path),
+	radialWindingSuperfluidDensity(_path),
+	radialAreaSuperfluidDensity(_path),
+	permutationCycle(_path,0),
+	oneBodyDensityMatrix(_path,_actionPtr,_random,0),
+	pairCorrelation(_path,_actionPtr,0),
 	radialDensity(_path),
-	wormProperties(_path),
-	numberDistribution(_path),
-	cylEnergy(_path,_actionPtr,maxR),
-	cylNumberParticles(_path,maxR),
-	cylSuperFluidFraction(_path,maxR),
-	cylPairCorrelation(_path,_actionPtr,maxR),
-	cylOneBodyDensityMatrix(_path,_actionPtr,_random,maxR),
-	cylNumberDistribution(_path,maxR),
-	cylRadialPotential(_path,_actionPtr,_random,maxR)
+	wormProperties(_path,0),
+	numberDistribution(_path,0),
+	cylEnergy(_path,_actionPtr,maxR,0),
+	cylNumberParticles(_path,maxR,0),
+	cylSuperFluidFraction(_path,maxR,0),
+	cylPairCorrelation(_path,_actionPtr,maxR,0),
+	cylOneBodyDensityMatrix(_path,_actionPtr,_random,maxR,0),
+	cylNumberDistribution(_path,maxR,0),
+	cylRadialPotential(_path,_actionPtr,_random,maxR,0)
 {
 	/* Are we starting from a saved state? */
 	startWithState = _startWithState;
@@ -137,6 +139,8 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	estimator.push_back(&particlePositions);
 	estimator.push_back(&superfluidFraction);
 	estimator.push_back(&localSuperfluidDensity);
+	estimator.push_back(&radialWindingSuperfluidDensity);
+	estimator.push_back(&radialAreaSuperfluidDensity);
 	estimator.push_back(&permutationCycle);
 	estimator.push_back(&pairCorrelation);
 	estimator.push_back(&numberDistribution);
@@ -247,7 +251,7 @@ string PathIntegralMonteCarlo::runMoves(const double x, const int sweep) {
 			moveName = staging.name;
 		}
 		else if (x < attemptOffDiagProb.at(9)) {
-			if ((sweep % numParticles)== 0) 
+			if ( (numParticles > 0) && ((sweep % numParticles)== 0) )
 				success = centerOfMass.attemptMove();
 			moveName = centerOfMass.name;
 		}

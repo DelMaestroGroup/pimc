@@ -63,6 +63,9 @@ class Container {
         /** The physical size of a NDIM-dimensional grid box */
         virtual double gridBoxVolume(const int) const = 0;
 
+        /** The radius of a grid box */
+        double gridRadius2(const int) const;
+
 
 	protected:
 		dVec pSide;		    ///< Periodic * side

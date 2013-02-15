@@ -85,7 +85,6 @@ class PathIntegralMonteCarlo {
 		SwapHeadMove 	 swapHead;
 		SwapTailMove 	 swapTail;
 
-
 		/* The estimators that we will measure */
 		DiagonalFractionEstimator       diagonalFraction;
 		EnergyEstimator                 energy;
@@ -93,6 +92,8 @@ class PathIntegralMonteCarlo {
         ParticlePositionEstimator       particlePositions;
 		SuperfluidFractionEstimator     superfluidFraction;
         LocalSuperfluidDensityEstimator localSuperfluidDensity;
+        RadialWindingSuperfluidDensityEstimator  radialWindingSuperfluidDensity;
+        RadialAreaSuperfluidDensityEstimator     radialAreaSuperfluidDensity;
 		PermutationCycleEstimator       permutationCycle;
 		OneBodyDensityMatrixEstimator   oneBodyDensityMatrix;
 		PairCorrelationEstimator        pairCorrelation;
