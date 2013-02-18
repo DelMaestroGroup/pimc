@@ -1,6 +1,7 @@
 ''' PimcHelp - helper methods for analzing pimc output data.
 '''
 import os
+import glob
 from operator import itemgetter, attrgetter
 
 # ----------------------------------------------------------------------
@@ -170,7 +171,7 @@ def getHeadersDict(fileName, removeLab=None, skipLines=0):
 def checkEnsemble(canonical):
     ''' Here we make sure that the correct ensemble flag is specified. '''
 
-    import sys,glob
+    import sys
     gceFiles = (len(glob.glob('gce-*'))>0)
     ceFiles = (len(glob.glob('ce-*'))>0)
 
@@ -330,9 +331,8 @@ class PimcHelp:
 
         # We want all the file names here
         if not idList:
-            lsCommand = 'ls -1 %s%s-%s-%s' % (self.baseDir,self.prefix,type,self.dataName)
-            fileNames = os.popen(lsCommand).read().split('\n')
-            fileNames.pop()
+            fileLoc = '%s%s-%s-%s' % (self.baseDir,self.prefix,type,self.dataName)
+            fileNames = glob.glob(fileLoc)
 
             # Now sort them
             fileNames  = sortFileNames(fileNames) 
@@ -340,10 +340,34 @@ class PimcHelp:
         # Otherwise we just go through and get the ID's we need
         else:
             for id in idList: 
-                lsCommand = 'ls -1 %s%s-log-*%s.dat' % (self.baseDir,self.prefix,id)
-                fileNames.append(os.popen(lsCommand).read().rstrip('\n'))
+                fileLoc = '%s%s-log-*%s.dat' % (self.baseDir,self.prefix,id)
+                fileNames.extend(glob.glob(fileLoc))
 
         return fileNames
+
+    # -----------------------------------------------------------------------------
+    # def getFileList(self,type,idList=None):
+    #     ''' Get a list of input files based on their type, and possibly a number
+    #         of unique ID's'''
+
+    #     fileNames = []
+
+    #     # We want all the file names here
+    #     if not idList:
+    #         lsCommand = 'ls -1 %s%s-%s-%s' % (self.baseDir,self.prefix,type,self.dataName)
+    #         fileNames = os.popen(lsCommand).read().split('\n')
+    #         fileNames.pop()
+
+    #         # Now sort them
+    #         fileNames  = sortFileNames(fileNames) 
+
+    #     # Otherwise we just go through and get the ID's we need
+    #     else:
+    #         for id in idList: 
+    #             lsCommand = 'ls -1 %s%s-log-*%s.dat' % (self.baseDir,self.prefix,id)
+    #             fileNames.append(os.popen(lsCommand).read().rstrip('\n'))
+
+    #     return fileNames
 
 # -------------------------------------------------------------------------------
 # CLASS SCALAR REDUCE
