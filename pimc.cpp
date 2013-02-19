@@ -203,7 +203,7 @@ string PathIntegralMonteCarlo::runMoves(const double x, const int sweep) {
 			moveName = staging.name;
 		}
 		else if (x < attemptDiagProb.at(3)) {
-			if ((sweep % numParticles)== 0) 
+			if ( (numParticles > 0) && ((sweep % numParticles)== 0) )
 				success = centerOfMass.attemptMove();
 			moveName = centerOfMass.name;
 		}
@@ -746,29 +746,35 @@ void PathIntegralMonteCarlo::loadQuantumState(Array <dVec,2> &tempBeads,
 void PathIntegralMonteCarlo::loadState() {
 
 	uint32 temp;
-
-	/* We first read the former total number of world lines */
-	int numWorldLines;
-	int numTimeSlices = path.numTimeSlices;
-
-	communicate()->file("init")->stream() >> numWorldLines;
+    string tempString;
 
 	/* Reset the total acceptance information */
-	communicate()->file("init")->stream() >> temp >> temp;
 	move.front()->resetTotAccept();
 
 	/* Reset all the individual move acceptance information */
 	for (vector<MoveBase*>::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
-		communicate()->file("init")->stream() >> temp >> temp;
 		(*movePtr)->resetAccept();
 	}
 
-	/* Reset previous estimator sampling information */
+	/* Reset estimator sampling information */
 	for (vector<EstimatorBase*>::iterator estimatorPtr = estimator.begin();
 			estimatorPtr != estimator.end(); ++estimatorPtr) {
-		communicate()->file("init")->stream() >> temp >> temp;
 		(*estimatorPtr)->restart(0,0);
 	}
+
+	/* We first read the former total number of world lines */
+	int numWorldLines;
+	int numTimeSlices = path.numTimeSlices;
+	communicate()->file("init")->stream() >> numWorldLines;
+
+    /* Now we skip through the input file until we find the beads matrix.  This
+     * is signalled by the appearance of an open bracket "(" */
+    while (!communicate()->file("init")->stream().eof()) {
+		if (communicate()->file("init")->stream().peek() != '(') 
+            getline (communicate()->file("init")->stream(), tempString);
+        else
+            break;
+    }
 
 	/* Now we resize all path data members and read them from the init state file */
 	path.beads.resize(numTimeSlices,numWorldLines);
