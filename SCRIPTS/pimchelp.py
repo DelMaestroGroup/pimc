@@ -713,7 +713,10 @@ class Description:
                                   'obdm':'One Body Density Matrix',
                                   'rho_s/rho':'Superfluid Fraction',
                                   'Area_rho_s':'Area Superfluid Fraction',
-                                  'rho_s/rho|Z':r'$\rho_s/\rho_0$'}
+                                  'rho_s/rho|Z':r'$\rho_s/\rho_0$',
+                                  'radwind':r'Radial Winding Superfliud Density $[\mathrm{\AA}^{-3}]$',
+                                  'radarea':r'Radial Area Superfliud Density $[\mathrm{\AA}^{-3}]$'
+                                 }
 
         self.estimatorShortName = {'K':'K [K]',
                                   'V':'V [K]',
@@ -738,4 +741,6 @@ class Description:
         self.estimatorXLongName = {'number':'Number of Particles',
                                    'pair':'r  %s' % lengthTUnit,
                                    'obdm':'r  %s' % lengthTUnit,
-                                   'radial':'r  %s' % lengthTUnit}
+                                   'radial':'r  %s' % lengthTUnit,
+                                   'radwind':'r  %s' % lengthTUnit,
+                                   'radarea':'r  %s' % lengthTUnit}

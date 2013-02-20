@@ -8,6 +8,7 @@
 import os,sys,glob
 import loadgmt,kevent
 import pimchelp
+import MCstat
 from optparse import OptionParser
 from pylab import *
 
@@ -19,7 +20,9 @@ def getStats(data,dim=0):
         numBins  = size(data,dim) 
         dataAve  = average(data,dim) 
         dataAve2 = average(data*data,dim) 
-        dataErr   = sqrt( abs(dataAve2-dataAve**2)/(1.0*numBins-1.0) ) 
+        #dataErr   = sqrt( abs(dataAve2-dataAve**2)/(1.0*numBins-1.0) ) 
+        bins = MCstat.bin(data) 
+        dataErr = amax(bins,axis=0)
     else:
         dataAve = data
         dataErr = 0.0*data
@@ -27,7 +30,7 @@ def getStats(data,dim=0):
     return dataAve,dataErr
 
 # -----------------------------------------------------------------------------
-def getScalarEst(type,pimc,outName,reduceFlag):
+def getScalarEst(type,pimc,outName,reduceFlag, skip=0):
     ''' Return the arrays containing the reduced averaged scalar
         estimators in question.'''
 
@@ -38,7 +41,7 @@ def getScalarEst(type,pimc,outName,reduceFlag):
     err = zeros([len(fileNames),len(headers)],float)
     for i,fname in enumerate(fileNames):
         # Compute the averages and error
-        data = loadtxt(fname)
+        data = loadtxt(fname,ndmin=2)[skip:,:]
         ave[i,:],err[i,:] = getStats(data)
     
     # output the estimator data to disk
@@ -61,7 +64,7 @@ def getScalarEst(type,pimc,outName,reduceFlag):
     return headers,ave,err;
 
 # -----------------------------------------------------------------------------
-def getVectorEst(type,pimc,outName,reduceFlag,xlab,ylab):
+def getVectorEst(type,pimc,outName,reduceFlag,xlab,ylab, skip=0):
     ''' Return the arrays consisting of the reduec averaged vector 
         estimators. '''
 
@@ -79,7 +82,7 @@ def getVectorEst(type,pimc,outName,reduceFlag,xlab,ylab):
     for i,fname in enumerate(fileNames):
 
         # Get the estimator data and compute averages
-        data = loadtxt(fname)
+        data = loadtxt(fname,ndmin=2)[skip:,:]
         ave[i,:],err[i,:] = getStats(data)
 
         # get the headers
@@ -116,7 +119,7 @@ def getVectorEst(type,pimc,outName,reduceFlag,xlab,ylab):
     return x,ave,err
 
 # -----------------------------------------------------------------------------
-def getKappa(pimc,outName,reduceFlag):
+def getKappa(pimc,outName,reduceFlag,skip=0):
     ''' Return the arrays containing the reduced averaged compressibility. '''
 
     fileNames = pimc.getFileList('estimator')
@@ -212,12 +215,17 @@ def main():
                       help="do we want to produce data plots?") 
     parser.add_option("-R", "--radius", dest="R", type="float",
                       help="radius in Angstroms") 
+    parser.add_option("-s", "--skip", dest="skip", type="int",
+                      help="number of measurements to skip") 
     parser.set_defaults(canonical=False)
     parser.set_defaults(plot=False)
+    parser.set_defaults(skip=0)
 
     # parse the command line options and get the reduce flag
     (options, args) = parser.parse_args() 
     baseDir = args[0] or ''
+
+    skip = options.skip
     
     if (not options.reduce):
         parser.error("need a correct reduce flag (-r,--reduce): [T,N,n,u,t,L,V]")
@@ -252,35 +260,35 @@ def main():
 
     # We first reduce the scalar estimators and output them to disk
     if estDo['estimator']:
-        head1,scAve1,scErr1 = getScalarEst('estimator',pimc,outName,reduceFlag)
+        head1,scAve1,scErr1 = getScalarEst('estimator',pimc,outName,reduceFlag,skip=skip)
 
     if estDo['super']:
-        head2,scAve2,scErr2 = getScalarEst('super',pimc,outName,reduceFlag)
+        head2,scAve2,scErr2 = getScalarEst('super',pimc,outName,reduceFlag,skip=skip)
 
     # Now we do the normalized one body density matrix
     if estDo['obdm']:
-        x1,ave1,err1 = getVectorEst('obdm',pimc,outName,reduceFlag,'r [A]','n(r)')
+        x1,ave1,err1 = getVectorEst('obdm',pimc,outName,reduceFlag,'r [A]','n(r)',skip=skip)
 
     # Now we do the pair correlation function
     if estDo['pair']:
-        x2,ave2,err2 = getVectorEst('pair',pimc,outName,reduceFlag,'r [A]','g(r)')
+        x2,ave2,err2 = getVectorEst('pair',pimc,outName,reduceFlag,'r [A]','g(r)',skip=skip)
 
     # The radial Density
     if estDo['radial']:
-        x3,ave3,err3 = getVectorEst('radial',pimc,outName,reduceFlag,'r [A]','rho(r)')
+        x3,ave3,err3 = getVectorEst('radial',pimc,outName,reduceFlag,'r [A]','rho(r)',skip=skip)
 
     # The radially averaged Winding superfluid density
     if estDo['radwind']:
-        x4,ave4,err4 = getVectorEst('radwind',pimc,outName,reduceFlag,'r [A]','rho_s(r)')
+        x4,ave4,err4 = getVectorEst('radwind',pimc,outName,reduceFlag,'r [A]','rho_s(r)',skip=skip)
 
     # The radially averaged area superfliud density
     if estDo['radarea']:
-        x5,ave5,err5 = getVectorEst('radarea',pimc,outName,reduceFlag,'r [A]','rho_s(r)')
+        x5,ave5,err5 = getVectorEst('radarea',pimc,outName,reduceFlag,'r [A]','rho_s(r)',skip=skip)
 
     # Compute the number distribution function and compressibility if we are in
     # the grand canonical ensemble
     if estDo['number']:
-        x6,ave6,err6 = getVectorEst('number',pimc,outName,reduceFlag,'N','P(N)')
+        x6,ave6,err6 = getVectorEst('number',pimc,outName,reduceFlag,'N','P(N)',skip=skip)
         kappa,kappaErr = getKappa(pimc,outName,reduceFlag)
 
     # Do we show plots?
