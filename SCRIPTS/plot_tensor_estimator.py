@@ -35,6 +35,8 @@ import itertools
 #cmap = loadgmt.getcmap('cb/div','Spectral_11')
 #cmap = loadgmt.getcmap('cb/div','RdGy_11')
 cmap = loadgmt.getcmap('gist','earth')
+cmap = loadgmt.getcmap('ncl','precip3_16lev')
+cmap = loadgmt.getcmap('ncl','temp_diff_18lev')
 
 # ===================================================================
 def main():
@@ -65,13 +67,14 @@ def main():
 
     # determine which column we will plot
     plotColumn = headers.get(estName,0)
-    print plotColumn
 
     # Assuming a 3d data set, load the data
     data = pl.loadtxt(fileName,ndmin=2)[:,plotColumn].reshape([N,N,N])
 
     # assuming translational symmetry in the z-axis
     rhoxy = pl.average(data,axis=2)
+
+    # For the particular case of A^2 we need to 
 
     num_rad_sep = 10
     dr = 0.5*L[0]/num_rad_sep
@@ -87,6 +90,12 @@ def main():
             if abs(rho[n]) < 10.0: 
                 rho[n] += rhoxy[i,j]
                 counts[n] += 1
+        if 'A^2' in estName and r > 1.2:
+            rhoxy[i,j] /= r*r
+        elif 'A^2' in estName and r < 1.2:
+            rhoxy[i,j] = 0.0
+        elif 'A:rho_s' in estName and r < 1.2:
+            rhoxy[i,j] = 0.0
         
     for n in range(num_rad_sep):
         if counts[n] > 0:
@@ -94,7 +103,7 @@ def main():
 
     # plot histograms in all three projections
     pl.figure(1)
-    pl.imshow(gridSize[2]*pl.sum(data,axis=2), cmap=cmap, 
+    pl.imshow(rhoxy, cmap=cmap, 
               extent=[-0.5*L[0],0.5*L[0],-0.5*L[1],0.5*L[1]])
     pl.xlabel(r'$y\  [\AA]$')
     pl.ylabel(r'$x\  [\AA]$')
@@ -102,11 +111,35 @@ def main():
     pl.colorbar(shrink=0.4)
 
     r = pl.linspace(0,0.5*L[0],num_rad_sep)
-    ar = pl.loadtxt('r.dat')
+#    ar = pl.loadtxt('r.dat')
     pl.figure(2)
-    pl.plot(r,rho,'ro', markersize=8)
-    pl.plot(ar[:,0],ar[:,1],'r-', linewidth=2)
+    pl.plot(r,rho,'ro-', markersize=8)
+#    pl.plot(ar[:,0],ar[:,1],'r-', linewidth=2)
+    
+    # Now we locally average the results
+    loc_ave_data = pl.zeros_like(rhoxy)
+    for i,j in itertools.product(l,l):
+        x = -0.5*L[0] + i*gridSize[0]
+        y = -0.5*L[1] + j*gridSize[1]
+        r = pl.sqrt(x*x + y*y)
+        if r < 0.5*L[0]:
+            count = 0
+            for k,l in itertools.product(range(-1,2),range(-1,2)):
+                if i+k < N and j+l < N:
+                    loc_ave_data[i,j] += rhoxy[i+k,j+l]
+                    count += 1
+            if count > 0:
+                loc_ave_data[i,j] /= count
+        else:
+            loc_ave_data[i,j] = rhoxy[i,j]
 
+    pl.figure(3)
+    pl.imshow(loc_ave_data, cmap=cmap, 
+              extent=[-0.5*L[0],0.5*L[0],-0.5*L[1],0.5*L[1]])
+    pl.xlabel(r'$y\  [\AA]$')
+    pl.ylabel(r'$x\  [\AA]$')
+    pl.title('Particle Density Projection (X-Y)')
+    pl.colorbar(shrink=0.4)
 #    pl.figure(2)
 #    pl.imshow(I, cmap=cmap, extent=[-0.5*L[0],0.5*L[0],-0.5*L[1],0.5*L[1]])
 #    pl.xlabel(r'$y\  [\AA]$')
