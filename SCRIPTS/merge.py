@@ -112,6 +112,61 @@ def mergeData(pimc,type,newID,skip):
             print '%10d' %numLines
 
 # -----------------------------------------------------------------------------
+def mergeCumulativeData(pimc,type,newID):
+    '''Perform a cumulative average of estimators written to disk as running
+    averages.  
+    
+    This is not techically OK when the number of measurements is not
+    identical in each cumulative average but is good enough for a qualitative
+    estimator.'''
+
+    fileNames = pimc.getFileList(type)
+
+    numLines = 0
+    fileExist = False
+    numMerged = 0
+    for i,fname in enumerate(fileNames):
+
+        # Does the file exist?
+        if len(glob.glob(fname)) > 0:
+            numMerged += 1
+
+            # Open and prepare the new file
+            inFile = open(fname,'r');
+            inLines = inFile.readlines();
+            inFile.close()
+            numLines += (len(inLines)-2) - (diagonalEst)*skip
+
+            if i == 0:
+                # get the output file name and open the file for writing
+                outName = fname.replace(str(pimc.id[0]),str(newID))
+                fileExist = True
+                print '%-80s' % outName,
+                outFile = open('MERGED/' + outName,'w');
+
+                # replace the old ID for the new one
+                inFile = open(fname,'r');
+                inLines = inFile.readlines();
+                inLines[0] = inLines[0].replace(str(pimc.id[0]),str(newID))
+                inFile.close()
+                outFile.write(inLines[0])
+                outFile.write(inLines[1])
+
+                # Get the data from the first file
+                data = loadtxt(fname, ndmin=2)
+            else:
+                # Accumulate the running average
+                data += loadtxt(fname, ndmin=2)
+
+    if fileExist:
+        # write the new average to disk
+        data /= 1.0*numMerged
+        for cdata in data[:,0]:
+            outFile.write('%16.8E\n'%cdata)
+        outFile.close() 
+        print '%10d' % numMerged
+
+# -----------------------------------------------------------------------------
 # Begin Main Program 
 # -----------------------------------------------------------------------------
 def main(): 
@@ -176,6 +231,10 @@ def main():
     print 'Merged data files:'
     for type in pimc.dataType:
         mergeData(pimc,type,newID,options.skip)
+
+    # Now perform the merge for possible cumulative average files
+    for type in ['position','locsuper']:
+        mergeCumulativeData(pimc,type,newID)
 
     # copy over the log file
     oldLogName = pimc.getFileList('log')[0]
