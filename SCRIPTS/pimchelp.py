@@ -250,10 +250,12 @@ class PimcHelp:
             self.prefix='gce'
 
         # The data file and all output file names
-        self.dataType = ['estimator','obdm','pair','pcycle','super','worm','radial']
+        self.dataType = ['estimator', 'obdm', 'pair', 'pcycle', 'super', 'worm', 
+                         'radial', 'radwind', 'radarea']
         if not canonical:
             self.dataType.append('number')
-        self.outType  = ['estimator','number','obdm','pair','pcycle','super','worm','radial','log','state']
+        self.outType  = ['estimator', 'number', 'obdm', 'pair', 'pcycle', 'super', 
+                         'worm', 'radial', 'log', 'state']
 
     # -----------------------------------------------------------------------------
     def getID(self,fileName): 

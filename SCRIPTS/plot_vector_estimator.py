@@ -62,6 +62,7 @@ def main():
 
     # Analyze the imput files
     estimatorName = pimchelp.getVectorEstimatorName(fileNames[0])
+    print estimatorName
     reduce = pimchelp.VectorReduce(fileNames,estimatorName,varLabel)
 
     # Get a color scheme and marker list

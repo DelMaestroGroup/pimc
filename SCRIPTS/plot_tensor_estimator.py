@@ -94,7 +94,7 @@ def main():
             rhoxy[i,j] /= r*r
         elif 'A^2' in estName and r < 1.2:
             rhoxy[i,j] = 0.0
-        elif 'A:rho_s' in estName and r < 1.2:
+        elif 'A:rho_s' in estName and r < 0.0:
             rhoxy[i,j] = 0.0
         
     for n in range(num_rad_sep):

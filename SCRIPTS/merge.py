@@ -131,12 +131,6 @@ def mergeCumulativeData(pimc,type,newID):
         if len(glob.glob(fname)) > 0:
             numMerged += 1
 
-            # Open and prepare the new file
-            inFile = open(fname,'r');
-            inLines = inFile.readlines();
-            inFile.close()
-            numLines += (len(inLines)-2) - (diagonalEst)*skip
-
             if i == 0:
                 # get the output file name and open the file for writing
                 outName = fname.replace(str(pimc.id[0]),str(newID))
@@ -161,8 +155,12 @@ def mergeCumulativeData(pimc,type,newID):
     if fileExist:
         # write the new average to disk
         data /= 1.0*numMerged
-        for cdata in data[:,0]:
-            outFile.write('%16.8E\n'%cdata)
+        numRows = data.shape[0]
+        numCols = data.shape[1]
+        for i in range(numRows):
+            for j in range(numCols):
+                outFile.write('%16.8E'%data[i,j])
+            outFile.write('\n')
         outFile.close() 
         print '%10d' % numMerged
 

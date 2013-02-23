@@ -223,7 +223,14 @@ def main():
 
     # parse the command line options and get the reduce flag
     (options, args) = parser.parse_args() 
-    baseDir = args[0] or ''
+
+    # Determine the working directory
+    if args:
+        baseDir = args[0]
+        if baseDir == '.':
+            baseDir = ''
+    else:
+        baseDir = ''
 
     skip = options.skip
     
