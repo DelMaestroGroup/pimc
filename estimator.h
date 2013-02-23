@@ -321,7 +321,7 @@ class PermutationCycleEstimator: public EstimatorBase {
 class OneBodyDensityMatrixEstimator: public EstimatorBase {
 
 	public:
-		OneBodyDensityMatrixEstimator(Path &, ActionBase *, MTRand &,
+		OneBodyDensityMatrixEstimator(Path &, ActionBase *, const MTRand &,
                 int _frequency=20, string _label="obdm");
 		~OneBodyDensityMatrixEstimator();
 
@@ -331,7 +331,7 @@ class OneBodyDensityMatrixEstimator: public EstimatorBase {
 	private:
 		Path &lpath;					// A non-constant local reference to the path
 		ActionBase *actionPtr;			// The action pointer
-		MTRand &random;					// A local reference to the random number generator
+		MTRand random;					// A local copy of the random number generator
 
 		double dR;						// The discretization
 		int numReps;					// The number of measurments reps					
@@ -522,7 +522,7 @@ class CylinderSuperfluidFractionEstimator: public EstimatorBase {
 class CylinderOneBodyDensityMatrixEstimator: public EstimatorBase {
 
 	public:
-		CylinderOneBodyDensityMatrixEstimator(Path &, ActionBase *, MTRand &, double, 
+		CylinderOneBodyDensityMatrixEstimator(Path &, ActionBase *, const MTRand &, double, 
                 int _frequency=20, string _label="cyl_obdm");
 		~CylinderOneBodyDensityMatrixEstimator();
 
@@ -531,7 +531,7 @@ class CylinderOneBodyDensityMatrixEstimator: public EstimatorBase {
 	private:
 		Path &lpath;					// A non-constant local reference to the path
 		ActionBase *actionPtr;			// The action pointer
-		MTRand &random;					// A local reference to the random number generator
+		MTRand random;					// A local copy of the random number generator
 
 		double dR;						// The discretization
 		int numReps;					// The number of measurments reps					

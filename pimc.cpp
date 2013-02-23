@@ -49,7 +49,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	radialWindingSuperfluidDensity(_path),
 	radialAreaSuperfluidDensity(_path),
 	permutationCycle(_path,0),
-	oneBodyDensityMatrix(_path,_actionPtr,_random,0),
+	oneBodyDensityMatrix(_path,_actionPtr,_random,1),
 	pairCorrelation(_path,_actionPtr,0),
 	radialDensity(_path),
 	wormProperties(_path,0),
@@ -643,7 +643,6 @@ void PathIntegralMonteCarlo::saveState() {
 
 	/* Rename and copy the file. */
 	communicate()->file("state")->rename();
-//	communicate()->file("state")->stream().close();
 }
 
 /**************************************************************************//**
@@ -745,7 +744,6 @@ void PathIntegralMonteCarlo::loadQuantumState(Array <dVec,2> &tempBeads,
 ******************************************************************************/
 void PathIntegralMonteCarlo::loadState() {
 
-	uint32 temp;
     string tempString;
 
 	/* Reset the total acceptance information */

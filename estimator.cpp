@@ -1118,7 +1118,7 @@ void PermutationCycleEstimator::accumulate() {
  *  on the type of simulation cell).
 ******************************************************************************/
 OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path,
-		ActionBase *_actionPtr, MTRand &_random, int _frequency, string _label) : 
+		ActionBase *_actionPtr, const MTRand &_random, int _frequency, string _label) : 
 	EstimatorBase(_path,_frequency,_label), 
 	lpath(_path),
 	actionPtr(_actionPtr),
@@ -1887,7 +1887,8 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
  *  on the type of simulation cell).
 ******************************************************************************/
 CylinderOneBodyDensityMatrixEstimator::CylinderOneBodyDensityMatrixEstimator (Path &_path,
-		ActionBase *_actionPtr, MTRand &_random, double _maxR, int _frequency, string _label) : 
+		ActionBase *_actionPtr, const MTRand &_random, double _maxR, int _frequency, 
+        string _label) : 
 	EstimatorBase(_path,_frequency,_label), 
 	lpath(_path),
 	actionPtr(_actionPtr),

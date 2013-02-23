@@ -297,17 +297,17 @@ your machine.  The results should yield:
 
     # PIMCID: 126039759
     # Number Samples     20
-    K                  343.53393	    20.05191
-    V                 -442.28790	    20.78028
-    E                  -98.75397	    12.00106
-    E_mu               -99.09439	    12.00384
-    K/N                 19.93362	     0.83784
-    V/N                -25.66135	     0.71731
-    E/N                 -5.72773	     0.66731
-    N                   17.02100	     0.37116
-    N^2                292.82900	    12.20056
-    density              0.02338	     0.00051
-    diagonal             0.75272	     0.01867
+    K                  375.57537	    18.37762
+    V                 -501.39256	    18.46109
+    E                 -125.81719	    13.42753
+    E_mu              -126.17684	    13.42957
+    K/N                 20.75984	     0.77635
+    V/N                -27.69348	     0.57022
+    E/N                 -6.93364	     0.71329
+    N                   17.98250	     0.29209
+    N^2                325.24550	    10.71591
+    density              0.02470	     0.00040
+    diagonal             0.79468	     0.01644
 
 The basic idea of running the program is that one needs to setup the simulation
 cell, by defining either its specific geometry via the size (`L`) flag, or by a
