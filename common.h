@@ -62,7 +62,7 @@
 #define NPCFSEP 400 	///< Spatial separations to be used in the pair correlation function
 #define NOBDMSEP 50	 	///< Spatial separations to be used in the one body density matrix
 #define NRADSEP 200	 	///< Spatial separations to be used in the radial density
-#define NGRIDSEP 100     ///< Spatial separations to be used in each dimension of the particle position grid
+#define NGRIDSEP 50     ///< Spatial separations to be used in each dimension of the particle position grid
 #define EPS 1.0E-7 		///< A small number
 #define BIG 1.0E30		///< A big number
 #define XXX	-999		///< Used to refer to a nonsense value
