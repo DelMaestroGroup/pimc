@@ -76,25 +76,28 @@ def main():
 
     # For the particular case of A^2 we need to 
 
-    num_rad_sep = 10
+    num_rad_sep = 30
     dr = 0.5*L[0]/num_rad_sep
     rho = pl.zeros(num_rad_sep)
     counts = pl.zeros_like(rho)
     l = range(N)
     for i,j in itertools.product(l,l):
-        x = -0.5*L[0] + i*gridSize[0]
-        y = -0.5*L[1] + j*gridSize[1]
+        x = -0.5*L[0] + (i+0.5)*gridSize[0]
+        y = -0.5*L[1] + (j+0.5)*gridSize[1]
         r = pl.sqrt(x*x + y*y)
         n = int(r/dr)
         if n < num_rad_sep:
-            if abs(rho[n]) < 10.0: 
-                rho[n] += rhoxy[i,j]
+            if abs(rho[n]) < 1000.0: 
+                if 'A^2' in estName:
+                    rho[n] += rhoxy[i,j]/(r*r)
+                else:
+                    rho[n] += rhoxy[i,j]
                 counts[n] += 1
-        if 'A^2' in estName and r > 1.2:
+        if 'A^2' in estName and r > 1.0:
             rhoxy[i,j] /= r*r
-        elif 'A^2' in estName and r < 1.2:
+        elif 'A^2' in estName and r < 1.0:
             rhoxy[i,j] = 0.0
-        elif 'A:rho_s' in estName and r < 0.0:
+        elif 'A:rho_s' in estName and r < 1.2:
             rhoxy[i,j] = 0.0
         
     for n in range(num_rad_sep):
@@ -104,7 +107,8 @@ def main():
     # plot histograms in all three projections
     pl.figure(1)
     pl.imshow(rhoxy, cmap=cmap, 
-              extent=[-0.5*L[0],0.5*L[0],-0.5*L[1],0.5*L[1]])
+              extent=[-0.5*L[0],0.5*L[0],-0.5*L[1],0.5*L[1]], 
+             interpolation='None')
     pl.xlabel(r'$y\  [\AA]$')
     pl.ylabel(r'$x\  [\AA]$')
     pl.title('Particle Density Projection (X-Y)')
@@ -115,6 +119,9 @@ def main():
     pl.figure(2)
     pl.plot(r,rho,'ro-', markersize=8)
 #    pl.plot(ar[:,0],ar[:,1],'r-', linewidth=2)
+
+    for i,cr in enumerate(r):
+        print '%16.8E%16.8E' % (cr,rho[i])
     
     # Now we locally average the results
     loc_ave_data = pl.zeros_like(rhoxy)
