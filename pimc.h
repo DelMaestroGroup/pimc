@@ -92,8 +92,11 @@ class PathIntegralMonteCarlo {
         ParticlePositionEstimator       particlePositions;
 		SuperfluidFractionEstimator     superfluidFraction;
         LocalSuperfluidDensityEstimator localSuperfluidDensity;
+        PlaneWindingSuperfluidDensityEstimator   planeWindingSuperfluidDensity;
+        PlaneAreaSuperfluidDensityEstimator   planeAreaSuperfluidDensity;
         RadialWindingSuperfluidDensityEstimator  radialWindingSuperfluidDensity;
         RadialAreaSuperfluidDensityEstimator     radialAreaSuperfluidDensity;
+        RadialArea1SuperfluidDensityEstimator     radialArea1SuperfluidDensity;
 		PermutationCycleEstimator       permutationCycle;
 		OneBodyDensityMatrixEstimator   oneBodyDensityMatrix;
 		PairCorrelationEstimator        pairCorrelation;

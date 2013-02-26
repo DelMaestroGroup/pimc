@@ -228,6 +228,52 @@ class LocalSuperfluidDensityEstimator: public EstimatorBase {
 };
 
 // ========================================================================  
+// Plane Winding Superfluid Density Estimator Class 
+// ========================================================================  
+/**
+ * Compute the radially averaged local superfluid density.
+ */
+class PlaneWindingSuperfluidDensityEstimator: public EstimatorBase {
+
+	public:
+		PlaneWindingSuperfluidDensityEstimator(const Path &, 
+                int _frequency=1, string _label="planewind");
+		~PlaneWindingSuperfluidDensityEstimator();
+
+	private:
+        dVec side;              // A local copy of the dimensions
+        double dx;              // The linear x-size of the spatial bin
+        double dy;              // The linear y-size of the spatial bin
+        int numGrid;            // The number of grid points
+        Array <double,1> locWz; // The local winding number estimator
+		void accumulate();		// Accumulate values
+
+};
+
+// ========================================================================  
+// Plane Area Superfluid Density Estimator Class 
+// ========================================================================  
+/**
+ * Compute the radially averaged local superfluid density.
+ */
+class PlaneAreaSuperfluidDensityEstimator: public EstimatorBase {
+
+	public:
+		PlaneAreaSuperfluidDensityEstimator(const Path &, 
+                int _frequency=1, string _label="planearea");
+		~PlaneAreaSuperfluidDensityEstimator();
+
+	private:
+        dVec side;              // A local copy of the dimensions
+        double dx;              // The linear x-size of the spatial bin
+        double dy;              // The linear y-size of the spatial bin
+        int numGrid;            // The number of grid points
+        Array <double,1> locAz; // The local area estimator
+		void accumulate();		// Accumulate values
+
+};
+
+// ========================================================================  
 // Radial Winding Superfluid Density Estimator Class 
 // ========================================================================  
 /**
@@ -248,6 +294,7 @@ class RadialWindingSuperfluidDensityEstimator: public EstimatorBase {
 
 };
 
+
 // ========================================================================  
 // Radial Area Superfluid Density Estimator Class 
 // ========================================================================  
@@ -260,6 +307,27 @@ class RadialAreaSuperfluidDensityEstimator: public EstimatorBase {
 		RadialAreaSuperfluidDensityEstimator(const Path &, 
                 int _frequency=1, string _label="radarea");
 		~RadialAreaSuperfluidDensityEstimator();
+
+	private:
+        double dR;              // The size of the radial bin
+        int numGrid;            // The number of grid points
+        Array <double,1> locAz; // The local winding number estimator
+		void accumulate();		// Accumulate values
+
+};
+
+// ========================================================================  
+// Radial Area Superfluid Density Estimator Class 
+// ========================================================================  
+/**
+ * Compute the radially averaged local superfluid density.
+ */
+class RadialArea1SuperfluidDensityEstimator: public EstimatorBase {
+
+	public:
+		RadialArea1SuperfluidDensityEstimator(const Path &, 
+                int _frequency=1, string _label="radarea1");
+		~RadialArea1SuperfluidDensityEstimator();
 
 	private:
         double dR;              // The size of the radial bin
