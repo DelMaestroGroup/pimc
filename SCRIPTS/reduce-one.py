@@ -257,7 +257,7 @@ def main():
 
     # possible types of estimators we may want to reduce
     estList = ['estimator', 'super', 'obdm', 'pair', 'radial', 'number', 
-               'radwind', 'radarea']
+               'radwind', 'radarea', 'planearea', 'planewind']
     estDo = {}
     for e in estList:
         if pimc.getFileList(e):
@@ -297,6 +297,12 @@ def main():
     if estDo['number']:
         x6,ave6,err6 = getVectorEst('number',pimc,outName,reduceFlag,'N','P(N)',skip=skip)
         kappa,kappaErr = getKappa(pimc,outName,reduceFlag)
+
+    if estDo['planewind']:
+        x7,ave7,err7 = getVectorEst('planewind',pimc,outName,reduceFlag,'n','rho_s(r)',skip=skip)
+
+    if estDo['planearea']:
+        x8,ave8,err8 = getVectorEst('planearea',pimc,outName,reduceFlag,'n','rho_s(r)',skip=skip)
 
     # Do we show plots?
     if options.plot:

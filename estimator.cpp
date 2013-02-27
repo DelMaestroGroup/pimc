@@ -460,6 +460,76 @@ void ParticlePositionEstimator::accumulate() {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
+// PLANE PARTICLE DENSITY ESTIMATOR CLASS ------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  A full NDIM-dimensional particle density hisgram.
+ *
+ *  @note Only tested for cubic boxes
+******************************************************************************/
+PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_path,
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_frequency,_label) {
+
+    numGrid = (2*NGRIDSEP)*(2*NGRIDSEP);
+
+	/* The spatial discretization */
+	dx  = path.boxPtr->side[0] / (2.0*NGRIDSEP);
+	dy  = path.boxPtr->side[1] / (2.0*NGRIDSEP);
+
+	/* This is a diagonal estimator that gets its own file */
+	initialize(numGrid);
+
+	/* Set estimator name */
+	name = "Planar Density rho";
+
+	/* The header is the first line which contains the spatial separations */
+	header = str(format("#%15.3E") % 0.0);
+	for (int n = 1; n < numGrid; n++) 
+		header.append(str(format("%16.3E") % (1.0*n)));
+
+    norm = 1.0/(1.0*path.numTimeSlices*dx*dy*path.boxPtr->side[NDIM-1]);
+    side = path.boxPtr->side;
+}
+
+/*************************************************************************//**
+ *  Destructor
+******************************************************************************/
+PlaneParticlePositionEstimator::~PlaneParticlePositionEstimator() { 
+}
+
+
+/*************************************************************************//**
+ *  Accumulate a histogram of all particle positions, with output 
+ *  being the running average of the density per grid space.
+******************************************************************************/
+void PlaneParticlePositionEstimator::accumulate() {
+
+    beadLocator beadIndex;
+    dVec pos;
+
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
+            pos = path(beadIndex);
+
+            int i = static_cast<int>(abs(pos[0] + 0.5*side[0] - EPS ) / (dx + EPS));
+            int j = static_cast<int>(abs(pos[1] + 0.5*side[1] - EPS ) / (dy + EPS));
+			int k = 2*NGRIDSEP*j + i;
+
+            /* update our particle position histogram */
+            if (k < numGrid)
+                estimator(k) += 1.0;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // SUPERFLUID FRACTION ESTIMATOR CLASS ---------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -923,15 +993,6 @@ void RadialAreaSuperfluidDensityEstimator::accumulate() {
 
 			int k = int(sqrt(rp2)/dR);
 
-            /*  The distance from the z-axis squared */
-            // rp2 = pos1[0]*pos2[0] + pos1[1]*pos2[1];
-            // if (abs(rp2) < dR*dR) {
-            //     if (rp2 < 0.0)
-            //         rp2 = -dR*dR;
-            //     else
-            //         rp2 = dR*dR;
-            // }
-
             /* The z-component of the area estimator */
 			tAz = pos1[0]*pos2[1] - pos2[0]*pos1[1];
 
@@ -941,99 +1002,6 @@ void RadialAreaSuperfluidDensityEstimator::accumulate() {
             /* The local part of the winding number */
 			if (k < numGrid)
                 locAz(k) += tAz/rp2;
-		}
-	}
-
-    estimator += locAz*Az;
-}
-
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// RADIAL AREA SUPERFLUID DENSITY ESTIMATOR CLASS ----------------------------
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-
-/*************************************************************************//**
- *  Constructor
- * 
- *  Initialize the variables needed to measure the radially averaged winding 
- *  number superfluid density.
- *  @see E. W. Draeger and D. M. Ceperley, Phys. Rev. Lett. 90, 065301 (2003).
- *
-******************************************************************************/
-RadialArea1SuperfluidDensityEstimator::RadialArea1SuperfluidDensityEstimator
-(const Path &_path, int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
-
-    numGrid = NGRIDSEP;
-
-	/* The spatial discretization */
-	dR  = 0.5*path.boxPtr->side[0] / (1.0*numGrid);
-
-	/* This is a diagonal estimator that gets its own file */
-	initialize(numGrid);
-
-	/* Set estimator name */
-	name = "Radial Area rhos/rho";
-
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < numGrid; n++) 
-		header.append(str(format("%16.3E") % ((n)*dR)));
-
-	norm = 0.5 * constants()->T()/constants()->lambda();
-	for (int n = 0; n < numGrid; n++) 
-		norm(n) /= (M_PI*(2*n+1)*dR*dR*path.boxPtr->side[NDIM-1]);
-
-	for (int n = 0; n < numGrid; n++) 
-		norm(n) /= (n+0.5)*(n+0.5)*dR*dR;
-
-    /* Initialize the local arrays */
-    locAz.resize(numGrid);
-    locAz = 0.0;
-}
-
-/*************************************************************************//**
- *  Destructor.
-******************************************************************************/
-RadialArea1SuperfluidDensityEstimator::~RadialArea1SuperfluidDensityEstimator() { 
-    locAz.free();
-}
-
-/*************************************************************************//**
- *  Accumulate superfluid properties.
- *
- *  
-******************************************************************************/
-void RadialArea1SuperfluidDensityEstimator::accumulate() {
-
-	int numTimeSlices = path.numTimeSlices;
-
-	beadLocator beadIndex;
-    double Az,rp2,tAz;
-    dVec pos1,pos2;
-
-    Az = 0.0;
-    locAz = 0.0;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-
-            beadIndex = slice,ptcl;
-			pos1 = path(beadIndex);
-			pos2 = path(path.next(beadIndex));
-            rp2 = pos1[0]*pos1[0] + pos1[1]*pos1[1];
-
-			int k = int(sqrt(rp2)/dR);
-
-            /* The z-component of the area estimator */
-			tAz = pos1[0]*pos2[1] - pos2[0]*pos1[1];
-
-            /* The total area */
-            Az += tAz;
-
-            /* The local part of the winding number */
-			if (k < numGrid)
-                locAz(k) += tAz;
 		}
 	}
 

@@ -76,7 +76,7 @@ def main():
 
     # For the particular case of A^2 we need to 
 
-    num_rad_sep = 30
+    num_rad_sep = int(N/2)
     dr = 0.5*L[0]/num_rad_sep
     rho = pl.zeros(num_rad_sep)
     counts = pl.zeros_like(rho)
@@ -93,11 +93,11 @@ def main():
                 else:
                     rho[n] += rhoxy[i,j]
                 counts[n] += 1
-        if 'A^2' in estName and r > 1.0:
+        if 'A^2' in estName and r > 0.8:
             rhoxy[i,j] /= r*r
-        elif 'A^2' in estName and r < 1.0:
+        elif 'A^2' in estName and r < 0.8:
             rhoxy[i,j] = 0.0
-        elif 'A:rho_s' in estName and r < 1.2:
+        elif 'A:rho_s' in estName and r < 1.0:
             rhoxy[i,j] = 0.0
         
     for n in range(num_rad_sep):

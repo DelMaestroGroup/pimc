@@ -44,13 +44,13 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	energy(_path,_actionPtr),
 	numberParticles(_path),
 	particlePositions(_path,0),
+	planeParticlePositions(_path),
 	superfluidFraction(_path),
 	localSuperfluidDensity(_path,0),
 	planeWindingSuperfluidDensity(_path),
 	planeAreaSuperfluidDensity(_path),
 	radialWindingSuperfluidDensity(_path),
 	radialAreaSuperfluidDensity(_path),
-	radialArea1SuperfluidDensity(_path),
 	permutationCycle(_path,0),
 	oneBodyDensityMatrix(_path,_actionPtr,_random,0),
 	pairCorrelation(_path,_actionPtr,0),
@@ -140,13 +140,13 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	estimator.push_back(&numberParticles);
 	estimator.push_back(&diagonalFraction);
 	estimator.push_back(&particlePositions);
+	estimator.push_back(&planeParticlePositions);
 	estimator.push_back(&superfluidFraction);
 	estimator.push_back(&localSuperfluidDensity);
 	estimator.push_back(&planeWindingSuperfluidDensity);
 	estimator.push_back(&planeAreaSuperfluidDensity);
 	estimator.push_back(&radialWindingSuperfluidDensity);
 	estimator.push_back(&radialAreaSuperfluidDensity);
-	estimator.push_back(&radialArea1SuperfluidDensity);
 	estimator.push_back(&permutationCycle);
 	estimator.push_back(&pairCorrelation);
 	estimator.push_back(&numberDistribution);

@@ -157,6 +157,28 @@ class ParticlePositionEstimator: public EstimatorBase {
         void accumulate();			// Accumulate values
 };
 
+// ========================================================================  
+// Plane Particle Density Estimator Class 
+// ========================================================================  
+/**
+ * Create a 2d histogram of particle positions.
+ * 
+ */
+class PlaneParticlePositionEstimator: public EstimatorBase {
+
+	public:
+		PlaneParticlePositionEstimator(const Path &, 
+                int _frequency=1, string _label="planedensity");
+		~PlaneParticlePositionEstimator();
+
+    private:
+        int numGrid;                // The number of grid points
+        double dx;                  // The linear x-size of the spatial bin
+        double dy;                  // The linear y-size of the spatial bin
+        void accumulate();			// Accumulate values
+        dVec side;                  // Local copy of container geometry
+};
+
 
 // ========================================================================  
 // Number Distribution Estimator Class 
@@ -307,27 +329,6 @@ class RadialAreaSuperfluidDensityEstimator: public EstimatorBase {
 		RadialAreaSuperfluidDensityEstimator(const Path &, 
                 int _frequency=1, string _label="radarea");
 		~RadialAreaSuperfluidDensityEstimator();
-
-	private:
-        double dR;              // The size of the radial bin
-        int numGrid;            // The number of grid points
-        Array <double,1> locAz; // The local winding number estimator
-		void accumulate();		// Accumulate values
-
-};
-
-// ========================================================================  
-// Radial Area Superfluid Density Estimator Class 
-// ========================================================================  
-/**
- * Compute the radially averaged local superfluid density.
- */
-class RadialArea1SuperfluidDensityEstimator: public EstimatorBase {
-
-	public:
-		RadialArea1SuperfluidDensityEstimator(const Path &, 
-                int _frequency=1, string _label="radarea1");
-		~RadialArea1SuperfluidDensityEstimator();
 
 	private:
         double dR;              // The size of the radial bin

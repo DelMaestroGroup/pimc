@@ -251,7 +251,8 @@ class PimcHelp:
 
         # The data file and all output file names
         self.dataType = ['estimator', 'obdm', 'pair', 'pcycle', 'super', 'worm', 
-                         'radial', 'radwind', 'radarea']
+                         'radial', 'radwind', 'radarea', 'radarea1',
+                         'planewind', 'planearea']
         if not canonical:
             self.dataType.append('number')
         self.outType  = ['estimator', 'number', 'obdm', 'pair', 'pcycle', 'super', 
