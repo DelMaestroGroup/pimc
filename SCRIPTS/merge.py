@@ -13,7 +13,7 @@ from pylab import *
 
 
 # -----------------------------------------------------------------------------
-def mergeData(pimc,type,newID,skip):
+def mergeData(pimc,type,newID,skip,baseDir):
     ''' Merge the results of the PIMC data files to a single file. '''
 
     fileNames = pimc.getFileList(type)
@@ -36,10 +36,10 @@ def mergeData(pimc,type,newID,skip):
 
             if i == 0:
                 # get the output file name and open the file for writing
-                outName = fname.replace(str(pimc.id[0]),str(newID))
+                outName = os.path.basename(fname).replace(str(pimc.id[0]),str(newID))
                 fileExist = True
                 print '%-80s' % outName,
-                outFile = open('MERGED/' + outName,'w');
+                outFile = open(baseDir + 'MERGED/' + outName,'w');
 
                 # replace the old ID for the new one
                 inLines[0] = inLines[0].replace(str(pimc.id[0]),str(newID))
@@ -61,12 +61,13 @@ def mergeData(pimc,type,newID,skip):
         print '%10d' %numLines
 
     # Now we check if a CYLINDER folder is present, if so, we repeat the process
-    if len(glob.glob('CYLINDER')) > 0:
+    if len(glob.glob(baseDir + 'CYLINDER')) > 0:
         numLines = 0
         fileExist = False
         for i,fname in enumerate(fileNames):
 
-            cylfname = 'CYLINDER/' + fname
+            baseName = os.path.basename(fname)
+            cylfname = baseDir + 'CYLINDER/' + baseName
     
             # Does the file exist?
             if len(glob.glob(cylfname)) > 0:
@@ -82,15 +83,15 @@ def mergeData(pimc,type,newID,skip):
     
                 if i == 0:
                     # get the output file name and open the file for writing
-                    outName = cylfname.replace(str(pimc.id[0]),str(newID))
+                    outName = 'CYLINDER/' + baseName.replace(str(pimc.id[0]),str(newID))
                     fileExist = True
                     print '%-80s' % outName,
 
                     # We check if we have a CYLINDER directory, if not create it
-                    if len(glob.glob('MERGED/CYLINDER')) == 0:
-                        os.system('mkdir MERGED/CYLINDER')
+                    if len(glob.glob(baseDir + 'MERGED/CYLINDER')) == 0:
+                        os.system('mkdir %sMERGED/CYLINDER' % baseDir)
 
-                    outFile = open('MERGED/' + outName,'w');
+                    outFile = open(baseDir + 'MERGED/' + outName,'w');
     
                     # replace the old ID for the new one
                     inLines[0] = inLines[0].replace(str(pimc.id[0]),str(newID))
@@ -112,7 +113,7 @@ def mergeData(pimc,type,newID,skip):
             print '%10d' %numLines
 
 # -----------------------------------------------------------------------------
-def mergeCumulativeData(pimc,type,newID):
+def mergeCumulativeData(pimc,type,newID,baseDir):
     '''Perform a cumulative average of estimators written to disk as running
     averages.  
     
@@ -133,10 +134,10 @@ def mergeCumulativeData(pimc,type,newID):
 
             if i == 0:
                 # get the output file name and open the file for writing
-                outName = fname.replace(str(pimc.id[0]),str(newID))
+                outName = os.path.basename(fname).replace(str(pimc.id[0]),str(newID))
                 fileExist = True
                 print '%-80s' % outName,
-                outFile = open('MERGED/' + outName,'w');
+                outFile = open(baseDir + 'MERGED/' + outName,'w');
 
                 # replace the old ID for the new one
                 inFile = open(fname,'r');
@@ -191,18 +192,27 @@ def main():
                       help="are we in the canonical ensemble?")
     parser.add_option("-s", "--skip", dest="skip", type="int",
                       help="how many input lines should we skip?")
+    parser.add_option("--cumulative", action="store_true", dest="cumulative",
+                      help="Merge cumulative estimators?")
     parser.set_defaults(skip=0)
 
     parser.set_defaults(canonical=False)
+    parser.set_defaults(cumulative=False)
 
     # parse the command line options and get the reduce flag
     (options, args) = parser.parse_args() 
-    if len(args) > 0: 
-        parser.error("incorrect number of arguments")
 
+    # Determine the working directory
+    if args:
+        baseDir = args[0]
+        if baseDir == '.':
+            baseDir = ''
+    else:
+        baseDir = ''
+        
     # We check if we have a MERGED directory, if not create it
-    if len(glob.glob('MERGED')) == 0:
-        os.system('mkdir MERGED')
+    if len(glob.glob(baseDir + 'MERGED')) == 0:
+        os.system('mkdir %sMERGED' % baseDir)
     
     # Check that we are in the correct ensemble
     pimchelp.checkEnsemble(options.canonical)
@@ -210,7 +220,7 @@ def main():
     dataName = pimchelp.getFileString(options,reduce=False)
 
     # Create the PIMC analysis helper and fill up the simulation parameters maps
-    pimc = pimchelp.PimcHelp(dataName,options.canonical)
+    pimc = pimchelp.PimcHelp(dataName,options.canonical,baseDir=baseDir)
     pimc.getSimulationParameters()
 
     # We try to find a new PIMCID which is the average of the ones to merge, and
@@ -221,23 +231,28 @@ def main():
     newID = int(newID/(1.0*len(pimc.id)))
 
     # Now we keep incrementing the ID number until we are sure it is unique
-    while ( (len(glob.glob('*estimator*-%09d*' % newID)) > 0) or
-           (len(glob.glob('MERGED/*estimator*-%09d*' % newID)) > 0) ):
+    while ( (len(glob.glob(baseDir + '*estimator*-%09d*' % newID)) > 0) or
+           (len(glob.glob(baseDir + 'MERGED/*estimator*-%09d*' % newID)) > 0) ):
         newID += 1
     
     # Merge all the output files
     print 'Merged data files:'
     for type in pimc.dataType:
-        mergeData(pimc,type,newID,options.skip)
+        mergeData(pimc,type,newID,options.skip,baseDir)
 
     # Now perform the merge for possible cumulative average files
-    for type in ['position','locsuper']:
-        mergeCumulativeData(pimc,type,newID)
+    if options.cumulative:
+        for type in ['position','locsuper']:
+            mergeCumulativeData(pimc,type,newID,baseDir)
 
     # copy over the log file
     oldLogName = pimc.getFileList('log')[0]
-    newLogName = oldLogName.replace(str(pimc.id[0]),str(newID))
-    os.system('cp %s %s' % (oldLogName,'MERGED/'+newLogName))
+    newLogName = os.path.basename(oldLogName).replace(str(pimc.id[0]),str(newID))
+    os.system('cp %s %s' % (oldLogName,baseDir+'MERGED/'+newLogName))
+
+    # Do the same if we are merging cylinder files
+    if len(glob.glob(baseDir + 'MERGED/CYLINDER')) > 0:
+        os.system('cp %s %s' % (oldLogName,baseDir+'MERGED/CYLINDER'+newLogName))
 
     # We first create the name of the output tar file
 #   mergeName = pimc.getFileList('estimator')[0].rstrip('.dat').replace('estimator','merged')
