@@ -20,9 +20,11 @@ def getStats(data,dim=0):
         numBins  = size(data,dim) 
         dataAve  = average(data,dim) 
         dataAve2 = average(data*data,dim) 
-        #dataErr   = sqrt( abs(dataAve2-dataAve**2)/(1.0*numBins-1.0) ) 
-        bins = MCstat.bin(data) 
-        dataErr = amax(bins,axis=0)
+        try:
+            bins = MCstat.bin(data) 
+            dataErr = amax(bins,axis=0)
+        except:
+            dataErr   = sqrt( abs(dataAve2-dataAve**2)/(1.0*numBins-1.0) ) 
     else:
         dataAve = data
         dataErr = 0.0*data

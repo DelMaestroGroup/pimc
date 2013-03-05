@@ -1108,6 +1108,7 @@ LJCylinderPotential::LJCylinderPotential(const double radius) :
 
 	/* The density of nitrogen in silicon nitride */
 	density = 0.078; // atoms / angstrom^3
+//	density = 0.008; // atoms / angstrom^3
 
 	/* We define the values of epsilon and sigma for N and He */ 
 //	double epsilonHe = 10.216; 	// Kelvin
@@ -1123,6 +1124,9 @@ LJCylinderPotential::LJCylinderPotential(const double radius) :
 	 * silicate and silicon-nitride are roughly equivalent. */
 	epsilon = 10.22; 	// Kelvin
 	sigma   = 2.628;	// angstroms
+
+//	epsilon = 32; 	// Kelvin
+//	sigma   = 3.08;	// angstroms
 
 	/* We choose a mesh consisting of 100K points, and create the lookup table */
 	dR = (1.0E-5)*R;

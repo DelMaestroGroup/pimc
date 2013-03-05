@@ -90,6 +90,7 @@ def mergeData(pimc,type,newID,skip,baseDir):
                     # We check if we have a CYLINDER directory, if not create it
                     if len(glob.glob(baseDir + 'MERGED/CYLINDER')) == 0:
                         os.system('mkdir %sMERGED/CYLINDER' % baseDir)
+                        os.system('touch %sMERGED/CYLINDER/.donotbackup' % baseDir)
 
                     outFile = open(baseDir + 'MERGED/' + outName,'w');
     
@@ -213,6 +214,9 @@ def main():
     # We check if we have a MERGED directory, if not create it
     if len(glob.glob(baseDir + 'MERGED')) == 0:
         os.system('mkdir %sMERGED' % baseDir)
+
+    # Create a .donotbackup file
+    os.system('touch %sMERGED/.donotbackup' % baseDir)
     
     # Check that we are in the correct ensemble
     pimchelp.checkEnsemble(options.canonical)

@@ -358,7 +358,7 @@ class HardCylinderPotential : public PotentialBase {
 			dVec tempr;
 			tempr = r;
 			tempr[2] = 0.0;
-			if (sqrt(r[0]*r[0]+r[1]*r[1]) == R)
+			if (abs((r[0]*r[0]+r[1]*r[1])-R*R)<1.0E-3)
 				return BIG*tempr;
 			else
 				return 0.0*tempr;
