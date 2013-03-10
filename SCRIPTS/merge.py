@@ -9,8 +9,7 @@ import os,sys,glob
 import tarfile
 import pimchelp
 from optparse import OptionParser
-from pylab import *
-
+import numpy
 
 # -----------------------------------------------------------------------------
 def mergeData(pimc,type,newID,skip,baseDir):
@@ -32,29 +31,31 @@ def mergeData(pimc,type,newID,skip,baseDir):
             inFile = open(fname,'r');
             inLines = inFile.readlines();
             inFile.close()
-            numLines += (len(inLines)-2) - (diagonalEst)*skip
+            if inLines:
+                numLines += (len(inLines)-2) - (diagonalEst)*skip
 
-            if i == 0:
-                # get the output file name and open the file for writing
-                outName = os.path.basename(fname).replace(str(pimc.id[0]),str(newID))
-                fileExist = True
-                print '%-80s' % outName,
-                outFile = open(baseDir + 'MERGED/' + outName,'w');
+                if i == 0:
+                    # get the output file name and open the file for writing
+                    outName = os.path.basename(fname).replace(str(pimc.id[0]),str(newID))
+                    fileExist = True
+                    print '%-80s' % outName,
+                    outFile = open(baseDir + 'MERGED/' + outName,'w');
 
-                # replace the old ID for the new one
-                inLines[0] = inLines[0].replace(str(pimc.id[0]),str(newID))
-                outFile.write(inLines[0])
-                outFile.write(inLines[1])
+                    # replace the old ID for the new one
+                    if '#' in inLines[0]:
+                        inLines[0] = inLines[0].replace(str(pimc.id[0]),str(newID))
+                        outFile.write(inLines[0])
+                        outFile.write(inLines[1])
 
-            # strip any comment lines
-            inLines.pop(0)
-            inLines.pop(0)
+                # strip any comment lines
+                while inLines and '#' in inLines[0]:
+                    inLines.pop(0)
 
-            j = 0
-            for line in inLines:
-                if ((not diagonalEst) or (diagonalEst and j >= skip)):
-                    outFile.write(line)
-                j += 1
+                j = 0
+                for line in inLines:
+                    if ((not diagonalEst) or (diagonalEst and j >= skip)):
+                        outFile.write(line)
+                    j += 1
 
     if fileExist:
         outFile.close() 
@@ -95,19 +96,18 @@ def mergeData(pimc,type,newID,skip,baseDir):
                     outFile = open(baseDir + 'MERGED/' + outName,'w');
     
                     # replace the old ID for the new one
-                    inLines[0] = inLines[0].replace(str(pimc.id[0]),str(newID))
-                    outFile.write(inLines[0])
-                    outFile.write(inLines[1])
+                    if '#' in inLines[0]:
+                        inLines[0] = inLines[0].replace(str(pimc.id[0]),str(newID))
+                        outFile.write(inLines[0])
+                        outFile.write(inLines[1])
     
                 # strip any comment lines
-                inLines.pop(0)
-                inLines.pop(0)
+                while inLines and '#' in inLines[0]:
+                    inLines.pop(0)
     
-                j = 0
-                for line in inLines:
+                for j,line in enumerate(inLines):
                     if ((not diagonalEst) or (diagonalEst and j >= skip)):
                         outFile.write(line)
-                    j += 1
     
         if fileExist:
             outFile.close() 
@@ -149,10 +149,10 @@ def mergeCumulativeData(pimc,type,newID,baseDir):
                 outFile.write(inLines[1])
 
                 # Get the data from the first file
-                data = loadtxt(fname, ndmin=2)
+                data = np.loadtxt(fname, ndmin=2)
             else:
                 # Accumulate the running average
-                data += loadtxt(fname, ndmin=2)
+                data += np.loadtxt(fname, ndmin=2)
 
     if fileExist:
         # write the new average to disk
@@ -256,7 +256,7 @@ def main():
 
     # Do the same if we are merging cylinder files
     if len(glob.glob(baseDir + 'MERGED/CYLINDER')) > 0:
-        os.system('cp %s %s' % (oldLogName,baseDir+'MERGED/CYLINDER'+newLogName))
+        os.system('cp %s %s' % (oldLogName,baseDir+'MERGED/CYLINDER/'+newLogName))
 
     # We first create the name of the output tar file
 #   mergeName = pimc.getFileList('estimator')[0].rstrip('.dat').replace('estimator','merged')

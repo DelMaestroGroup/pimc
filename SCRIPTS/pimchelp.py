@@ -567,8 +567,6 @@ class VectorReduce:
             data = np.loadtxt(fileName,ndmin=2)
             self.estimator_[n,:,:] = data
 
-
-
     # ----------------------------------------------------------------------
     def getNumVarParams(self):
         '''Return the number of variable parameters.'''
