@@ -13,6 +13,7 @@
 #include "communicator.h"
 #include "move.h"
 #include "estimator.h"
+//#include <boost/ptr_container/ptr_map.hpp>
 
 class ActionBase;
 class Path;
@@ -64,7 +65,6 @@ class PathIntegralMonteCarlo {
         int numUpdates;             // The maximum number of updates per step.
         int numParticles;           // The number of particles
 		bool savedState;			// We have saved at least one state
-		bool fixedNumLevels;		// Have we fixed the number of levels
 		bool startWithState;		// Are we starting from a saved state
         bool success;               // Track move success/failure
 
@@ -113,8 +113,8 @@ class PathIntegralMonteCarlo {
 		CylinderNumberDistributionEstimator   cylNumberDistribution;
 		CylinderRadialPotentialEstimator      cylRadialPotential;
 
-		vector <EstimatorBase*> estimator;		// The estimator base array
-		vector <MoveBase*> move;				// The move base array
+		vector <EstimatorBase*> estimator;		// The estimator array
+		vector <MoveBase*> move;				// The move array
 
 		vector <double> attemptDiagProb;		// The cumulative diagonal attempt Probabilities
 		vector <double> attemptOffDiagProb;		// The cumulative off-diagonal attempt Probabilities
@@ -132,8 +132,9 @@ class PathIntegralMonteCarlo {
 		/* Shuffle the offDiag move list, returning it in moves*/
 		void shuffleMoves();
 
-		/* Perform all moves */
-		string runMoves(const double,const int);
+		/* Perform a Metropolis update */
+		string update(const double,const int);
+		string update1(const double,const int);
 };
 
 #endif

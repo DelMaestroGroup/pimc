@@ -84,8 +84,6 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	numCoM         = 0;
 	numCoMAccepted = 0;
 
-	fixedNumLevels = false;
-
 	/* Have we saved a state? */
 	savedState  = constants()->restart();
 
@@ -93,45 +91,40 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	configNumber = 0;
 
 	/* Fill up the move array */
-	move.push_back(&centerOfMass);
-	move.push_back(&staging);
 	move.push_back(&open);
+	move.push_back(&insert);
 	move.push_back(&close);
 	move.push_back(&advanceHead);
 	move.push_back(&recedeHead);
 	move.push_back(&advanceTail);
 	move.push_back(&recedeTail);
+	move.push_back(&remove);
 	move.push_back(&swapHead);
 	move.push_back(&swapTail);
-	move.push_back(&insert);
-	move.push_back(&remove);
+	move.push_back(&staging);
+	move.push_back(&centerOfMass);
 
-	/* Now we fill up the cumulative attempt move probability arrays */ 
+	/* Determine the cumulative attempt move probabilities */ 
+    double cumDiagProb = 0.0;
+    double cumOffDiagProb = 0.0;
+	for (vector<MoveBase*>::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
+        if ( ((*movePtr)->operateOnConfig == DIAGONAL) || (*movePtr)->operateOnConfig == ANY) {
+            cumDiagProb += constants()->attemptProb((*movePtr)->name);
+            attemptDiagProb.push_back(cumDiagProb);
+        }
+        else 
+            attemptDiagProb.push_back(cumDiagProb);
 
-	/* The cumulative diagonal probabilty vector */
-	attemptDiagProb.push_back(constants()->openAttemptProb());
-	attemptDiagProb.push_back(attemptDiagProb.at(0) + constants()->insertAttemptProb());
-	attemptDiagProb.push_back(attemptDiagProb.at(1) + constants()->stagingAttemptProb());
-	attemptDiagProb.push_back(attemptDiagProb.at(2) + constants()->comAttemptProb());
+        if ( ((*movePtr)->operateOnConfig == OFFDIAGONAL) || (*movePtr)->operateOnConfig == ANY) {
+            cumOffDiagProb += constants()->attemptProb((*movePtr)->name);
+            attemptOffDiagProb.push_back(cumOffDiagProb);
+        }
+        else
+            attemptOffDiagProb.push_back(cumOffDiagProb);
+    }
 
-    /* Make sure it adds up to 1 */
-	PIMC_ASSERT(attemptDiagProb.back()-1.0 < EPS);
+    /* Make sure the move cmulative probability arrays add up to 1 */
     attemptDiagProb.back() = 1.0 + EPS;
-
-	/* The cumulative off diagonal probability vector */
-	attemptOffDiagProb.push_back(constants()->closeAttemptProb());
-	attemptOffDiagProb.push_back(attemptOffDiagProb.at(0) + constants()->advanceHeadAttemptProb());
-	attemptOffDiagProb.push_back(attemptOffDiagProb.at(1) + constants()->recedeHeadAttemptProb());
-	attemptOffDiagProb.push_back(attemptOffDiagProb.at(2) + constants()->advanceTailAttemptProb());
-	attemptOffDiagProb.push_back(attemptOffDiagProb.at(3) + constants()->recedeTailAttemptProb());
-	attemptOffDiagProb.push_back(attemptOffDiagProb.at(4) + constants()->removeAttemptProb());
-	attemptOffDiagProb.push_back(attemptOffDiagProb.at(5) + constants()->swapHeadAttemptProb());
-	attemptOffDiagProb.push_back(attemptOffDiagProb.at(6) + constants()->swapTailAttemptProb());
-	attemptOffDiagProb.push_back(attemptOffDiagProb.at(7) + constants()->stagingAttemptProb());
-	attemptOffDiagProb.push_back(attemptOffDiagProb.at(8) + constants()->comAttemptProb());
-
-    /* Make sure it adds up to 1 */
-	PIMC_ASSERT(attemptOffDiagProb.back()-1.0 < EPS);
     attemptOffDiagProb.back() = 1.0 + EPS;
 
 	/* Add all the estimators. The energy estimator has to be
@@ -182,90 +175,36 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
  *  Destructor.
 ******************************************************************************/
 PathIntegralMonteCarlo::~PathIntegralMonteCarlo () {
-
+    // empty destructor
 }
 
 /**************************************************************************//**
- *  Goes through all possible moves, sampling the partition function.
+ *  Performs one of various possible Monte Carlo updats on the path.
 ******************************************************************************/
-string PathIntegralMonteCarlo::runMoves(const double x, const int sweep) { 
+string PathIntegralMonteCarlo::update(const double x, const int sweep) { 
 
     success = false;
 	string moveName = "NONE";
+    int index;
 
-	/* First we try the moves that can operate on the diagonal ensemble */
-	if (path.worm.isConfigDiagonal) {
+    /* Determine the index of the move to be performed */
+	if (path.worm.isConfigDiagonal)
+        index = std::lower_bound(attemptDiagProb.begin(),attemptDiagProb.end(),x)
+            - attemptDiagProb.begin();
+    else 
+        index = std::lower_bound(attemptOffDiagProb.begin(),attemptOffDiagProb.end(),x)
+            - attemptOffDiagProb.begin();
 
-		if (x < attemptDiagProb.at(0)) {
-			success = open.attemptMove();
-			moveName = open.name;
-		}
-		else if (x < attemptDiagProb.at(1)) {
-			success = insert.attemptMove();
-			moveName = insert.name;
-		}
-		else if (x < attemptDiagProb.at(2)) {
-			success = staging.attemptMove();
-			moveName = staging.name;
-		}
-		else if (x < attemptDiagProb.at(3)) {
-			if ( (numParticles > 0) && ((sweep % numParticles)== 0) )
-				success = centerOfMass.attemptMove();
-			moveName = centerOfMass.name;
-		}
-		else {
-			cout << "Cumulative Diagonal Probability" << endl;
-			cout << format("x = %16.14E\n") % x;
-		}
-	}
-	/* Now we try all other moves */
-	else{
-		if (x < attemptOffDiagProb.at(0)) { 
-			success = close.attemptMove();
-			moveName = close.name;
-		}
-		else if (x < attemptOffDiagProb.at(1)) {
-			success = advanceHead.attemptMove();
-			moveName = advanceHead.name;
-		}
-		else if (x < attemptOffDiagProb.at(2)) {
-			success = recedeHead.attemptMove();
-			moveName = recedeHead.name;
-		}
-		else if (x < attemptOffDiagProb.at(3)) {
-			success = advanceTail.attemptMove();
-			moveName = advanceTail.name;
-		}
-		else if (x < attemptOffDiagProb.at(4)) {
-			success = recedeTail.attemptMove();
-			moveName = recedeTail.name;
-		}
-		else if (x < attemptOffDiagProb.at(5)) {
-			success = remove.attemptMove();
-			moveName = remove.name;
-		}
-		else if (x < attemptOffDiagProb.at(6)) {
-			success = swapHead.attemptMove();
-			moveName = swapHead.name;
-		}
-		else if (x < attemptOffDiagProb.at(7)) {
-			success = swapTail.attemptMove();
-			moveName = swapTail.name;
-		}
-		else if (x < attemptOffDiagProb.at(8)) {
-			success = staging.attemptMove();
-			moveName = staging.name;
-		}
-		else if (x < attemptOffDiagProb.at(9)) {
-			if ( (numParticles > 0) && ((sweep % numParticles)== 0) )
-				success = centerOfMass.attemptMove();
-			moveName = centerOfMass.name;
-		}
-		else {
-			cout << "Cumulative Off-Diagonal Probability!" << endl;
-			cout << format("x = %16.14E\n") % x;
-		}
-	} 
+    /* Perform the move */
+    moveName = move.at(index)->name;
+
+    if (moveName == "center of mass"){
+        if ( (numParticles > 0) && ((sweep % numParticles)== 0) )
+            success = move.at(index)->attemptMove();
+    }
+    else
+        success = move.at(index)->attemptMove();
+
 	return moveName;
 }
 
@@ -295,7 +234,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 
             /* Here we do the diagonal pre-equilibration moves, and allow for 
              * optimization of simulation parameters */
-            if (x < constants()->comAttemptProb()) {
+            if (x < constants()->attemptProb("center of mass")) {
                 centerOfMass.attemptMove();
                 numCoM += 1;
 
@@ -330,7 +269,6 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
                 /* Attemp the staging Move */
                 for (int sweep = 0; sweep < numImagTimeSweeps; sweep++) 
                     staging.attemptMove();
-
             } //staging move
         } // numParticles
 
@@ -349,7 +287,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 
             /* Generate random number and run through all moves */
             x = random.rand();
-            runMoves(x,n);
+            update(x,n);
 
             /* We accumulate the number of diagonal configurations */
             numConfig++;
@@ -436,7 +374,7 @@ void PathIntegralMonteCarlo::equilStepOffDiagonal(const uint32 iStep, const bool
 		
         /* Generate random number and run through all moves */
         x = random.rand();
-        runMoves(x,n);
+        update(x,n);
 
         /* We accumulate the number of diagonal configurations */
         numConfig++;
@@ -513,9 +451,7 @@ void PathIntegralMonteCarlo::step() {
 
 	/* We run through all moves, making sure that we could have touched each bead at least once */
     for (int n = 0; n < numUpdates ; n++) {
-
-        double x = random.rand();
-        moveName = runMoves(x,n);
+        moveName = update(random.rand(),n);
 
         /* We measure the one body density matrix here to ensure adequate statistics */
         //oneBodyDensityMatrix.sample();

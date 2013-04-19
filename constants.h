@@ -38,7 +38,7 @@ class ConstantParameters
 		double rc() const {return rc_;}					///< Get potential cutoff
 		double rc2() const {return rc2_;}				///< Get potential cutoff squared
 		double C0() const {return C0_;}					///< Get worm factor C0
-		double Delta() const {return Delta_;}			///< Get center of mass fhit
+		double Delta() const {return Delta_;}			///< Get center of mass shift
 		double C() const {return C_;}					///< Get full worm constant
 		double V() const {return V_;}					///< Get cell volume
 		double L() const {return L_;}					///< Get maximum side length
@@ -50,19 +50,15 @@ class ConstantParameters
 		/** Get (4lambda/tau)^{-1} */
 		double fourLambdaTauInv() const { return (0.25 / (lambda_ * tau_)); }
 
-		/* Get methods for the attempt probabilities */
-		double openAttemptProb() const {return openAttemptProb_;}			///< Get open probability
-		double closeAttemptProb() const {return closeAttemptProb_;}			///< Get close probability
-		double insertAttemptProb() const {return insertAttemptProb_;}		///< Get insert probability
-		double removeAttemptProb() const {return removeAttemptProb_;}		///< Get remove probability
-		double advanceHeadAttemptProb() const {return advanceHeadAttemptProb_;}	///< Get advance head probability
-		double recedeHeadAttemptProb() const {return recedeHeadAttemptProb_;}	///< Get recede head probabililty
-		double advanceTailAttemptProb() const {return advanceTailAttemptProb_;}	///< Get advance tail probabililty
-		double recedeTailAttemptProb() const {return recedeTailAttemptProb_;}	///< Get recede tail probabililty
-		double swapHeadAttemptProb() const {return swapHeadAttemptProb_;}		///< Get swap head probabililty
-		double swapTailAttemptProb() const {return swapTailAttemptProb_;}		///< Get swap tail probabililty
-		double comAttemptProb() const {return comAttemptProb_;}					///< Get CoM probabililty
-		double stagingAttemptProb() const {return stagingAttemptProb_;}			///< Get staging probabililty
+        /* Get the move attempt probability */
+        double attemptProb(string type) {
+            if (attemptProb_.count(type))
+                return attemptProb_[type];
+            else
+                cerr << "Attempt probability for " << type << " does not exist!" << endl;
+                exit(EXIT_FAILURE);
+                return 0.0;
+        }
 
 		bool restart() const {return restart_;}			///< Get restart state
 		bool canonical() const { return canonical_;}	///< Get ensemble
@@ -126,19 +122,7 @@ class ConstantParameters
 		string intPotentialType_; // The type of interaction potential
 		string extPotentialType_; // The type of external potential
 
-		/* All the move attempt probabilities */
-		double openAttemptProb_;
-		double closeAttemptProb_;
-		double insertAttemptProb_;
-		double removeAttemptProb_;
-		double advanceHeadAttemptProb_;
-		double recedeHeadAttemptProb_;
-		double advanceTailAttemptProb_;
-		double recedeTailAttemptProb_;
-		double swapHeadAttemptProb_;
-		double swapTailAttemptProb_;
-		double comAttemptProb_;
-		double stagingAttemptProb_;
+		map <string,double> attemptProb_;	// The move attempt probabilities
 };
 
 /**************************************************************************//**

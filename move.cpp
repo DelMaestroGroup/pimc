@@ -23,7 +23,10 @@ uint32 MoveBase::totAccepted = 0;
 /*************************************************************************//**
  *  Constructor.
 ******************************************************************************/
-MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random) :
+MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random, 
+        string _name, ensemble _operateOnConfig) :
+    name(_name),
+    operateOnConfig(_operateOnConfig),
 	path(_path), 
 	actionPtr(_actionPtr), 
 	random(_random) {
@@ -33,8 +36,6 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random) :
 	success = false;
 
 	sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
-
-	name = "";
 }
 
 /*************************************************************************//**
@@ -221,7 +222,8 @@ dVec MoveBase::newFreeParticlePosition(const beadLocator &neighborIndex) {
  *  Constructor.
 ******************************************************************************/
 CenterOfMassMove::CenterOfMassMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random) : MoveBase(_path,_actionPtr,_random) {
+		MTRand &_random, string _name,  ensemble _operateOnConfig) :
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 
 	/* Initialize private data to zera */
 	numAccepted = numAttempted = numToMove = 0;
@@ -229,8 +231,6 @@ CenterOfMassMove::CenterOfMassMove (Path &_path, ActionBase *_actionPtr,
 	/* We setup the original position array which will store the shift
 	 * of a single particle at a time so it can be undone later */
 	originalPos.resize(1);
-
-	name = "Center of Mass";
 }
 
 /*************************************************************************//**
@@ -355,22 +355,21 @@ void CenterOfMassMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 StagingMove::StagingMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random) : 
-	MoveBase(_path,_actionPtr,_random)  {
+        MTRand &_random, string _name, ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 
 	/* Initialize private data to zera */
 	numAccepted = numAttempted = numToMove = 0;
 
 	/* Resize the original position array */
 	originalPos.resize(constants()->Mbar()-1);
-
-	name = "Staging";
 }
 
 /*************************************************************************//**
  *  Destructor.
 ******************************************************************************/
 StagingMove::~StagingMove() {
+    // empty destructor
 }
 
 /*************************************************************************//**
@@ -465,8 +464,9 @@ void StagingMove::undoMove() {
 /*************************************************************************//**
  * Constructor.
 ******************************************************************************/
-OpenMove::OpenMove (Path &_path, ActionBase *_actionPtr, MTRand &_random) : 
-	MoveBase(_path,_actionPtr,_random) {
+OpenMove::OpenMove (Path &_path, ActionBase *_actionPtr, MTRand &_random, 
+        string _name, ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -476,8 +476,6 @@ OpenMove::OpenMove (Path &_path, ActionBase *_actionPtr, MTRand &_random) :
 	numAttemptedLevel.resize(constants()->b()+1);
 	numAcceptedLevel  = 0;
 	numAttemptedLevel = 0;
-
-	name = "Open";
 }
 
 /*************************************************************************//**
@@ -526,7 +524,7 @@ bool OpenMove::attemptMove() {
  					/ actionPtr->rho0(headBead,tailBead,gapLength);
 
 			/* We rescale to take into account different attempt probabilities */
-			norm *= constants()->closeAttemptProb()/constants()->openAttemptProb();
+			norm *= constants()->attemptProb("close")/constants()->attemptProb("open");
 
 			/* Weight for ensemble */
 			norm *= actionPtr->ensembleWeight(-gapLength+1);
@@ -617,8 +615,8 @@ void OpenMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 CloseMove::CloseMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random) : 
-	MoveBase(_path,_actionPtr,_random) {
+		MTRand &_random, string _name, ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -628,8 +626,6 @@ CloseMove::CloseMove (Path &_path, ActionBase *_actionPtr,
 	numAttemptedLevel.resize(constants()->b()+1);
 	numAcceptedLevel  = 0;
 	numAttemptedLevel = 0;
-
-	name = "Close";
 }
 
 /*************************************************************************//**
@@ -676,7 +672,7 @@ bool CloseMove::attemptMove() {
 		(constants()->C() * constants()->Mbar() * (path.worm.getNumBeadsOn() + path.worm.gap - 1));
 
 	/* We rescale to take into account different attempt probabilities */
-	norm *= constants()->openAttemptProb()/constants()->closeAttemptProb();
+	norm *= constants()->attemptProb("open")/constants()->attemptProb("close");
 
 	/* Weight for ensemble */
 	norm *= actionPtr->ensembleWeight(path.worm.gap-1);
@@ -757,8 +753,9 @@ void CloseMove::undoMove() {
 /*************************************************************************//**
  *  Constructor.
 ******************************************************************************/
-InsertMove::InsertMove (Path &_path, ActionBase *_actionPtr, MTRand &_random) : 
-	MoveBase(_path,_actionPtr,_random) {
+InsertMove::InsertMove (Path &_path, ActionBase *_actionPtr, MTRand &_random, 
+        string _name, ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -768,8 +765,6 @@ InsertMove::InsertMove (Path &_path, ActionBase *_actionPtr, MTRand &_random) :
 	numAttemptedLevel.resize(constants()->b()+1);
 	numAcceptedLevel  = 0;
 	numAttemptedLevel = 0;
-
-	name = "Insert";
 }
 
 /*************************************************************************//**
@@ -789,6 +784,95 @@ InsertMove::~InsertMove() {
 ******************************************************************************/
 bool InsertMove::attemptMove() {
 
+    /* Get the length of the proposed worm to insert */
+    wormLength = 1 + random.randInt(constants()->Mbar()-1);
+    numLevels = int(ceil(log(1.0*wormLength) / log(2.0)-EPS));
+
+    /* Increment the number of insert moves and the total number of moves */
+    numAttempted++;
+    totAttempted++;
+    numAttemptedLevel(numLevels)++;
+
+    /* Move normalization factor */
+    double norm = constants()->C() * constants()->Mbar() * path.numTimeSlices 
+        * path.boxPtr->volume;
+    double muShift = wormLength*constants()->tau()*constants()->mu();
+    
+    /* We rescale to take into account different attempt probabilities */
+    norm *= constants()->attemptProb("remove") / constants()->attemptProb("insert");
+
+    /* Weight for ensemble */
+    norm *= actionPtr->ensembleWeight(wormLength);
+
+    /* We pick a random tail slice, and add a new bead */
+    int slice = random.randInt(constants()->numTimeSlices()-1);
+
+    /* Choose a random position inside the box for the proposed tail */
+    tailBead = path.addBead(slice,path.boxPtr->randPosition(random));
+    path.worm.special2 = tailBead;
+
+    double totAction = 0.0;
+    double PNorm = 1.0;
+    double P;
+
+    /* Generate the action for the proposed worm */
+    beadLocator beadIndex;
+    beadIndex = tailBead;
+    newAction = actionPtr->potentialAction(beadIndex);
+    totAction += newAction;
+
+    P = min(exp(-newAction),1.0);
+    PNorm *= P;
+
+    /* We perform a metropolis test on the tail bead */
+    if ( random.rand() >= P ) {
+        undoMove();
+        return success;
+    }
+
+    /* Now go through the non head/tail beads */
+    for (int k = 1; k < wormLength; k++) {
+
+        beadIndex = path.addNextBead(beadIndex,newFreeParticlePosition(beadIndex));
+        newAction = actionPtr->potentialAction(beadIndex);
+        totAction += newAction;
+
+        P = min(exp(-newAction),1.0);
+        PNorm *= P;
+
+        /* We perform a metropolis test on the single bead */
+        if ( random.rand() >= P ) {
+            undoMove();
+            return success;
+        }
+    }
+    headBead = path.addNextBead(beadIndex,newFreeParticlePosition(beadIndex));
+    path.worm.special1 = headBead;
+    newAction = actionPtr->potentialAction(headBead);
+    totAction += newAction;
+
+    P = norm*exp(-totAction + muShift)/PNorm;
+
+    /* Perform a final Metropolis test for inserting the fullw worm*/
+    if ( random.rand() < P )
+        keepMove();
+    else
+        undoMove();
+
+	return success;
+}
+
+/*************************************************************************//**
+ * Perform an insert move.
+ * 
+ * Attempt to insert a worm, which acts like a new worldline without
+ * periodic boundary conditions.  It is only possible if we are already
+ * in a diagonal configuration.  We have to be careful to properly grow
+ * our bead and link arrays. The actual number of particles doesn't increase,
+ * just the number of active worldlines.
+******************************************************************************/
+bool InsertMove::attemptMove1() {
+
 	/* We first make sure we are in a diagonal configuration */
 	if (path.worm.isConfigDiagonal) {
 
@@ -807,7 +891,7 @@ bool InsertMove::attemptMove() {
 		double muShift = wormLength*constants()->tau()*constants()->mu();
 		
 		/* We rescale to take into account different attempt probabilities */
-		norm *= constants()->removeAttemptProb() / constants()->insertAttemptProb();
+		norm *= constants()->attemptProb("remove") / constants()->attemptProb("insert");
 
 		/* Weight for ensemble */
 		norm *= actionPtr->ensembleWeight(wormLength);
@@ -894,8 +978,9 @@ void InsertMove::undoMove() {
 /*************************************************************************//**
  *  Constructor.
 ******************************************************************************/
-RemoveMove::RemoveMove (Path &_path, ActionBase *_actionPtr, MTRand &_random) 
-	: MoveBase(_path,_actionPtr,_random) {
+RemoveMove::RemoveMove (Path &_path, ActionBase *_actionPtr, MTRand &_random, 
+        string _name, ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -905,8 +990,6 @@ RemoveMove::RemoveMove (Path &_path, ActionBase *_actionPtr, MTRand &_random)
 	numAttemptedLevel.resize(constants()->b()+1);
 	numAcceptedLevel  = 0;
 	numAttemptedLevel = 0;
-
-	name = "Remove";
 }
 
 /*************************************************************************//**
@@ -928,6 +1011,77 @@ bool RemoveMove::attemptMove() {
 
 	/* We first make sure we are in an off-diagonal configuration, and the worm isn't
 	 * too short or long, also that we don't remove our last particle */
+    if ( (path.worm.length <= constants()->Mbar()) && (path.worm.length >= 1)
+			&& (path.getTrueNumParticles() > 1) ) {
+
+		numLevels = int(ceil(log(1.0*path.worm.length) / log(2.0)-EPS));
+
+		/* Increment the number of insert moves and the total number of moves */
+		numAttempted++;
+		numAttemptedLevel(numLevels)++;
+		totAttempted++;
+
+		/* The normalization constant and action shift due to the chemical potential */
+		double norm = 1.0 / (constants()->C() * constants()->Mbar() * path.numTimeSlices 
+				* path.boxPtr->volume);
+		double muShift = path.worm.length * constants()->mu() * constants()->tau();
+		
+		/* We rescale to take into account different attempt probabilities */
+		norm *= constants()->attemptProb("insert") / constants()->attemptProb("remove");
+
+		/* Weight for ensemble */
+		norm *= actionPtr->ensembleWeight(-path.worm.length);
+
+		oldAction = 0.0;
+        double totAction = 0.0;
+        double PNorm = 1.0;
+        double P;
+
+		beadLocator beadIndex;
+		beadIndex = path.worm.head;
+		do {
+			oldAction = actionPtr->potentialAction(beadIndex);
+            totAction += oldAction;
+
+            if (all(beadIndex==path.worm.tail))
+                P = norm * exp(totAction - muShift ) / PNorm;
+            else {
+                P = min(exp(oldAction),1.0);
+                PNorm *= P;
+            }
+
+            /* We do a single slice Metropolis test and exit the move if we
+             * wouldn't remove the single bead */
+            if ( random.rand() >= P ) {
+                undoMove();
+                return success;
+            }
+
+			beadIndex = path.prev(beadIndex);
+		} while (!all(beadIndex==path.prev(path.worm.tail)));
+
+		/* If we have accepted each bead removal individually, we accept the
+         * move */
+        keepMove();
+
+	} // is the worm length appropriate to remove
+
+	return success;
+}
+
+/*************************************************************************//**
+ * Perform a remove move.
+ * 
+ * Attempt to remove a worm thus restoring a diagonal configuration.
+ * It is only possible if we are already have an off-diagonal configuration.  
+ * We have to be careful to properly shrink our bead and link arrays.  Again
+ * the number of true particles doesn't change here, just the number of
+ * active worldlines.
+******************************************************************************/
+bool RemoveMove::attemptMove1() {
+
+	/* We first make sure we are in an off-diagonal configuration, and the worm isn't
+	 * too short or long, also that we don't remove our last particle */
 	if ( (!path.worm.isConfigDiagonal) 
 			&& (path.worm.length <= constants()->Mbar())
 			&& (path.worm.length >= 1)
@@ -945,7 +1099,7 @@ bool RemoveMove::attemptMove() {
 				* path.boxPtr->volume);
 		
 		/* We rescale to take into account different attempt probabilities */
-		norm *= constants()->insertAttemptProb() / constants()->removeAttemptProb();
+		norm *= constants()->attemptProb("insert") / constants()->attemptProb("remove");
 
 		/* Weight for ensemble */
 		norm *= actionPtr->ensembleWeight(-path.worm.length);
@@ -954,8 +1108,7 @@ bool RemoveMove::attemptMove() {
 
 		oldAction = 0.0;
 
-		beadLocator beadIndex,oldTail;
-		oldTail = path.worm.tail;
+		beadLocator beadIndex;
 		beadIndex = path.worm.head;
 		do {
 			oldAction += actionPtr->potentialAction(beadIndex);
@@ -994,7 +1147,6 @@ void RemoveMove::keepMove() {
 		beadIndex = path.delBeadGetPrev(beadIndex);
 	} while (!all(beadIndex==XXX));
 
-
 	path.worm.reset();
 
 	/* The configuration without a worm is diagonal */
@@ -1027,7 +1179,8 @@ void RemoveMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 AdvanceHeadMove::AdvanceHeadMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random) : MoveBase(_path,_actionPtr,_random) {
+		MTRand &_random, string _name, ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1037,8 +1190,6 @@ AdvanceHeadMove::AdvanceHeadMove (Path &_path, ActionBase *_actionPtr,
 	numAttemptedLevel.resize(constants()->b()+1);
 	numAcceptedLevel  = 0;
 	numAttemptedLevel = 0;
-
-	name = "Advance Head";
 }
 
 /*************************************************************************//**
@@ -1072,8 +1223,8 @@ bool AdvanceHeadMove::attemptMove() {
 		totAttempted++;
 
 		double muShift = advanceLength*constants()->tau()*constants()->mu();
-		double norm = constants()->recedeHeadAttemptProb() / 
-			constants()->advanceHeadAttemptProb();
+		double norm = constants()->attemptProb("recede head") / 
+			constants()->attemptProb("advance head");
 
 		/* Weight for ensemble */
 		norm *= actionPtr->ensembleWeight(advanceLength);
@@ -1164,7 +1315,8 @@ void AdvanceHeadMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 AdvanceTailMove::AdvanceTailMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random) : MoveBase(_path,_actionPtr,_random) {
+		MTRand &_random, string _name, ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1174,8 +1326,6 @@ AdvanceTailMove::AdvanceTailMove (Path &_path, ActionBase *_actionPtr,
 	numAttemptedLevel.resize(constants()->b()+1);
 	numAcceptedLevel  = 0;
 	numAttemptedLevel = 0;
-
-	name = "Advance Tail";
 }
 
 /*************************************************************************//**
@@ -1213,8 +1363,8 @@ bool AdvanceTailMove::attemptMove() {
 			/* The action shift due to the chemical potential */
 			double muShift = advanceLength*constants()->tau()*constants()->mu();
 
-			double norm = constants()->recedeTailAttemptProb() / 
-				constants()->advanceTailAttemptProb();
+			double norm = constants()->attemptProb("recede tail") / 
+				constants()->attemptProb("advance tail");
 
 			/* Weight for ensemble */
 			norm *= actionPtr->ensembleWeight(-advanceLength);
@@ -1302,7 +1452,8 @@ void AdvanceTailMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 RecedeHeadMove::RecedeHeadMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random) : MoveBase(_path,_actionPtr,_random) {
+		MTRand &_random, string _name, ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1312,8 +1463,6 @@ RecedeHeadMove::RecedeHeadMove (Path &_path, ActionBase *_actionPtr,
 	numAttemptedLevel.resize(constants()->b()+1);
 	numAcceptedLevel  = 0;
 	numAttemptedLevel = 0;
-
-	name = "Recede Head";
 }
 
 /*************************************************************************//**
@@ -1350,8 +1499,8 @@ bool RecedeHeadMove::attemptMove() {
 			/* The action shift due to the chemical potential */
 			double muShift = recedeLength*constants()->tau()*constants()->mu();
 
-			double norm = constants()->advanceHeadAttemptProb() / 
-				constants()->recedeHeadAttemptProb();
+			double norm = constants()->attemptProb("advance head") / 
+				constants()->attemptProb("recede head");
 
 			/* Weight for ensemble */
 			norm *= actionPtr->ensembleWeight(-recedeLength);
@@ -1440,8 +1589,8 @@ void RecedeHeadMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 RecedeTailMove::RecedeTailMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random) : 
-	MoveBase(_path,_actionPtr,_random) {
+		MTRand &_random, string _name, ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1451,8 +1600,6 @@ RecedeTailMove::RecedeTailMove (Path &_path, ActionBase *_actionPtr,
 	numAttemptedLevel.resize(constants()->b()+1);
 	numAcceptedLevel  = 0;
 	numAttemptedLevel = 0;
-
-	name = "Recede Tail";
 }
 
 /*************************************************************************//**
@@ -1485,8 +1632,8 @@ bool RecedeTailMove::attemptMove() {
 		totAttempted++;
 
 		double muShift = recedeLength*constants()->tau()*constants()->mu();
-		double norm = constants()->advanceTailAttemptProb() / 
-			constants()->recedeTailAttemptProb();
+		double norm = constants()->attemptProb("advance tail") / 
+			constants()->attemptProb("recede tail");
 
 		/* Weight for ensemble */
 		norm *= actionPtr->ensembleWeight(recedeLength);
@@ -1578,15 +1725,15 @@ void RecedeTailMove::undoMove() {
 /*************************************************************************//**
  *  Constructor.
 ******************************************************************************/
-SwapMoveBase::SwapMoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random) : 
-	MoveBase(_path,_actionPtr,_random) {
+SwapMoveBase::SwapMoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
+        string _name, ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 }
 
 /*************************************************************************//**
  *  Destructor.
 ******************************************************************************/
 SwapMoveBase::~SwapMoveBase() {
-	cumulant.free();
 }
 
 /*************************************************************************//**
@@ -1604,14 +1751,17 @@ double SwapMoveBase::getNorm(const beadLocator &beadIndex) {
 	/* We sum up the free particle density matrices for each bead
 	 * in the list */
 	Sigma = actionPtr->rho0(beadIndex,path.lookup.fullBeadList(0),swapLength);
-	cumulant(0) = Sigma;
+	cumulant.at(0) = Sigma;
 	for (int n = 1; n < path.lookup.fullNumBeads; n++) {
 		crho0 = actionPtr->rho0(beadIndex,path.lookup.fullBeadList(n),swapLength);
 		Sigma += crho0;
-		cumulant(n) = cumulant(n-1) + crho0;
+		cumulant.at(n) = cumulant.at(n-1) + crho0;
 	}
+
 	/* Normalize the cumulant */
-	cumulant /= Sigma;
+	for (int n = 0; n < path.lookup.fullNumBeads; n++)
+        cumulant.at(n) /= Sigma;
+
 
 	return Sigma;
 }
@@ -1630,12 +1780,15 @@ beadLocator SwapMoveBase::selectPivotBead() {
 	/* Generate a uniform deviate, and figure out where it fits in our cumulant
 	 * array using a binary search */
 	double u = random.rand();
-	Array<double,1>::iterator lb;
-	lb = lowerBound(cumulant.begin(),cumulant.end(),u);
+	//Array<double,1>::iterator lb;
+	//lb = lowerBound(cumulant.begin(),cumulant.end(),u);
 
+    int index = std::lower_bound(cumulant.begin(),cumulant.end(),u)
+            - cumulant.begin();
 	/* Copy over the pivot bead and return it */
 	beadLocator pivotBead;
-	pivotBead = path.lookup.fullBeadList(lb.position()[0]);
+	//pivotBead = path.lookup.fullBeadList(lb.position()[0]);
+	pivotBead = path.lookup.fullBeadList(index);
 	
 	return pivotBead;
 }
@@ -1650,7 +1803,8 @@ beadLocator SwapMoveBase::selectPivotBead() {
  *  Constructor.
 ******************************************************************************/
 SwapHeadMove::SwapHeadMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random) : SwapMoveBase(_path,_actionPtr,_random) {
+		MTRand &_random, string _name, ensemble _operateOnConfig) : 
+    SwapMoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1664,8 +1818,6 @@ SwapHeadMove::SwapHeadMove (Path &_path, ActionBase *_actionPtr,
 	/* Update the sizes of the original position array */
 	originalPos.resize(constants()->Mbar()-1);
 	originalPos = 0.0;
-
-	name = "Swap Head";
 }
 
 /*************************************************************************//**
@@ -1884,7 +2036,8 @@ void SwapHeadMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 SwapTailMove::SwapTailMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random) : SwapMoveBase(_path,_actionPtr,_random) {
+		MTRand &_random, string _name, ensemble _operateOnConfig) : 
+    SwapMoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1898,8 +2051,6 @@ SwapTailMove::SwapTailMove (Path &_path, ActionBase *_actionPtr,
 	/* Update the sizes of the original position array */
 	originalPos.resize(constants()->Mbar()-1);
 	originalPos = 0.0;
-
-	name = "Swap Tail";
 }
 
 /*************************************************************************//**

@@ -30,10 +30,12 @@ class ActionBase;
 class MoveBase {
 
 	public:
-		MoveBase (Path &, ActionBase *, MTRand &);
+		MoveBase (Path &, ActionBase *, MTRand &, string _name="", 
+                ensemble _operateOnConfig=ANY);
 		virtual ~MoveBase();
 
-		string name;	///< The name of the estimator
+		string name;	                ///< The name of the estimator
+        ensemble operateOnConfig;       ///< What configurations do we operate on?
 
 		/** Get the acceptance ratio. */
 		double getAcceptanceRatio() {
@@ -128,7 +130,8 @@ class MoveBase {
 class CenterOfMassMove: public MoveBase {
 
 	public:
-		CenterOfMassMove(Path &, ActionBase *, MTRand &);
+		CenterOfMassMove(Path &, ActionBase *, MTRand &, 
+                string _name="center of mass", ensemble _operateOnConfig=ANY);
 		~CenterOfMassMove();
 
 		bool attemptMove();
@@ -149,7 +152,8 @@ class CenterOfMassMove: public MoveBase {
 class StagingMove: public MoveBase {
 
 	public:
-		StagingMove(Path &, ActionBase *, MTRand &);
+		StagingMove(Path &, ActionBase *, MTRand &, string _name="staging", 
+                ensemble _operateOnConfig=ANY);
 		~StagingMove();
 
 		bool attemptMove();
@@ -171,7 +175,8 @@ class StagingMove: public MoveBase {
 class OpenMove: public MoveBase {
 
 	public:
-		OpenMove(Path &, ActionBase *, MTRand &);
+		OpenMove(Path &, ActionBase *, MTRand &, string _name="open",
+                ensemble _operateOnConfig=DIAGONAL);
 		~OpenMove();
 
 		bool attemptMove();
@@ -196,7 +201,8 @@ class OpenMove: public MoveBase {
 class CloseMove: public MoveBase {
 
 	public:
-		CloseMove(Path &, ActionBase *, MTRand &);
+		CloseMove(Path &, ActionBase *, MTRand &, string _name="close",
+                ensemble _operateOnConfig=OFFDIAGONAL);
 		~CloseMove();
 
 		bool attemptMove();
@@ -222,10 +228,12 @@ class CloseMove: public MoveBase {
 class InsertMove: public MoveBase {
 
 	public:
-		InsertMove(Path &, ActionBase *, MTRand &);
+		InsertMove(Path &, ActionBase *, MTRand &, string _name="insert",
+                ensemble _operateOnConfig=DIAGONAL);
 		~InsertMove();
 
 		bool attemptMove();
+		bool attemptMove1();
 
 	private:
 		beadLocator headBead,tailBead;	// The temporary head and tail beads
@@ -247,11 +255,13 @@ class InsertMove: public MoveBase {
 class RemoveMove: public MoveBase {
 
 	public:
-		RemoveMove(Path &, ActionBase *, MTRand &);
+		RemoveMove(Path &, ActionBase *, MTRand &, string _name="remove",
+                ensemble _operateOnConfig=OFFDIAGONAL);
 		~RemoveMove();
 
 		
 		bool attemptMove();
+		bool attemptMove1();
 
 	private:
 		int numLevels;					// The 2^numLevels = num slices moved
@@ -270,7 +280,9 @@ class RemoveMove: public MoveBase {
 class AdvanceHeadMove: public MoveBase {
 
 	public:
-		AdvanceHeadMove(Path &, ActionBase *, MTRand &);
+		AdvanceHeadMove(Path &, ActionBase *, MTRand &, 
+                string _name="advance head", 
+                ensemble _operateOnConfig=OFFDIAGONAL);
 		~AdvanceHeadMove();
 		
 		bool attemptMove();
@@ -302,7 +314,9 @@ class AdvanceHeadMove: public MoveBase {
 class AdvanceTailMove: public MoveBase {
 
 	public:
-		AdvanceTailMove(Path &, ActionBase *, MTRand &);
+        AdvanceTailMove(Path &, ActionBase *, MTRand &, 
+                string _name="advance tail",
+                ensemble _operateOnConfig=OFFDIAGONAL);
 		~AdvanceTailMove();
 
 		bool attemptMove();
@@ -327,7 +341,9 @@ class AdvanceTailMove: public MoveBase {
 class RecedeHeadMove: public MoveBase {
 
 	public:
-		RecedeHeadMove(Path &, ActionBase *, MTRand &);
+		RecedeHeadMove(Path &, ActionBase *, MTRand &,
+                string _name="recede head",
+                ensemble _operateOnConfig=OFFDIAGONAL);
 		~RecedeHeadMove();
 		
 		bool attemptMove();
@@ -351,7 +367,9 @@ class RecedeHeadMove: public MoveBase {
 class RecedeTailMove: public MoveBase {
 
 	public:
-		RecedeTailMove(Path &, ActionBase *, MTRand &);
+		RecedeTailMove(Path &, ActionBase *, MTRand &,
+                string _name="recede tail",
+                ensemble _operateOnConfig=OFFDIAGONAL);
 		~RecedeTailMove();
 		
 		bool attemptMove();
@@ -375,14 +393,15 @@ class RecedeTailMove: public MoveBase {
 class SwapMoveBase: public MoveBase {
 
 	public:
-		SwapMoveBase(Path &, ActionBase *, MTRand &);
+		SwapMoveBase(Path &, ActionBase *, MTRand &, string _name="swap",
+                ensemble _operateOnConfig=OFFDIAGONAL);
 		~SwapMoveBase();
 
 	protected:
 		int swapLength;						///< The length of worldLine to be moved
 		int numLevels;						///< The number of bisection levels
 
-		Array <double,1> cumulant;			///< The cumulant array used in selecting a pivot
+		vector <double> cumulant;			///< The cumulant array used in selecting a pivot
 
 		beadLocator pivot;					///< The pivot bead
 		beadLocator swap;					///< The swap bead
@@ -407,7 +426,9 @@ class SwapMoveBase: public MoveBase {
 class SwapHeadMove: public SwapMoveBase {
 
 	public:
-		SwapHeadMove(Path &, ActionBase *, MTRand &);
+		SwapHeadMove(Path &, ActionBase *, MTRand &,
+                string _name="swap head",
+                ensemble _operateOnConfig=OFFDIAGONAL);
 		~SwapHeadMove();
 
 		bool attemptMove();
@@ -433,7 +454,9 @@ class SwapHeadMove: public SwapMoveBase {
 class SwapTailMove: public SwapMoveBase {
 
 	public:
-		SwapTailMove(Path &, ActionBase *, MTRand &);
+		SwapTailMove(Path &, ActionBase *, MTRand &,
+                string _name="swap tail",
+                ensemble _operateOnConfig=OFFDIAGONAL);
 		~SwapTailMove();
 		
 		bool attemptMove();

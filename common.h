@@ -19,6 +19,7 @@
 #include <cassert>
 #include <vector>
 #include <map>
+#include <algorithm>
 
 #include <blitz/array.h>
 #include <boost/format.hpp>
@@ -95,6 +96,10 @@ typedef Array<beadLocator,1>::iterator beadIter;
 /** Each bead can have three possible states */
 enum beadState {HEADTAIL,SPECIAL,NONE};
 
+/** Each move can operate on only the digaonal ensemble, only the
+ * off-diagonal ensemble, or both */
+enum ensemble {DIAGONAL, OFFDIAGONAL, ANY};
+
 /** Return the integer value of a number raised to a power */
 inline int ipow (int base, int power) {
 	return static_cast<int>(floor(pow(1.0*base,1.0*power) + EPS));
@@ -117,36 +122,36 @@ inline Ttype& max(Ttype& x, Ttype& y) { return (x > y ? x : y); }
 /*****************************************************************************/
 
 /** The distance between two iterators */
-template<class Titer>
-inline void distanceIter(Titer first, Titer last, unsigned int &n)
-{ while (first != last) { ++first; ++n;} }
-
-/** Advance an iterator n steps */
-template<class Titer>
-void advance( Titer &i, unsigned int n) { while (n--) ++i; }
-
-/** Return an iterator which points to the position where we 
- * would insert x into a sorted array */
-template<class Titer, typename Ttype> 
-Titer lowerBound(Titer first, Titer last, Ttype x) {
-	unsigned int len = 0;
-	unsigned int half;
-	distanceIter(first, last, len);
-	Titer middle;
-	while (len > 0) {
-		half = len >> 1;
-		middle = first;
-		advance(middle, half);
-		if (*middle < x) {
-			first = middle;
-			++first;
-			len = len - half - 1;
-		}
-		else
-			len = half;
-	}
-	return first;
-}
+//template<class Titer>
+//inline void distanceIter(Titer first, Titer last, unsigned int &n)
+//{ while (first != last) { ++first; ++n;} }
+//
+///** Advance an iterator n steps */
+//template<class Titer>
+//void advance( Titer &i, unsigned int n) { while (n--) ++i; }
+//
+///** Return an iterator which points to the position where we 
+// * would insert x into a sorted array */
+//template<class Titer, typename Ttype> 
+//Titer lowerBound(Titer first, Titer last, Ttype x) {
+//	unsigned int len = 0;
+//	unsigned int half;
+//	distanceIter(first, last, len);
+//	Titer middle;
+//	while (len > 0) {
+//		half = len >> 1;
+//		middle = first;
+//		advance(middle, half);
+//		if (*middle < x) {
+//			first = middle;
+//			++first;
+//			len = len - half - 1;
+//		}
+//		else
+//			len = half;
+//	}
+//	return first;
+//}
 
 #endif
 
