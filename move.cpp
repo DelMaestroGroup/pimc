@@ -782,7 +782,7 @@ InsertMove::~InsertMove() {
  * our bead and link arrays. The actual number of particles doesn't increase,
  * just the number of active worldlines.
 ******************************************************************************/
-bool InsertMove::attemptMove() {
+bool InsertMove::attemptMove1() {
 
     /* Get the length of the proposed worm to insert */
     wormLength = 1 + random.randInt(constants()->Mbar()-1);
@@ -811,7 +811,7 @@ bool InsertMove::attemptMove() {
     tailBead = path.addBead(slice,path.boxPtr->randPosition(random));
     path.worm.special2 = tailBead;
 
-    double totAction = 0.0;
+    double deltaAction = 0.0;
     double PNorm = 1.0;
     double P;
 
@@ -819,9 +819,9 @@ bool InsertMove::attemptMove() {
     beadLocator beadIndex;
     beadIndex = tailBead;
     newAction = actionPtr->potentialAction(beadIndex);
-    totAction += newAction;
+    deltaAction += newAction;
 
-    P = min(exp(-newAction),1.0);
+    P = min(exp(-deltaAction),1.0);
     PNorm *= P;
 
     /* We perform a metropolis test on the tail bead */
@@ -835,7 +835,7 @@ bool InsertMove::attemptMove() {
 
         beadIndex = path.addNextBead(beadIndex,newFreeParticlePosition(beadIndex));
         newAction = actionPtr->potentialAction(beadIndex);
-        totAction += newAction;
+        deltaAction += newAction;
 
         P = min(exp(-newAction),1.0);
         PNorm *= P;
@@ -849,11 +849,12 @@ bool InsertMove::attemptMove() {
     headBead = path.addNextBead(beadIndex,newFreeParticlePosition(beadIndex));
     path.worm.special1 = headBead;
     newAction = actionPtr->potentialAction(headBead);
-    totAction += newAction;
+    deltaAction += newAction;
 
-    P = norm*exp(-totAction + muShift)/PNorm;
+//    PNorm = 1.0;
+    P = norm*exp(-deltaAction + muShift)/PNorm;
 
-    /* Perform a final Metropolis test for inserting the fullw worm*/
+    /* Perform a final Metropolis test for inserting the full worm*/
     if ( random.rand() < P )
         keepMove();
     else
@@ -871,7 +872,7 @@ bool InsertMove::attemptMove() {
  * our bead and link arrays. The actual number of particles doesn't increase,
  * just the number of active worldlines.
 ******************************************************************************/
-bool InsertMove::attemptMove1() {
+bool InsertMove::attemptMove() {
 
 	/* We first make sure we are in a diagonal configuration */
 	if (path.worm.isConfigDiagonal) {
@@ -1033,7 +1034,7 @@ bool RemoveMove::attemptMove() {
 		norm *= actionPtr->ensembleWeight(-path.worm.length);
 
 		oldAction = 0.0;
-        double totAction = 0.0;
+        double deltaAction = 0.0;
         double PNorm = 1.0;
         double P;
 
@@ -1041,14 +1042,19 @@ bool RemoveMove::attemptMove() {
 		beadIndex = path.worm.head;
 		do {
 			oldAction = actionPtr->potentialAction(beadIndex);
-            totAction += oldAction;
+            deltaAction -= oldAction;
 
-            if (all(beadIndex==path.worm.tail))
-                P = norm * exp(totAction - muShift ) / PNorm;
-            else {
-                P = min(exp(oldAction),1.0);
-                PNorm *= P;
-            }
+//            if (all(beadIndex==path.worm.tail)) {
+//                P = norm * exp(deltaAction - muShift ) / PNorm;
+//                if ( random.rand() >= P ) {
+//                    undoMove();
+//                    return success;
+//                }
+//            }
+//            else {
+            P = min(exp(oldAction),1.0);
+            PNorm *= P;
+//            }
 
             /* We do a single slice Metropolis test and exit the move if we
              * wouldn't remove the single bead */
@@ -1058,11 +1064,22 @@ bool RemoveMove::attemptMove() {
             }
 
 			beadIndex = path.prev(beadIndex);
-		} while (!all(beadIndex==path.prev(path.worm.tail)));
+		} while (!all(beadIndex==path.worm.tail));
+
+        /* Add the part from the tail */
+        oldAction = actionPtr->potentialAction(path.worm.tail);
+        deltaAction -= oldAction;
+
+        P = norm * exp(-deltaAction - muShift ) / PNorm;
+        if ( random.rand() < P )
+            keepMove();
+        else
+            undoMove();
+        
 
 		/* If we have accepted each bead removal individually, we accept the
          * move */
-        keepMove();
+//        keepMove();
 
 	} // is the worm length appropriate to remove
 
