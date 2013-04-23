@@ -782,7 +782,7 @@ InsertMove::~InsertMove() {
  * our bead and link arrays. The actual number of particles doesn't increase,
  * just the number of active worldlines.
 ******************************************************************************/
-bool InsertMove::attemptMove1() {
+bool InsertMove::attemptMove() {
 
     /* Get the length of the proposed worm to insert */
     wormLength = 1 + random.randInt(constants()->Mbar()-1);
@@ -813,7 +813,7 @@ bool InsertMove::attemptMove1() {
 
     double deltaAction = 0.0;
     double PNorm = 1.0;
-    double P;
+    double P,P0;
 
     /* Generate the action for the proposed worm */
     beadLocator beadIndex;
@@ -821,8 +821,9 @@ bool InsertMove::attemptMove1() {
     newAction = actionPtr->potentialAction(beadIndex);
     deltaAction += newAction;
 
-    P = min(exp(-deltaAction),1.0);
-    PNorm *= P;
+    P0 = min(exp(-deltaAction),1.0);
+    P = P0/PNorm;
+    PNorm *= P0;
 
     /* We perform a metropolis test on the tail bead */
     if ( random.rand() >= P ) {
@@ -837,8 +838,12 @@ bool InsertMove::attemptMove1() {
         newAction = actionPtr->potentialAction(beadIndex);
         deltaAction += newAction;
 
-        P = min(exp(-newAction),1.0);
-        PNorm *= P;
+        //P = min(exp(-newAction),1.0)/PNorm;
+        //PNorm *= P;
+
+        P0 = min(exp(-deltaAction),1.0);
+        P = P0/PNorm;
+        PNorm *= P0;
 
         /* We perform a metropolis test on the single bead */
         if ( random.rand() >= P ) {
@@ -851,7 +856,6 @@ bool InsertMove::attemptMove1() {
     newAction = actionPtr->potentialAction(headBead);
     deltaAction += newAction;
 
-//    PNorm = 1.0;
     P = norm*exp(-deltaAction + muShift)/PNorm;
 
     /* Perform a final Metropolis test for inserting the full worm*/
@@ -872,7 +876,7 @@ bool InsertMove::attemptMove1() {
  * our bead and link arrays. The actual number of particles doesn't increase,
  * just the number of active worldlines.
 ******************************************************************************/
-bool InsertMove::attemptMove() {
+bool InsertMove::attemptMove1() {
 
 	/* We first make sure we are in a diagonal configuration */
 	if (path.worm.isConfigDiagonal) {
@@ -1036,7 +1040,7 @@ bool RemoveMove::attemptMove() {
 		oldAction = 0.0;
         double deltaAction = 0.0;
         double PNorm = 1.0;
-        double P;
+        double P,P0;
 
 		beadLocator beadIndex;
 		beadIndex = path.worm.head;
@@ -1052,8 +1056,9 @@ bool RemoveMove::attemptMove() {
 //                }
 //            }
 //            else {
-            P = min(exp(oldAction),1.0);
-            PNorm *= P;
+            P0 = min(exp(-deltaAction),1.0);
+            P = P0/PNorm;
+            PNorm *= P0;
 //            }
 
             /* We do a single slice Metropolis test and exit the move if we
@@ -1071,6 +1076,7 @@ bool RemoveMove::attemptMove() {
         deltaAction -= oldAction;
 
         P = norm * exp(-deltaAction - muShift ) / PNorm;
+
         if ( random.rand() < P )
             keepMove();
         else
@@ -1078,6 +1084,7 @@ bool RemoveMove::attemptMove() {
         
 
 		/* If we have accepted each bead removal individually, we accept the
+        P = norm * exp(-deltaAction + muShift)/PNorm;
          * move */
 //        keepMove();
 

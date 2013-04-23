@@ -230,49 +230,48 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 
         for (int n = 0; n < numParticles; n++) {
             
-			x = random.rand();
-
             /* Here we do the diagonal pre-equilibration moves, and allow for 
              * optimization of simulation parameters */
-            if (x < constants()->attemptProb("center of mass")) {
+            if (random.rand() < constants()->attemptProb("center of mass")) {
                 centerOfMass.attemptMove();
                 numCoM += 1;
-
-                /* We check how many CoM moves we have tried.  Every 200 moves, we see if we need
-                 * to adjust Delta, provided we are in the pre-equilibration diagonal state. */
-                if ( (numCoM >= 200) 
-                        && (constants()->Delta() < 0.5*blitz::min(path.boxPtr->side)) 
-                        && (constants()->Delta() > 0.01*blitz::min(path.boxPtr->side)) ) {
-
-                    int numCoMAttempted = numCoM*path.getNumParticles();
-                    numCoMAccepted = centerOfMass.getNumAccepted() - numCoMAccepted;
-                    double CoMRatio = 1.0*numCoMAccepted / (1.0*numCoMAttempted);
-                    if (CoMRatio < 0.2)
-                        constants()->shiftDelta(-0.6);
-                    else if (CoMRatio < 0.3)
-                        constants()->shiftDelta(-0.4);
-                    else if (CoMRatio < 0.4)
-                        constants()->shiftDelta(-0.2);
-                    else if (CoMRatio > 0.6)
-                        constants()->shiftDelta(0.2);
-                    else if (CoMRatio > 0.7)
-                        constants()->shiftDelta(0.4);
-                    else if (CoMRatio > 0.8)
-                        constants()->shiftDelta(0.6);
-
-                    /* Reset the accepted counter */
-                    numCoMAccepted = centerOfMass.getNumAccepted();
-                    numCoM = 0;
-                }
-            } // CoM Move
+            } // Center of mass move
             else {
                 /* Attemp the staging Move */
                 for (int sweep = 0; sweep < numImagTimeSweeps; sweep++) 
                     staging.attemptMove();
             } //staging move
+
+            /* We check how many CoM moves we have tried.  Every 200 moves, we see if we need
+             * to adjust Delta, provided we are in the pre-equilibration diagonal state. */
+            if ( (numCoM >= 200) 
+                    && (constants()->Delta() < 0.5*blitz::min(path.boxPtr->side)) 
+                    && (constants()->Delta() > 0.01*blitz::min(path.boxPtr->side)) )  {
+
+                int numCoMAttempted = numCoM; //*path.getNumParticles();
+                numCoMAccepted = centerOfMass.getNumAccepted() - numCoMAccepted;
+                double CoMRatio = 1.0*numCoMAccepted / (1.0*numCoMAttempted);
+                if (CoMRatio < 0.2)
+                    constants()->shiftDelta(-0.6);
+                else if (CoMRatio < 0.3)
+                    constants()->shiftDelta(-0.4);
+                else if (CoMRatio < 0.4)
+                    constants()->shiftDelta(-0.2);
+                else if (CoMRatio > 0.6)
+                    constants()->shiftDelta(0.2);
+                else if (CoMRatio > 0.7)
+                    constants()->shiftDelta(0.4);
+                else if (CoMRatio > 0.8)
+                    constants()->shiftDelta(0.6);
+
+                /* Reset the accepted counter */
+                numCoMAccepted = centerOfMass.getNumAccepted();
+                numCoM = 0;
+            } // CoM Delta Shift
+
         } // numParticles
 
-	} // equilFrac < 1/3 and !startWithState
+    } // equilFrac < 1/3 and !startWithState
 
     /* Start the 2/3 off diagonal portion of the equilibration */
 	else {
