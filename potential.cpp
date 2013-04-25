@@ -717,6 +717,25 @@ double TabulatedPotential::newtonGregory(const Array<double,1> &VTable,
 	return (T1 + 0.5 * (T2 - T1) * xi);
 }
 
+/**************************************************************************//**
+ *  Use a direct lookup for the potential table.
+ *
+ *  This is faster thant Newton-Gregory and may give similar results for a fine
+ *  enough mesh.
+******************************************************************************/
+double TabulatedPotential::direct(const Array<double,1> &VTable, 
+		const TinyVector<double,2> &extVal, const double r) {
+
+	int k = int(r/dr);
+	if (k <= 0) 
+		return extVal[0];
+
+	if (k >= tableLength)
+		return extVal[1];
+
+    return VTable(k);
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // FREE POTENTIAL CLASS ------------------------------------------------------
@@ -1128,8 +1147,8 @@ LJCylinderPotential::LJCylinderPotential(const double radius) :
 //	epsilon = 32; 	// Kelvin
 //	sigma   = 3.08;	// angstroms
 
-	/* We choose a mesh consisting of 100K points, and create the lookup table */
-	dR = (1.0E-5)*R;
+	/* We choose a mesh consisting of 10^6 points, and create the lookup table */
+	dR = (1.0E-6)*R;
 
 	initLookupTable(dR,R);
 	
@@ -1322,7 +1341,8 @@ AzizPotential::AzizPotential(const dVec &side) : PotentialBase(), TabulatedPoten
 	double L = max(side);
 
 	/* Create the potential lookup tables */
-	initLookupTable(0.00005*rm,L);
+	//initLookupTable(0.00005*rm,L);
+	initLookupTable((1.0E-6)*rm,L);
 
 	/* Now we compute the tail correction */
 	double rmoL = rm / L;
@@ -1334,33 +1354,6 @@ AzizPotential::AzizPotential(const dVec &side) : PotentialBase(), TabulatedPoten
 	double t4 = 128.0*C10*pow(rmoL,7.0)/7.0;
 	
 	tailV = 2.0*M_PI*epsilon*(t1 - rm3*(t2+t3+t4));
-
-//	/* Compute the mean field correction to the chemical potential */
-//	double dmu = 0.0;
-//	double rmax = 0.0;
-//	for (int i = 0; i < NDIM; i++)
-//		rmax += 0.25*side[i]*side[i];
-//	rmax = sqrt(rmax);
-//	int N = 200;
-//	double dr = rmax/(1.0*N);
-//	dVec r;
-//	for (int i1 = 1; i1 < N; i1++) {
-//		r[0] = (i1-0.5)*dr;
-//		for (int i2 = 1; i2 < N; i2++) {
-//			r[1] = (i2-0.5)*dr;
-//			for (int i3 = 1; i3 < N; i3++) {
-//				r[2]  = (i3-0.5)*dr;
-//				if ((r[0] > 0.5*side[0]) || (r[1] > 0.5*side[1]) || (r[2]  > 0.5*side[2])) {
-//					double rmf = sqrt(dot(r,r));
-//					if (rmf < rmax)
-//						dmu += V(r);
-//				}
-//			}
-//		}
-//	}
-//
-//	cout << "dmu = " << dmu << endl;
-
 }
 
 /**************************************************************************//**

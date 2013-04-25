@@ -47,6 +47,10 @@ class ActionBase {
 		virtual double potentialAction (const beadLocator &beadIndex);
 		virtual double potentialAction (const beadLocator &beadIndex, int wlLength);
 
+        /* The bare potential action and its correction */
+		virtual double barePotentialAction (const beadLocator &beadIndex);
+		virtual double potentialActionCorrection (const beadLocator &beadIndex);
+
 		/** The public method that sets the tau scaling factor. */
 		void setShift(int _shift) { shift = _shift; }
 		/** Get the tau scaling factor. */
@@ -78,6 +82,13 @@ class ActionBase {
 		TinyVector <double,2> pFactor;	///< The even/odd slice potential factor
 		TinyVector <double,2> cFactor;	///< The even/odd slice correction factor
 		TinyVector <double,2> eFactor;	///< The even/odd slice energy factor
+
+        /* Short-hands for potential action and correction terms */
+        TinyVector <double,2> vFactor;  ///< The even/odd slice total potential factor
+        TinyVector <double,2> fFactor;  ///< The even/odd slice force correction potential factor
+
+        /* Setup the time-saving action factors */
+        virtual void setFactor();
 
 		/* These definitions are needed for weighting in the canonical ensemble */
 		bool canonical;					///< Are we in the canonical ensemble?

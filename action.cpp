@@ -21,26 +21,39 @@
 ******************************************************************************/
 ActionBase::ActionBase (const Path &_path, Potential *_potentialPtr) :
 	path(_path), potentialPtr(_potentialPtr) {
-		/* The default tau scale is 1 */
-		shift = 1;
+    /* The default tau scale is 1 */
+    shift = 1;
 
-		/* By default, there is no even/odd difference and the correction
-		 * coming from gradients of the potential is zero */
-		pFactor = 1.0;
-		cFactor = 0.0;
-		eFactor = 0.0;
+    /* By default, there is no even/odd difference and the correction
+     * coming from gradients of the potential is zero */
+    pFactor = 1.0;
+    cFactor = 0.0;
+    eFactor = 0.0;
 
-		/* Needed for canonical ensemble weighting */
-		canonical = constants()->canonical();
-		numBeads0  = constants()->initialNumParticles()*constants()->numTimeSlices();
-		deltaNumBeads2 = 1.0*constants()->deltaNumParticles()*constants()->numTimeSlices();
-		deltaNumBeads2 *= deltaNumBeads2;
-	}
+    setFactor();
+
+    /* Needed for canonical ensemble weighting */
+    canonical = constants()->canonical();
+    numBeads0  = constants()->initialNumParticles()*constants()->numTimeSlices();
+    deltaNumBeads2 = 1.0*constants()->deltaNumParticles()*constants()->numTimeSlices();
+    deltaNumBeads2 *= deltaNumBeads2;
+}
 
 /**************************************************************************//**
  *  Empty base constructor.
 ******************************************************************************/
 ActionBase::~ActionBase() {
+}
+
+/**************************************************************************//**
+ *  Setup the potential action and force correction factors.
+ *
+ *  We pre-compute constant numbers that don't change during the
+ *  simulation and are used to compute the action
+******************************************************************************/
+void ActionBase::setFactor() {
+    vFactor = constants()->tau()*pFactor;
+    fFactor = constants()->tau()*constants()->tau()*constants()->lambda()*cFactor*vFactor;
 }
 
 /**************************************************************************//**
@@ -254,6 +267,38 @@ double ActionBase::potentialAction (const beadLocator &beadIndex,
 }
 
 /**************************************************************************//**
+ *  Return the bare potential action for a single bead indexed with beadIndex.  
+ *
+ *  This action corresponds to the primitive approxiamtion and may be used
+ *  when attempting updates that use single slice rejection.
+******************************************************************************/
+double ActionBase::barePotentialAction (const beadLocator &beadIndex) {
+    eo = (beadIndex[0] % 2);
+	return ( shift * vFactor[eo] * potentialPtr->Vnn(beadIndex) );
+}
+
+/**************************************************************************//**
+ *  Return the potential action correction for a single bead.
+ *
+ *  Provided that the correction is small, we return its value.
+******************************************************************************/
+double ActionBase::potentialActionCorrection (const beadLocator &beadIndex) {
+
+	double totF = 0.0;
+	eo = (beadIndex[0] % 2);
+
+    /* If we have a finite correction */
+	if (fFactor[eo] > EPS) 
+		totF = fFactor[eo] * potentialPtr->gradVnnSquared(beadIndex);
+
+	/* We only include the force correction term if it is small */
+	if (abs(totF) < 1.0)
+        return totF;
+    else
+        return 0.0;
+}
+
+/**************************************************************************//**
  *  Return the total action, for all particles and all time slices.
 ******************************************************************************/
 double ActionBase::totalAction () {
@@ -280,6 +325,8 @@ LiBroughtonAction::LiBroughtonAction(const Path &_path,
 	pFactor = 1.0;
 	cFactor = 1.0 / 12.0;
 	eFactor = 1.0 / 24.0;
+
+    setFactor();
 }
 
 /**************************************************************************//**
@@ -327,6 +374,8 @@ GSFAction::GSFAction(const Path &_path, Potential *_potentialPtr) :
 
 	eFactor[0] = 0.0;
 	eFactor[1] = 1.0/9.0;
+
+    setFactor();
 }
 
 /**************************************************************************//**

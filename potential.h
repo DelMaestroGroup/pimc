@@ -79,6 +79,9 @@ class TabulatedPotential {
 		/* Returns the 2-point spline fit to the lookup table */
 		virtual double newtonGregory(const Array<double,1>&, const TinyVector<double,2>&, const double);
 
+        /* Returns a bare lookup value */
+		virtual double direct(const Array<double,1>&, const TinyVector<double,2>&, const double);
+
 		/** The functional value of V */
 		virtual double valueV (const double) = 0;				
 		/** The functional value of dV/dr */
@@ -480,8 +483,9 @@ class AzizPotential : public PotentialBase, public TabulatedPotential {
  * Return the aziz potential for separation r using a lookup table. 
  */
 inline double AzizPotential::V(const dVec &r) {
-	double rnorm = sqrt(dot(r,r));
-	return newtonGregory(lookupV,extV,rnorm);
+	//double rnorm = sqrt(dot(r,r));
+	//return newtonGregory(lookupV,extV,rnorm);
+	return direct(lookupV,extV,sqrt(dot(r,r)));
 }
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -493,7 +497,8 @@ inline double AzizPotential::V(const dVec &r) {
 inline dVec AzizPotential::gradV(const dVec &r) {
 	double rnorm = sqrt(dot(r,r));
 	dVec gV;
-	gV = (newtonGregory(lookupdVdr,extdVdr,rnorm)/rnorm)*r;
+	//gV = (newtonGregory(lookupdVdr,extdVdr,rnorm)/rnorm)*r;
+	gV = (direct(lookupdVdr,extdVdr,rnorm)/rnorm)*r;
 	return gV;
 }
 

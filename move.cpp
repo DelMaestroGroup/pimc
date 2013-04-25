@@ -820,7 +820,8 @@ bool InsertMove::attemptMove() {
     /* Generate the action for the proposed worm */
     beadLocator beadIndex;
     beadIndex = tailBead;
-    deltaAction += actionPtr->potentialAction(beadIndex) - 0.5*actionShift;
+    //deltaAction += actionPtr->potentialAction(beadIndex) - 0.5*actionShift;
+    deltaAction += actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift;
     P = min(exp(-deltaAction)/PNorm,1.0);
 
     /* We perform a metropolis test on the tail bead */
@@ -834,7 +835,8 @@ bool InsertMove::attemptMove() {
     for (int k = 1; k < wormLength; k++) {
 
         beadIndex = path.addNextBead(beadIndex,newFreeParticlePosition(beadIndex));
-        deltaAction += actionPtr->potentialAction(beadIndex) - actionShift;
+        //deltaAction += actionPtr->potentialAction(beadIndex) - actionShift;
+        deltaAction += actionPtr->barePotentialAction(beadIndex) - actionShift;
         P = min(exp(-deltaAction)/PNorm,1.0);
 
         /* We perform a metropolis test on the single bead */
@@ -846,7 +848,15 @@ bool InsertMove::attemptMove() {
     }
     headBead = path.addNextBead(beadIndex,newFreeParticlePosition(beadIndex));
     path.worm.special1 = headBead;
-    deltaAction += actionPtr->potentialAction(headBead) - 0.5*actionShift;
+
+    /* If we have made it this far, we compute the total action as well as the
+     * action correction */
+    deltaAction += actionPtr->barePotentialAction(headBead) - 0.5*actionShift;
+    beadIndex = tailBead;
+    do {
+        deltaAction += actionPtr->potentialActionCorrection(beadIndex);
+        beadIndex = path.next(beadIndex);
+    } while (!all(beadIndex==XXX));
 
     /* Perform a final Metropolis test for inserting the full worm*/
     if ( random.rand() < (exp(-deltaAction)/PNorm) )
@@ -1039,7 +1049,8 @@ bool RemoveMove::attemptMove() {
 		beadIndex = path.worm.head;
         double factor = 0.5;
 		do {
-            deltaAction -= actionPtr->potentialAction(beadIndex) - factor*actionShift;
+            //deltaAction -= actionPtr->potentialAction(beadIndex) - factor*actionShift;
+            deltaAction -= actionPtr->barePotentialAction(beadIndex) - factor*actionShift;
             P = min(exp(-deltaAction)/PNorm,1.0);
 
             /* We do a single slice Metropolis test and exit the move if we
@@ -1056,6 +1067,13 @@ bool RemoveMove::attemptMove() {
 
         /* Add the part from the tail */
         deltaAction -= actionPtr->potentialAction(path.worm.tail) - 0.5*actionShift;
+
+        /* If we have made it this far, add the action correcton */
+        beadIndex = path.worm.tail;
+        do {
+            deltaAction -= actionPtr->potentialActionCorrection(beadIndex);
+            beadIndex = path.next(beadIndex);
+        } while (!all(beadIndex==XXX)); 
 
         if ( random.rand() < (exp(-deltaAction)/PNorm) )
             keepMove();
