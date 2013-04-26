@@ -261,11 +261,6 @@ void EnergyEstimator::accumulate() {
 			totV  += actionPtr->potentialPtr->V(slice);
 	}
 
-//	/* Normalize the action correction and the total potential*/
-//	gV2 *= normAct;
-//	totV /= (1.0 * numTimeSlices);
-//	totV += 2.0*gV2;
-
 	/* Normalize the action correction and the total potential*/
 	gV2 *= normAct;
 	totV /= (0.5 * numTimeSlices);

@@ -180,6 +180,7 @@ class OpenMove: public MoveBase {
 		~OpenMove();
 
 		bool attemptMove();
+		bool attemptMove1();
 
 	private:
 		beadLocator headBead, tailBead;	// The temporary head and tail locatores
@@ -206,6 +207,7 @@ class CloseMove: public MoveBase {
 		~CloseMove();
 
 		bool attemptMove();
+		bool attemptMove1();
 
 	private:
 		beadLocator headBead,tailBead;	// The temporary head and tail slices

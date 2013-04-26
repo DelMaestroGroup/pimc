@@ -125,11 +125,6 @@ class Potential {
 		 * nearest neighbor lookup table */
 		double gradVnnSquared(const beadLocator&);	
 
-		/* The gradient of the full potential at a given time slice dotted
-		 * with the separations at that slice.  Needed for the kinetic 
-		 * energy. */
-		double rDotGradV(const int);
-
 		Array <int,1> sepHist;				///< A histogram of separations
 		Array <int,1> cylSepHist;			///< A histogram of separations for a cylinder
 

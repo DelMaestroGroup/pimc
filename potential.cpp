@@ -586,45 +586,6 @@ double Potential::gradVnnSquared(const beadLocator &bead1) {
 	return totF2;
 }
 
-/**************************************************************************//**
- *  Return the gradient of the full potential for all beads at a single
- *  time slice dotted with the bead positions at that time slice. 
- *
- *  This includes both the external and interaction potentials.
-******************************************************************************/
-double Potential::rDotGradV(const int slice) {
-
-	double tot = 0.0;
-
-	int numParticles = path.numBeadsAtSlice(slice);
-
-	/* The two interacting particles */
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
-
-	/* We loop over the first bead */
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
-
-		/* The loop over all other particles, to find the total interaction
-		 * potential */
-		for (bead2[1] = (bead1[1]+1); bead2[1] < numParticles; bead2[1]++) {
-
-			sep = path.getSeparation(bead1,bead2);
-
-			/* The interaction component of the force */
-			tot += dot(sep,interactionPtr->gradV(sep));
-
-		} // bead2
-
-		/* Now add the external component */
-		tot += dot(path(bead1),externalPtr->gradV(path(bead1)));
-
-	} // end bead1
-
-	return tot;
-}
-
-
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // TABULATED POTENTIAL CLASS -------------------------------------------------
