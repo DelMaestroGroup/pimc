@@ -138,6 +138,8 @@ class Potential {
 		PotentialBase *externalPtr;		///< The external potential
 
 	protected:
+		friend class ActionBase;	    ///< ActionBase needs access to the LookupTable
+
 		const Path &path;				///< A constant path reference
 		LookupTable &lookup;			///< We need a non-constant reference for updates
 

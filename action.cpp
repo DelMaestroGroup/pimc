@@ -288,8 +288,15 @@ double ActionBase::potentialActionCorrection (const beadLocator &beadIndex) {
 	eo = (beadIndex[0] % 2);
 
     /* If we have a finite correction */
-	if (fFactor[eo] > EPS) 
+	if (fFactor[eo] > EPS) {
+        /* We need to update the lookup table here */
+		potentialPtr->lookup.updateInteractionList(path,beadIndex);
+
+        /* Compute the correction */
 		totF = fFactor[eo] * potentialPtr->gradVnnSquared(beadIndex);
+    }
+    else 
+        return 0.0;
 
 	/* We only include the force correction term if it is small */
 	if (abs(totF) < 1.0)

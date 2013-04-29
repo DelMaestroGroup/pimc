@@ -819,6 +819,7 @@ bool CloseMove::attemptMove() {
     /* If we have made it this far, we compute the total action as well as the
      * action correction */
     deltaAction += actionPtr->barePotentialAction(path.worm.tail) - 0.5*actionShift;
+
     beadIndex = path.worm.head;
     do {
         deltaAction += actionPtr->potentialActionCorrection(beadIndex);
@@ -981,7 +982,7 @@ InsertMove::~InsertMove() {
  * our bead and link arrays. The actual number of particles doesn't increase,
  * just the number of active worldlines.
 ******************************************************************************/
-bool InsertMove::attemptMove() {
+bool InsertMove::attemptMove1() {
 
     /* Get the length of the proposed worm to insert */
     wormLength = 1 + random.randInt(constants()->Mbar()-1);
@@ -1073,7 +1074,7 @@ bool InsertMove::attemptMove() {
  * our bead and link arrays. The actual number of particles doesn't increase,
  * just the number of active worldlines.
 ******************************************************************************/
-bool InsertMove::attemptMove1() {
+bool InsertMove::attemptMove() {
 
 	/* We first make sure we are in a diagonal configuration */
 	if (path.worm.isConfigDiagonal) {
@@ -1209,7 +1210,7 @@ RemoveMove::~RemoveMove() {
  * the number of true particles doesn't change here, just the number of
  * active worldlines.
 ******************************************************************************/
-bool RemoveMove::attemptMove() {
+bool RemoveMove::attemptMove1() {
 
 	/* We first make sure we are in an off-diagonal configuration, and the worm isn't
 	 * too short or long, also that we don't remove our last particle */
@@ -1290,7 +1291,7 @@ bool RemoveMove::attemptMove() {
  * the number of true particles doesn't change here, just the number of
  * active worldlines.
 ******************************************************************************/
-bool RemoveMove::attemptMove1() {
+bool RemoveMove::attemptMove() {
 
 	/* We first make sure we are in an off-diagonal configuration, and the worm isn't
 	 * too short or long, also that we don't remove our last particle */
