@@ -1422,6 +1422,91 @@ AdvanceHeadMove::~AdvanceHeadMove() {
 bool AdvanceHeadMove::attemptMove() {
 
 	success = false;
+
+    /* Get the length of the proposed advancement by computing
+     * a random number of levels to be used in the bisection algorithm. */
+    advanceLength = 1 + random.randInt(constants()->Mbar()-1);
+    numLevels = int (ceil(log(1.0*advanceLength) / log(2.0)-EPS));
+
+    /* Increment the number of advance moves and the total number of moves */
+    numAttempted++;
+    numAttemptedLevel(numLevels)++;
+    totAttempted++;
+
+    double muShift = advanceLength*constants()->tau()*constants()->mu();
+    double norm = constants()->attemptProb("recede head") / 
+        constants()->attemptProb("advance head");
+
+    /* Weight for ensemble */
+    norm *= actionPtr->ensembleWeight(advanceLength);
+
+    double actionShift = (log(norm) + muShift)/advanceLength;
+
+    /* Make the old head a special bead, and undefine the head */
+    path.worm.special1 = path.worm.head;
+    path.worm.head = XXX;
+
+    double deltaAction = 0.0;
+    double PNorm = 1.0;
+    double P;
+
+    /* Generate the new path, and compute its action, assigning the new head */
+    beadLocator beadIndex;
+    beadIndex = path.worm.special1;
+    deltaAction = actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift;
+
+    P = min(exp(-deltaAction)/PNorm,1.0);
+    if ( random.rand() >= P ) {
+        undoMove();
+        return success;
+    }
+    PNorm *= P;
+
+    for (int k = 0; k < (advanceLength-1); k++) {
+        beadIndex = path.addNextBead(beadIndex,newFreeParticlePosition(beadIndex));
+        deltaAction += actionPtr->barePotentialAction(beadIndex) - actionShift;
+
+        P = min(exp(-deltaAction)/PNorm,1.0);
+
+        /* We perform a metropolis test on the single bead */
+        if ( random.rand() >= P ) {
+            undoMove();
+            return success;
+        }
+        PNorm *= P;
+    }
+    headBead = path.addNextBead(beadIndex,newFreeParticlePosition(beadIndex));
+
+    /* Assign the new head and compute its action */
+    path.worm.head = headBead;
+    deltaAction += actionPtr->potentialAction(headBead) - 0.5*actionShift;
+
+    beadIndex = path.worm.special1;
+    do {
+        deltaAction += actionPtr->potentialActionCorrection(beadIndex);
+        beadIndex = path.next(beadIndex);
+    } while (!all(beadIndex==XXX));
+
+    /* Perform the metropolis test */
+    if ( random.rand() < (exp(-deltaAction)/PNorm))
+        keepMove();
+    else 
+        undoMove();
+
+	return success;
+}
+
+/*************************************************************************//**
+ * Perform an advance head move.
+ * 
+ * Attempt to advance a worm head in imaginary time by a random number
+ * of slices.  We generate the new bead positions from the free particle
+ * density matrix.  It is only possible if we already have an off-diagonal 
+ * configuration.  
+******************************************************************************/
+bool AdvanceHeadMove::attemptMove1() {
+
+	success = false;
 	/* We first make sure we are in an off diagonal configuration */
 	if (!path.worm.isConfigDiagonal) {
 
@@ -1504,9 +1589,11 @@ void AdvanceHeadMove::undoMove() {
 	/* We remove all the beads and links that have been added. */
 	beadLocator beadIndex;
 	beadIndex = path.next(path.worm.head);
-	do {
-		beadIndex = path.delBeadGetNext(beadIndex);
-	} while (!all(beadIndex==XXX));
+    while (!all(beadIndex==XXX))
+        beadIndex = path.delBeadGetNext(beadIndex);
+//	do {
+//		beadIndex = path.delBeadGetNext(beadIndex);
+//	} while (!all(beadIndex==XXX));
 
 	/* Reset the configuration to off-diagonal */
  	path.worm.isConfigDiagonal = false;
@@ -1556,6 +1643,91 @@ AdvanceTailMove::~AdvanceTailMove() {
  * off-diagonal configuration.  
 ******************************************************************************/
 bool AdvanceTailMove::attemptMove() {
+
+	success = false;
+
+    /* Get the number of time slices we will try to shrink the worm by */
+    advanceLength = 1 + random.randInt(constants()->Mbar()-1);
+    numLevels = int (ceil(log(1.0*advanceLength) / log(2.0)-EPS));
+
+    /* We now make sure that this is shorter than the length of the worm, 
+     * otherewise we reject the move immediatly */
+    if (advanceLength < path.worm.length) {
+
+        /* The proposed new tail */
+        tailBead = path.next(path.worm.tail,advanceLength);
+
+        /* The action shift due to the chemical potential */
+        double muShift = advanceLength*constants()->tau()*constants()->mu();
+
+        double norm = constants()->attemptProb("recede tail") / 
+            constants()->attemptProb("advance tail");
+
+        /* Weight for ensemble */
+        norm *= actionPtr->ensembleWeight(-advanceLength);
+
+        double actionShift = (-log(norm) + muShift)/advanceLength;
+
+        /* Increment the number of recede moves and the total number of moves */
+        numAttempted++;
+        numAttemptedLevel(numLevels)++;
+        totAttempted++;
+
+        /* Mark the proposed tail as special */
+        path.worm.special1 = tailBead;
+        oldAction = 0.0;
+
+        double deltaAction = 0.0;
+        double PNorm = 1.0;
+        double P;
+        double factor = 0.5;
+
+        beadLocator beadIndex;
+        beadIndex = path.worm.tail;
+        do {
+            deltaAction -= actionPtr->barePotentialAction(beadIndex) - factor*actionShift;
+            P = min(exp(-deltaAction)/PNorm,1.0);
+
+            /* We do a single slice Metropolis test and exit the move if we
+             * wouldn't remove the single bead */
+            if ( random.rand() >= P ) {
+                undoMove();
+                return success;
+            }
+            PNorm *= P;
+
+            factor = 1.0; 
+            beadIndex = path.next(beadIndex);
+        } while (!all(beadIndex==tailBead));
+
+        /* Add the part from the tail */
+        deltaAction -= actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift;
+
+        /* If we have made it this far, add the action correcton */
+        do {
+            deltaAction -= actionPtr->potentialActionCorrection(beadIndex);
+            beadIndex = path.prev(beadIndex);
+        } while (!all(beadIndex==XXX)); 
+
+        /* Perform final metropolis test */
+        if ( random.rand() < (exp(-deltaAction)/PNorm) )
+            keepMove();
+        else 
+            undoMove();
+
+    } // advanceLength
+
+	return success;
+}
+/*************************************************************************//**
+ * Perform an advance tail move.
+ * 
+ * Here we attempt to advance the tail of a worm in imaginary time by a 
+ * random number of slices. This is accomplished by removing beads and the
+ * result is a shorter worm.  It is only possible if we already have an 
+ * off-diagonal configuration.  
+******************************************************************************/
+bool AdvanceTailMove::attemptMove1() {
 
 	success = false;
 
@@ -1695,6 +1867,89 @@ bool RecedeHeadMove::attemptMove() {
 
 	success = false;
 
+    /* Get the number of time slices we will try to shrink the worm by */
+    recedeLength = 1 + random.randInt(constants()->Mbar()-1);
+    numLevels = int (ceil(log(1.0*recedeLength) / log(2.0)-EPS));
+
+    /* We now make sure that this is shorter than the length of the worm, 
+     * otherewise we reject the move immediatly */
+    if (recedeLength < path.worm.length) {
+
+        /* The proposed new head */
+        headBead = path.prev(path.worm.head,recedeLength);
+
+        /* The action shift due to the chemical potential */
+        double muShift = recedeLength*constants()->tau()*constants()->mu();
+
+        double norm = constants()->attemptProb("advance head") / 
+            constants()->attemptProb("recede head");
+
+        /* Weight for ensemble */
+        norm *= actionPtr->ensembleWeight(-recedeLength);
+
+        double actionShift = (-log(norm) + muShift)/recedeLength;
+
+        /* Increment the number of recede moves and the total number of moves */
+        numAttempted++;
+        numAttemptedLevel(numLevels)++;
+        totAttempted++;
+
+        /* Set the proposed head as special */
+        path.worm.special1 = headBead;
+
+        oldAction = 0.0;
+
+        double deltaAction = 0.0;
+        double PNorm = 1.0;
+        double P;
+        double factor = 0.5;
+
+        beadLocator beadIndex;
+        beadIndex = path.worm.head;
+        do {
+            deltaAction -= actionPtr->potentialAction(beadIndex) - factor*actionShift;
+            P = min(exp(-deltaAction)/PNorm,1.0);
+            if ( random.rand() >= P ) {
+                undoMove();
+                return success;
+            }
+            PNorm *= P;
+
+            factor = 1.0; 
+            beadIndex = path.prev(beadIndex);
+        } while (!all(beadIndex==headBead));
+
+        deltaAction -= actionPtr->barePotentialAction(headBead) - 0.5*actionShift;
+
+        /* If we have made it this far, add the action correcton */
+        beadIndex = headBead;
+        do {
+            deltaAction -= actionPtr->potentialActionCorrection(beadIndex);
+            beadIndex = path.next(beadIndex);
+        } while (!all(beadIndex==XXX)); 
+
+        /* Perform final metropolis test */
+        if ( random.rand() < (exp(-deltaAction)/PNorm) )
+            keepMove();
+        else 
+            undoMove();
+
+    } // recedeLength
+
+	return success;
+}
+
+/*************************************************************************//**
+ * Perform a recede head move.
+ * 
+ * Attempt to propagate a worm backwards in imaginary time by
+ * randomly selecting a number of links then attempting to remove them.
+ * The number of true particles doesn't change here.
+******************************************************************************/
+bool RecedeHeadMove::attemptMove1() {
+
+	success = false;
+
 	/* We first make sure we are in an off-diagonal configuration */
 	if (!path.worm.isConfigDiagonal) {
 
@@ -1831,6 +2086,92 @@ RecedeTailMove::~RecedeTailMove() {
 bool RecedeTailMove::attemptMove() {
 
 	success = false;
+
+    /* Get the length of the proposed advancement by computing
+     * a random number of levels to be used in the bisection algorithm. */
+    recedeLength = 1 + random.randInt(constants()->Mbar()-1);
+    numLevels = int (ceil(log(1.0*recedeLength) / log(2.0)-EPS));
+
+    /* Increment the number of advance moves and the total number of moves */
+    numAttempted++;
+    numAttemptedLevel(numLevels)++;
+    totAttempted++;
+
+    double muShift = recedeLength*constants()->tau()*constants()->mu();
+    double norm = constants()->attemptProb("advance tail") / 
+        constants()->attemptProb("recede tail");
+
+    /* Weight for ensemble */
+    norm *= actionPtr->ensembleWeight(recedeLength);
+
+    double actionShift = (log(norm) + muShift)/recedeLength;
+
+    /* Make the current tail special, and undefine the tail */
+    path.worm.special1 = path.worm.tail;
+    path.worm.tail = XXX;
+
+    double deltaAction = 0.0;
+    double PNorm = 1.0;
+    double P;
+
+    /* Compute the action for the proposed path, and assign the new tail */
+    beadLocator beadIndex;
+    beadIndex = path.worm.special1;
+
+    deltaAction += actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift;
+    P = min(exp(-deltaAction)/PNorm,1.0);
+
+    /* We perform a metropolis test on the tail bead */
+    if ( random.rand() >= P ) {
+        undoMove();
+        return success;
+    }
+    PNorm *= P;
+
+    for (int k = 0; k < (recedeLength-1); k++) {
+        beadIndex = path.addPrevBead(beadIndex,newFreeParticlePosition(beadIndex));
+        deltaAction += actionPtr->barePotentialAction(beadIndex) - actionShift;
+        P = min(exp(-deltaAction)/PNorm,1.0);
+
+        /* We perform a metropolis test on the single bead */
+        if ( random.rand() >= P ) {
+            undoMove();
+            return success;
+        }
+        PNorm *= P;
+    }
+
+    tailBead = path.addPrevBead(beadIndex,newFreeParticlePosition(beadIndex));
+
+    /* Assign the new tail bead and compute its action */
+    path.worm.tail = tailBead;
+    deltaAction += actionPtr->barePotentialAction(tailBead) - 0.5*actionShift;
+
+    beadIndex = path.worm.special1;
+    do {
+        deltaAction += actionPtr->potentialActionCorrection(beadIndex);
+        beadIndex = path.prev(beadIndex);
+    } while (!all(beadIndex==XXX));
+
+    /* Perform the metropolis test */
+    if ( random.rand() < (exp(-deltaAction)/PNorm))
+        keepMove();
+    else 
+        undoMove();
+
+	return success;
+}
+
+/*************************************************************************//**
+ * Perform a recede tail move.
+ * 
+ * Attempt to propagate a worm tail backwards in imaginary time by
+ * randomly selecting a number of links then attempting to generate new positions
+ * which exactly sample the free particle density matrix.
+******************************************************************************/
+bool RecedeTailMove::attemptMove1() {
+
+	success = false;
 	/* We first make sure we are in an off diagonal configuration */
 	if (!path.worm.isConfigDiagonal) {
 
@@ -1914,9 +2255,11 @@ void RecedeTailMove::undoMove() {
 	/* We remove all the beads and links that have been added. */
 	beadLocator beadIndex;
 	beadIndex = path.prev(path.worm.tail);
-	do {
-		beadIndex = path.delBeadGetPrev(beadIndex);
-	} while (!all(beadIndex==XXX));
+	while (!all(beadIndex==XXX)) 
+        beadIndex = path.delBeadGetPrev(beadIndex);
+//	do {
+//		beadIndex = path.delBeadGetPrev(beadIndex);
+//	} while (!all(beadIndex==XXX));
 	path.prev(path.worm.tail) = XXX;
 
 	/* Reset the configuration to off-diagonal */

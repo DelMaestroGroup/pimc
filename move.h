@@ -288,6 +288,7 @@ class AdvanceHeadMove: public MoveBase {
 		~AdvanceHeadMove();
 		
 		bool attemptMove();
+		bool attemptMove1();
 
 	private:
 		beadLocator headBead;			// The temporary new head
@@ -322,6 +323,7 @@ class AdvanceTailMove: public MoveBase {
 		~AdvanceTailMove();
 
 		bool attemptMove();
+		bool attemptMove1();
 
 	private:
 		beadLocator tailBead;			// The temporary new tail
@@ -349,6 +351,7 @@ class RecedeHeadMove: public MoveBase {
 		~RecedeHeadMove();
 		
 		bool attemptMove();
+		bool attemptMove1();
 
 	private:
 		beadLocator headBead;			// The proposed new head position
@@ -375,6 +378,7 @@ class RecedeTailMove: public MoveBase {
 		~RecedeTailMove();
 		
 		bool attemptMove();
+		bool attemptMove1();
 
 	private:
 		beadLocator tailBead;			// The proposed new head position
