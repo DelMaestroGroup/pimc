@@ -306,6 +306,30 @@ double ActionBase::potentialActionCorrection (const beadLocator &beadIndex) {
 }
 
 /**************************************************************************//**
+ *  Return the potential action correction for a path.
+ *
+ *  Given a starting and ending bead, compute the potential action correction
+ *  for the path.
+ *
+ *  @param beadStart the starting bead
+ *  @param beadEnd the end bead on the path
+******************************************************************************/
+double ActionBase::potentialActionCorrection (const beadLocator &beadStart, 
+        const beadLocator &beadEnd) {
+
+    double totF = 0.0;
+    beadLocator beadIndex;
+    beadIndex = beadStart;
+    while (!all(beadIndex==path.next(beadEnd))) {
+        totF += potentialActionCorrection(beadIndex);
+        beadIndex = path.next(beadIndex);
+    } 
+
+    return totF;
+}
+
+
+/**************************************************************************//**
  *  Return the total action, for all particles and all time slices.
 ******************************************************************************/
 double ActionBase::totalAction () {

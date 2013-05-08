@@ -35,7 +35,8 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
 	numAccepted = numAttempted = numToMove = 0;
 	success = false;
 
-	sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
+	sqrtLambdaTau = sqrt(constants()->lambda() * constants()->tau());
+	sqrt2LambdaTau = sqrt(2.0)*sqrtLambdaTau;
 }
 
 /*************************************************************************//**
@@ -210,6 +211,37 @@ dVec MoveBase::newFreeParticlePosition(const beadLocator &neighborIndex) {
     path.boxPtr->putInside(newRanPos);
 
     return newRanPos;
+}
+
+/*************************************************************************//**
+ * Returns a new bisection position which will exactly sample the kinetic
+ * action. 
+ *
+ * @param beadIndex The bead that we want a new position for
+ * @param lshift The number of time slices between beads moved at this level
+ * @return A NDIM-vector which holds a new random position.
+******************************************************************************/
+dVec MoveBase::newBisectionPosition(const beadLocator &beadIndex, 
+        const int lshift) { 
+
+    /* The size of the move */
+    double delta = sqrtLambdaTau*sqrt(1.0*lshift);
+
+	/* We first get the index and position of the 'previous' neighbor bead */
+	nBeadIndex = path.prev(beadIndex,lshift);
+
+	/* We now get the midpoint between the previous and next beads */
+	newRanPos = path.getSeparation(path.next(beadIndex,lshift),nBeadIndex);
+	newRanPos *= 0.5;
+	newRanPos += path(nBeadIndex);
+
+	/* This is the gausian distributed random kick around that midpoint */
+	for (int i = 0; i < NDIM; i++)
+		newRanPos[i] = random.randNorm(newRanPos[i],delta);
+
+    /* Put in PBC and return */
+    path.boxPtr->putInside(newRanPos);
+	return newRanPos;
 }
 
 // ---------------------------------------------------------------------------
@@ -457,6 +489,202 @@ void StagingMove::undoMove() {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
+// BISECTION MOVE CLASS ------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ * Constructor.
+ *
+ * Initialize the number of levels and all local data structures.
+******************************************************************************/
+BisectionMove::BisectionMove(Path &_path, ActionBase *_actionPtr, 
+        MTRand &_random, string _name, ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+
+	/* Initialize private data to zera */
+	numAccepted = numAttempted = numToMove = 0;
+
+	/* Initialize the acceptance by level counters */
+	numAcceptedLevel.resize(constants()->b()+1);
+	numAttemptedLevel.resize(constants()->b()+1);
+	numAcceptedLevel  = 0;
+	numAttemptedLevel = 0;
+
+    /* The number of levels used in bisection */
+	numLevels = constants()->b();
+
+	/* We setup the original and new positions as well as the include array
+     * which stores updates to the beads involved in the bisection */
+	numActiveBeads = ipow(2,numLevels)-1;
+    include.resize(numActiveBeads);
+    originalPos.resize(numActiveBeads);
+    newPos.resize(numActiveBeads);
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+BisectionMove::~BisectionMove() {
+    include.free();
+}
+
+
+/*****************************************************************************/
+/// Bisection Move : attempt Move
+///
+/// Here we actually perform the bisection move, which attempts to make a single
+/// large move at the midpoint between two slices, then futher bisects until
+/// all particles have been moved.  The only adjustable parameter for is the 
+/// number of levels, which sets the number of particles that we will try 
+/// to move.  The move can be fully rejected at any level, and we then
+/// go back and restore the positions of all moved particles.
+///
+/// For a nice description of the algorithm see:
+/// C. Chakravarty et al. J. Chem. Phys. 109, 2123 (1998).
+/*****************************************************************************/
+bool BisectionMove::attemptMove() {
+
+	success = false;
+
+	/* Randomly select the start bead of the bisection */
+	startBead[0] = random.randInt(path.numTimeSlices-1);
+	startBead[1] = random.randInt(path.numBeadsAtSlice(startBead[0])-1);
+
+	/* Now we have to make sure that we are moving an active trajectory, 
+	 * otherwise we exit immediatly */
+	beadLocator beadIndex;
+	beadIndex = startBead;
+	for (int k = 0; k < (numActiveBeads+1); k++) {
+		if (!path.worm.beadOn(beadIndex) || all(beadIndex==path.worm.head))
+			return false;
+		beadIndex = path.next(beadIndex);
+	}
+	endBead = beadIndex;
+
+    checkMove(0,0.0);
+
+    /* Increment the number of displacement moves and the total number
+     * of moves */
+    numAttempted++;
+    totAttempted++;
+    numAttemptedLevel(numLevels)++;
+    include = true;
+
+    /* Now we perform the actual bisection down to level 1 */
+    oldDeltaAction = 0.0;
+    for (level = numLevels; level > 0; level--) {
+
+        /* Compute the distance between time slices and set the tau
+         * shift for the action */
+        shift = ipow(2,level-1);
+        actionPtr->setShift(shift);
+
+        /* Reset the actions for this level*/
+        oldAction = newAction = 0.0;
+
+        beadIndex = path.next(startBead,shift);
+        int k = 1;
+        do {
+            int n = k*shift-1;
+
+            if (include(n)) {
+                originalPos(n) = path(beadIndex);
+                oldAction += actionPtr->barePotentialAction(beadIndex);
+
+                /* Generate the new position and compute the action */
+                newPos(n) = newBisectionPosition(beadIndex,shift);
+                path.updateBead(beadIndex,newPos(n));
+                newAction += actionPtr->barePotentialAction(beadIndex);
+
+                /* Set the include bit */
+                include(n) = false;
+            }
+            /* At level 1 we need to compute the full action */
+            else if (level==1) {
+                newAction += actionPtr->potentialAction(beadIndex);
+                path.updateBead(beadIndex,originalPos(n));
+                oldAction += actionPtr->potentialAction(beadIndex);
+                path.updateBead(beadIndex,newPos(n));
+            }
+
+            ++k;
+            beadIndex = path.next(beadIndex,shift);
+        } while (!all(beadIndex==endBead));
+
+        /* Record the total action difference at this level */
+        deltaAction = (newAction - oldAction);
+
+        /* Now we do the metropolis step, if we accept the move, we 
+         * keep going to the next level, however, if we reject it,
+         * we return all slices that have already been moved back
+         * to their original positions and break out of the level
+         * loop. */
+
+        /* The actual Metropolis test */
+        if (random.rand() < exp(-deltaAction + oldDeltaAction)) {
+            if (level == 1) {
+                keepMove();
+                checkMove(1,deltaAction);
+            }
+        }
+        else {
+            undoMove();
+            checkMove(2,0.0);
+            break;
+        }
+
+        oldDeltaAction = deltaAction;
+
+    } // end over level
+
+	return success;
+}
+
+/*****************************************************************************/
+/// Bisection Move : keep Move
+///
+/// If the move is accepted, we simply increment our accept counters 
+/*****************************************************************************/
+void BisectionMove::keepMove() {
+
+	numAccepted++;
+	numAcceptedLevel(numLevels)++;
+	totAccepted++;
+
+	/* Restore the shift level for the time step to 1 */
+	actionPtr->setShift(1);
+
+	success = true;
+}
+
+/*****************************************************************************/
+/// Bisection Move : undo Move
+///
+/// We undo the bisection move, restoring the original position of each
+/// particle that has been tampered with, it might not be all of them.
+/*****************************************************************************/
+void BisectionMove::undoMove() {
+
+    /* Go through the list of updated beads and return them to their original
+     * positions */
+	int k = 0;
+	beadLocator beadIndex;
+	beadIndex = startBead;
+	do {
+		beadIndex = path.next(beadIndex);
+        if (!include(k)) {
+            path.updateBead(beadIndex,originalPos(k));
+        }
+		++k;
+	} while (!all(beadIndex==path.prev(endBead)));
+
+	actionPtr->setShift(1);
+	success = false;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // OPEN MOVE CLASS -----------------------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -493,6 +721,7 @@ OpenMove::~OpenMove() {
  * (worm free) we just remove a portion of the particle's worldline.
 ******************************************************************************/
 bool OpenMove::attemptMove() {
+    return attemptMoveFull();
 
 	success = false;
 
@@ -567,13 +796,7 @@ bool OpenMove::attemptMove() {
 
         /* Add the part from the tail */
         deltaAction -= actionPtr->barePotentialAction(tailBead) - 0.5*actionShift;
-
-        /* If we have made it this far, add the action correcton */
-        beadIndex = headBead;
-        do {
-            deltaAction -= actionPtr->potentialActionCorrection(beadIndex);
-            beadIndex = path.next(beadIndex);
-        } while (!all(beadIndex==path.next(tailBead)));
+        deltaAction -= actionPtr->potentialActionCorrection(headBead,tailBead);
 
         /* Now perform the final metropolis acceptance test based on removing a
          * chunk of worldline. */
@@ -595,7 +818,7 @@ bool OpenMove::attemptMove() {
  * slice at random, and provided the current configuration is diagonal
  * (worm free) we just remove a portion of the particle's worldline.
 ******************************************************************************/
-bool OpenMove::attemptMove1() {
+bool OpenMove::attemptMoveFull() {
 
 	success = false;
 
@@ -742,6 +965,7 @@ CloseMove::~CloseMove() {
  * After a sucessful close, we update the number of particles. 
 ******************************************************************************/
 bool CloseMove::attemptMove() {
+    return attemptMoveFull();
 
 	success = false;
 	/* We first make sure we are in an off-diagonal configuration, and that that
@@ -819,12 +1043,7 @@ bool CloseMove::attemptMove() {
     /* If we have made it this far, we compute the total action as well as the
      * action correction */
     deltaAction += actionPtr->barePotentialAction(path.worm.tail) - 0.5*actionShift;
-
-    beadIndex = path.worm.head;
-    do {
-        deltaAction += actionPtr->potentialActionCorrection(beadIndex);
-        beadIndex = path.next(beadIndex);
-    } while (!all(beadIndex==path.next(path.worm.tail)));
+    deltaAction += actionPtr->potentialActionCorrection(path.worm.head,path.worm.tail);
 
 	/* Perform the metropolis test */
     if ( random.rand() < (exp(-deltaAction)/PNorm) )
@@ -843,7 +1062,7 @@ bool CloseMove::attemptMove() {
  * array as well as generating new positions for the particle beads. 
  * After a sucessful close, we update the number of particles. 
 ******************************************************************************/
-bool CloseMove::attemptMove1() {
+bool CloseMove::attemptMoveFull() {
 
 	success = false;
 	/* We first make sure we are in an off-diagonal configuration, and that that
@@ -983,6 +1202,7 @@ InsertMove::~InsertMove() {
  * just the number of active worldlines.
 ******************************************************************************/
 bool InsertMove::attemptMove() {
+    return attemptMoveFull();
 
     /* Get the length of the proposed worm to insert */
     wormLength = 1 + random.randInt(constants()->Mbar()-1);
@@ -1050,11 +1270,7 @@ bool InsertMove::attemptMove() {
     /* If we have made it this far, we compute the total action as well as the
      * action correction */
     deltaAction += actionPtr->barePotentialAction(headBead) - 0.5*actionShift;
-    beadIndex = tailBead;
-    do {
-        deltaAction += actionPtr->potentialActionCorrection(beadIndex);
-        beadIndex = path.next(beadIndex);
-    } while (!all(beadIndex==XXX));
+    deltaAction += actionPtr->potentialActionCorrection(tailBead,headBead);
 
     /* Perform a final Metropolis test for inserting the full worm*/
     if ( random.rand() < (exp(-deltaAction)/PNorm) )
@@ -1074,7 +1290,7 @@ bool InsertMove::attemptMove() {
  * our bead and link arrays. The actual number of particles doesn't increase,
  * just the number of active worldlines.
 ******************************************************************************/
-bool InsertMove::attemptMove1() {
+bool InsertMove::attemptMoveFull() {
 
 	/* We first make sure we are in a diagonal configuration */
 	if (path.worm.isConfigDiagonal) {
@@ -1211,6 +1427,7 @@ RemoveMove::~RemoveMove() {
  * active worldlines.
 ******************************************************************************/
 bool RemoveMove::attemptMove() {
+    return attemptMoveFull();
 
 	/* We first make sure we are in an off-diagonal configuration, and the worm isn't
 	 * too short or long, also that we don't remove our last particle */
@@ -1265,13 +1482,7 @@ bool RemoveMove::attemptMove() {
 
     /* Add the part from the tail */
     deltaAction -= actionPtr->barePotentialAction(path.worm.tail) - 0.5*actionShift;
-
-    /* If we have made it this far, add the action correcton */
-    beadIndex = path.worm.tail;
-    do {
-        deltaAction -= actionPtr->potentialActionCorrection(beadIndex);
-        beadIndex = path.next(beadIndex);
-    } while (!all(beadIndex==XXX)); 
+    deltaAction -= actionPtr->potentialActionCorrection(path.worm.tail,path.worm.head);
 
     /* Perform final metropolis test */
     if ( random.rand() < (exp(-deltaAction)/PNorm) )
@@ -1291,7 +1502,7 @@ bool RemoveMove::attemptMove() {
  * the number of true particles doesn't change here, just the number of
  * active worldlines.
 ******************************************************************************/
-bool RemoveMove::attemptMove1() {
+bool RemoveMove::attemptMoveFull() {
 
 	/* We first make sure we are in an off-diagonal configuration, and the worm isn't
 	 * too short or long, also that we don't remove our last particle */
@@ -1420,6 +1631,7 @@ AdvanceHeadMove::~AdvanceHeadMove() {
  * configuration.  
 ******************************************************************************/
 bool AdvanceHeadMove::attemptMove() {
+    return attemptMoveFull();
 
 	success = false;
 
@@ -1480,12 +1692,7 @@ bool AdvanceHeadMove::attemptMove() {
     /* Assign the new head and compute its action */
     path.worm.head = headBead;
     deltaAction += actionPtr->potentialAction(headBead) - 0.5*actionShift;
-
-    beadIndex = path.worm.special1;
-    do {
-        deltaAction += actionPtr->potentialActionCorrection(beadIndex);
-        beadIndex = path.next(beadIndex);
-    } while (!all(beadIndex==XXX));
+    deltaAction += actionPtr->potentialActionCorrection(path.worm.special1,path.worm.head);
 
     /* Perform the metropolis test */
     if ( random.rand() < (exp(-deltaAction)/PNorm))
@@ -1504,7 +1711,7 @@ bool AdvanceHeadMove::attemptMove() {
  * density matrix.  It is only possible if we already have an off-diagonal 
  * configuration.  
 ******************************************************************************/
-bool AdvanceHeadMove::attemptMove1() {
+bool AdvanceHeadMove::attemptMoveFull() {
 
 	success = false;
 	/* We first make sure we are in an off diagonal configuration */
@@ -1643,6 +1850,7 @@ AdvanceTailMove::~AdvanceTailMove() {
  * off-diagonal configuration.  
 ******************************************************************************/
 bool AdvanceTailMove::attemptMove() {
+    return attemptMoveFull();
 
 	success = false;
 
@@ -1702,12 +1910,7 @@ bool AdvanceTailMove::attemptMove() {
 
         /* Add the part from the tail */
         deltaAction -= actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift;
-
-        /* If we have made it this far, add the action correcton */
-        do {
-            deltaAction -= actionPtr->potentialActionCorrection(beadIndex);
-            beadIndex = path.prev(beadIndex);
-        } while (!all(beadIndex==XXX)); 
+        deltaAction -= actionPtr->potentialActionCorrection(path.worm.tail,tailBead);
 
         /* Perform final metropolis test */
         if ( random.rand() < (exp(-deltaAction)/PNorm) )
@@ -1727,7 +1930,7 @@ bool AdvanceTailMove::attemptMove() {
  * result is a shorter worm.  It is only possible if we already have an 
  * off-diagonal configuration.  
 ******************************************************************************/
-bool AdvanceTailMove::attemptMove1() {
+bool AdvanceTailMove::attemptMoveFull() {
 
 	success = false;
 
@@ -1864,6 +2067,7 @@ RecedeHeadMove::~RecedeHeadMove() {
  * The number of true particles doesn't change here.
 ******************************************************************************/
 bool RecedeHeadMove::attemptMove() {
+    return attemptMoveFull();
 
 	success = false;
 
@@ -1920,13 +2124,7 @@ bool RecedeHeadMove::attemptMove() {
         } while (!all(beadIndex==headBead));
 
         deltaAction -= actionPtr->barePotentialAction(headBead) - 0.5*actionShift;
-
-        /* If we have made it this far, add the action correcton */
-        beadIndex = headBead;
-        do {
-            deltaAction -= actionPtr->potentialActionCorrection(beadIndex);
-            beadIndex = path.next(beadIndex);
-        } while (!all(beadIndex==XXX)); 
+        deltaAction -= actionPtr->potentialActionCorrection(path.worm.special1,path.worm.head);
 
         /* Perform final metropolis test */
         if ( random.rand() < (exp(-deltaAction)/PNorm) )
@@ -1946,7 +2144,7 @@ bool RecedeHeadMove::attemptMove() {
  * randomly selecting a number of links then attempting to remove them.
  * The number of true particles doesn't change here.
 ******************************************************************************/
-bool RecedeHeadMove::attemptMove1() {
+bool RecedeHeadMove::attemptMoveFull() {
 
 	success = false;
 
@@ -2084,6 +2282,7 @@ RecedeTailMove::~RecedeTailMove() {
  * which exactly sample the free particle density matrix.
 ******************************************************************************/
 bool RecedeTailMove::attemptMove() {
+    return attemptMoveFull();
 
 	success = false;
 
@@ -2140,18 +2339,12 @@ bool RecedeTailMove::attemptMove() {
         }
         PNorm *= P;
     }
-
     tailBead = path.addPrevBead(beadIndex,newFreeParticlePosition(beadIndex));
 
     /* Assign the new tail bead and compute its action */
     path.worm.tail = tailBead;
     deltaAction += actionPtr->barePotentialAction(tailBead) - 0.5*actionShift;
-
-    beadIndex = path.worm.special1;
-    do {
-        deltaAction += actionPtr->potentialActionCorrection(beadIndex);
-        beadIndex = path.prev(beadIndex);
-    } while (!all(beadIndex==XXX));
+    deltaAction += actionPtr->potentialActionCorrection(tailBead,path.worm.special1);
 
     /* Perform the metropolis test */
     if ( random.rand() < (exp(-deltaAction)/PNorm))
@@ -2169,7 +2362,7 @@ bool RecedeTailMove::attemptMove() {
  * randomly selecting a number of links then attempting to generate new positions
  * which exactly sample the free particle density matrix.
 ******************************************************************************/
-bool RecedeTailMove::attemptMove1() {
+bool RecedeTailMove::attemptMoveFull() {
 
 	success = false;
 	/* We first make sure we are in an off diagonal configuration */
@@ -2257,9 +2450,6 @@ void RecedeTailMove::undoMove() {
 	beadIndex = path.prev(path.worm.tail);
 	while (!all(beadIndex==XXX)) 
         beadIndex = path.delBeadGetPrev(beadIndex);
-//	do {
-//		beadIndex = path.delBeadGetPrev(beadIndex);
-//	} while (!all(beadIndex==XXX));
 	path.prev(path.worm.tail) = XXX;
 
 	/* Reset the configuration to off-diagonal */

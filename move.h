@@ -82,6 +82,7 @@ class MoveBase {
 		uint32 numAccepted;				///< The number of accepted moves
 		uint32 numAttempted;			///< The number of attempted moves
 		int numToMove;					///< The number of particles moved
+		int numLevels;					// The 2^numLevels = num slices moved
 
 		static uint32 totAccepted;		///< The total number of  moves accepted
 		static uint32 totAttempted;		///< The total number of  moves attempted
@@ -90,12 +91,15 @@ class MoveBase {
 		Array <uint32,1> numAttemptedLevel;	///< The number of moves attempted at each level
 
 		Array <dVec,1> originalPos;		///< The original particle positions
+		Array <dVec,1> newPos;		    ///< New particle positions
 
 		double oldAction;				///< The original potential action
 		double newAction;				///< The new potential action
 
 		double sqrt2LambdaTau;			///< sqrt(2 * Lambda * tau)
+		double sqrtLambdaTau;		    ///< sqrt(Lambda * tau)
 
+        beadLocator nBeadIndex;         ///< Neighbor bead index
 		dVec neighborPos; 				///< Staging neighbor position
 		dVec newRanPos; 				///< Staing random position
 
@@ -109,6 +113,9 @@ class MoveBase {
 
 		/* Return a new bead position which samples the free particle density matrix */
 		dVec newFreeParticlePosition(const beadLocator &);
+
+		// Returns a new bead position based on the bisection algorithm */
+		dVec newBisectionPosition(const beadLocator&, const int); 	
 
 		///@cond DEBUG
 		double newK,oldK;				// The old and new action pieces
@@ -166,6 +173,36 @@ class StagingMove: public MoveBase {
 };
 
 // ========================================================================  
+// Bisection Move Class 
+// ========================================================================  
+/* A derived class which performs a bisection move, which exactly samples
+ * the kinetic action.
+ */
+class BisectionMove: public MoveBase {
+
+	public:
+		BisectionMove(Path &, ActionBase *, MTRand &, string _name="bisection",
+                ensemble _operateOnConfig=ANY);
+		~BisectionMove();
+
+		bool attemptMove();
+
+	private:
+        Array <bool,1> include;             // Which beads have been included?
+
+        beadLocator startBead,endBead;
+
+		int numActiveBeads;					// The total number of active beads
+		int level;							// The current level
+		int shift;							// The distance between slices at a given level
+
+		double deltaAction,oldDeltaAction;	// The old and new action differences
+
+		void keepMove(); 					// Keep the move
+		void undoMove(); 					// Undo the move
+};
+
+// ========================================================================  
 // Open Move Class 
 // ========================================================================  
 /** 
@@ -180,7 +217,7 @@ class OpenMove: public MoveBase {
 		~OpenMove();
 
 		bool attemptMove();
-		bool attemptMove1();
+		bool attemptMoveFull();
 
 	private:
 		beadLocator headBead, tailBead;	// The temporary head and tail locatores
@@ -207,7 +244,7 @@ class CloseMove: public MoveBase {
 		~CloseMove();
 
 		bool attemptMove();
-		bool attemptMove1();
+		bool attemptMoveFull();
 
 	private:
 		beadLocator headBead,tailBead;	// The temporary head and tail slices
@@ -235,7 +272,7 @@ class InsertMove: public MoveBase {
 		~InsertMove();
 
 		bool attemptMove();
-		bool attemptMove1();
+		bool attemptMoveFull();
 
 	private:
 		beadLocator headBead,tailBead;	// The temporary head and tail beads
@@ -263,7 +300,7 @@ class RemoveMove: public MoveBase {
 
 		
 		bool attemptMove();
-		bool attemptMove1();
+		bool attemptMoveFull();
 
 	private:
 		int numLevels;					// The 2^numLevels = num slices moved
@@ -288,7 +325,7 @@ class AdvanceHeadMove: public MoveBase {
 		~AdvanceHeadMove();
 		
 		bool attemptMove();
-		bool attemptMove1();
+		bool attemptMoveFull();
 
 	private:
 		beadLocator headBead;			// The temporary new head
@@ -323,7 +360,7 @@ class AdvanceTailMove: public MoveBase {
 		~AdvanceTailMove();
 
 		bool attemptMove();
-		bool attemptMove1();
+		bool attemptMoveFull();
 
 	private:
 		beadLocator tailBead;			// The temporary new tail
@@ -351,7 +388,7 @@ class RecedeHeadMove: public MoveBase {
 		~RecedeHeadMove();
 		
 		bool attemptMove();
-		bool attemptMove1();
+		bool attemptMoveFull();
 
 	private:
 		beadLocator headBead;			// The proposed new head position
@@ -378,7 +415,7 @@ class RecedeTailMove: public MoveBase {
 		~RecedeTailMove();
 		
 		bool attemptMove();
-		bool attemptMove1();
+		bool attemptMoveFull();
 
 	private:
 		beadLocator tailBead;			// The proposed new head position

@@ -48,8 +48,9 @@ class ActionBase {
 		virtual double potentialAction (const beadLocator &beadIndex, int wlLength);
 
         /* The bare potential action and its correction */
-		virtual double barePotentialAction (const beadLocator &beadIndex);
-		virtual double potentialActionCorrection (const beadLocator &beadIndex);
+		virtual double barePotentialAction (const beadLocator &);
+		virtual double potentialActionCorrection (const beadLocator &);
+		virtual double potentialActionCorrection (const beadLocator &, const beadLocator &);
 
 		/** The public method that sets the tau scaling factor. */
 		void setShift(int _shift) { shift = _shift; }

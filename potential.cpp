@@ -538,6 +538,9 @@ double Potential::gradVnnSquared(const beadLocator &bead1) {
 
 	if (path.worm.beadOn(bead1)) {
 
+		/* Get the state of bead 1 */
+		//beadState state1 = path.worm.getState(bead1);
+
 		/* The 'forces' and particle separation */
 		dVec Fext1,Fext2;
 		dVec Fint1,Fint2,Fint3;
@@ -552,6 +555,8 @@ double Potential::gradVnnSquared(const beadLocator &bead1) {
 
 			/* Eliminate self and null interactions */
 			if ( !all(bead1 == bead2) ) {
+
+                //double factor = path.worm.factor(state1,lookup.beadList(n))
 
 				/* Get the separation between beads 1 and 2 and compute the terms in the
 				 * gradient squared */

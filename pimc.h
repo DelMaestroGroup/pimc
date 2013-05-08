@@ -74,6 +74,7 @@ class PathIntegralMonteCarlo {
 		/* The actual moves to be performed */
 		CenterOfMassMove centerOfMass;
 		StagingMove    	 staging;
+        BisectionMove    bisection;
 		OpenMove         open;
 		CloseMove        close;
 		InsertMove       insert;

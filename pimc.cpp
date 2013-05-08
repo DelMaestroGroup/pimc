@@ -30,6 +30,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	path(_path),
 	centerOfMass(_path,_actionPtr,_random),
 	staging(_path,_actionPtr,_random),
+	bisection(_path,_actionPtr,_random),
 	open(_path,_actionPtr,_random),
 	close(_path,_actionPtr,_random),
 	insert(_path,_actionPtr,_random),
@@ -49,8 +50,8 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	localSuperfluidDensity(_path,0),
 	planeWindingSuperfluidDensity(_path,0),
 	planeAreaSuperfluidDensity(_path,0),
-	radialWindingSuperfluidDensity(_path,1),
-	radialAreaSuperfluidDensity(_path,1),
+	radialWindingSuperfluidDensity(_path,0),
+	radialAreaSuperfluidDensity(_path,0),
 	permutationCycle(_path,0),
 	oneBodyDensityMatrix(_path,_actionPtr,_random),
 	pairCorrelation(_path,_actionPtr),
@@ -102,6 +103,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	move.push_back(&swapHead);
 	move.push_back(&swapTail);
 	move.push_back(&staging);
+	move.push_back(&bisection);
 	move.push_back(&centerOfMass);
 
 	/* Determine the cumulative attempt move probabilities */ 
@@ -239,7 +241,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
             else {
                 /* Attemp the staging Move */
                 for (int sweep = 0; sweep < numImagTimeSweeps; sweep++) 
-                    staging.attemptMove();
+                    bisection.attemptMove();
             } //staging move
 
             /* We check how many CoM moves we have tried.  Every 200 moves, we see if we need
@@ -503,7 +505,8 @@ void PathIntegralMonteCarlo::finalOutput() {
 
 		/* We only output levels for those moves which have a variable size */
 		if ( (moveName != staging.name) && (moveName != centerOfMass.name)
-				&& (moveName != swapHead.name) && (moveName != swapTail.name) ) {
+                && (moveName != bisection.name) && (moveName != swapHead.name) 
+                && (moveName != swapTail.name) ) {
 			for (int n = 0; n <= constants()->b(); n++) {
 				communicate()->file("log")->stream() << format("%-12s Level %-10d\t:\t%7.5f\t(%d/%d)\n") 
 					% moveName % n % (*movePtr)->getAcceptanceRatioLevel(n) 

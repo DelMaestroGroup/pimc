@@ -103,13 +103,14 @@ void ConstantParameters::initConstants(bool _canonical, double _T, double _mu, d
     attemptProb_["remove"] = 0.15;
     attemptProb_["swap head"] = 0.10;
     attemptProb_["swap tail"] = 0.10;
-    attemptProb_["staging"] = 0.15;
+    attemptProb_["staging"] = 0.00;
+    attemptProb_["bisection"] = 0.15;
     attemptProb_["center of mass"] = 0.05;
 
     double totProb = attemptProb_["close"] + attemptProb_["advance head"] + attemptProb_["recede head"]
         + attemptProb_["advance tail"] + attemptProb_["recede head"] + attemptProb_["remove"]
         + attemptProb_["swap head"] + attemptProb_["swap tail"] + attemptProb_["staging"]
-        + attemptProb_["center of mass"];
+        + attemptProb_["bisection"] + attemptProb_["center of mass"];
 
 	if (abs(totProb - 1.0) > EPS) {
 		cout << "Close + AdvanceHead + RecedeHead + AdvanceTail + RecedeTail + Remove + SwapHead " 
@@ -119,7 +120,7 @@ void ConstantParameters::initConstants(bool _canonical, double _T, double _mu, d
 	PIMC_ASSERT(totProb-1.0 < EPS);
 
     totProb = attemptProb_["open"] + attemptProb_["insert"] + attemptProb_["staging"]
-       + attemptProb_["center of mass"];
+       + attemptProb_["bisection"] + attemptProb_["center of mass"];
 	
 	if (abs(totProb - 1.0) > EPS) {
 		cout << "Open + Insert + Staging + Bisection + CoM Probability != 1" << endl;
