@@ -273,8 +273,10 @@ double ActionBase::potentialAction (const beadLocator &beadIndex,
  *  when attempting updates that use single slice rejection.
 ******************************************************************************/
 double ActionBase::barePotentialAction (const beadLocator &beadIndex) {
-    eo = (beadIndex[0] % 2);
-	return ( shift * vFactor[eo] * potentialPtr->Vnn(beadIndex) );
+//    eo = (beadIndex[0] % 2);
+//	return ( shift * vFactor[eo] * potentialPtr->Vnn(beadIndex) );
+
+    return potentialAction(beadIndex);
 }
 
 /**************************************************************************//**
@@ -283,6 +285,8 @@ double ActionBase::barePotentialAction (const beadLocator &beadIndex) {
  *  Provided that the correction is small, we return its value.
 ******************************************************************************/
 double ActionBase::potentialActionCorrection (const beadLocator &beadIndex) {
+
+    return 0.0;
 
 	double totF = 0.0;
 	eo = (beadIndex[0] % 2);

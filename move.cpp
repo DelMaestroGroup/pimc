@@ -721,7 +721,7 @@ OpenMove::~OpenMove() {
  * (worm free) we just remove a portion of the particle's worldline.
 ******************************************************************************/
 bool OpenMove::attemptMove() {
-    return attemptMoveFull();
+    //return attemptMoveFull();
 
 	success = false;
 
@@ -965,7 +965,7 @@ CloseMove::~CloseMove() {
  * After a sucessful close, we update the number of particles. 
 ******************************************************************************/
 bool CloseMove::attemptMove() {
-    return attemptMoveFull();
+    //return attemptMoveFull();
 
 	success = false;
 	/* We first make sure we are in an off-diagonal configuration, and that that
