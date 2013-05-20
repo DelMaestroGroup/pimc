@@ -1202,7 +1202,7 @@ InsertMove::~InsertMove() {
  * just the number of active worldlines.
 ******************************************************************************/
 bool InsertMove::attemptMove() {
-    return attemptMoveFull();
+//    return attemptMoveFull();
 
     /* Get the length of the proposed worm to insert */
     wormLength = 1 + random.randInt(constants()->Mbar()-1);
@@ -1427,7 +1427,7 @@ RemoveMove::~RemoveMove() {
  * active worldlines.
 ******************************************************************************/
 bool RemoveMove::attemptMove() {
-    return attemptMoveFull();
+//    return attemptMoveFull();
 
 	/* We first make sure we are in an off-diagonal configuration, and the worm isn't
 	 * too short or long, also that we don't remove our last particle */
@@ -1631,7 +1631,7 @@ AdvanceHeadMove::~AdvanceHeadMove() {
  * configuration.  
 ******************************************************************************/
 bool AdvanceHeadMove::attemptMove() {
-    return attemptMoveFull();
+    //return attemptMoveFull();
 
 	success = false;
 
@@ -1850,7 +1850,7 @@ AdvanceTailMove::~AdvanceTailMove() {
  * off-diagonal configuration.  
 ******************************************************************************/
 bool AdvanceTailMove::attemptMove() {
-    return attemptMoveFull();
+    //return attemptMoveFull();
 
 	success = false;
 
@@ -2067,7 +2067,7 @@ RecedeHeadMove::~RecedeHeadMove() {
  * The number of true particles doesn't change here.
 ******************************************************************************/
 bool RecedeHeadMove::attemptMove() {
-    return attemptMoveFull();
+    //return attemptMoveFull();
 
 	success = false;
 
@@ -2282,7 +2282,7 @@ RecedeTailMove::~RecedeTailMove() {
  * which exactly sample the free particle density matrix.
 ******************************************************************************/
 bool RecedeTailMove::attemptMove() {
-    return attemptMoveFull();
+    //return attemptMoveFull();
 
 	success = false;
 

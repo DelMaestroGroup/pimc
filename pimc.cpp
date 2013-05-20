@@ -239,10 +239,15 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
                 numCoM += 1;
             } // Center of mass move
             else {
-                /* Attemp the staging Move */
-                for (int sweep = 0; sweep < numImagTimeSweeps; sweep++) 
-                    bisection.attemptMove();
-            } //staging move
+                /* Attemp a diagonal path update*/
+                for (int sweep = 0; sweep < numImagTimeSweeps; sweep++)  {
+
+                    if (constants()->attemptProb("bisection") > 0.0)
+                        bisection.attemptMove();
+                    else
+                        staging.attemptMove();
+                }
+            } 
 
             /* We check how many CoM moves we have tried.  Every 200 moves, we see if we need
              * to adjust Delta, provided we are in the pre-equilibration diagonal state. */
