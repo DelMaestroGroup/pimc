@@ -400,7 +400,7 @@ GSFAction::GSFAction(const Path &_path, Potential *_potentialPtr) :
 //	eFactor[1] = alpha/9.0;
 	
 	/* There are different pre-factors for even/odd slices, we use the 
-	 * Prokof'ev version here.*/
+	 * Prokof'ev version here. I have taken alpha = 0 here. */
 	pFactor[0] = 2.0/3.0;
 	pFactor[1] = 4.0/3.0;
 

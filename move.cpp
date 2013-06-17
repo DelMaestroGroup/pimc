@@ -334,7 +334,6 @@ bool CenterOfMassMove::attemptMove() {
 	/* We go through the entire worldline, accumulating the old potential action,
 	 * shifting the center of mass, then accumulating the new potential action. */ 
 	beadIndex = startBead;
-	int wlLength = 0;
 	do {
 		oldAction += actionPtr->potentialAction(beadIndex);
 		pos = path(beadIndex) + originalPos(0);
@@ -343,7 +342,6 @@ bool CenterOfMassMove::attemptMove() {
 
 		newAction += actionPtr->potentialAction(beadIndex);
 		beadIndex = path.next(beadIndex);
-		wlLength++;
 	} while (!all(beadIndex==endBead));
 
 	/* The metropolis acceptance step */
@@ -721,7 +719,7 @@ OpenMove::~OpenMove() {
  * (worm free) we just remove a portion of the particle's worldline.
 ******************************************************************************/
 bool OpenMove::attemptMove() {
-    //return attemptMoveFull();
+//    return attemptMoveFull();
 
 	success = false;
 
@@ -965,7 +963,7 @@ CloseMove::~CloseMove() {
  * After a sucessful close, we update the number of particles. 
 ******************************************************************************/
 bool CloseMove::attemptMove() {
-    //return attemptMoveFull();
+//    return attemptMoveFull();
 
 	success = false;
 	/* We first make sure we are in an off-diagonal configuration, and that that
@@ -1202,6 +1200,7 @@ InsertMove::~InsertMove() {
  * just the number of active worldlines.
 ******************************************************************************/
 bool InsertMove::attemptMove() {
+
 //    return attemptMoveFull();
 
     /* Get the length of the proposed worm to insert */
@@ -1427,7 +1426,7 @@ RemoveMove::~RemoveMove() {
  * active worldlines.
 ******************************************************************************/
 bool RemoveMove::attemptMove() {
-//    return attemptMoveFull();
+    // return attemptMoveFull();
 
 	/* We first make sure we are in an off-diagonal configuration, and the worm isn't
 	 * too short or long, also that we don't remove our last particle */
@@ -1631,7 +1630,7 @@ AdvanceHeadMove::~AdvanceHeadMove() {
  * configuration.  
 ******************************************************************************/
 bool AdvanceHeadMove::attemptMove() {
-    //return attemptMoveFull();
+    // return attemptMoveFull();
 
 	success = false;
 
@@ -1850,7 +1849,7 @@ AdvanceTailMove::~AdvanceTailMove() {
  * off-diagonal configuration.  
 ******************************************************************************/
 bool AdvanceTailMove::attemptMove() {
-    //return attemptMoveFull();
+    // return attemptMoveFull();
 
 	success = false;
 
@@ -2067,7 +2066,7 @@ RecedeHeadMove::~RecedeHeadMove() {
  * The number of true particles doesn't change here.
 ******************************************************************************/
 bool RecedeHeadMove::attemptMove() {
-    //return attemptMoveFull();
+    // return attemptMoveFull();
 
 	success = false;
 
@@ -2282,7 +2281,7 @@ RecedeTailMove::~RecedeTailMove() {
  * which exactly sample the free particle density matrix.
 ******************************************************************************/
 bool RecedeTailMove::attemptMove() {
-    //return attemptMoveFull();
+    // return attemptMoveFull();
 
 	success = false;
 
@@ -2649,7 +2648,8 @@ bool SwapHeadMove::attemptMove() {
 				/* We now perform a pre-metropolis step on the selected bead. If this 
 				 * is not accepted, it is extremely likely that the potential change
 				 * will have any effect, so we don't bother with it. */
-				if (random.rand() < min(SigmaHead/SigmaSwap,1.0)) {
+                double PNorm = min(SigmaHead/SigmaSwap,1.0);
+				if (random.rand() < PNorm) {
 
 					/* Mark the special beads */
 					path.worm.special1 = swap;
@@ -2703,7 +2703,7 @@ bool SwapHeadMove::attemptMove() {
 					} while (!all(beadIndex==path.next(pivot)));
 
 
-					if (random.rand() < min(exp(-(newAction - oldAction)),1.0))
+					if ( random.rand() < exp(-(newAction - oldAction))/PNorm )
 						keepMove();
 					else
 						undoMove();
@@ -2880,7 +2880,8 @@ bool SwapTailMove::attemptMove() {
 				/* We now perform a pre-metropolis step on the selected bead. If this 
 				 * is not accepted, it is extremely unlikely that the potential change
 				 * will have any effect, so we don't bother with it. */
-				if (random.rand() < min(SigmaTail/SigmaSwap,1.0)) {
+                double PNorm = min(SigmaTail/SigmaSwap,1.0);
+				if (random.rand() < PNorm) {
 
 					/* Mark the swap and pivot as special */
 					path.worm.special1 = swap;
@@ -2888,17 +2889,6 @@ bool SwapTailMove::attemptMove() {
 
 					int k = 0;
 					oldAction = newAction = 0.0;
-
-					/* First we compute the old potential action */
-//					beadIndex = pivot;
-//					do {
-//						if (!all(beadIndex==swap) && !all(beadIndex==pivot)) {
-//							originalPos(k) = path(beadIndex);
-//							++k;
-//						}
-//						oldAction += actionPtr->potentialAction(beadIndex);
-//						beadIndex = path.next(beadIndex);
-//					} while (!all(beadIndex==path.next(swap)));
 
 					beadIndex = swap;
 					do {
@@ -2929,19 +2919,6 @@ bool SwapTailMove::attemptMove() {
 					path.worm.special1 = path.worm.tail;
 					path.worm.tail = swap;
 
-					/* Now we propose a new trajectory and compute its action */
-//					beadIndex = pivot;
-//					k = 0;
-//					do {
-//						if (!all(beadIndex==path.worm.special1) && !all(beadIndex==pivot)) {
-//							path.updateBead(beadIndex,
-//									newStagingPosition(path.prev(beadIndex),path.worm.special1,swapLength,k));
-//							++k;
-//						}
-//						newAction += actionPtr->potentialAction(beadIndex);
-//						beadIndex = path.next(beadIndex);
-//					} while (!all(beadIndex==path.next(path.worm.special1)));
-
 					k = 0;
 					beadIndex = path.worm.special1;
 					do {
@@ -2954,7 +2931,7 @@ bool SwapTailMove::attemptMove() {
 						beadIndex = path.prev(beadIndex);
 					} while (!all(beadIndex==path.prev(pivot)));
 
-					if (random.rand() < min(exp(-(newAction - oldAction)),1.0))
+					if ( random.rand() < exp(-(newAction - oldAction))/PNorm )
 						keepMove();
 					else
 						undoMove();
@@ -3006,14 +2983,6 @@ void SwapTailMove::undoMove() {
 	path.next(prevSwap)       = swap;
 
 	beadLocator beadIndex;
-//	beadIndex = path.next(pivot);
-//	int k = 0;
-//	do {
-//		path.updateBead(beadIndex,originalPos(k));
-//		++k;
-//		beadIndex = path.next(beadIndex);
-//	} while (!all(beadIndex==swap));
-
 	beadIndex = path.prev(swap);
 	int k = 0;
 	do {
