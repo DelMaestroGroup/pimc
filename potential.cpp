@@ -112,487 +112,6 @@ void PotentialBase::output(const double maxSep) {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// POTENTIAL CLASS ------------------------------------------------------
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-
-/**************************************************************************//**
- *  Constructor.
- *
- *  Initialize the separation histograms and assign the external and intearction
- *  potentials.
-******************************************************************************/
-Potential::Potential (const Path &_path, LookupTable &_lookup, 
-		PotentialBase *_externalPtr, PotentialBase *_interactionPtr) :
-	path(_path), lookup(_lookup)  {
-
-		/* Assign the values of the external and interaction potentials */
-		externalPtr = _externalPtr;
-		interactionPtr = _interactionPtr;
-
-		/* Initialize the separation histogram */
-		sepHist.resize(NPCFSEP);
-		sepHist = 0;
-		cylSepHist.resize(NPCFSEP);
-		cylSepHist = 0;
-		dSep = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
-}
-
-/**************************************************************************//**
- *  Destructor.
-******************************************************************************/
-Potential::~Potential() {
-	sepHist.free();
-	cylSepHist.free();
-}
-
-/*************************************************************************//**
- *  Update the separation histogram. 
- *
- *  We multiply by the periodic array, as we will only measure separations 
- *  along spatial dimensions with periodic boundary conditions.
-******************************************************************************/
-inline void Potential::updateSepHist(const dVec &_sep) {
-	dVec psep;
-	psep = path.boxPtr->periodic*_sep;
-	int nR = int(sqrt(dot(psep,psep))/dSep);
-	if (nR < NPCFSEP)
-		++sepHist(nR);
-}
-
-/*************************************************************************//**
- *  Returns the total value of the potential energy, including both the
- *  external potential, and that due to interactions for a single bead.
-******************************************************************************/
-double Potential::V(const beadLocator &bead1) {
-
-	/* We only need to calculate the potential if the bead is on */
-	if (path.worm.beadOn(bead1)) {
-
-		bead2[0] = bead1[0];
-		
-		/* Calculate the total external potential */
-		double totVext = externalPtr->V(path(bead1));
-
-		/* Now calculate the total interation potential, neglecting self-interactions */
-		double totVint = 0.0;
-
-		/* Get the state of bead 1 */
-		beadState state1 = path.worm.getState(bead1);
-		
-		for (bead2[1]= 0; bead2[1] < path.numBeadsAtSlice(bead1[0]); bead2[1]++) {
-
-			/* Skip self interactions */
-			if ( bead2[1] != bead1[1] ) {
-
-				/* get the separation between the two particles */
-				sep = path.getSeparation(bead2,bead1);
-
-				/* Now add the interaction potential */
-				totVint += path.worm.factor(state1,bead2) * interactionPtr->V(sep);
-			} // bead2 != bead1 
-
-		} // for bead2
-		return ( totVext + totVint );
-
-	} // if bead1On
-	else
-		return 0.0;
-}
-
-/*************************************************************************//**
- *  Returns the total value of the potential energy, including both the
- *  external potential, and that due to interactions for all particles in
- *  a single time slice.  
- *
- *  This is really only used for either debugging or during the calculation 
- *  of the potential energy. As such, we update the separation histogram here.
-******************************************************************************/
-double Potential::V(const int slice) {
-
-	double totVint = 0.0;
-	double totVext = 0.0;
-
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
-
-	int numParticles = path.numBeadsAtSlice(slice);
-
-	/* Initialize the separation histogram */
-	sepHist = 0;
-
-	/* Calculate the total potential, including external and interaction
-	 * effects*/
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
-
-			/* Evaluate the external potential */
-			totVext += externalPtr->V(path(bead1));
-
-			/* The loop over all other particles, to find the total interaction
-			 * potential */
-			for (bead2[1] = bead1[1]+1; bead2[1] < numParticles; bead2[1]++) {
-				sep = path.getSeparation(bead2,bead1);
-				updateSepHist(sep);
-				totVint += interactionPtr->V(sep);
-			} // bead2
-
-	} // bead1
-	return ( totVext + totVint );
-}
-
-/*************************************************************************//**
- *  Returns the total value of the potential energy, including both the
- *  external potential, and that due to interactions for all particles in
- *  a single time slice within a certain cuttoff radius of the center of 
- *  a cylinder.  
- *
- *  This is really only used for either debugging or during the calculation 
- *  of the potential energy. As such, we update the separation histogram here.
-******************************************************************************/
-double Potential::V(const int slice, const double maxR) {
-
-	double totVint = 0.0;
-	double totVext = 0.0;
-	dVec r1,r2;
-
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
-
-	int numParticles = path.numBeadsAtSlice(slice);
-
-	/* Initialize the separation histogram */
-	cylSepHist = 0;
-
-	/* Calculate the total potential, including external and interaction
-	 * effects*/
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
-
-		r1 = path(bead1);
-
-		if (r1[0]*r1[0] + r1[1]*r1[1] < maxR*maxR) {
-
-			/* Evaluate the external potential */
-			totVext += externalPtr->V(path(bead1));
-
-			/* The loop over all other particles, to find the total interaction
-			 * potential */
-			for (bead2[1] = bead1[1]+1; bead2[1] < numParticles; bead2[1]++) {
-				r2 = path(bead2);
-				sep = path.getSeparation(bead2,bead1);
-				if (r2[0]*r2[0] + r2[1]*r2[1] < maxR*maxR) {
-					int nR = int(abs(sep[2])/dSep);
-					if (nR < NPCFSEP)
-						++cylSepHist(nR);
-				}
-				totVint += interactionPtr->V(sep);
-			} // bead2
-
-		} // maxR
-	} // bead1
-
-	return ( totVext + totVint );
-}
-
-/*************************************************************************//**
- *  Returns the total value of the potential energy, including both the
- *  external potential, and that due to interactions for a single bead with
- *  all interactions confined to a single time slice using a nearest neighbor
- *  grid lookup table.
-******************************************************************************/
-double Potential::Vnn(const beadLocator &bead1) {
-
-	double totVint = 0.0;
-	double totVext = 0.0;
-
-	/* We only continue if bead1 is turned on */
-	if (path.worm.beadOn(bead1)) {
-
-		/* Fill up th nearest neighbor list */
-		lookup.updateInteractionList(path,bead1);
-
-		/* Evaluate the external potential */
-		totVext = externalPtr->V(path(bead1));
-
-		/* Get the state of bead 1 */
-		beadState state1 = path.worm.getState(bead1);
-
-		/* Sum the interaction potential over all NN beads */
-		for (int n = 0; n < lookup.numBeads; n++) {
-			totVint += path.worm.factor(state1,lookup.beadList(n)) 
-				* interactionPtr->V(lookup.beadSep(n));
-		}
-	}
-	return ( totVext + totVint );
-}
-
-/*************************************************************************//**
- *  Returns the total value of the potential energy, including both the
- *  external potential, and that due to interactions for all particles in
- *  a single time slice using a lookup table which only considers particles
- *  within a sphere of some cutoff radius.
-******************************************************************************/
-double Potential::Vnn(const int slice) {
-
-	Array <bool,1> doParticles(path.numBeadsAtSlice(slice));
-	doParticles = true;
-
-	double totVint = 0.0;
-	double totVext = 0.0;
-
-	iVec gIndex,nngIndex;			// The grid box of a particle
-	TinyVector<int,NDIM+1> nnIndex;	// The nearest neighbor boxes of a particle
-	TinyVector<int,NDIM+2> hI1,hI2;	// The hash indices
-
-	dVec pos;						// The position of a particle
-
-	beadLocator bead1; 		// Interacting beads
-	bead1[0] = slice;
-
-	for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(slice); bead1[1]++) {
-
-		doParticles(bead1[1]) = false;
-
-		/* Accumulate the external potential */
-		pos = path(bead1);
-		totVext += externalPtr->V(pos);
-
-		/* Get the interaction list */
-		lookup.updateInteractionList(path,bead1);
-
-		/* Get the state of bead 1 */
-		beadState state1 = path.worm.getState(bead1);
-
-		/* Sum the interaction potential over all NN beads */
-		for (int n = 0; n < lookup.numBeads; n++) {
-			bead2 = lookup.beadList(n);
-			if (doParticles(bead2[1])) {
-				sep = path.getSeparation(bead2,bead1);
-				totVint += path.worm.factor(state1,bead2) * interactionPtr->V(sep);
-			}
-		} // n
-
-	} // bead1
-
-	cout << totVext << " " << totVint << endl;
-	return ( totVext + totVint );
-}
-
-/**************************************************************************//**
- *  Return the gradient of the full potential squared for a single bead.  This
- *  includes both the external and interaction potentials.
-******************************************************************************/
-double Potential::gradVSquared(const beadLocator &bead1) {
-
-	double totF2 = 0.0;		// The total force squared
-
-	if (path.worm.beadOn(bead1)) {
-
-		/* All interacting beads are on the same slice. */
-		bead2[0] = bead3[0] = bead1[0];
-
-		/* The 'forces' and particle separation */
-		dVec Fext1,Fext2;
-		dVec Fint1,Fint2,Fint3;
-
-		int numParticles = path.numBeadsAtSlice(bead1[0]);
-	
-		/* Get the gradient squared part for the external potential*/
-		Fext1 = externalPtr->gradV(path(bead1));
-
-		/* We loop through all beads and compute the forces between beads
-		 * 1 and 2 */
-		Fint1 = 0.0;
-		for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
-
-			if (!all(bead1==bead2)) {
-
-				sep = path.getSeparation(bead2,bead1);
-				Fint2 = interactionPtr->gradV(sep);
-				Fint1 -= Fint2;
-				Fext2 = externalPtr->gradV(path(bead2));
-
-				/* There is a single term that depends on this additional interaction
-				 * between beads 2 and 3.  This is where all the time is taken */
-				Fint3 = 0.0;
-				for (bead3[1] = 0; bead3[1] < numParticles; bead3[1]++) {
-					if ( !all(bead3==bead2) && !all(bead3==bead1) ) {
-						sep = path.getSeparation(bead2,bead3);
-						Fint3 += interactionPtr->gradV(sep);
-					}
-				} // for bead3
-
-				totF2 += dot(Fint2,Fint2) + 2.0*dot(Fext2,Fint2) + 2.0*dot(Fint2,Fint3);
-
-			} //bead1 != bead2
-
-		} // for bead2
-
-		totF2 += dot(Fext1,Fext1) + 2.0 * dot(Fext1,Fint1) + dot(Fint1,Fint1);
-
-	} // bead1 On
-
-	return totF2;
-}
-
-/**************************************************************************//**
- *  Return the gradient of the full potential squared for all beads at a single
- *  time slice. 
- *
- *  This includes both the external and interaction potentials.
-******************************************************************************/
-double Potential::gradVSquared(const int slice) {
-
-	double totF2 = 0.0;
-
-	int numParticles = path.numBeadsAtSlice(slice);
-
-	/* The two interacting particles */
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
-
-	dVec F;					// The 'force'
-
-	/* We loop over the first bead */
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
-
-		F = 0.0;
-		/* Sum up potential for all other active beads in the system */
-		for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
-
-			/* Avoid self interactions */
-			if (!all(bead1==bead2)) {
-
-				/* The interaction component of the force */
-				F += interactionPtr->gradV(path.getSeparation(bead1,bead2));
-			} 
-
-		} // end bead2
-
-		/* Now add the external component */
-		F += externalPtr->gradV(path(bead1));
-
-		totF2 += dot(F,F);
-	} // end bead1
-
-	return totF2;
-}
-
-/**************************************************************************//**
- *  Return the gradient of the full potential squared for all beads at a single
- *  time slice restricted inside some cut-off radius.
- *
- *  This includes both the external and interaction potentials.
-******************************************************************************/
-double Potential::gradVSquared(const int slice, const double maxR) {
-
-	double totF2 = 0.0;
-
-	int numParticles = path.numBeadsAtSlice(slice);
-
-	/* The two interacting particles */
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
-	dVec r1;
-
-	dVec F;					// The 'force'
-
-	/* We loop over the first bead */
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
-
-		r1 = path(bead1);
-		if (r1[0]*r1[0] + r1[1]*r1[1] < maxR*maxR) {
-
-			F = 0.0;
-			/* Sum up potential for all other active beads in the system */
-			for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
-				/* Avoid self interactions */
-				if (!all(bead1==bead2)) {
-
-					/* The interaction component of the force */
-					F += interactionPtr->gradV(path.getSeparation(bead1,bead2));
-				} 
-			} // end bead2
-
-			/* Now add the external component */
-			F += externalPtr->gradV(path(bead1));
-
-			totF2 += dot(F,F);
-		} // maxR
-	} // end bead1
-
-	return totF2;
-}
-
-/**************************************************************************//**
- *  Return the gradient of the full potential squared for a single bead.  
- *
- *  This includes both the external and interaction potentials using the nearest
- *  neighbor lookup table.
-******************************************************************************/
-double Potential::gradVnnSquared(const beadLocator &bead1) {
-
-	/* This should always be called after Vnn, such that the lookup table 
-	 * interaction list has been updated!!! */
-
-	double totF2 = 0.0;		// The total force squared
-
-	if (path.worm.beadOn(bead1)) {
-
-		/* Get the state of bead 1 */
-		//beadState state1 = path.worm.getState(bead1);
-
-		/* The 'forces' and particle separation */
-		dVec Fext1,Fext2;
-		dVec Fint1,Fint2,Fint3;
-
-		/* Get the gradient squared part for the external potential*/
-		Fext1 = externalPtr->gradV(path(bead1));
-
-		/* We first loop over bead2's interacting with bead1 via the nn lookup table */
-		Fint1 = 0.0;
-		for (int n = 0; n < lookup.numBeads; n++) {
-			bead2 = lookup.beadList(n);
-
-			/* Eliminate self and null interactions */
-			if ( !all(bead1 == bead2) ) {
-
-                //double factor = path.worm.factor(state1,lookup.beadList(n))
-
-				/* Get the separation between beads 1 and 2 and compute the terms in the
-				 * gradient squared */
-				sep = lookup.beadSep(n); 
-				Fint2 = interactionPtr->gradV(sep);
-				Fint1 -= Fint2;
-				Fext2 = externalPtr->gradV(path(bead2));
-
-				/* We now loop over bead3, this is the time-intensive part of the calculation */
-				Fint3 = 0.0;
-				for (int m = 0; m < lookup.numBeads; m++) {
-					bead3 = lookup.beadList(m);
-
-					/* Eliminate self-interactions */
-					if ( !all(bead3==bead2) && !all(bead3==bead1) ) {
-						sep = path.getSeparation(bead2,bead3);
-						Fint3 += interactionPtr->gradV(sep);
-					}
-
-				} // end bead3
-
-				totF2 += dot(Fint2,Fint2) + 2.0*dot(Fext2,Fint2) + 2.0*dot(Fint2,Fint3);
-
-			} // bead2 != bead1
-
-		} // end bead2
-
-		totF2 += dot(Fext1,Fext1) + 2.0 * dot(Fext1,Fint1) + dot(Fint1,Fint1);
-
-	} // bead1 on
-
-	return totF2;
-}
-
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
 // TABULATED POTENTIAL CLASS -------------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -1491,4 +1010,130 @@ Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
     }
 
 	return initialPos;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// HARD SPHERE POTENTIAL CLASS -----------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+ *  Constructor.
+ *  @param a The radius of the hard sphere (also the scattering length)
+******************************************************************************/
+HardSpherePotential::HardSpherePotential(double _a) : 
+	PotentialBase(),
+    a(_a) {
+
+}
+
+/**************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+HardSpherePotential::~HardSpherePotential() {
+// empty deconstructor
+}
+
+/**************************************************************************//**
+ *  The effective potential.
+ *
+ *  Computes the non-local two-body effective pair potential.
+ *
+ *  Tested and working with Mathematica on 2013-06-12.
+ *
+ *  @param sep1 The first separation
+ *  @param sep2 The second separation
+ *  @param lambdaTau The product of \lambda = \hbar^2/2m and \tau
+ *  @return the two-body effective pair potential
+******************************************************************************/
+double HardSpherePotential::V(const dVec &sep1, const dVec &sep2, 
+        double lambdaTau) {
+
+    double r1 = sqrt(dot(sep1,sep1));
+    double r2 = sqrt(dot(sep2,sep2));
+
+    if (r1*r2 < EPS)
+        return log(BIG);
+
+    double cosTheta = dot(sep1,sep2)/(r1*r2);
+
+
+    double t1 = -(r1*r2 + a*a - a*(r1 + r2)) * (1.0 + cosTheta);
+    t1 /= (4.0*lambdaTau);
+
+    double t2 = (a*(r1+r2) - a*a)/(r1*r2);
+    double t3 = 1.0 - t2*exp(t1);
+
+    return -log(t3);
+}
+
+/**************************************************************************//**
+ *  The derivative of the effective potential with respect to lambda.
+ *
+ *  Computes the non-local two-body effective pair potential.
+ *
+ *  Tested and working with Mathematica on 2013-06-12.
+ *
+ *  @param sep1 the first separation
+ *  @param sep2 the second separation
+ *  @param lambda \lambda = \hbar^2/2m
+ *  @param tau the imaginary timestep tau
+ *  @return the derivative of the effective potential with respect to lambda
+******************************************************************************/
+double HardSpherePotential::dVdlambda(const dVec &sep1, const dVec &sep2, 
+        double lambda, double tau) {
+
+    double r1 = sqrt(dot(sep1,sep1));
+    double r2 = sqrt(dot(sep2,sep2));
+
+    if (r1*r2 < EPS)
+        return log(BIG);
+
+    double cosTheta = dot(sep1,sep2)/(r1*r2);
+
+    double t1 = -(r1*r2 + a*a - a*(r1 + r2)) * (1.0 + cosTheta);
+    t1 /= (4.0*lambda*tau);
+
+    double t2 = (a*(r1+r2) - a*a)/(r1*r2);
+    double t3 = 1.0 - t2*exp(t1);
+
+    double t4 = (1.0/t3)*(t2*exp(t1))*(t1/lambda);
+
+    return -t4;
+}
+
+/**************************************************************************//**
+ *  The derivative of the effective potential with respect to tau.
+ *
+ *  Computes the non-local two-body effective pair potential.
+ *
+ *  Tested and working with Mathematica on 2013-06-12.
+ *
+ *  @param sep1 the first separation
+ *  @param sep2 the second separation
+ *  @param lambda \lambda = \hbar^2/2m
+ *  @param tau the imaginary timestep tau
+ *  @return the derivative of the effective potential with respect to tau
+******************************************************************************/
+double HardSpherePotential::dVdtau(const dVec &sep1, const dVec &sep2, 
+        double lambda, double tau) {
+
+    double r1 = sqrt(dot(sep1,sep1));
+    double r2 = sqrt(dot(sep2,sep2));
+
+    if (r1*r2 < EPS)
+        return log(BIG);
+
+    double cosTheta = dot(sep1,sep2)/(r1*r2);
+
+    double t1 = -(r1*r2 + a*a - a*(r1 + r2)) * (1.0 + cosTheta);
+    t1 /= (4.0*lambda*tau);
+
+    double t2 = (a*(r1+r2) - a*a)/(r1*r2);
+    double t3 = 1.0 - t2*exp(t1);
+
+    double t4 = (1.0/t3)*(t2*exp(t1))*(t1/tau);
+
+    return -t4;
 }

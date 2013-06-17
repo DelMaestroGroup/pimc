@@ -211,22 +211,18 @@ EnergyEstimator::~EnergyEstimator() {
 void EnergyEstimator::accumulate() {
 
 	double totK = 0.0;
+	double totVop = 0.0;
 	double totV = 0.0;
-	double gV2 = 0.0;
 
 	int numParticles  = path.getTrueNumParticles();
 	int numTimeSlices = path.numTimeSlices;
 
 	/* The total tail correction */
 	double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
-		* actionPtr->potentialPtr->getTailV();
+		* actionPtr->interactionPtr->tailV;
 
 	/* The kinetic normalization factor */
 	double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * numTimeSlices);
-
-	/* The action correction normalization factor */
-	double normAct = 2.0 * constants()->lambda() * constants()->tau() * constants()->tau()
-		/ (1.0 * numTimeSlices);
 
 	/* The classical contribution to the kinetic energy per particle 
 	 * including the chemical potential */
@@ -252,23 +248,29 @@ void EnergyEstimator::accumulate() {
 	/* Now we compute the potential and kinetic energy.  We use an operator estimater
 	 * for V and the thermodynamic estimator for K */
 	int eo;
+    double t1 = 0.0;
+    double t2 = 0.0;
 	for (int slice = 0; slice < numTimeSlices; slice++) {
 		eo = (slice % 2);
-//		totV += (actionPtr->pFactor[eo]) * (actionPtr->potentialPtr->V(slice));
-		if (actionPtr->eFactor[eo] > EPS) 
-			gV2  += (actionPtr->eFactor[eo]) * (actionPtr->potentialPtr->gradVSquared(slice));
-		else if (eo==0)
-			totV  += actionPtr->potentialPtr->V(slice);
+        t1 += actionPtr->derivPotentialActionLambda(slice);
+        t2 += actionPtr->derivPotentialActionTau(slice);
+		if (eo==0) 
+            totVop  += actionPtr->potential(slice);
 	}
 
+    t1 *= constants()->lambda()/(constants()->tau()*numTimeSlices);
+    t2 /= 1.0*numTimeSlices;
+
 	/* Normalize the action correction and the total potential*/
-	gV2 *= normAct;
-	totV /= (0.5 * numTimeSlices);
+	totVop /= (0.5 * numTimeSlices);
 
 	/* Perform all the normalizations and compute the individual energy terms */
-	totK  += (classicalKinetic + gV2);
+	totK += (classicalKinetic + t1);
+    totV = t2 - t1 + tailV;
 
-	totV += tailV;
+	totVop += tailV;
+
+    //totV = totVop;
 
 	/* Now we accumulate the average total, kinetic and potential energy, 
 	 * as well as their values per particles. */
@@ -280,6 +282,7 @@ void EnergyEstimator::accumulate() {
 
 	estimator(4) += totK/(1.0*numParticles);
 	estimator(5) += totV/(1.0*numParticles);
+
 	estimator(6) += (totK + totV)/(1.0*numParticles);
 }
 
@@ -1403,6 +1406,8 @@ OneBodyDensityMatrixEstimator::~OneBodyDensityMatrixEstimator() {
  *  We overload the sample method for the one body density matrix as we
  *  only want to measure when the gap is not too large, otherwise we will be
  *  dominated by tiny close probabilities.
+ *
+ *  !!NB!! We only measure the OBDM when the tail is on an even time slice
 ******************************************************************************/
 void OneBodyDensityMatrixEstimator::sample() {
 	numSampled++;
@@ -1410,7 +1415,7 @@ void OneBodyDensityMatrixEstimator::sample() {
          ((numSampled % frequency) == 0) &&
          (path.worm.isConfigDiagonal == diagonal) &&
          (path.worm.gap > 0) && (path.worm.gap <= constants()->Mbar())  &&
-         (actionPtr->eFactor[(lpath.worm.tail[0] % 2)] < EPS) ) {
+         ( (lpath.worm.tail[0] % 2) == 0) ) {
 
 		/* If we are canonical, we want the closed configuration to be close
 		 * to our ideal one */
@@ -1669,8 +1674,8 @@ void PairCorrelationEstimator::accumulate() {
 	int numParticles = path.getTrueNumParticles();
 	double lnorm = 1.0*(numParticles-1)/(1.0*numParticles);
 	if (numParticles > 1) {
-		estimator += lnorm*(1.0*actionPtr->potentialPtr->sepHist / 
-			(1.0*sum(actionPtr->potentialPtr->sepHist)));
+		estimator += lnorm*(1.0*actionPtr->sepHist / 
+			(1.0*sum(actionPtr->sepHist)));
 	}
 	else
 		estimator += 1.0;
@@ -1811,17 +1816,12 @@ void CylinderEnergyEstimator::accumulate() {
 
 	double totK = 0.0;
 	double totV = 0.0;
-	double gV2 = 0.0;
 
 	int numParticles  = num1DParticles(path,maxR);
 	int numTimeSlices = path.numTimeSlices;
 
 	/* The kinetic normalization factor */
 	double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * numTimeSlices);
-
-	/* The action correction normalization factor */
-	double normAct = 2.0 * constants()->lambda() * constants()->tau() * constants()->tau()
-		/ (1.0 * numTimeSlices);
 
 	/* The classical contribution to the kinetic energy per particle 
 	 * including the chemical potential */
@@ -1849,20 +1849,23 @@ void CylinderEnergyEstimator::accumulate() {
 	/* Now we compute the potential and kinetic energy.  We use an operator estimater
 	 * for V and the thermodynamic estimator for K */
 	int eo;
+    double t1 = 0.0;
+    double t2 = 0.0;
 	for (int slice = 0; slice < numTimeSlices; slice++) {
 		eo = (slice % 2);
-		if (actionPtr->eFactor[eo] > EPS) 
-			gV2  += (actionPtr->eFactor[eo]) * (actionPtr->potentialPtr->gradVSquared(slice,maxR));
-		else if (eo==0)
-			totV  += actionPtr->potentialPtr->V(slice,maxR);
+        t1 += actionPtr->derivPotentialActionLambda(slice,maxR);
+        t2 += actionPtr->derivPotentialActionTau(slice,maxR);
+		if (eo==0)
+			totV  += actionPtr->potential(slice,maxR);
 	}
 
 	/* Normalize the action correction and the total potential*/
-	gV2 *= normAct;
+    t1 *= constants()->lambda()/(constants()->tau()*numTimeSlices);
+    t2 /= 1.0*numTimeSlices;
 	totV /= (0.5 * numTimeSlices);
 
 	/* Perform all the normalizations and compute the individual energy terms */
-	totK  += (classicalKinetic + gV2);
+	totK  += (classicalKinetic + t1);
 
 	/* Now we accumulate the average total, kinetic and potential energy, 
 	 * as well as their values per particles, provided we have at least one
@@ -2182,7 +2185,7 @@ void CylinderOneBodyDensityMatrixEstimator::sample() {
          ((numSampled % frequency) == 0) && 
          (path.worm.isConfigDiagonal == diagonal) &&
          (path.worm.gap > 0) && (path.worm.gap <= constants()->Mbar())  &&
-         (actionPtr->eFactor[(lpath.worm.tail[0] % 2)] < EPS) ) {
+         ( (lpath.worm.tail[0] % 2) == 0) ) {
 		
 		/* We only attempt the partial-close if both the head and tail
 		 * are within the include region. */
@@ -2387,9 +2390,9 @@ CylinderPairCorrelationEstimator::~CylinderPairCorrelationEstimator() {
 void CylinderPairCorrelationEstimator::accumulate() {
 	int N1D = num1DParticles(path,maxR);
     if (N1D > 1) {
-        double lnorm = 1.0*sum(actionPtr->potentialPtr->cylSepHist);
+        double lnorm = 1.0*sum(actionPtr->cylSepHist);
         lnorm /= 1.0*(N1D-1)/(1.0*N1D);
-        estimator += 1.0*actionPtr->potentialPtr->cylSepHist / (1.0*lnorm);
+        estimator += 1.0*actionPtr->cylSepHist / (1.0*lnorm);
     }
 }
 
@@ -2402,7 +2405,7 @@ void CylinderPairCorrelationEstimator::accumulate() {
 void CylinderPairCorrelationEstimator::sample() {
     numSampled++;
 
-    if (baseSample() && (sum(actionPtr->potentialPtr->cylSepHist) > 0)) {
+    if (baseSample() && (sum(actionPtr->cylSepHist) > 0)) {
         totNumAccumulated++;
         numAccumulated++;
         accumulate();
@@ -2487,13 +2490,13 @@ void CylinderRadialPotentialEstimator::accumulate() {
 				if (!include(r2,maxR)) {
 					sep = r2 - r1;
 					path.boxPtr->putInBC(sep);
-					totV += actionPtr->potentialPtr->interactionPtr->V(sep);
+					totV += actionPtr->interactionPtr->V(sep);
 				} // bead2 is outside maxR
 			} // bead2
 		} // slice
 
 		totV /= 1.0*path.numTimeSlices;
-		totV += actionPtr->potentialPtr->externalPtr->V(r1);
+		totV += actionPtr->externalPtr->V(r1);
 
 		estimator(n) += totV;
 	} // n
@@ -2535,7 +2538,7 @@ void CylinderRadialPotentialEstimator::accumulate1() {
 			/* If the first particle is in the central chain, looks for its
 			 * interacting partners */
 			if (found1) {
-				totV = actionPtr->potentialPtr->externalPtr->V(r1);
+				totV = actionPtr->externalPtr->V(r1);
 				numFound1 ++;
 
 				/* We don't have to worry about double counting here, as
@@ -2551,7 +2554,7 @@ void CylinderRadialPotentialEstimator::accumulate1() {
 					 * chain while bead2 is not */
 					if (!found2) {
 						sep = path.getSeparation(bead2,bead1);
-						totV += actionPtr->potentialPtr->interactionPtr->V(sep);
+						totV += actionPtr->interactionPtr->V(sep);
 					} // !found2
 				} // bead2
 				

@@ -45,6 +45,7 @@ Setup::Setup() :
 	interactionPotentialName.push_back("aziz");
 	interactionPotentialName.push_back("delta");
 	interactionPotentialName.push_back("lorentzian");
+	interactionPotentialName.push_back("hard_sphere");
 	interactionPotentialName.push_back("free");
 	
 	/* Create the interaction potential name string */
@@ -86,7 +87,9 @@ void Setup::getOptions(int argc, char *argv[])
 		("process,p", po::value<uint32>()->default_value(0), "process or cpu number")
 		("restart,R", po::value<uint32>()->default_value(0), 
 		 "restart running simulation with PIMCID")
-		("start_with_state,s", po::value<string>()->default_value(""), 
+        ("wall_clock,W", po::value<double>()->default_value(0),
+         "set wall clock limit in hours")
+		("start_with_state,s", po::value<string>()->default_value(""),
 		 "start simulation with a supplied state file.")
 		;
 
@@ -110,7 +113,9 @@ void Setup::getOptions(int argc, char *argv[])
 		 str(format("interaction potential type {%s}") % interactionNames).c_str())
 		("external_potential,X", po::value<string>()->default_value("free"),
 		 str(format("external potential type {%s}") % externalNames).c_str())
-		("delta_width,a", po::value<double>()->default_value(1.0E-3),
+		("scattering_length,a", po::value<double>()->default_value(1.0),
+		 "scattering length [angstroms]")
+		("delta_width", po::value<double>()->default_value(1.0E-3),
 		 "delta function potential width")
 		("delta_strength,c", po::value<double>()->default_value(10.0),
 		 "delta function potential integrated strength") 
@@ -122,6 +127,8 @@ void Setup::getOptions(int argc, char *argv[])
 
 	physicalOptions.add_options()
 		("canonical", "perform a canonical simulation")
+        ("window", po::value<int>()->default_value(-1),"set particle number window")
+        ("gaussian_ensemble_SD", po::value<double>()->default_value(-1.0),"set gaussian ensemble weight")
 		("mass,m", po::value<double>()->default_value(4.0030),"particle mass [amu]")
 		("density,n", po::value<double>(), str(format("initial density [angstroms^(-%d)]") % NDIM).c_str())
 		("number_particles,N", po::value<int>(), "number of particles")
@@ -147,7 +154,6 @@ void Setup::getOptions(int argc, char *argv[])
 
 	po::store(po::parse_command_line(argc, argv, cmdLineOptions), params);
 	po::notify(params);    
-
 }
 
 /**************************************************************************//**
@@ -287,6 +293,13 @@ bool Setup::parseOptions() {
 		return 1;
 	}
 
+	/* We can only use the hard sphere potential in a 3D system */
+	if ((params["interaction_potential"].as<string>().find("hard_sphere") != string::npos) && (NDIM != 3)) {
+		cerr << endl << "PIMC ERROR: Can only use hard sphere potentials for a 3D system!" << endl << endl;
+		cerr << "Action: change the potential or recompile with ndim=3." << endl;
+		return 1;
+	}
+
 	return false;
 }
 
@@ -364,7 +377,7 @@ bool Setup::worldlines() {
 		insertOption("number_time_slices",numTimeSlices);
 	}
 	else {
-		numTimeSlices = params["numTimeSlices"].as<int>();
+		numTimeSlices = params["number_time_slices"].as<int>();
 		if ((numTimeSlices % 2) != 0)
 			numTimeSlices--;
 		tau = 1.0/(params["temperature"].as<double>() * numTimeSlices);
@@ -425,9 +438,12 @@ void Setup::setConstants() {
 			params["number_time_slices"].as<int>(),
 			params["restart"].as<uint32>(),
 			params["process"].as<uint32>(),
+            params["wall_clock"].as<double>(),
 			params["number_eq_steps"].as<uint32>(),
 			params["interaction_potential"].as<string>(),
-			params["external_potential"].as<string>());
+			params["external_potential"].as<string>(),
+            params["window"].as<int>(),
+            params["gaussian_ensemble_SD"].as<double>() );
 
 	/* If we have specified the center of mass shift delta on the command line, we update
 	 * its value. */
@@ -469,7 +485,9 @@ PotentialBase * Setup::interactionPotential() {
 		interactionPotentialPtr = new FreePotential();
 	else if (constants()->intPotentialType() == "delta")
 		interactionPotentialPtr = new DeltaPotential(params["delta_width"].as<double>(),
-				params["delta_strength"].as<double>());
+                params["delta_strength"].as<double>());
+	else if (constants()->intPotentialType() == "hard_sphere")
+        interactionPotentialPtr = new HardSpherePotential(params["scattering_length"].as<double>());
 	else if (constants()->intPotentialType() == "lorentzian")
 		interactionPotentialPtr = new LorentzianPotential(params["delta_width"].as<double>(),
 				params["delta_strength"].as<double>());
@@ -504,8 +522,8 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
 	else if (constants()->extPotentialType() == "fixed_aziz") 
 		externalPotentialPtr = new FixedAzizPotential(boxPtr);
     else if (constants()->extPotentialType() == "gasp_prim")
-        externalPotentialPtr = new
-            Gasparini_1_Potential(params["barrier_width_z"].as<double>(),params["barrier_width_y"].as<double>(),boxPtr);
+        externalPotentialPtr = new Gasparini_1_Potential(params["barrier_width_z"].as<double>(),
+                params["barrier_width_y"].as<double>(),boxPtr);
 
 	return externalPotentialPtr;
 }

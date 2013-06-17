@@ -66,7 +66,7 @@
 #define NGRIDSEP 50     ///< Spatial separations to be used in each dimension of the particle position grid
 #define EPS 1.0E-7 		///< A small number
 #define BIG 1.0E30		///< A big number
-#define XXX	-999		///< Used to refer to a nonsense value
+#define XXX	-1		    ///< Used to refer to a nonsense beadIndex
 
 using namespace std;
 using namespace blitz;
@@ -112,46 +112,6 @@ inline Ttype& min(Ttype& x, Ttype& y) { return (x < y ? x : y); }
 /** Maximum of two inputs */
 template<typename Ttype>
 inline Ttype& max(Ttype& x, Ttype& y) { return (x > y ? x : y); } 
-
-/****************************************************************************/
-/* Binary Search Functions
- * These functions provide templated binary search functionality which
- * returns an iterator to the position in an array where we would insert
- * a provided value.
- */
-/*****************************************************************************/
-
-/** The distance between two iterators */
-//template<class Titer>
-//inline void distanceIter(Titer first, Titer last, unsigned int &n)
-//{ while (first != last) { ++first; ++n;} }
-//
-///** Advance an iterator n steps */
-//template<class Titer>
-//void advance( Titer &i, unsigned int n) { while (n--) ++i; }
-//
-///** Return an iterator which points to the position where we 
-// * would insert x into a sorted array */
-//template<class Titer, typename Ttype> 
-//Titer lowerBound(Titer first, Titer last, Ttype x) {
-//	unsigned int len = 0;
-//	unsigned int half;
-//	distanceIter(first, last, len);
-//	Titer middle;
-//	while (len > 0) {
-//		half = len >> 1;
-//		middle = first;
-//		advance(middle, half);
-//		if (*middle < x) {
-//			first = middle;
-//			++first;
-//			len = len - half - 1;
-//		}
-//		else
-//			len = half;
-//	}
-//	return first;
-//}
 
 #endif
 

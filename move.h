@@ -142,6 +142,7 @@ class CenterOfMassMove: public MoveBase {
 		~CenterOfMassMove();
 
 		bool attemptMove();
+		bool attemptMove1();
 
 	private:
 		beadLocator startBead,endBead;	// The start and end beads
@@ -217,7 +218,6 @@ class OpenMove: public MoveBase {
 		~OpenMove();
 
 		bool attemptMove();
-		bool attemptMoveFull();
 
 	private:
 		beadLocator headBead, tailBead;	// The temporary head and tail locatores
@@ -244,7 +244,6 @@ class CloseMove: public MoveBase {
 		~CloseMove();
 
 		bool attemptMove();
-		bool attemptMoveFull();
 
 	private:
 		beadLocator headBead,tailBead;	// The temporary head and tail slices
@@ -272,7 +271,6 @@ class InsertMove: public MoveBase {
 		~InsertMove();
 
 		bool attemptMove();
-		bool attemptMoveFull();
 
 	private:
 		beadLocator headBead,tailBead;	// The temporary head and tail beads
@@ -300,7 +298,6 @@ class RemoveMove: public MoveBase {
 
 		
 		bool attemptMove();
-		bool attemptMoveFull();
 
 	private:
 		int numLevels;					// The 2^numLevels = num slices moved
@@ -325,7 +322,6 @@ class AdvanceHeadMove: public MoveBase {
 		~AdvanceHeadMove();
 		
 		bool attemptMove();
-		bool attemptMoveFull();
 
 	private:
 		beadLocator headBead;			// The temporary new head
@@ -360,7 +356,6 @@ class AdvanceTailMove: public MoveBase {
 		~AdvanceTailMove();
 
 		bool attemptMove();
-		bool attemptMoveFull();
 
 	private:
 		beadLocator tailBead;			// The temporary new tail
@@ -388,7 +383,6 @@ class RecedeHeadMove: public MoveBase {
 		~RecedeHeadMove();
 		
 		bool attemptMove();
-		bool attemptMoveFull();
 
 	private:
 		beadLocator headBead;			// The proposed new head position
@@ -415,7 +409,6 @@ class RecedeTailMove: public MoveBase {
 		~RecedeTailMove();
 		
 		bool attemptMove();
-		bool attemptMoveFull();
 
 	private:
 		beadLocator tailBead;			// The proposed new head position

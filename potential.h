@@ -22,8 +22,9 @@ class Container;
 /** 
  * The base class from which all specific potentials are derived from.
  *
- * This class contains three  methods, one which returns the actual value of 
- * the potential one which returns the gradient of the potential and a final
+ * This class contains methods which return the actual value of 
+ * the potential, an effective potential related to the pair product
+ * approximation,  one which returns the gradient of the potential and a final
  * one which generates a sensible initial particle configuration.
  * We require knowledge of both the interaction as well as external potential
  * to run the simulation.
@@ -35,9 +36,18 @@ class PotentialBase {
 		virtual ~PotentialBase();
 	
 		/** The potential */
-		virtual double V(const dVec &) = 0;
+		virtual double V(const dVec &r) { return 0.0; }
+
+		/** The effective potential for the pair product approximation */
+		virtual double V(const dVec &sep1, const dVec &sep2, double lamtau) { return 0.0; }
+
 		/** The gradient of the potential*/
-		virtual dVec gradV(const dVec &) = 0;
+		virtual dVec gradV(const dVec &r) { return 0.0; }
+
+        /** The derivative of the effective potential with respect to lambda
+         *  and tau */
+        virtual double dVdlambda(const dVec &sep1, const dVec &sep2, double lambda, double tau) {return 0.0;}
+        virtual double dVdtau(const dVec &sep1, const dVec &sep2, double lambda, double tau) {return 0.0;}
 		
 		/** Default Initial configuration of particles*/
 		virtual Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
@@ -86,68 +96,6 @@ class TabulatedPotential {
 		virtual double valueV (const double) = 0;				
 		/** The functional value of dV/dr */
 		virtual double valuedVdr (const double) = 0;					
-};
-
-// ========================================================================  
-// Potential Class
-// ========================================================================  
-/**
- * Container class which contains the interaction and external potential.
- *
- * This class holds all the methods and data needed to compute the external
- * and interaction potential for a given bead both with and without a 
- * nearest neighbor lookup table.
- */
-class Potential {
-
-	public:
-		Potential (const Path &, LookupTable &, PotentialBase *, PotentialBase *);
-		~Potential();
-
-		/* The full potential for a single bead and all beads at a single
-		 * time slice. */
-		double V(const beadLocator&);	
-		double V(const int);
-		double V(const int, const double);
-
-		/* The full potential with the NN lookup table for a single bead and all
-		 * beads at a single time slice. */
-		double Vnn(const beadLocator&);
-		double Vnn(const int);
-
-		/* The gradient of the potential squared for a single bead and all beads
-		 * at a single time slice. */
-		double gradVSquared(const beadLocator&);	
-		double gradVSquared(const int);
-		double gradVSquared(const int, const double);
-
-		/* The gradient of the potential squared for a single bead using the 
-		 * nearest neighbor lookup table */
-		double gradVnnSquared(const beadLocator&);	
-
-		Array <int,1> sepHist;				///< A histogram of separations
-		Array <int,1> cylSepHist;			///< A histogram of separations for a cylinder
-
-		/* Update the separation histogram */
-		void updateSepHist(const dVec &);	
-
-		/** Get the tail correction factor */
-		double getTailV() { return interactionPtr->tailV; }
-
-		PotentialBase *interactionPtr;	///< The interaction potential
-		PotentialBase *externalPtr;		///< The external potential
-
-	protected:
-		friend class ActionBase;	    ///< ActionBase needs access to the LookupTable
-
-		const Path &path;				///< A constant path reference
-		LookupTable &lookup;			///< We need a non-constant reference for updates
-
-	private:
-		beadLocator bead2,bead3;		// Bead indexers used to calcaulte gradV^2
-		dVec sep;						// The spatial separation between beads.
-
-		double dSep;					// The discretization for the separation histogram
 };
 
 // ========================================================================  
@@ -568,6 +516,35 @@ class Gasparini_1_Potential : public PotentialBase {
         const double az;        //scales the length (z)
         const double ay;        //scales the width (y,x)
         const double V0;       //scales the potential step
+};
+
+// ========================================================================  
+// Hard Sphere Potential Class
+// ========================================================================  
+/** 
+ * Computes the effective potential from the exact two-body density matrix
+ * for hard spheres.  
+ *
+ * @see: S. Pilati, K. Sakkos, J. Boronat, J. Casulleras, and 
+ *       S. Giorgini, Phys Rev A 74, 043621 (2006).
+ */
+class HardSpherePotential : public PotentialBase  {
+	public:
+		HardSpherePotential (double);
+		~HardSpherePotential ();
+
+		/** The classical potential */
+		virtual double V(const dVec &r) { 
+            return ((sqrt(dot(r,r)) <= a) ? BIG : 0.0);
+        }
+
+		/** The effective potential */
+		double V(const dVec &, const dVec &, double);
+        double dVdlambda(const dVec &, const dVec &, double, double);
+        double dVdtau(const dVec &, const dVec &, double, double);
+
+	private:
+		double a;				// The strength of the delta function
 };
 
 // ========================================================================  

@@ -152,7 +152,7 @@ inline dVec Path::getSeparation(const beadLocator &bead1, const beadLocator &bea
 inline dVec Path::getVelocity (const beadLocator &beadIndex) const {
 	dVec vel;
 
-	if (all(beadIndex== XXX) || all(next(beadIndex)==XXX))
+	if (all(beadIndex==XXX) || all(next(beadIndex)==XXX))
 		return 0.0;
 
 	/* Calculate the 'velocity' and implement periodic boundary conditions */

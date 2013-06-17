@@ -255,9 +255,8 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
                     && (constants()->Delta() < 0.5*blitz::min(path.boxPtr->side)) 
                     && (constants()->Delta() > 0.01*blitz::min(path.boxPtr->side)) )  {
 
-                int numCoMAttempted = numCoM; //*path.getNumParticles();
                 numCoMAccepted = centerOfMass.getNumAccepted() - numCoMAccepted;
-                double CoMRatio = 1.0*numCoMAccepted / (1.0*numCoMAttempted);
+                double CoMRatio = 1.0*numCoMAccepted / (1.0*numCoM);
                 if (CoMRatio < 0.2)
                     constants()->shiftDelta(-0.6);
                 else if (CoMRatio < 0.3)

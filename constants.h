@@ -27,7 +27,7 @@ class ConstantParameters
 	public:
 		static ConstantParameters* getInstance();
 		void initConstants(bool,double,double,double,double,double,double,double,
-				int,int,int,uint32,uint32,uint32,string,string);
+				int,int,int,uint32,uint32,double,uint32,string,string,int,double);
 
 		/* All the get methods */
 		double T() const {return T_;}					///< Get temperature.
@@ -61,7 +61,13 @@ class ConstantParameters
         }
 
 		bool restart() const {return restart_;}			///< Get restart state
-		bool canonical() const { return canonical_;}	///< Get ensemble
+        bool wallClockOn() const {return wallClockOn_;}                     ///< Get wallclockOn
+        uint32 wallClock() const {return wallClock_;}                       ///< Get wallclock limit
+		bool canonical() const { return canonical_;}                        ///< Get ensemble
+        bool window() const { return window_;}                              ///< Get window on/off
+        int windowWidth() const { return windowWidth_;}                     ///< Get window 1/2 width
+        bool gaussianEnsemble() const { return gaussianEnsemble_;}          ///< Get enesemble weight on/off
+        double gaussianEnsembleSD() const { return gaussianEnsembleSD_;}    ///< Get enesemble weight standard dev.
 
 		int Mbar() {return Mbar_;}						///< Get Mbar
 		int b() {return b_;}							///< Get bisection level
@@ -116,8 +122,15 @@ class ConstantParameters
 		uint32 id_;				// The unique simulation ID
 		uint32 numEqSteps_;		// Number of equilibration steps
 
-		bool restart_;			// Are we restarting the simulation
-		bool canonical_;		// Are we in the canonical ensemble?
+		bool restart_;              // Are we restarting the simulation
+        uint32 wallClock_;          // The wall clock limit in seconds
+        bool wallClockOn_;          // Is the wall clock on?
+        bool canonical_;            // Are we in the canonical ensemble?
+        bool window_;               // Are we using a particle number window?
+        int windowWidth_;           // Half width of particle number window
+        bool gaussianEnsemble_;     // Are we using guassian ensemble weight?
+        double gaussianEnsembleSD_; // Standard deviation of ensemble weight
+
 
 		string intPotentialType_; // The type of interaction potential
 		string extPotentialType_; // The type of external potential

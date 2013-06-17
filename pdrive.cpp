@@ -26,6 +26,11 @@
  * @see boost::program_options -- http://www.boost.org/doc/libs/1_43_0/doc/html/program_options.html
  */
 int main (int argc, char *argv[]) {
+   
+    /* Get initial time */
+    time_t start_time = time(NULL);
+    time_t current_time; //current time
+    bool wallClockReached = false;
 
 	uint32 seed = 139853;	// The seed for the random number generator
 
@@ -92,13 +97,10 @@ int main (int argc, char *argv[]) {
 	/* Setup the path data variable */
 	Path path(boxPtr,lookup,constants()->numTimeSlices(),initialPos);
 
-	/* The potential object, which needs to know about both the external and 
-	 * interaction potential */
-	Potential potential(path,lookup,externalPotentialPtr,interactionPotentialPtr);
-
 	/* Setup the action */
-	GSFAction action(path,&potential);	
-	//ActionBase action(path,&potential);
+	GSFAction action(path,lookup,externalPotentialPtr,interactionPotentialPtr);	
+	//PrimitiveAction action(path,lookup,externalPotentialPtr,interactionPotentialPtr);	
+	//NonLocalAction action(path,lookup,externalPotentialPtr,interactionPotentialPtr,"Pair Product Approximation");	
 
 	/* Setup the pimc object */
 	PathIntegralMonteCarlo pimc(path,&action,random,setup.params["estimator_radius"].as<double>(),
@@ -137,9 +139,20 @@ int main (int argc, char *argv[]) {
 			path.outputConfig(outNum);
 			outNum++;
 		}
-
+        
+        /* Check if we've reached the wall clock limit*/
+        if(constants()->wallClockOn()){
+            current_time = time(NULL);
+            if ( uint32(current_time)  > (uint32(start_time) + constants()->wallClock()) ){
+                wallClockReached = true;
+                break;
+            }
+        }
 	} while (pimc.numStoredBins < setup.params["number_bins_stored"].as<int>());
-	cout << format("[PIMCID: %09d] - Measurement complete.") % constants()->id() << endl;
+    if (wallClockReached)
+        cout << format("[PIMCID: %09d] - Wall clock limit reached.") % constants()->id() << endl;
+    else
+        cout << format("[PIMCID: %09d] - Measurement complete.") % constants()->id() << endl;
 
 	/* Output Results */
 	pimc.finalOutput();

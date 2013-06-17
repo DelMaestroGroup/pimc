@@ -1,5 +1,5 @@
 /** 
- * @file constants.cpp
+ c @file constants.cpp
  * @author Adrian Del Maestro
  *
  * @brief ConstantParameters class implementation.
@@ -19,8 +19,9 @@
 ******************************************************************************/
 ConstantParameters::ConstantParameters() : T_(), mu_(), tau_(), lambda_(), m_(),
 	dBWavelength_(), rc_(), C0_(), C_(), V_(), L_(), Mbar_(), b_(), numTimeSlices_(), 
-	initialNumParticles_(), deltaNumParticles_(), id_(), restart_(), canonical_(), 
-	intPotentialType_(), extPotentialType_()
+    initialNumParticles_(), deltaNumParticles_(), id_(), restart_(),
+    wallClock_(),  canonical_(), window_(), intPotentialType_(),
+    extPotentialType_()
 { }
 
 /**************************************************************************//**
@@ -33,8 +34,9 @@ ConstantParameters::ConstantParameters() : T_(), mu_(), tau_(), lambda_(), m_(),
 ******************************************************************************/
 void ConstantParameters::initConstants(bool _canonical, double _T, double _mu, double _m,
 		double _rc, double _C0, double _V, double _L, int _initialNumParticles, 
-		int _Mbar, int _numTimeSlices, uint32 _id, uint32 _process,
-		uint32 _numEqSteps, string _intPotentialType, string _extPotentialType) {
+		int _Mbar, int _numTimeSlices, uint32 _id, uint32 _process, double _wallClock,
+		uint32 _numEqSteps, string _intPotentialType, string _extPotentialType,
+        int _window, double _gaussianEnsembleSD ) {
 
 	/* The simulation ID is the number of seconds since January 1 2009 */
 	if (_id == 0) {
@@ -46,9 +48,38 @@ void ConstantParameters::initConstants(bool _canonical, double _T, double _mu, d
 		id_ = _id;
 		restart_ = true;
 	}
+    
+    /* Set the wall clock state */
+    if (_wallClock < 0.0001){
+        wallClockOn_ = false;
+        wallClock_ = 0;
+    }else{
+        wallClockOn_ = true;
+        /* Set wallClock_ in seconds*/
+        wallClock_ = uint32( floor(_wallClock*3600) );
+    }
 
 	/* Are we working in the grand canonical ensemble? */
 	canonical_ = _canonical;
+    
+    /* Set the particle number window */
+    if ( _window < 0 ){
+        window_ = false;
+        windowWidth_ = 0;
+    }else{
+        window_ = true;
+        windowWidth_ = _window;
+    }
+    
+    /* Set the ensemble weight */
+    if ( _gaussianEnsembleSD < 0.0 ){
+        gaussianEnsemble_ = false;
+        gaussianEnsembleSD_ = 0.0;
+    }else{
+        gaussianEnsemble_ = true;
+        gaussianEnsembleSD_ = _gaussianEnsembleSD;
+    }
+
 
 	/* Assigned values */
 	b_             = int (ceil(log(1.0*_Mbar) / log(2.0)-EPS));
