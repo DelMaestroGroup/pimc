@@ -46,6 +46,7 @@ Setup::Setup() :
 	interactionPotentialName.push_back("delta");
 	interactionPotentialName.push_back("lorentzian");
 	interactionPotentialName.push_back("hard_sphere");
+	interactionPotentialName.push_back("hard_rod");
 	interactionPotentialName.push_back("free");
 	
 	/* Create the interaction potential name string */
@@ -300,6 +301,13 @@ bool Setup::parseOptions() {
 		return 1;
 	}
 
+	/* We can only use the hard rod potential in a 1D system */
+	if ((params["interaction_potential"].as<string>().find("hard_rod") != string::npos) && (NDIM != 1)) {
+		cerr << endl << "PIMC ERROR: Can only use hard rod potentials for a 1D system!" << endl << endl;
+		cerr << "Action: change the potential or recompile with ndim=1." << endl;
+		return 1;
+	}
+
 	return false;
 }
 
@@ -488,6 +496,8 @@ PotentialBase * Setup::interactionPotential() {
                 params["delta_strength"].as<double>());
 	else if (constants()->intPotentialType() == "hard_sphere")
         interactionPotentialPtr = new HardSpherePotential(params["scattering_length"].as<double>());
+	else if (constants()->intPotentialType() == "hard_rod")
+        interactionPotentialPtr = new HardRodPotential(params["scattering_length"].as<double>());
 	else if (constants()->intPotentialType() == "lorentzian")
 		interactionPotentialPtr = new LorentzianPotential(params["delta_width"].as<double>(),
 				params["delta_strength"].as<double>());

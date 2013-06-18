@@ -1137,3 +1137,114 @@ double HardSpherePotential::dVdtau(const dVec &sep1, const dVec &sep2,
 
     return -t4;
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// HARD ROD POTENTIAL CLASS --------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+ *  Constructor.
+ *  @param a The radius of the hard rod (also the scattering length)
+******************************************************************************/
+HardRodPotential::HardRodPotential(double _a) : 
+	PotentialBase(),
+    a(_a) {
+
+}
+
+/**************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+HardRodPotential::~HardRodPotential() {
+// empty deconstructor
+}
+
+/**************************************************************************//**
+ *  The effective potential.
+ *
+ *  Computes the non-local two-body effective pair potential.
+ *
+ *  Tested and working with Mathematica on 2013-06-17.
+ *
+ *  @param sep1 The first separation
+ *  @param sep2 The second separation
+ *  @param lambdaTau The product of \lambda = \hbar^2/2m and \tau
+ *  @return the two-body effective pair potential
+******************************************************************************/
+double HardRodPotential::V(const dVec &sep1, const dVec &sep2, 
+        double lambdaTau) {
+
+    double r1 = sqrt(dot(sep1,sep1));
+    double r2 = sqrt(dot(sep2,sep2));
+
+    if (r1*r2 < EPS)
+        return log(BIG);
+
+    double t1 = sep1[0]*sep2[0] - r1*r2;
+    t1 /= (4.0*lambdaTau);
+
+    double t2 = -(r1-a)*(r2-a)/(2.0*lambdaTau);
+    double t3 = -log(1.0 - exp(t2));
+
+    return 0.0*t1 + t3;
+}
+
+/**************************************************************************//**
+ *  The derivative of the effective potential with respect to lambda.
+ *
+ *  Computes the non-local two-body effective pair potential.
+ *
+ *  Tested and working with Mathematica on 2013-06-17.
+ *
+ *  @param sep1 the first separation
+ *  @param sep2 the second separation
+ *  @param lambda \lambda = \hbar^2/2m
+ *  @param tau the imaginary timestep tau
+ *  @return the derivative of the effective potential with respect to lambda
+******************************************************************************/
+double HardRodPotential::dVdlambda(const dVec &sep1, const dVec &sep2, 
+        double lambda, double tau) {
+
+    double r1 = sqrt(dot(sep1,sep1));
+    double r2 = sqrt(dot(sep2,sep2));
+
+    if (r1*r2 < EPS)
+        return log(BIG);
+
+    double t1 = r1*r2 - sep1[0]*sep2[0];
+    double t2 = (r1-a)*(r2-a);
+    double t3 = t2/(2.0*lambda*tau);
+
+    return ((0.0*t1 + 2.0*t2/(exp(t3)-1.0))/(4.0*lambda*lambda*tau));
+}
+
+/**************************************************************************//**
+ *  The derivative of the effective potential with respect to tau.
+ *
+ *  Computes the non-local two-body effective pair potential.
+ *
+ *  Tested and working with Mathematica on 2013-06-17.
+ *
+ *  @param sep1 the first separation
+ *  @param sep2 the second separation
+ *  @param lambda \lambda = \hbar^2/2m
+ *  @param tau the imaginary timestep tau
+ *  @return the derivative of the effective potential with respect to tau
+******************************************************************************/
+double HardRodPotential::dVdtau(const dVec &sep1, const dVec &sep2, 
+        double lambda, double tau) {
+
+    double r1 = sqrt(dot(sep1,sep1));
+    double r2 = sqrt(dot(sep2,sep2));
+
+    if (r1*r2 < EPS)
+        return log(BIG);
+
+    double t1 = r1*r2 - sep1[0]*sep2[0];
+    double t2 = (r1-a)*(r2-a);
+    double t3 = t2/(2.0*lambda*tau);
+
+    return ((0.0*t1 + 2.0*t2/(exp(t3)-1.0))/(4.0*lambda*tau*tau));
+}

@@ -523,7 +523,7 @@ class Gasparini_1_Potential : public PotentialBase {
 // ========================================================================  
 /** 
  * Computes the effective potential from the exact two-body density matrix
- * for hard spheres.  
+ * for hard spheres in 3D.  
  *
  * @see: S. Pilati, K. Sakkos, J. Boronat, J. Casulleras, and 
  *       S. Giorgini, Phys Rev A 74, 043621 (2006).
@@ -532,6 +532,33 @@ class HardSpherePotential : public PotentialBase  {
 	public:
 		HardSpherePotential (double);
 		~HardSpherePotential ();
+
+		/** The classical potential */
+		virtual double V(const dVec &r) { 
+            return ((sqrt(dot(r,r)) <= a) ? BIG : 0.0);
+        }
+
+		/** The effective potential */
+		double V(const dVec &, const dVec &, double);
+        double dVdlambda(const dVec &, const dVec &, double, double);
+        double dVdtau(const dVec &, const dVec &, double, double);
+
+	private:
+		double a;				// The strength of the delta function
+};
+
+// ========================================================================  
+// Hard Rod Potential Class
+// ========================================================================  
+/** 
+ * Computes the effective potential from the exact two-body density matrix
+ * for hard rods in 1D.  
+ *
+ */
+class HardRodPotential : public PotentialBase  {
+	public:
+		HardRodPotential (double);
+		~HardRodPotential ();
 
 		/** The classical potential */
 		virtual double V(const dVec &r) { 
