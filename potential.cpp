@@ -1179,16 +1179,11 @@ double HardRodPotential::V(const dVec &sep1, const dVec &sep2,
     double r1 = sqrt(dot(sep1,sep1));
     double r2 = sqrt(dot(sep2,sep2));
 
-    if (r1*r2 < EPS)
+    if ((r1*r2 < EPS) || (sep1[0]*sep2[0] < 0.0))
         return log(BIG);
 
-    double t1 = sep1[0]*sep2[0] - r1*r2;
-    t1 /= (4.0*lambdaTau);
-
-    double t2 = -(r1-a)*(r2-a)/(2.0*lambdaTau);
-    double t3 = -log(1.0 - exp(t2));
-
-    return 0.0*t1 + t3;
+    double t1 = -(r1-a)*(r2-a)/(2.0*lambdaTau);
+    return (-log(1.0 - exp(t1)));
 }
 
 /**************************************************************************//**
@@ -1213,11 +1208,10 @@ double HardRodPotential::dVdlambda(const dVec &sep1, const dVec &sep2,
     if (r1*r2 < EPS)
         return log(BIG);
 
-    double t1 = r1*r2 - sep1[0]*sep2[0];
-    double t2 = (r1-a)*(r2-a);
-    double t3 = t2/(2.0*lambda*tau);
+    double t1 = (r1-a)*(r2-a);
+    double t2 = t1/(2.0*lambda*tau);
 
-    return ((0.0*t1 + 2.0*t2/(exp(t3)-1.0))/(4.0*lambda*lambda*tau));
+    return ((0.5*t1/(exp(t2)-1.0))/(lambda*lambda*tau));
 }
 
 /**************************************************************************//**
@@ -1242,9 +1236,8 @@ double HardRodPotential::dVdtau(const dVec &sep1, const dVec &sep2,
     if (r1*r2 < EPS)
         return log(BIG);
 
-    double t1 = r1*r2 - sep1[0]*sep2[0];
-    double t2 = (r1-a)*(r2-a);
-    double t3 = t2/(2.0*lambda*tau);
+    double t1 = (r1-a)*(r2-a);
+    double t2 = t1/(2.0*lambda*tau);
 
-    return ((0.0*t1 + 2.0*t2/(exp(t3)-1.0))/(4.0*lambda*tau*tau));
+    return ((0.5*t1/(exp(t2)-1.0))/(lambda*tau*tau));
 }
