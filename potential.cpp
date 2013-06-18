@@ -1179,8 +1179,11 @@ double HardRodPotential::V(const dVec &sep1, const dVec &sep2,
     double r1 = sqrt(dot(sep1,sep1));
     double r2 = sqrt(dot(sep2,sep2));
 
-    if ((r1*r2 < EPS) || (sep1[0]*sep2[0] < 0.0))
+    if (r1*r2 < EPS)
         return log(BIG);
+
+    // if ((r1*r2 < EPS) || (sep1[0]*sep2[0] < 0.0))
+    //     return log(BIG);
 
     double t1 = -(r1-a)*(r2-a)/(2.0*lambdaTau);
     return (-log(1.0 - exp(t1)));
