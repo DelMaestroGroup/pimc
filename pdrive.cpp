@@ -98,9 +98,9 @@ int main (int argc, char *argv[]) {
 	Path path(boxPtr,lookup,constants()->numTimeSlices(),initialPos);
 
 	/* Setup the action */
-	//GSFAction action(path,lookup,externalPotentialPtr,interactionPotentialPtr);	
+	GSFAction action(path,lookup,externalPotentialPtr,interactionPotentialPtr);	
 	//PrimitiveAction action(path,lookup,externalPotentialPtr,interactionPotentialPtr);	
-	NonLocalAction action(path,lookup,externalPotentialPtr,interactionPotentialPtr,"Pair Product Approximation");	
+	//NonLocalAction action(path,lookup,externalPotentialPtr,interactionPotentialPtr,"Pair Product Approximation");	
 
 	/* Setup the pimc object */
 	PathIntegralMonteCarlo pimc(path,&action,random,setup.params["estimator_radius"].as<double>(),

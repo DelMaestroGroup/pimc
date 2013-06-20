@@ -252,8 +252,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
             /* We check how many CoM moves we have tried.  Every 200 moves, we see if we need
              * to adjust Delta, provided we are in the pre-equilibration diagonal state. */
             if ( (numCoM >= 200) 
-                    && (constants()->Delta() < 0.5*blitz::min(path.boxPtr->side)) 
-                    && (constants()->Delta() > 0.01*blitz::min(path.boxPtr->side)) )  {
+                    && (constants()->Delta() < 0.5*blitz::min(path.boxPtr->side)) ) {
 
                 numCoMAccepted = centerOfMass.getNumAccepted() - numCoMAccepted;
                 double CoMRatio = 1.0*numCoMAccepted / (1.0*numCoM);
