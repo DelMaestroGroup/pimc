@@ -2465,7 +2465,7 @@ bool SwapHeadMove::attemptMove() {
                     /* Compute the potential action for the updated path */
                     newAction = actionPtr->potentialAction(path.worm.special1,pivot);
 
-					if ( random.rand() < exp(-(newAction - oldAction))/PNorm ) {
+					if ( random.rand() < exp(-(newAction - oldAction))) {
 						keepMove();
                         checkMove(1,newAction-oldAction);
                     }
@@ -2704,7 +2704,7 @@ bool SwapTailMove::attemptMove() {
                     newAction = actionPtr->potentialAction(pivot,path.worm.special1);
 
                     /* Perform the Metropolis test */
-					if ( random.rand() < exp(-(newAction - oldAction))/PNorm ) {
+					if ( random.rand() < exp(-(newAction - oldAction))) {
 						keepMove();
                         checkMove(1,newAction-oldAction);
                     }

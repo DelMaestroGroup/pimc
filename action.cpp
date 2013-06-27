@@ -252,7 +252,7 @@ double ActionBase::potentialAction (const beadLocator &startBead,
 ******************************************************************************/
 LocalAction::LocalAction (const Path &_path, LookupTable &_lookup, 
 		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, string _name) :
-    ActionBase(_path,_lookup,_externalPtr,_interactionPtr,true,_name) 
+    ActionBase(_path,_lookup,_externalPtr,_interactionPtr,false,_name) 
 {
     /* By default, there is no even/odd difference and the correction
      * coming from gradients of the potential is zero */
