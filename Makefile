@@ -23,6 +23,9 @@ opts = basic
 preset   = none
 OVERRIDE = $(preset)
 
+# Get the svn version number into the executable
+SVNDEV := -D'SVN_VERSION="$(shell svnversion -n .)"'
+
 ####################################################################
 ####################################################################
 ##OS Variables
@@ -115,9 +118,9 @@ LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_sy
 else ifeq ($(OVERRIDE), westgrid)
 CXX = icpc
 LD = icpc
-OPTS = -axP -fast
-CODEDIR = $$HOME/local
-CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include $(DEBUG)
+OPTS = -O3 -ipo -axSSE4.1,axAVX  #-w -vec-report0 -opt-report0
+CODEDIR = $$HOME/loc
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include # $(DEBUG)
 LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_system -limf
 #Westgrid end######################################################
 endif# sharcnet, elseif westgrid
@@ -128,10 +131,10 @@ endif# sharcnet, elseif westgrid
 ##Linking and Compiling Variables
 RM     = /bin/rm -f
 PROG   = pimc.e
-SOURCE = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp cmc.cpp
+SOURCE = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp wavefunction.cpp cmc.cpp
 OBJS   = $(SOURCE:.cpp=.o)
 
-COMPILE_PCH  = $(CXX) $(CXXFLAGS) -pipe
+COMPILE_PCH  = $(CXX) $(CXXFLAGS) $(SVNDEV) -pipe
 COMPILE_WPCH = $(COMPILE_PCH) --include common.h
 LINK         = $(LD) $(OBJS) -pipe $(LDFLAGS)
 
@@ -170,13 +173,16 @@ estimator.o: estimator.cpp common.h.gch path.h action.h potential.h communicator
 potential.o: potential.cpp common.h.gch constants.h communicator.h path.h lookuptable.h
 	$(COMPILE_WPCH) -c potential.cpp
 
-action.o: action.cpp common.h.gch constants.h path.h potential.h lookuptable.h
-	$(COMPILE_WPCH) -c action.cpp
-
-pdrive.o: pdrive.cpp common.h.gch constants.h container.h path.h potential.h action.h pimc.h lookuptable.h communicator.h setup.h cmc.h worm.h
+pdrive.o: pdrive.cpp common.h.gch constants.h wavefunction.h container.h path.h potential.h action.h pimc.h lookuptable.h communicator.h setup.h cmc.h worm.h move.h
 	$(COMPILE_WPCH) -c pdrive.cpp
 
-setup.o: setup.cpp common.h.gch constants.h communicator.h container.h potential.h
+wavefunction.o: wavefunction.cpp common.h.gch path.h 
+	$(COMPILE_WPCH) -c wavefunction.cpp
+
+action.o: action.cpp common.h.gch constants.h path.h potential.h lookuptable.h wavefunction.h
+	$(COMPILE_WPCH) -c action.cpp
+
+setup.o: setup.cpp common.h.gch constants.h communicator.h container.h potential.h action.h move.h estimator.h
 	$(COMPILE_WPCH) -c setup.cpp
 
 move.o: move.cpp common.h.gch path.h action.h lookuptable.h communicator.h

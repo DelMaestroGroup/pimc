@@ -9,6 +9,7 @@
 #include "path.h"
 #include "action.h"
 #include "lookuptable.h"
+#include "move.h"
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -25,46 +26,12 @@
  *  from a user supplied state.
 ******************************************************************************/
 PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, const double maxR, const bool _startWithState) :
+		MTRand &_random, move_vector &_move, estimator_vector &_estimator, 
+        const bool _startWithState) :
 	random(_random),
 	path(_path),
-	centerOfMass(_path,_actionPtr,_random),
-	staging(_path,_actionPtr,_random),
-	bisection(_path,_actionPtr,_random),
-	open(_path,_actionPtr,_random),
-	close(_path,_actionPtr,_random),
-	insert(_path,_actionPtr,_random),
-	remove(_path,_actionPtr,_random),
-	advanceHead(_path,_actionPtr,_random),
-	recedeHead(_path,_actionPtr,_random),
-	advanceTail(_path,_actionPtr,_random),
-	recedeTail(_path,_actionPtr,_random),
-	swapHead(_path,_actionPtr,_random),
-	swapTail(_path,_actionPtr,_random),
-	diagonalFraction(_path),
-	energy(_path,_actionPtr),
-	numberParticles(_path),
-	particlePositions(_path,0),
-	planeParticlePositions(_path,0),
-	superfluidFraction(_path),
-	localSuperfluidDensity(_path,0),
-	planeWindingSuperfluidDensity(_path,0),
-	planeAreaSuperfluidDensity(_path,0),
-	radialWindingSuperfluidDensity(_path,0),
-	radialAreaSuperfluidDensity(_path,0),
-	permutationCycle(_path,0),
-	oneBodyDensityMatrix(_path,_actionPtr,_random),
-	pairCorrelation(_path,_actionPtr),
-	radialDensity(_path),
-	wormProperties(_path,0),
-	numberDistribution(_path),
-	cylEnergy(_path,_actionPtr,maxR),
-	cylNumberParticles(_path,maxR),
-	cylSuperFluidFraction(_path,maxR),
-	cylPairCorrelation(_path,_actionPtr,maxR),
-	cylOneBodyDensityMatrix(_path,_actionPtr,_random,maxR),
-	cylNumberDistribution(_path,maxR),
-	cylRadialPotential(_path,_actionPtr,_random,maxR)
+    move(_move.release()),
+    estimator(_estimator.release())
 {
 	/* Are we starting from a saved state? */
 	startWithState = _startWithState;
@@ -80,10 +47,12 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	numImagTimeSweeps = int(ceil((1.0*constants()->numTimeSlices()/(1.0*constants()->Mbar()))));
 
 	/* These counters are used in the equilibration process */
-	numConfig      = 0;
-	numDiagonal    = 0;
-	numCoM         = 0;
+	numConfig = 0;
+	numDiagonal = 0;
+	numCoMAttempted = 200;
 	numCoMAccepted = 0;
+	numDisplaceAttempted = 200;
+	numDisplaceAccepted = 0;
 
 	/* Have we saved a state? */
 	savedState  = constants()->restart();
@@ -91,86 +60,47 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	/* Intialize the config number to zero */
 	configNumber = 0;
 
-	/* Fill up the move array */
-	move.push_back(&open);
-	move.push_back(&insert);
-	move.push_back(&close);
-	move.push_back(&advanceHead);
-	move.push_back(&recedeHead);
-	move.push_back(&advanceTail);
-	move.push_back(&recedeTail);
-	move.push_back(&remove);
-	move.push_back(&swapHead);
-	move.push_back(&swapTail);
-	move.push_back(&staging);
-	move.push_back(&bisection);
-	move.push_back(&centerOfMass);
-
-	/* Determine the cumulative attempt move probabilities */ 
+	/* Determine the cumulative attempt move probabilities, and the indices of 
+     * various diagonal moves */ 
     double cumDiagProb = 0.0;
     double cumOffDiagProb = 0.0;
-	for (vector<MoveBase*>::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
-        if ( ((*movePtr)->operateOnConfig == DIAGONAL) || (*movePtr)->operateOnConfig == ANY) {
-            cumDiagProb += constants()->attemptProb((*movePtr)->name);
+	for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
+        if ( (movePtr->operateOnConfig == DIAGONAL) || movePtr->operateOnConfig == ANY ) {
+            cumDiagProb += constants()->attemptProb(movePtr->name);
             attemptDiagProb.push_back(cumDiagProb);
         }
         else 
             attemptDiagProb.push_back(cumDiagProb);
 
-        if ( ((*movePtr)->operateOnConfig == OFFDIAGONAL) || (*movePtr)->operateOnConfig == ANY) {
-            cumOffDiagProb += constants()->attemptProb((*movePtr)->name);
+        if ( (movePtr->operateOnConfig == OFFDIAGONAL) || movePtr->operateOnConfig == ANY) {
+            cumOffDiagProb += constants()->attemptProb(movePtr->name);
             attemptOffDiagProb.push_back(cumOffDiagProb);
         }
         else
             attemptOffDiagProb.push_back(cumOffDiagProb);
+
+        if (movePtr->name == "center of mass")
+            comIndex = std::distance(move.begin(), movePtr);
+        else if (movePtr->name == "bisection")
+            diagIndex = std::distance(move.begin(), movePtr);
+        else if (movePtr->name == "staging")
+            diagIndex = std::distance(move.begin(), movePtr);
+        else if (movePtr->name == "displace")
+            displaceIndex = std::distance(move.begin(), movePtr);
     }
 
-    /* Make sure the move cmulative probability arrays add up to 1 */
+    /* Make sure the move cumulative probability arrays add up to 1 */
     attemptDiagProb.back() = 1.0 + EPS;
     attemptOffDiagProb.back() = 1.0 + EPS;
-
-	/* Add all the estimators. The energy estimator has to be
-	 * the first one added. */
-	estimator.push_back(&energy);
-	estimator.push_back(&numberParticles);
-	estimator.push_back(&diagonalFraction);
-	estimator.push_back(&particlePositions);
-	estimator.push_back(&planeParticlePositions);
-	estimator.push_back(&superfluidFraction);
-	estimator.push_back(&localSuperfluidDensity);
-	estimator.push_back(&planeWindingSuperfluidDensity);
-	estimator.push_back(&planeAreaSuperfluidDensity);
-	estimator.push_back(&radialWindingSuperfluidDensity);
-	estimator.push_back(&radialAreaSuperfluidDensity);
-	estimator.push_back(&permutationCycle);
-	estimator.push_back(&pairCorrelation);
-	estimator.push_back(&numberDistribution);
-	estimator.push_back(&oneBodyDensityMatrix);
-	estimator.push_back(&wormProperties);
-
-	/* We only consider the radial density estimator for dimensions > 1 */
-	if (NDIM > 1) 
-		estimator.push_back(&radialDensity);
-
-	/* We only include the cylinder estimators if we have a tube */
-	if (constants()->extPotentialType().find("tube") != string::npos) {
-		estimator.push_back(&cylEnergy);
-		estimator.push_back(&cylSuperFluidFraction);
-		estimator.push_back(&cylNumberParticles);
-		estimator.push_back(&cylPairCorrelation);
-		estimator.push_back(&cylOneBodyDensityMatrix);
-		estimator.push_back(&cylNumberDistribution);
-		estimator.push_back(&cylRadialPotential);
-	}
 
 	/* If we are restarting, or loading a state from disk, do so now. */
 	if (startWithState || constants()->restart())
 		loadState();
 
     /* Setup all the estimators for measurement i/o */
-    for (vector<EstimatorBase*>::iterator estimatorPtr = estimator.begin();
+    for (estimator_vector::iterator estimatorPtr = estimator.begin();
             estimatorPtr != estimator.end(); ++estimatorPtr)
-        (*estimatorPtr)->prepare();
+        estimatorPtr->prepare();
 }
 
 /**************************************************************************//**
@@ -198,14 +128,14 @@ string PathIntegralMonteCarlo::update(const double x, const int sweep) {
             - attemptOffDiagProb.begin();
 
     /* Perform the move */
-    moveName = move.at(index)->name;
+    moveName = move.at(index).name;
 
     if (moveName == "center of mass"){
         if ( (numParticles > 0) && ((sweep % numParticles)== 0) )
-            success = move.at(index)->attemptMove();
+            success = move.at(index).attemptMove();
     }
     else
-        success = move.at(index)->attemptMove();
+        success = move.at(index).attemptMove();
 
 	return moveName;
 }
@@ -224,7 +154,6 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 
 	/* How far are we into the equilibration? */
 	double equilFrac = (1.0*iStep) / (1.0*constants()->numEqSteps());
-
     numParticles = path.getTrueNumParticles();
 
 	/* For the first 1/3 of equilibration steps, we only do diagonal moves */
@@ -232,47 +161,74 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 
         for (int n = 0; n < numParticles; n++) {
             
+            x = random.rand();
+            
             /* Here we do the diagonal pre-equilibration moves, and allow for 
              * optimization of simulation parameters */
-            if (random.rand() < constants()->attemptProb("center of mass")) {
-                centerOfMass.attemptMove();
-                numCoM += 1;
+            if (x < constants()->attemptProb("center of mass")) {
+
+                move.at(comIndex).attemptMove();
+
+                /* We check how many CoM moves we have tried.  Every 200 moves, we see if we need
+                 * to adjust comDelta, provided we are in the pre-equilibration diagonal state. */
+                if ( (move.at(comIndex).getNumAttempted() > 0) 
+                        && (move.at(comIndex).getNumAttempted() % numCoMAttempted == 0) 
+                        && (constants()->comDelta() < 0.5*blitz::min(path.boxPtr->side)) ) {
+
+                    numCoMAccepted  = move.at(comIndex).getNumAccepted() - numCoMAccepted;
+                    double CoMRatio = 1.0*numCoMAccepted / numCoMAttempted;
+                    if (CoMRatio < 0.2)
+                        constants()->shiftCoMDelta(-0.6);
+                    else if (CoMRatio < 0.3)
+                        constants()->shiftCoMDelta(-0.4);
+                    else if (CoMRatio < 0.4)
+                        constants()->shiftCoMDelta(-0.2);
+                    else if (CoMRatio > 0.6)
+                        constants()->shiftCoMDelta(0.2);
+                    else if (CoMRatio > 0.7)
+                        constants()->shiftCoMDelta(0.4);
+                    else if (CoMRatio > 0.8)
+                        constants()->shiftCoMDelta(0.6);
+
+                    /* Reset the counters */
+                    numCoMAccepted = move.at(comIndex).getNumAccepted();
+                } // CoM Delta Shift
+
             } // Center of mass move
+            /* Now try a displace move */
+            else if (x < constants()->attemptProb("center of mass") + constants()->attemptProb("displace")) {
+                move.at(displaceIndex).attemptMove();
+
+                /* We check how many displacde moves we have tried.  Every numDisplaceAttempted moves, we see if we need
+                 * to adjust delta, provided we are in the pre-equilibration diagonal state. */
+                if ( (move.at(displaceIndex).getNumAttempted() > 0) 
+                        && (move.at(displaceIndex).getNumAttempted() % numDisplaceAttempted == 0) ) {
+
+                    numDisplaceAccepted = move.at(displaceIndex).getNumAccepted() - numDisplaceAccepted;
+                    double displaceRatio = 1.0*numDisplaceAccepted / numDisplaceAttempted;
+                    if (displaceRatio < 0.2)
+                        constants()->shiftDisplaceDelta(-0.6);
+                    else if (displaceRatio < 0.3)
+                        constants()->shiftDisplaceDelta(-0.4);
+                    else if (displaceRatio < 0.4)
+                        constants()->shiftDisplaceDelta(-0.2);
+                    else if (displaceRatio > 0.6)
+                        constants()->shiftDisplaceDelta(0.2);
+                    else if (displaceRatio > 0.7)
+                        constants()->shiftDisplaceDelta(0.4);
+                    else if (displaceRatio > 0.8)
+                        constants()->shiftDisplaceDelta(0.6);
+
+                    //cout << "delta: " << constants()->delta() << " " << displaceRatio << endl;
+                    /* Reset the counters */
+                    numDisplaceAccepted = move.at(displaceIndex).getNumAccepted();
+                }
+            } // displace move
             else {
                 /* Attemp a diagonal path update*/
-                for (int sweep = 0; sweep < numImagTimeSweeps; sweep++)  {
-
-                    if (constants()->attemptProb("bisection") > 0.0)
-                        bisection.attemptMove();
-                    else
-                        staging.attemptMove();
-                }
+                for (int sweep = 0; sweep < numImagTimeSweeps; sweep++)
+                    move.at(diagIndex).attemptMove();
             } 
-
-            /* We check how many CoM moves we have tried.  Every 200 moves, we see if we need
-             * to adjust Delta, provided we are in the pre-equilibration diagonal state. */
-            if ( (numCoM >= 200) 
-                    && (constants()->Delta() < 0.5*blitz::min(path.boxPtr->side)) ) {
-
-                numCoMAccepted = centerOfMass.getNumAccepted() - numCoMAccepted;
-                double CoMRatio = 1.0*numCoMAccepted / (1.0*numCoM);
-                if (CoMRatio < 0.2)
-                    constants()->shiftDelta(-0.6);
-                else if (CoMRatio < 0.3)
-                    constants()->shiftDelta(-0.4);
-                else if (CoMRatio < 0.4)
-                    constants()->shiftDelta(-0.2);
-                else if (CoMRatio > 0.6)
-                    constants()->shiftDelta(0.2);
-                else if (CoMRatio > 0.7)
-                    constants()->shiftDelta(0.4);
-                else if (CoMRatio > 0.8)
-                    constants()->shiftDelta(0.6);
-
-                /* Reset the accepted counter */
-                numCoMAccepted = centerOfMass.getNumAccepted();
-                numCoM = 0;
-            } // CoM Delta Shift
 
         } // numParticles
 
@@ -353,91 +309,6 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
 }
 
 /**************************************************************************//**
- *  Equilibration.
- * 
- *  The equilibration method, where we perform fully diagonal moves 1/3 of the
- *  time, finding an optimal, COM step, then for another 1/3 we perform 
- *  all moves adjusting C0 to yield a diagonal fraction near 0.75 and and for 
- *  the final 1/3 we just equilibrate.
-******************************************************************************/
-void PathIntegralMonteCarlo::equilStepOffDiagonal(const uint32 iStep, const bool relaxC0) {
-
-	double x;
-
-	/* How far are we into the equilibration? */
-	double equilFrac = (1.0*iStep) / (1.0*constants()->numEqSteps());
-
-    /* Increment the number of steps */
-    numSteps++;
-    
-    /* How many updates should we perform? */
-    numUpdates = int(ceil(path.worm.getNumBeadsOn()/(1.0*constants()->Mbar())));
-    numParticles = path.getTrueNumParticles();
-
-    for (int n = 0; n < numUpdates; n++) {
-		
-        /* Generate random number and run through all moves */
-        x = random.rand();
-        update(x,n);
-
-        /* We accumulate the number of diagonal configurations */
-        numConfig++;
-        if (path.worm.isConfigDiagonal) 
-            ++numDiagonal;
-
-        /* Every 200 steps, we check the diagonal fraction and update the
-         * worm constant for the first 1/3 of equilibration */
-        if ( (relaxC0) && (numSteps > 200) && (equilFrac < 1.0/3.0) ) {
-
-            double diagFrac = 1.0*numDiagonal / (1.0*numConfig);
-
-            cout << format("%4.2f\t%8.5f\t") % diagFrac % constants()->C0();
-
-            /* Adjust the worm constant to ensure that the diagonal fraction
-             * is between 0.75 and 0.85, but don't let it get too small or too large*/
-            if (constants()->C0() > 1.0E-5) {
-                if (diagFrac < 0.2)
-                    constants()->shiftC0(-0.5);
-                else if (diagFrac >= 0.2 && diagFrac < 0.3)
-                    constants()->shiftC0(-0.4);
-                else if (diagFrac >= 0.3 && diagFrac < 0.4)
-                    constants()->shiftC0(-0.3);
-                else if (diagFrac >= 0.4 && diagFrac < 0.5)
-                    constants()->shiftC0(-0.2);
-                else if (diagFrac >= 0.5 && diagFrac < 0.6)
-                    constants()->shiftC0(-0.1);
-                else if (diagFrac >= 0.6 && diagFrac < 0.75)
-                    constants()->shiftC0(-0.05);
-            }
-
-            if (constants()->C0() < 1.0E4) {
-                if (diagFrac <= 0.9 && diagFrac > 0.85)
-                    constants()->shiftC0(0.05);
-                else if (diagFrac <= 0.95 && diagFrac > 0.9)
-                    constants()->shiftC0(0.1);
-                else if (diagFrac > 0.95)
-                    constants()->shiftC0(0.2);
-            }
-
-            cout << format("%8.5f\t%5d\t%8.6f\n") % constants()->C0() 
-                % path.getTrueNumParticles() 
-                % (1.0*path.getTrueNumParticles()/path.boxPtr->volume);
-
-            /* Reset the counters */
-            numDiagonal = 0;
-            numConfig = 0;
-            numSteps = 0;
-
-        } // relaxC0
-
-    } // sweeps loop	
-
-    /* Save a state to disk every 200 equilibrium steps */
-    if ((iStep > 0) && (iStep % 200) == 0)
-        saveState();
-}
-
-/**************************************************************************//**
  *  PIMC step.
  * 
  *  This method performs the metropolis sampling, which is actually a 
@@ -466,17 +337,17 @@ void PathIntegralMonteCarlo::step() {
 	} // n
 
 	/* Perform all measurements */
-	for (vector<EstimatorBase*>::iterator estimatorPtr = estimator.begin();
+	for (estimator_vector::iterator estimatorPtr = estimator.begin();
 			estimatorPtr != estimator.end(); ++estimatorPtr)
-		(*estimatorPtr)->sample();
+		estimatorPtr->sample();
 
 	/* Every binSize measurements, we output averages to disk and record the 
 	 * state of the simulation on disk.  */
-	if (estimator.front()->getNumAccumulated() >= binSize) {
-		for (vector<EstimatorBase*>::iterator estimatorPtr = estimator.begin();
-				estimatorPtr != estimator.end(); ++estimatorPtr) {
-			if ((*estimatorPtr)->getNumAccumulated() >= binSize)
-				(*estimatorPtr)->output();
+	if (estimator.front().getNumAccumulated() >= binSize) {
+        for (estimator_vector::iterator estimatorPtr = estimator.begin();
+                estimatorPtr != estimator.end(); ++estimatorPtr) {
+			if (estimatorPtr->getNumAccumulated() >= binSize)
+				estimatorPtr->output();
 		}
 		saveState();
 		++numStoredBins;
@@ -498,27 +369,25 @@ void PathIntegralMonteCarlo::finalOutput() {
 	communicate()->file("log")->stream() << "---------- Begin Acceptance Data ---------------" << endl;
 	communicate()->file("log")->stream() << endl;
 	communicate()->file("log")->stream() << format("%-29s\t:\t%7.5f\n") % "Total Rate" 
-		% move.front()->getTotAcceptanceRatio();
+		% move.front().getTotAcceptanceRatio();
 	communicate()->file("log")->stream() << endl;
 
 	/* Ouptut all the move acceptance information to disk */
 	string moveName;
-	for (vector<MoveBase*>::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
-		moveName = (*movePtr)->name;
+	for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
+		moveName = movePtr->name;
 
 		/* We only output levels for those moves which have a variable size */
-		if ( (moveName != staging.name) && (moveName != centerOfMass.name)
-                && (moveName != bisection.name) && (moveName != swapHead.name) 
-                && (moveName != swapTail.name) ) {
+        if (movePtr->variableLength) {
 			for (int n = 0; n <= constants()->b(); n++) {
 				communicate()->file("log")->stream() << format("%-12s Level %-10d\t:\t%7.5f\t(%d/%d)\n") 
-					% moveName % n % (*movePtr)->getAcceptanceRatioLevel(n) 
-					% (*movePtr)->numAcceptedLevel(n) % (*movePtr)->numAttemptedLevel(n);
+					% moveName % n % movePtr->getAcceptanceRatioLevel(n) 
+					% movePtr->numAcceptedLevel(n) % movePtr->numAttemptedLevel(n);
 			}
 		}
 		communicate()->file("log")->stream() << format("%-29s\t:\t%7.5f\t(%d/%d)\n") % moveName
-			% (*movePtr)->getAcceptanceRatio() % (*movePtr)->numAccepted
-			% (*movePtr)->numAttempted;
+			% movePtr->getAcceptanceRatio() % movePtr->numAccepted
+			% movePtr->numAttempted;
 		communicate()->file("log")->stream() << endl;
 	}
 	communicate()->file("log")->stream() << "---------- End Acceptance Data -----------------" << endl;
@@ -529,15 +398,14 @@ void PathIntegralMonteCarlo::finalOutput() {
 	/* Output the estimator statistics to the log file */
 	communicate()->file("log")->stream() << "---------- Begin Estimator Data ----------------" << endl;
 	communicate()->file("log")->stream() << endl;
-	for (vector <EstimatorBase*>::iterator estimatorPtr = estimator.begin();
+	for (estimator_vector::iterator estimatorPtr = estimator.begin();
 			estimatorPtr != estimator.end(); ++estimatorPtr) {
-		communicate()->file("log")->stream() << format("%-29s\t:\t%16d\t%16d\n") % (*estimatorPtr)->getName()
-			% (*estimatorPtr)->getNumSampled() % (*estimatorPtr)->getTotNumAccumulated();
+		communicate()->file("log")->stream() << format("%-29s\t:\t%16d\t%16d\n") % estimatorPtr->getName()
+			% estimatorPtr->getNumSampled() % estimatorPtr->getTotNumAccumulated();
 
 	}
 	communicate()->file("log")->stream() << endl;
 	communicate()->file("log")->stream() << "---------- End Estimator Data ------------------" << endl;
-
 }
 
 /**************************************************************************//**
@@ -556,21 +424,21 @@ void PathIntegralMonteCarlo::saveState() {
 
 	/* Now write the total acceptance information for all moves */
 	communicate()->file("state")->stream() << format("%16d\t%16d\n") 
-		% move.front()->totAccepted % move.front()->totAttempted;
+		% move.front().totAccepted % move.front().totAttempted;
 
 	/* Now record the individual move acceptance information,
 	 * first for the diagonal, then off-diagonal*/
-	for (vector<MoveBase*>::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
+	for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
 		communicate()->file("state")->stream() << format("%16d\t%16d\n") 
-			% (*movePtr)->numAccepted % (*movePtr)->numAttempted;
+			% movePtr->numAccepted % movePtr->numAttempted;
 	}
 
 	/* Output the estimator sampling information */
-	for (vector <EstimatorBase*>::iterator estimatorPtr = estimator.begin();
+	for (estimator_vector::iterator estimatorPtr = estimator.begin();
 			estimatorPtr != estimator.end(); ++estimatorPtr) {
 		communicate()->file("state")->stream() << format("%16d\t%16d\n") 
-			% (*estimatorPtr)->getTotNumAccumulated() 
-			% (*estimatorPtr)->getNumSampled();
+			% estimatorPtr->getTotNumAccumulated() 
+			% estimatorPtr->getNumSampled();
 	}
 
 	/* Now we output the actual path and worldline data */
@@ -694,17 +562,17 @@ void PathIntegralMonteCarlo::loadState() {
     string tempString;
 
 	/* Reset the total acceptance information */
-	move.front()->resetTotAccept();
+	move.front().resetTotAccept();
 
 	/* Reset all the individual move acceptance information */
-	for (vector<MoveBase*>::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
-		(*movePtr)->resetAccept();
+	for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
+		movePtr->resetAccept();
 	}
 
 	/* Reset estimator sampling information */
-	for (vector<EstimatorBase*>::iterator estimatorPtr = estimator.begin();
+	for (estimator_vector::iterator estimatorPtr = estimator.begin();
 			estimatorPtr != estimator.end(); ++estimatorPtr) {
-		(*estimatorPtr)->restart(0,0);
+		estimatorPtr->restart(0,0);
 	}
 
 	/* We first read the former total number of world lines */

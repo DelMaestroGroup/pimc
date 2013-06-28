@@ -26,7 +26,7 @@
  * @param initialPos The initial configuration of particles
 ******************************************************************************/
 Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices, 
-		const Array<dVec,1> &initialPos) : 
+		const Array<dVec,1> &initialPos,int numberBroken) :
 	numTimeSlices(_numTimeSlices),
 	boxPtr(_boxPtr), 
 	worm(initialPos.size()),
@@ -56,10 +56,23 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
 	nextLink[0] = i1+1;
 	nextLink[1] = i2;
 	
-	/* Here we implement the initial periodic boundary conditions in 
-	 * imaginary time */
-	prevLink(0,Range::all())[0] = numTimeSlices-1;
-	nextLink(numTimeSlices-1,Range::all())[0] = 0;
+    if (constants()->pigs()) {
+	/* Here we implement the fixed boundary conditions in imaginary time. */
+        prevLink(0,Range::all()) = XXX;
+        nextLink(numTimeSlices-1,Range::all()) = XXX;
+
+        /* Here we break worldlines at the center of the path if requested*/
+        breakSlice = (numTimeSlices-1)/2-1;
+        for (int n=0; n<numberBroken; n++){
+            nextLink(breakSlice,n) = XXX;
+            prevLink(breakSlice+1,n) = XXX;
+        }
+    }
+    else {
+        /* Here we implement periodic boundary conditions in imaginary time */
+        prevLink(0,Range::all())[0] = numTimeSlices-1;
+        nextLink(numTimeSlices-1,Range::all())[0] = 0;
+    }
 
 	/* Initialize the number of active beads at each slice */
 	numBeadsAtSlice.resize(numTimeSlices);

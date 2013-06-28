@@ -24,9 +24,10 @@ uint32 MoveBase::totAccepted = 0;
  *  Constructor.
 ******************************************************************************/
 MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random, 
-        string _name, ensemble _operateOnConfig) :
+        string _name, ensemble _operateOnConfig, bool _varLength) :
     name(_name),
     operateOnConfig(_operateOnConfig),
+    variableLength(_varLength),
 	path(_path), 
 	actionPtr(_actionPtr), 
 	random(_random) {
@@ -252,6 +253,128 @@ dVec MoveBase::newBisectionPosition(const beadLocator &beadIndex,
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
+// DISPLACE MOVE CLASS -------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ * Constructor
+ *
+ * A constructor which sets up the path data and random members.
+******************************************************************************/
+DisplaceMove::DisplaceMove (Path &_path, ActionBase *_actionPtr, 
+		MTRand &_random, string _name,  ensemble _operateOnConfig) :
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+
+	/* Initialize private data to zera */
+	numAccepted = numAttempted = numToMove = 0;
+
+	/* For a simple displacement move, we will only move one particle
+	 * at a time, and thus only need to store one original position at
+	 * a time. */
+	originalPos.resize(1);
+}
+
+DisplaceMove::~DisplaceMove() {
+}
+
+
+/*************************************************************************//**
+ * Perform a single slice update on the head or tail.
+******************************************************************************/
+bool DisplaceMove::attemptMove() {
+
+	success = false;
+    
+	/* Randomly select the bead to be moved, either the head or tail */
+    if (random.rand() < 0.5) {
+        beadIndex[0] = 0;
+    }
+    else {
+        beadIndex[0] = constants()->numTimeSlices()-1;
+    }
+
+    /* We now select the worldline that will be updated */
+    beadIndex[1] = random.randInt(path.numBeadsAtSlice(beadIndex[0])-1);
+
+    /* !!NB!! Ask Chris about this, it seems like the boundaries will never be
+     * moved */
+    
+    /* If path is broken, select which end to move */
+    if ( (path.breakSlice > 0) && (random.rand() < 0.5) ){
+        /* Check if worldline is broken */
+        beadLocator brokenBead = beadIndex;
+        if ( beadIndex[0] == 0){
+            while( !all(path.next(brokenBead)==XXX) ){
+                brokenBead = path.next(brokenBead);
+                if ( brokenBead[0] == path.breakSlice ){
+                    if ( all(path.next(brokenBead)==XXX ) )
+                        beadIndex = brokenBead;
+                }
+            }
+        }else{
+            while( !all(path.prev(brokenBead)==XXX) ){
+                brokenBead = path.prev(brokenBead);
+                if ( brokenBead[0] == path.breakSlice+1 ){
+                    if ( all(path.prev(brokenBead)==XXX ) )
+                        beadIndex = brokenBead;
+                }
+            }
+        }
+    }
+
+	/* Make sure the bead is turned on, otherwise skip the move */
+	if (path.worm.beadOn(beadIndex)) {
+
+        /* Increment the number of displacement moves and the total number
+         * of moves */
+        numAttempted++;
+        totAttempted++;
+
+        checkMove(0,0);
+
+		/* Compute the total action, a single bead is involved in two 
+		 * pieces of the kinetic action */
+        oldAction = actionPtr->kineticAction(beadIndex) +
+            actionPtr->potentialAction(beadIndex);
+
+		/* Save the old position of the particle */
+		originalPos(0) = path(beadIndex);
+
+		/* Generate a new random position for our particle  */
+		path.updateBead(beadIndex,path.boxPtr->randUpdate(random,originalPos(0)));
+
+		/* Compute the new part of the potential action */
+        newAction = actionPtr->kineticAction(beadIndex) +
+            actionPtr->potentialAction(beadIndex);
+
+        /* The metropolis acceptance step */
+        if (random.rand() < exp(-(newAction - oldAction))) {
+			keepMove();
+            checkMove(1,newAction-oldAction);
+        }
+		else {
+			undoMove();
+            checkMove(2,0);
+        }
+
+	} // if beadOn
+	else
+		success = false;
+
+	return success;
+}
+
+/*************************************************************************//**
+ * Undo the single slice move by returning the bead to its original position
+******************************************************************************/
+void DisplaceMove::undoMove() {
+    path.updateBead(beadIndex,originalPos(0));
+	success = false;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // CENTEROFMASS MOVE CLASS ---------------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -260,7 +383,7 @@ dVec MoveBase::newBisectionPosition(const beadLocator &beadIndex,
  *  Constructor.
 ******************************************************************************/
 CenterOfMassMove::CenterOfMassMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name,  ensemble _operateOnConfig) :
+		MTRand &_random, string _name, ensemble _operateOnConfig) :
     MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
 
 	/* Initialize private data to zera */
@@ -292,38 +415,48 @@ bool CenterOfMassMove::attemptMove() {
 	if (path.numBeadsAtSlice(0) == 0)
 		return false;
 
-	/* The initial bead to be moved */
-	startBead = 0,random.randInt(path.numBeadsAtSlice(0)-1);
-
 	checkMove(0,0.0);
+
+	/* The initial bead */
+    beadLocator firstBead;
+	firstBead = 0,random.randInt(path.numBeadsAtSlice(0)-1);
+
+    /* Now we traverse the path backwards, until we find 1 of two
+     * possibilities, either we reach a null bead, or we wrap around */
+    startBead = firstBead;
+    if (!all(path.prev(startBead)==XXX)) {
+        do {
+            startBead = path.prev(startBead);
+        } while (!all(path.prev(startBead)==firstBead) && !all(path.prev(startBead)==XXX));
+    }
+
+    /* Get a closed worldline */
+    if (all(path.prev(startBead)==firstBead)) {
+        startBead = firstBead;
+        endBead = path.prev(startBead);
+    }
+    /* Otherwise, find the end bead */
+    else {
+        endBead = firstBead;
+        if (!all(path.next(endBead)==XXX)) {
+            do {
+                endBead = path.next(endBead);
+            } while(!all(path.next(endBead)==XXX));
+        }
+    }
 
     int wlLength = 0;
 	beadLocator beadIndex;
-	/* Check to see if the start bead is on a worm and that it is shorter than
-     * the number of time slices.  If it is, we start at the worm tail and end
-     * at its head. */
-	if ( path.worm.foundBead(path,startBead) )  {
-        if (path.worm.length >= constants()->numTimeSlices())
-            return false;
-		startBead = path.worm.tail;
-		endBead   = path.worm.head;
-	}
-	/* Otherwise, we loop around until we find the initial bead, and finish at 
-     * its predecesser in imaginary time */
-	else {
-		endBead = path.prev(startBead);
+    /* Make sure the worldline to be moved is shorter than the number of time
+     * slices */
+    beadIndex = startBead;
+    do {
+        ++wlLength;
+        beadIndex = path.next(beadIndex);
+    } while (!all(beadIndex==path.next(endBead)));
 
-        /* if our worldline is longer than numTimeSlices, we don't attempt the
-         * move */
-        beadIndex = startBead;
-        do {
-            ++wlLength;
-            beadIndex = path.next(beadIndex);
-        } while (!all(beadIndex==path.next(endBead)));
-
-        if (wlLength > constants()->numTimeSlices())
-            return false;
-    }
+    if (wlLength > constants()->numTimeSlices())
+        return false;
 
 	/* Increment the number of center of mass moves and the total number
 	 * of moves */
@@ -332,7 +465,7 @@ bool CenterOfMassMove::attemptMove() {
 
 	/* The random shift that will be applied to the center of mass*/
 	for (int i = 0; i < NDIM; i++) 
-		originalPos(0)[i] = constants()->Delta()*(-0.5 + random.rand());
+		originalPos(0)[i] = constants()->comDelta()*(-0.5 + random.rand());
 
 	/* Here we test to see if any beads are placed outside the box (if we
 	 * don't have periodic boundary conditions).  If that is the case,
@@ -456,7 +589,7 @@ bool StagingMove::attemptMove() {
 	beadLocator beadIndex;
 	beadIndex = startBead;
 	for (int k = 0; k < (constants()->Mbar()); k++) {
-		if (!path.worm.beadOn(beadIndex) || all(beadIndex==path.worm.head))
+		if (!path.worm.beadOn(beadIndex) || all(path.next(beadIndex)==XXX))
 			return false;
 		beadIndex = path.next(beadIndex);
 	}
@@ -578,8 +711,8 @@ bool BisectionMove::attemptMove() {
 
 	success = false;
 
-    /* We cannot perform this move at present when using a non-local action */
-    if (!actionPtr->local)
+    /* We cannot perform this move at present when using a pair product action */
+    if (constants()->actionType() == "pair_product")
         return false;
 
 	/* Randomly select the start bead of the bisection */
@@ -733,8 +866,8 @@ void BisectionMove::undoMove() {
  * Constructor.
 ******************************************************************************/
 OpenMove::OpenMove (Path &_path, ActionBase *_actionPtr, MTRand &_random, 
-        string _name, ensemble _operateOnConfig) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+        string _name, ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -815,37 +948,32 @@ bool OpenMove::attemptMove() {
 
             /* We now compute the potential energy of the beads that would be
              * removed if the worm is inserted */
-            oldAction = 0.0;
-            double deltaAction = 0.0;
-            double PNorm = 1.0;
-            double P;
+            deltaAction = 0.0;
             double factor = 0.5;
 
             beadLocator beadIndex;
             beadIndex = headBead;
             do {
-                deltaAction -= actionPtr->barePotentialAction(beadIndex) - factor*actionShift;
-                P = min(exp(-deltaAction)/PNorm,1.0);
+                deltaAction =-(actionPtr->barePotentialAction(beadIndex) - factor*actionShift);
 
                 /* We do a single slice Metropolis test and exit the move if we
                  * wouldn't remove the single bead */
-                if ( random.rand() >= P ) {
+                if ( random.rand() >= exp(-deltaAction) ) {
                     undoMove();
                     return success;
                 }
-                PNorm *= P;
 
                 factor = 1.0; 
                 beadIndex = path.next(beadIndex);
             } while (!all(beadIndex==tailBead));
 
             /* Add the part from the tail */
-            deltaAction -= actionPtr->barePotentialAction(tailBead) - 0.5*actionShift;
+            deltaAction = -(actionPtr->barePotentialAction(tailBead) - 0.5*actionShift);
             deltaAction -= actionPtr->potentialActionCorrection(headBead,tailBead);
 
             /* Now perform the final metropolis acceptance test based on removing a
              * chunk of worldline. */
-            if ( random.rand() < (exp(-deltaAction)/PNorm) ) {
+            if ( random.rand() < (exp(-deltaAction)) ) {
                 keepMove();
                 checkMove(1,deltaAction - gapLength*actionShift);
             }
@@ -929,8 +1057,8 @@ void OpenMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 CloseMove::CloseMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name, ensemble _operateOnConfig) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+		MTRand &_random, string _name, ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1002,48 +1130,40 @@ bool CloseMove::attemptMove() {
 
         double actionShift = (log(norm) + muShift)/path.worm.gap;
 
-        double deltaAction = 0.0;
-        double PNorm = 1.0;
-        double P;
-
         /* Compute the potential action for the new trajectory, inclucing a piece
          * coming from the head and tail. */
         beadLocator beadIndex;
         beadIndex = path.worm.head;
 
-        deltaAction += actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift;
-        P = min(exp(-deltaAction)/PNorm,1.0);
+        deltaAction = actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift;
 
         /* We perform a metropolis test on the tail bead */
-        if ( random.rand() >= P ) {
+        if ( random.rand() >= exp(-deltaAction) ) {
             undoMove();
             return success;
         }
-        PNorm *= P;
 
         for (int k = 0; k < (path.worm.gap-1); k++) {
             beadIndex = path.addNextBead(beadIndex,
                     newStagingPosition(beadIndex,path.worm.tail,path.worm.gap,k));
-            deltaAction += actionPtr->barePotentialAction(beadIndex) - actionShift;
-            P = min(exp(-deltaAction)/PNorm,1.0);
+            deltaAction = actionPtr->barePotentialAction(beadIndex) - actionShift;
 
             /* We perform a metropolis test on the single bead */
-            if ( random.rand() >= P ) {
+            if ( random.rand() >= exp(-deltaAction) ) {
                 undoMove();
                 return success;
             }
-            PNorm *= P;
         }
         path.next(beadIndex) = path.worm.tail;
         path.prev(path.worm.tail) = beadIndex;
 
         /* If we have made it this far, we compute the total action as well as the
          * action correction */
-        deltaAction += actionPtr->barePotentialAction(path.worm.tail) - 0.5*actionShift;
+        deltaAction = actionPtr->barePotentialAction(path.worm.tail) - 0.5*actionShift;
         deltaAction += actionPtr->potentialActionCorrection(path.worm.head,path.worm.tail);
 
         /* Perform the metropolis test */
-        if ( random.rand() < (exp(-deltaAction)/PNorm) ) {
+        if ( random.rand() < (exp(-deltaAction)) ) {
             keepMove();
             checkMove(1,deltaAction + log(norm) + muShift);
         }
@@ -1134,8 +1254,8 @@ void CloseMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 InsertMove::InsertMove (Path &_path, ActionBase *_actionPtr, MTRand &_random, 
-        string _name, ensemble _operateOnConfig) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+        string _name, ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1198,47 +1318,39 @@ bool InsertMove::attemptMove() {
 
         double actionShift = (log(norm) + muShift)/wormLength;
 
-        double deltaAction = 0.0;
-        double PNorm = 1.0;
-        double P;
-
         /* Generate the action for the proposed worm */
         beadLocator beadIndex;
         beadIndex = tailBead;
-        deltaAction += actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift;
-        P = min(exp(-deltaAction)/PNorm,1.0);
+        deltaAction = actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift;
 
         /* We perform a metropolis test on the tail bead */
-        if ( random.rand() >= P ) {
+        if ( random.rand() >= exp(-deltaAction) ) {
             undoMove();
             return success;
         }
-        PNorm *= P;
 
         /* Now go through the non head/tail beads */
         for (int k = 1; k < wormLength; k++) {
 
             beadIndex = path.addNextBead(beadIndex,newFreeParticlePosition(beadIndex));
-            deltaAction += actionPtr->barePotentialAction(beadIndex) - actionShift;
-            P = min(exp(-deltaAction)/PNorm,1.0);
+            deltaAction = actionPtr->barePotentialAction(beadIndex) - actionShift;
 
             /* We perform a metropolis test on the single bead */
-            if ( random.rand() >= P ) {
+            if ( random.rand() >= exp(-deltaAction) ) {
                 undoMove();
                 return success;
             }
-            PNorm *= P;
         }
         headBead = path.addNextBead(beadIndex,newFreeParticlePosition(beadIndex));
         path.worm.special1 = headBead;
 
         /* If we have made it this far, we compute the total action as well as the
          * action correction */
-        deltaAction += actionPtr->barePotentialAction(headBead) - 0.5*actionShift;
+        deltaAction = actionPtr->barePotentialAction(headBead) - 0.5*actionShift;
         deltaAction += actionPtr->potentialActionCorrection(tailBead,headBead);
 
         /* Perform a final Metropolis test for inserting the full worm*/
-        if ( random.rand() < (exp(-deltaAction)/PNorm) ) {
+        if ( random.rand() < (exp(-deltaAction)) ) {
             keepMove();
             checkMove(1,deltaAction + actionShift*wormLength);
         }
@@ -1328,8 +1440,8 @@ void InsertMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 RemoveMove::RemoveMove (Path &_path, ActionBase *_actionPtr, MTRand &_random, 
-        string _name, ensemble _operateOnConfig) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+        string _name, ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1388,38 +1500,32 @@ bool RemoveMove::attemptMove() {
     if (actionPtr->local) {
 
         double actionShift = (-log(norm) + muShift)/path.worm.length;
-
-        oldAction = 0.0;
-        double deltaAction = 0.0;
-        double PNorm = 1.0;
-        double P;
+        deltaAction = 0.0;
 
         /* First do the head */
         beadLocator beadIndex;
         beadIndex = path.worm.head;
         double factor = 0.5;
         do {
-            deltaAction -= actionPtr->barePotentialAction(beadIndex) - factor*actionShift;
-            P = min(exp(-deltaAction)/PNorm,1.0);
+            deltaAction = -(actionPtr->barePotentialAction(beadIndex) - factor*actionShift);
 
             /* We do a single slice Metropolis test and exit the move if we
              * wouldn't remove the single bead */
-            if ( random.rand() >= P ) {
+            if ( random.rand() >= exp(-deltaAction) ) {
                 undoMove();
                 return success;
             }
-            PNorm *= P;
 
             factor = 1.0; 
             beadIndex = path.prev(beadIndex);
         } while (!all(beadIndex==path.worm.tail));
 
         /* Add the part from the tail */
-        deltaAction -= actionPtr->barePotentialAction(path.worm.tail) - 0.5*actionShift;
+        deltaAction = -(actionPtr->barePotentialAction(path.worm.tail) - 0.5*actionShift);
         deltaAction -= actionPtr->potentialActionCorrection(path.worm.tail,path.worm.head);
 
         /* Perform final metropolis test */
-        if ( random.rand() < (exp(-deltaAction)/PNorm) ) {
+        if ( random.rand() < (exp(-deltaAction)) ) {
             keepMove();
             checkMove(1,deltaAction + log(norm) - muShift);
         }
@@ -1501,8 +1607,8 @@ void RemoveMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 AdvanceHeadMove::AdvanceHeadMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name, ensemble _operateOnConfig) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+		MTRand &_random, string _name, ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1560,44 +1666,35 @@ bool AdvanceHeadMove::attemptMove() {
 
         double actionShift = (log(norm) + muShift)/advanceLength;
 
-        double deltaAction = 0.0;
-        double PNorm = 1.0;
-        double P;
-
         /* Generate the new path, and compute its action, assigning the new head */
         beadLocator beadIndex;
         beadIndex = path.worm.special1;
         deltaAction = actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift;
 
-        P = min(exp(-deltaAction)/PNorm,1.0);
-        if ( random.rand() >= P ) {
+        if ( random.rand() >= exp(-deltaAction) ) {
             undoMove();
             return success;
         }
-        PNorm *= P;
 
         for (int k = 0; k < (advanceLength-1); k++) {
             beadIndex = path.addNextBead(beadIndex,newFreeParticlePosition(beadIndex));
-            deltaAction += actionPtr->barePotentialAction(beadIndex) - actionShift;
-
-            P = min(exp(-deltaAction)/PNorm,1.0);
+            deltaAction = actionPtr->barePotentialAction(beadIndex) - actionShift;
 
             /* We perform a metropolis test on the single bead */
-            if ( random.rand() >= P ) {
+            if ( random.rand() >= exp(-deltaAction) ) {
                 undoMove();
                 return success;
             }
-            PNorm *= P;
         }
         headBead = path.addNextBead(beadIndex,newFreeParticlePosition(beadIndex));
 
         /* Assign the new head and compute its action */
         path.worm.head = headBead;
-        deltaAction += actionPtr->potentialAction(headBead) - 0.5*actionShift;
+        deltaAction = actionPtr->potentialAction(headBead) - 0.5*actionShift;
         deltaAction += actionPtr->potentialActionCorrection(path.worm.special1,path.worm.head);
 
         /* Perform the metropolis test */
-        if ( random.rand() < (exp(-deltaAction)/PNorm)) {
+        if ( random.rand() < (exp(-deltaAction))) {
             keepMove();
             checkMove(1,deltaAction + advanceLength*actionShift);
         }
@@ -1691,8 +1788,8 @@ void AdvanceHeadMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 AdvanceTailMove::AdvanceTailMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name, ensemble _operateOnConfig) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+		MTRand &_random, string _name, ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1757,36 +1854,31 @@ bool AdvanceTailMove::attemptMove() {
 
             double actionShift = (-log(norm) + muShift)/advanceLength;
 
-            oldAction = 0.0;
-            double deltaAction = 0.0;
-            double PNorm = 1.0;
-            double P;
+            deltaAction = 0.0;
             double factor = 0.5;
 
             beadLocator beadIndex;
             beadIndex = path.worm.tail;
             do {
-                deltaAction -= actionPtr->barePotentialAction(beadIndex) - factor*actionShift;
-                P = min(exp(-deltaAction)/PNorm,1.0);
+                deltaAction = -(actionPtr->barePotentialAction(beadIndex) - factor*actionShift);
 
                 /* We do a single slice Metropolis test and exit the move if we
                  * wouldn't remove the single bead */
-                if ( random.rand() >= P ) {
+                if ( random.rand() >= exp(-deltaAction) ) {
                     undoMove();
                     return success;
                 }
-                PNorm *= P;
 
                 factor = 1.0; 
                 beadIndex = path.next(beadIndex);
             } while (!all(beadIndex==tailBead));
 
             /* Add the part from the tail */
-            deltaAction -= actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift;
+            deltaAction = -(actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift);
             deltaAction -= actionPtr->potentialActionCorrection(path.worm.tail,tailBead);
 
             /* Perform final metropolis test */
-            if ( random.rand() < (exp(-deltaAction)/PNorm) ) {
+            if ( random.rand() < (exp(-deltaAction)) ) {
                 keepMove();
                 checkMove(1,deltaAction - advanceLength*actionShift);
             }
@@ -1870,8 +1962,8 @@ void AdvanceTailMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 RecedeHeadMove::RecedeHeadMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name, ensemble _operateOnConfig) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+		MTRand &_random, string _name, ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1935,33 +2027,27 @@ bool RecedeHeadMove::attemptMove() {
 
             double actionShift = (-log(norm) + muShift)/recedeLength;
 
-            oldAction = 0.0;
-
-            double deltaAction = 0.0;
-            double PNorm = 1.0;
-            double P;
+            deltaAction = 0.0;
             double factor = 0.5;
 
             beadLocator beadIndex;
             beadIndex = path.worm.head;
             do {
-                deltaAction -= actionPtr->barePotentialAction(beadIndex) - factor*actionShift;
-                P = min(exp(-deltaAction)/PNorm,1.0);
-                if ( random.rand() >= P ) {
+                deltaAction = -(actionPtr->barePotentialAction(beadIndex) - factor*actionShift);
+                if ( random.rand() >= exp(-deltaAction) ) {
                     undoMove();
                     return success;
                 }
-                PNorm *= P;
 
                 factor = 1.0; 
                 beadIndex = path.prev(beadIndex);
             } while (!all(beadIndex==headBead));
 
-            deltaAction -= actionPtr->barePotentialAction(headBead) - 0.5*actionShift;
+            deltaAction =- (actionPtr->barePotentialAction(headBead) - 0.5*actionShift);
             deltaAction -= actionPtr->potentialActionCorrection(path.worm.special1,path.worm.head);
 
             /* Perform final metropolis test */
-            if ( random.rand() < (exp(-deltaAction)/PNorm) ) {
+            if ( random.rand() < (exp(-deltaAction)) ) {
                 keepMove();
                 checkMove(1,deltaAction - recedeLength*actionShift);
             }
@@ -2045,8 +2131,8 @@ void RecedeHeadMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 RecedeTailMove::RecedeTailMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name, ensemble _operateOnConfig) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+		MTRand &_random, string _name, ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -2102,45 +2188,38 @@ bool RecedeTailMove::attemptMove() {
     if (actionPtr->local) {
 
         double actionShift = (log(norm) + muShift)/recedeLength;
-        double deltaAction = 0.0;
-        double PNorm = 1.0;
-        double P;
 
         /* Compute the action for the proposed path, and assign the new tail */
         beadLocator beadIndex;
         beadIndex = path.worm.special1;
 
-        deltaAction += actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift;
-        P = min(exp(-deltaAction)/PNorm,1.0);
+        deltaAction = actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift;
 
         /* We perform a metropolis test on the tail bead */
-        if ( random.rand() >= P ) {
+        if ( random.rand() >= exp(-deltaAction) ) {
             undoMove();
             return success;
         }
-        PNorm *= P;
 
         for (int k = 0; k < (recedeLength-1); k++) {
             beadIndex = path.addPrevBead(beadIndex,newFreeParticlePosition(beadIndex));
-            deltaAction += actionPtr->barePotentialAction(beadIndex) - actionShift;
-            P = min(exp(-deltaAction)/PNorm,1.0);
+            deltaAction = actionPtr->barePotentialAction(beadIndex) - actionShift;
 
             /* We perform a metropolis test on the single bead */
-            if ( random.rand() >= P ) {
+            if ( random.rand() >= exp(-deltaAction) ) {
                 undoMove();
                 return success;
             }
-            PNorm *= P;
         }
         tailBead = path.addPrevBead(beadIndex,newFreeParticlePosition(beadIndex));
 
         /* Assign the new tail bead and compute its action */
         path.worm.tail = tailBead;
-        deltaAction += actionPtr->barePotentialAction(tailBead) - 0.5*actionShift;
+        deltaAction = actionPtr->barePotentialAction(tailBead) - 0.5*actionShift;
         deltaAction += actionPtr->potentialActionCorrection(tailBead,path.worm.special1);
 
         /* Perform the metropolis test */
-        if ( random.rand() < (exp(-deltaAction)/PNorm)) {
+        if ( random.rand() < (exp(-deltaAction))) {
             keepMove();
             checkMove(1,deltaAction + recedeLength*actionShift);
         }

@@ -148,7 +148,7 @@ dVec Prism::randUpdate (MTRand &random, const dVec &pos) const {
 	dVec randPos;
     randPos = pos;
     for (int i = 0; i < NDIM; i++) 
-        randPos[i] += 4.0*constants()->Delta()*(-0.5 + random.rand());
+        randPos[i] += 4.0*constants()->displaceDelta()*(-0.5 + random.rand());
     putInside(randPos);
 	return randPos;
 }
@@ -355,7 +355,7 @@ dVec Cylinder::randUpdateJumpShell (MTRand &random, const dVec &pos) const {
     double ranTheta = M_PI*(-0.05 + 0.1*random.rand());
     randPos[0] = newr*cos(theta + ranTheta);
     randPos[1] = newr*sin(theta + ranTheta);
-    randPos[2] += constants()->Delta()*(-0.5 + random.rand());
+    randPos[2] += constants()->displaceDelta()*(-0.5 + random.rand());
 
     putInside(randPos);
 	return randPos;
@@ -369,7 +369,7 @@ dVec Cylinder::randUpdateSmall (MTRand &random, const dVec &pos) const {
 	dVec randPos;
     randPos = pos;
     for (int i = 0; i < NDIM; i++) 
-        randPos[i] += constants()->Delta()*(-0.5 + random.rand());
+        randPos[i] += constants()->displaceDelta()*(-0.5 + random.rand());
     putInside(randPos);
 	return randPos;
 }

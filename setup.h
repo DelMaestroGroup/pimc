@@ -15,6 +15,13 @@ namespace po = boost::program_options;
 
 class Container; 
 class PotentialBase;
+class WaveFunctionBase;
+class ActionBase;
+class Path;
+class LookupTable;
+class MoveBase;
+class EstimatorBase;
+
 // ========================================================================  
 // Setup Class
 // ========================================================================  
@@ -63,15 +70,31 @@ class Setup {
 
 		/* Setup the external potential */
 		PotentialBase * externalPotential(const Container*);
+    
+        /* Setup the trial wave function */
+        WaveFunctionBase * waveFunction(const Path &);
+
+        /* Setup the action */
+        ActionBase * action(const Path &, LookupTable &, PotentialBase*, PotentialBase *, WaveFunctionBase *);
+
+        /* Setup the move array */
+        auto_ptr< boost::ptr_vector<MoveBase> > moves(Path &, ActionBase *, MTRand &);
+
+        /* Setup the estimator array */
+        auto_ptr< boost::ptr_vector<EstimatorBase> > estimators(Path &, ActionBase *, MTRand &);
 
         po::variables_map params;       			///< The command line parameter map
 
 	private:
 		vector<string> interactionPotentialName;	///< The allowed interaction potential names
 		vector<string> externalPotentialName;		///< The allowed external potential names
+        vector<string> waveFunctionName;		    ///< The allowed trial wave function names
+        vector<string> actionName;		            ///< The allowed action names
 
 		string interactionNames;					///< The interaction output list
 		string externalNames;						///< The external output list
+        string waveFunctionNames;                           ///< The wavefunction output list
+        string actionNames;                         ///< The action output list
 
 		dVec side;									///< The sides of the simulation cell
 		double volume;								///< A local copy of the volume.
@@ -85,13 +108,15 @@ class Setup {
         po::options_description algorithmicOptions;	///< Algorithmic options
         po::options_description cmdLineOptions;		///< All options
 
+        bool checkOption(const string, const string);    // check an option string
+
+        string getOptionList(const vector<string>); // Construct a comma separated list of options
+
 		/* Two template methods used to deal with the wonky nature of setting 
 		 * parameters programattically */
 		template<typename TType> void setOption(string, const TType);
 		template<typename TType> void insertOption(string, const TType);
 
-        /* Ensure the correct directory stucture has been created */
-//        void createOutputDirectory();
 };
 
 /** Use boost::program_options funky method for setting parameters */

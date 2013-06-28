@@ -826,7 +826,7 @@ AzizPotential::AzizPotential(const dVec &side) : PotentialBase(), TabulatedPoten
 	double L = max(side);
 
 	/* Create the potential lookup tables */
-	//initLookupTable(0.00005*rm,L);
+	// initLookupTable(0.00005*rm,L);
 	initLookupTable((1.0E-6)*rm,L);
 
 	/* Now we compute the tail correction */
@@ -1179,11 +1179,8 @@ double HardRodPotential::V(const dVec &sep1, const dVec &sep2,
     double r1 = sqrt(dot(sep1,sep1));
     double r2 = sqrt(dot(sep2,sep2));
 
-    if (r1*r2 < EPS)
+    if ((sep1[0]*sep2[0] < 0.0))
         return log(BIG);
-
-    // if ((r1*r2 < EPS) || (sep1[0]*sep2[0] < 0.0))
-    //     return log(BIG);
 
     double t1 = -(r1-a)*(r2-a)/(2.0*lambdaTau);
     return (-log(1.0 - exp(t1)));
@@ -1207,9 +1204,6 @@ double HardRodPotential::dVdlambda(const dVec &sep1, const dVec &sep2,
 
     double r1 = sqrt(dot(sep1,sep1));
     double r2 = sqrt(dot(sep2,sep2));
-
-    if (r1*r2 < EPS)
-        return log(BIG);
 
     double t1 = (r1-a)*(r2-a);
     double t2 = t1/(2.0*lambda*tau);
@@ -1235,9 +1229,6 @@ double HardRodPotential::dVdtau(const dVec &sep1, const dVec &sep2,
 
     double r1 = sqrt(dot(sep1,sep1));
     double r2 = sqrt(dot(sep2,sep2));
-
-    if (r1*r2 < EPS)
-        return log(BIG);
 
     double t1 = (r1-a)*(r2-a);
     double t2 = t1/(2.0*lambda*tau);

@@ -11,6 +11,10 @@
 #include "constants.h"
 #include "communicator.h"
 #include "potential.h"
+#include "wavefunction.h"
+#include "action.h"
+#include "move.h"
+#include "estimator.h"
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -38,9 +42,6 @@ Setup::Setup() :
 	side = 0.0;
 	volume = 0.0;
 
-	/* An iterator to move through names */
-	vector<string>::iterator it;
-
 	/* Define the allowed interaction potential names */
 	interactionPotentialName.push_back("aziz");
 	interactionPotentialName.push_back("delta");
@@ -48,12 +49,8 @@ Setup::Setup() :
 	interactionPotentialName.push_back("hard_sphere");
 	interactionPotentialName.push_back("hard_rod");
 	interactionPotentialName.push_back("free");
-	
-	/* Create the interaction potential name string */
-	interactionNames = "";
-	for (it = interactionPotentialName.begin(); it != interactionPotentialName.end(); ++it) 
-		interactionNames += *it + ",";
-	interactionNames.erase(interactionNames.end()-1);
+
+    interactionNames = getOptionList(interactionPotentialName);
 
 	/* Define the allowed external  potential names */
 	externalPotentialName.push_back("free");
@@ -64,11 +61,36 @@ Setup::Setup() :
 	externalPotentialName.push_back("fixed_aziz");
     externalPotentialName.push_back("gasp_prim");
 
-	/* Create the external potential name string */
-	externalNames = "";
-	for (it = externalPotentialName.begin(); it != externalPotentialName.end(); ++it)
-		externalNames += *it + ",";
-	externalNames.erase(externalNames.end()-1);
+   externalNames = getOptionList(externalPotentialName);
+
+	/* Define the allowed action names */
+	actionName.push_back("primitive");
+	actionName.push_back("li_broughton");
+	actionName.push_back("gsf");
+	actionName.push_back("pair_product");
+
+    actionNames = getOptionList(actionName);
+
+    /* Define the allowed trial wave function names */
+	waveFunctionName.push_back("constant");
+	waveFunctionName.push_back("sech");
+	waveFunctionName.push_back("jastrow");
+
+    waveFunctionNames = getOptionList(waveFunctionName);
+}
+
+/**************************************************************************//**
+ * Make a list of possible option strings
+ *
+ * @param option the stl vector of options
+ * @return a comma separated list of options
+******************************************************************************/
+string Setup::getOptionList(const vector<string> option) {
+
+    ostringstream optionList;
+    std::copy(option.begin(), option.end() - 1, std::ostream_iterator<string>(optionList, ", "));
+    optionList << option.back();
+    return optionList.str();
 }
 
 /**************************************************************************//**
@@ -84,6 +106,7 @@ void Setup::getOptions(int argc, char *argv[])
 	/* Setup all possible command line options */
 	generalOptions.add_options()
 		("help,h", "produce help message")
+		("version", "output svn version")
 		("output_config,o", po::value<int>()->default_value(0), "number of output configurations")
 		("process,p", po::value<uint32>()->default_value(0), "process or cpu number")
 		("restart,R", po::value<uint32>()->default_value(0), 
@@ -122,18 +145,21 @@ void Setup::getOptions(int argc, char *argv[])
 		 "delta function potential integrated strength") 
 		("fixed,f", po::value<string>()->default_value(""), 
 		 "input file name for fixed atomic positions.")
-		("potential_cutoff,l", po::value<double>()->default_value(6.0), 
-		 "interaction potential cutoff length [angstroms]")
+		("potential_cutoff,l", po::value<double>(), "interaction potential cutoff length [angstroms]")
 		;
 
 	physicalOptions.add_options()
 		("canonical", "perform a canonical simulation")
+		("pigs", "perform a path integral ground state (PIGS) simulation at T = 0")
         ("window", po::value<int>()->default_value(-1),"set particle number window")
         ("gaussian_ensemble_SD", po::value<double>()->default_value(-1.0),"set gaussian ensemble weight")
 		("mass,m", po::value<double>()->default_value(4.0030),"particle mass [amu]")
 		("density,n", po::value<double>(), str(format("initial density [angstroms^(-%d)]") % NDIM).c_str())
 		("number_particles,N", po::value<int>(), "number of particles")
 		("temperature,T", po::value<double>(), "temperature [kelvin]")
+		("imaginary_time_length", po::value<double>(), "total path length in imaginary time [kelvin^(-1)]")
+        ("wavefunction", po::value<string>()->default_value("constant"), 
+         str(format("trial wave function type {%s}") % waveFunctionNames).c_str())
 		("chemical_potential,u", po::value<double>()->default_value(0.0), "chemical potential [kelvin]")
 		;
 
@@ -142,12 +168,16 @@ void Setup::getOptions(int argc, char *argv[])
 		("number_time_slices,P", po::value<int>(), "number of time slices")
 		("imaginary_time_step,t", po::value<double>(), "imaginary time step [kelvin^(-1)]")
 		("worm_constant,C", po::value<double>()->default_value(1.0), "worm acceptance constant")
-		("Delta,D", po::value<double>(),"center of mass shift")
+		("com_delta,D", po::value<double>(),"center of mass update radius[angstroms]")
+		("displace_delta,d", po::value<double>(),"displace update radius [angstroms]")
 		("Mbar,M", po::value<int>(), "worm update length, Mbar")
 		("number_eq_steps,E", po::value<uint32>()->default_value(1), 
 		 "number of equilibration steps")
 		("number_bins_stored,S", po::value<int>()->default_value(1), 
 		 "number of estimator bins stored")
+		("action", po::value<string>()->default_value("gsf"), 
+		 str(format("action type {%s}") % actionNames).c_str())
+		("full_updates", "perform full staging updates")
 		;
 
 	cmdLineOptions.add(generalOptions).add(algorithmicOptions).add(physicalOptions);
@@ -179,10 +209,23 @@ bool Setup::parseOptions() {
 		return true;
 	}
 
-    /* Have we defined a temperature? */
-    if (!params.count("temperature")) {
-		cerr << endl << "PIMC ERROR: No temperature defined!" << endl << endl;
+	/* Output the svn version that the code was compiled with */
+	if (params.count("version")) {
+		cout << endl << format("Code was compiled with repo version %s.") % SVN_VERSION
+			<< endl << endl;
+		return true;
+	}
+
+    /* Have we defined a temperature for a PIMC simulation?*/
+    if (!params.count("temperature") && !params.count("pigs")) {
+		cerr << endl << "ERROR: No temperature defined!" << endl << endl;
 		cerr << "Action: specify temperature (T)" << endl;
+    }
+
+    /* Have we mistakingly defined one for a PIGS simulation? */
+    if (params.count("temperature") && params.count("pigs")) {
+		cerr << endl << "ERROR: Did you mean to define a non-zero temperature for PIGS?" << endl << endl;
+		cerr << "Action: remove temperature (T)" << endl;
     }
 
 	/* Have we physically defined a simulation cell? */
@@ -205,7 +248,7 @@ bool Setup::parseOptions() {
 	if (!( (params.count("density") && params.count("number_particles")) ||
 	 	 (definedCell && params.count("number_particles")) ||
 		 (definedCell && params.count("density")) ) ) {
-		cerr << endl << "PIMC ERROR: Cannot create the simulation cell!" << endl << endl;
+		cerr << endl << "ERROR: Cannot create the simulation cell!" << endl << endl;
 		cerr << "Action: define a valid simulation cell." << endl;
 		cerr << "Need: [number_particles (N) AND density (n)] OR " << endl;
 		cerr << "      [number_particles (N) AND size (L) or Lx,Ly,Lz] OR" << endl;
@@ -218,54 +261,77 @@ bool Setup::parseOptions() {
 	if (!( (params["cell_type"].as<string>() == "cylinder")  || 
 	       (params["cell_type"].as<string>() == "prism") ))
 	{
-		cerr << endl << "PIMC ERROR: Invalid simulation cell type." << endl << endl;
+		cerr << endl << "ERROR: Invalid simulation cell type." << endl << endl;
 		cerr << "Action: change cell_type (b) to one of:" << endl
 			<< "\t[prism,cylinder]" << endl;
 		return true;
 	}
 
 	/* Can we create the worldlines? */
-	if (!(params.count("number_time_slices") || (params.count("imaginary_time_step")))) {
-		cerr << endl << "PIMC ERROR: Cannot create imaginary time paths!" << endl << endl;
-		cerr << "Action: define number_time_slices (P) OR imaginary_time_step (t)" << endl << endl;
+	if (!((params.count("imaginary_time_length") && params.count("number_time_slices")) || 
+          (params.count("imaginary_time_length") && params.count("imaginary_time_step")) || 
+	      (params.count("number_time_slices") && params.count("imaginary_time_step")) ||
+          (params.count("temperature") && (params.count("number_time_slices") || (params.count("imaginary_time_step")))) ) ) {
+		cerr << endl << "ERROR: Cannot create imaginary time paths!" << endl << endl;
+		cerr << "Action: define imaginary_time_length AND imaginary_time_step (t) OR" << endl;
+		cerr << "        define imaginary_time_length AND number_time_steps (P) OR" << endl; 
+		cerr << "        define number_time_slices (P) AND imaginary_time_step (t)" << endl << endl;
+		cerr << "        define temperature (T) AND (number_time_slices (P) OR imaginary_time_step (t))" << endl << endl;
 		cerr << algorithmicOptions << endl;
 		return true;
 	}
 
 	/* Make sure we have selected a valid interaction potential */
-	bool validPotential = false;
-	vector<string>::iterator it;
-	for (it = interactionPotentialName.begin(); it != interactionPotentialName.end(); ++it) {
-		if (params["interaction_potential"].as<string>() == *it) {
-			validPotential = true;
-			break;
-		}
-	}
-	if (!validPotential) {
-		cerr << endl << "PIMC ERROR: Invalid interaction potential!" << endl << endl;
+    if (std::find(interactionPotentialName.begin(), interactionPotentialName.end(), 
+                params["interaction_potential"].as<string>()) == interactionPotentialName.end()) {
+		cerr << endl << "ERROR: Invalid interaction potential!" << endl << endl;
 		cerr << "Action: set interaction_potential (I) to one of:" << endl
 			 << "\t[" << interactionNames << "]" <<  endl;
 		return true;
 	}
 
 	/* Make sure we have selected a valid external potential */
-	validPotential = false;
-	for (it = externalPotentialName.begin(); it != externalPotentialName.end(); ++it) {
-		if (params["external_potential"].as<string>() == *it) {
-			validPotential = true;
-			break;
-		}
-	}
-	if (!validPotential) {
-		cerr << endl << "PIMC ERROR: Invalid external potential!" << endl << endl;
+    if (std::find(externalPotentialName.begin(), externalPotentialName.end(), 
+                params["external_potential"].as<string>()) == externalPotentialName.end()) {
+		cerr << endl << "ERROR: Invalid external potential!" << endl << endl;
 		cerr << "Action: set external_potential (X) must to one of:" << endl
 			 << "\t[" << externalNames << "]" << endl;
 		return true;
 	}
 
+	/* Make sure we have selected a valid action type */
+    if (std::find(actionName.begin(), actionName.end(), 
+                params["action"].as<string>()) == actionName.end()) {
+		cerr << endl << "ERROR: Invalid action!" << endl << endl;
+		cerr << "Action: set action to one of:" << endl
+			 << "\t[" << actionNames << "]" <<  endl;
+		return true;
+	}
+    
+    /* Make sure we have selected a valid trial wave fucntion */
+    if (std::find(waveFunctionName.begin(), waveFunctionName.end(), 
+                params["wavefunction"].as<string>()) == waveFunctionName.end()) {
+		cerr << endl << "ERROR: Invalid trial wave function!" << endl << endl;
+		cerr << "Action: set wave function to one of :" << endl
+        << "\t[" << waveFunctionNames << "]" << endl;
+		return true;
+	}
+
+    /* Make sure we use the pair product approximation for discontinuous
+     * potentials */
+    if (((params["interaction_potential"].as<string>() == "hard_sphere") ||
+        (params["interaction_potential"].as<string>() == "hard_rod")) &&
+	    (params["action"].as<string>() != "pair_product") ) {
+        cout << endl;
+		cerr << "ERROR: Need to use the pair product approximation with discontinuous potentials!"; 
+        cout << endl << endl;
+		cerr << "Action: change the action to pair_product." << endl;
+		return 1;
+    }
+
 	/* We can only use the cylinder potentials for a 3D system */
 	if ((params["external_potential"].as<string>().find("tube") != string::npos) && (NDIM != 3)) {
-		cerr << endl << "PIMC ERROR: Can only use tube potentials for a 3D system!" << endl << endl;
+		cerr << endl << "ERROR: Can only use tube potentials for a 3D system!" << endl << endl;
 		cerr << "Action: change the potential or recompile with ndim=3." << endl;
 		return 1;
 	}
@@ -273,7 +339,7 @@ bool Setup::parseOptions() {
 	/* Need to specify a radius for the tube potentials */
 	if ( (params["external_potential"].as<string>().find("tube") != string::npos) && 
             (!params.count("radius")) ) {
-		cerr << endl << "PIMC ERROR: Incomplete specification for external potential!" << endl << endl;
+		cerr << endl << "ERROR: Incomplete specification for external potential!" << endl << endl;
 		cerr << "Action: specfiy a radius (r) for the tube potentials." << endl;
 		return 1;
 	}
@@ -281,7 +347,7 @@ bool Setup::parseOptions() {
     /* Need to specify a y- barrier width scale factor for Gasparini potential */
 	if ( (params["external_potential"].as<string>().find("gasp_prim") != string::npos) &&
              (!params.count("barrier_width_y")) ) {
-		cerr << endl << "PIMC ERROR: Incomplete specification for external potential!" << endl << endl;
+		cerr << endl << "ERROR: Incomplete specification for external potential!" << endl << endl;
 		cerr << "Action: specify a y- scale factor (y) for the Gasparini potential." << endl;
 		return 1;
 	}
@@ -289,21 +355,21 @@ bool Setup::parseOptions() {
     /* Need to specify a z- barrier width scale factor for Gasparini potential */
 	if ( (params["external_potential"].as<string>().find("gasp_prim") != string::npos) && 
             (!params.count("barrier_width_z")) ) {
-		cerr << endl << "PIMC ERROR: Incomplete specification for external potential!" << endl << endl;
+		cerr << endl << "ERROR: Incomplete specification for external potential!" << endl << endl;
 		cerr << "Action: specify a z- scale factor (z) for the Gasparini potential." << endl;
 		return 1;
 	}
 
 	/* We can only use the hard sphere potential in a 3D system */
 	if ((params["interaction_potential"].as<string>().find("hard_sphere") != string::npos) && (NDIM != 3)) {
-		cerr << endl << "PIMC ERROR: Can only use hard sphere potentials for a 3D system!" << endl << endl;
+		cerr << endl << "ERROR: Can only use hard sphere potentials for a 3D system!" << endl << endl;
 		cerr << "Action: change the potential or recompile with ndim=3." << endl;
 		return 1;
 	}
 
 	/* We can only use the hard rod potential in a 1D system */
 	if ((params["interaction_potential"].as<string>().find("hard_rod") != string::npos) && (NDIM != 1)) {
-		cerr << endl << "PIMC ERROR: Can only use hard rod potentials for a 1D system!" << endl << endl;
+		cerr << endl << "ERROR: Can only use hard rod potentials for a 1D system!" << endl << endl;
 		cerr << "Action: change the potential or recompile with ndim=1." << endl;
 		return 1;
 	}
@@ -373,25 +439,75 @@ Container * Setup::cell() {
 ******************************************************************************/
 bool Setup::worldlines() {
 
-	/* We determine if we have fixed P or tau.  We require that the number of time 
-	 * slices is always even. */
 	int numTimeSlices;
-	double tau;
-	if (!params.count("number_time_slices")) {
-		tau = params["imaginary_time_step"].as<double>();
-		numTimeSlices = static_cast<int>(1.0/(params["temperature"].as<double>() * tau) + EPS);
-		if ((numTimeSlices % 2) != 0)
-			numTimeSlices--;
-		insertOption("number_time_slices",numTimeSlices);
-	}
-	else {
-		numTimeSlices = params["number_time_slices"].as<int>();
-		if ((numTimeSlices % 2) != 0)
-			numTimeSlices--;
-		tau = 1.0/(params["temperature"].as<double>() * numTimeSlices);
-		setOption("number_time_slices",numTimeSlices);
-		insertOption("imaginary_time_step",tau);
-	}
+    double tau;
+
+    /* !!NB!! We separate the worldline building into two sections, one for PIGS and
+     * one for PIMC.  This can probably be cleaned up in the future. */
+
+    if (!params.count("pigs")) {
+
+        /* Set the imaginary time length*/
+        if (!params.count("imaginary_time_length"))
+            insertOption("imaginary_time_length",1.0/params["temperature"].as<double>());
+
+        /* We determine if we have fixed P or tau.  We require that the number of time 
+         * slices is always even. */
+        if (!params.count("number_time_slices")) {
+            tau = params["imaginary_time_step"].as<double>();
+            numTimeSlices = static_cast<int>(1.0/(params["temperature"].as<double>() * tau) + EPS);
+            if ((numTimeSlices % 2) != 0)
+                numTimeSlices--;
+            //setOption("imaginary_time_step",1.0/(params["temperature"].as<double>()*numTimeSlices));
+            insertOption("number_time_slices",numTimeSlices);
+        }
+        else {
+            numTimeSlices = params["number_time_slices"].as<int>();
+            if ((numTimeSlices % 2) != 0)
+                numTimeSlices--;
+            tau = 1.0/(params["temperature"].as<double>() * numTimeSlices);
+            setOption("number_time_slices",numTimeSlices);
+            insertOption("imaginary_time_step",tau);
+        }
+    }
+    else {
+        /* Fixing the total imaginary time and the number of time slices */
+        if ( params.count("imaginary_time_length") && params.count("number_time_slices") ) {
+
+            /* We make sure we have an odd number of time slices */
+            numTimeSlices = params["number_time_slices"].as<int>();
+            if ((numTimeSlices % 2) == 0)
+                numTimeSlices--;
+
+            tau = params["imaginary_time_length"].as<double>() / numTimeSlices;
+            setOption("number_time_slices",numTimeSlices);
+            insertOption("imaginary_time_step",tau);
+        }
+        /* Fixing the total imaginary time and the time step.  We need to make sure
+         * we can get an odd number of slices */
+        else if ( params.count("imaginary_time_length") && params.count("imaginary_time_step") ) {
+            tau = params["imaginary_time_step"].as<double>();
+            numTimeSlices = static_cast<int>((params["imaginary_time_length"].as<double>() / tau) + EPS);
+            if ((numTimeSlices % 2) == 0)
+                numTimeSlices--;
+            insertOption("number_time_slices",numTimeSlices);
+            //setOption("imaginary_time_step",params["imaginary_time_length"].as<double>()/numTimeSlices);
+        }
+        /* Fixing the number of time steps and the size of the time step.  */
+        else {
+            /* We make sure we have an odd number of time slices */
+            numTimeSlices = params["number_time_slices"].as<int>();
+            if ((numTimeSlices % 2) == 0)
+                numTimeSlices--;
+
+            /* Set the updated number of time slices and imaginary time length */
+            setOption("number_time_slices",numTimeSlices);
+            insertOption("imaginary_time_length",params["imaginary_time_step"].as<double>()*numTimeSlices);
+        }
+
+        /* We set the effective temperature to 1.0/imagTimeLength */
+        insertOption("temperature",1.0/params["imaginary_time_length"].as<double>());
+    }
 
 	/* If we haven't fixed Mbar, do so now. We use the value defined in
 	 * PRE 74, 036701 (2006). We make sure it is always >= 8 */
@@ -401,9 +517,8 @@ bool Setup::worldlines() {
 		double ell = pow((1.0*params["number_particles"].as<int>()/volume),-1.0/(1.0*NDIM));
 		double lambda = 24.24 / params["mass"].as<double>();
 		Mbar = int(ell*ell/(16*lambda*params["imaginary_time_step"].as<double>()));
-		if (Mbar < 8)
-			Mbar = 8;
-		Mbar = 8;
+		if (Mbar < 2)
+			Mbar = 2;
 		insertOption("Mbar",Mbar);
 	}
 	else 
@@ -412,14 +527,17 @@ bool Setup::worldlines() {
 	/* Now we make sure it is even and not too large*/
 	if (Mbar%2)
 		Mbar++;
+
+	setOption("Mbar",Mbar);
+
 	if (Mbar > numTimeSlices) {
-		cerr << endl << "PIMC ERROR: Update length > number time slices!" << endl << endl;
+		cerr << endl << "ERROR: Update length > number time slices!" << endl << endl;
         cerr << "Action: Increase number_time_slices (P) OR" <<  endl;
         cerr << "        Increase Mbar (M) OR"  << endl;
-        cerr << "        Decrease imaginary_time_step (t)" << endl; 
+        cerr << "        Decrease imaginary_time_step (t) OR" << endl; 
+        cerr << "        Increase imaginary_time_length" << endl; 
         return true;
 	}
-	setOption("Mbar",Mbar);
 
 	return false;
 }
@@ -431,10 +549,24 @@ bool Setup::worldlines() {
 ******************************************************************************/
 void Setup::setConstants() {
 
+    /* At present, we need to make sure that if a pair_product action has been
+     * selected, that we turn off the cuttoff by making it the size of the box */
+    if (params["action"].as<string>() == "pair_product")
+        if (params.count("potential_cutoff"))
+            setOption("potential_cutoff",side[NDIM-1]);
+        else
+            insertOption("potential_cutoff",side[NDIM-1]);
+
+    /* If we haven't set a potential_cutoff, set it to the size of the box */
+    if (!params.count("potential_cutoff"))
+        insertOption("potential_cutoff",side[NDIM-1]);
+
 	/* Set the required constants */
 	constants()->initConstants(
+            params.count("pigs"),
 			params.count("canonical"),
 			params["temperature"].as<double>(),
+            params["imaginary_time_length"].as<double>(),
 			params["chemical_potential"].as<double>(),
 			params["mass"].as<double>(),
 			params["potential_cutoff"].as<double>(),
@@ -450,15 +582,22 @@ void Setup::setConstants() {
 			params["number_eq_steps"].as<uint32>(),
 			params["interaction_potential"].as<string>(),
 			params["external_potential"].as<string>(),
+            params["wavefunction"].as<string>(),
+            params["action"].as<string>(),
             params["window"].as<int>(),
             params["gaussian_ensemble_SD"].as<double>() );
 
-	/* If we have specified the center of mass shift delta on the command line, we update
-	 * its value. */
-	if (params.count("Delta"))
-		constants()->setDelta(params["Delta"].as<double>());
+    /* If we have specified either the center of mass or displace shift on the
+     * command line, we update their values. */
+	if (params.count("com_delta"))
+		constants()->setCoMDelta(params["com_delta"].as<double>());
 	else {
-		insertOption("Delta",constants()->Delta());
+		insertOption("com_delta",constants()->comDelta());
+	}
+	if (params.count("displace_delta"))
+		constants()->setDisplaceDelta(params["displace_delta"].as<double>());
+	else {
+		insertOption("displace_delta",constants()->displaceDelta());
 	}
 }
 
@@ -538,6 +677,228 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
 	return externalPotentialPtr;
 }
 
+
+/*************************************************************************//**
+* Setup the trial wave function.
+*
+* Based on the user's choice we create a new trial wave function  pointer
+* which is returned to the main program.
+******************************************************************************/
+WaveFunctionBase * Setup::waveFunction(const Path &path) {
+    
+	WaveFunctionBase *waveFunctionPtr = NULL;
+    
+	if (constants()->waveFunctionType() == "constant")
+		waveFunctionPtr = new WaveFunctionBase(path);
+	else if (constants()->waveFunctionType() == "sech")
+		waveFunctionPtr = new SechWaveFunction(path);
+	else if (constants()->waveFunctionType() == "jastrow")
+		waveFunctionPtr = new JastrowWaveFunction(path);
+    
+	return waveFunctionPtr;
+}
+
+/*************************************************************************//**
+* Setup the action.
+*
+* Based on the user's choices we create a new action pointer which is returned
+* to the main program.
+******************************************************************************/
+ActionBase * Setup::action(const Path &path, LookupTable &lookup, 
+        PotentialBase *externalPotentialPtr, 
+        PotentialBase * interactionPotentialPtr, 
+        WaveFunctionBase * waveFunctionPtr) {
+
+    ActionBase *actionPtr = NULL;
+
+    /* Non Local Actions */
+    if (constants()->actionType() == "pair_product") {
+        actionPtr = new NonLocalAction(path,lookup,externalPotentialPtr,
+                interactionPotentialPtr,waveFunctionPtr,false,constants()->actionType());	
+    }
+    /* Local Actions */
+    else {
+
+        /* The factors needed for local actions. */
+        TinyVector <double,2> VFactor;	    
+        TinyVector <double,2> gradVFactor;	
+
+        VFactor = 1.0;
+        gradVFactor = 0.0;
+
+        if (constants()->actionType() == "gsf") {
+
+            /* There are different pre-factors for even/odd slices, we use the 
+             * Prokof'ev version here. I have taken alpha = 0 here. */
+            VFactor[0] = 2.0/3.0;
+            VFactor[1] = 4.0/3.0;
+
+            double alpha = 0.0;
+            gradVFactor[0] = 2.0*alpha/9.0;
+            gradVFactor[1] = 2.0*(1.0-alpha)/9.0;
+        }
+        else if (constants()->actionType() == "li_broughton")
+            gradVFactor = 1.0 / 12.0;
+
+        /* Do we want to use full staging moves? */
+        bool local = true;
+        if (params.count("full_updates"))
+            local = false;
+
+        actionPtr = new LocalAction(path,lookup,externalPotentialPtr,
+                interactionPotentialPtr,waveFunctionPtr,VFactor,gradVFactor,local,constants()->actionType());	
+        
+        }
+
+    return actionPtr;
+}
+
+/*************************************************************************//**
+ * Define the Monte Carlo updates that will be performed
+ *
+ * @param path A reference to the paths
+ * @param actionPtr The action in use
+ * @param random The random number generator 
+ * @return a list of Monte Carlo updates
+******************************************************************************/
+auto_ptr< boost::ptr_vector<MoveBase> > Setup::moves(Path &path, 
+        ActionBase *actionPtr, MTRand &random) {
+
+    boost::ptr_vector<MoveBase> move;
+
+    /* All simulations include the Center of Mass move */
+    move.push_back(new CenterOfMassMove(path,actionPtr,random));
+
+    /* PIGS simulations use staging and displace moves */
+    if (params.count("pigs")) {
+        move.push_back(new StagingMove(path,actionPtr,random));
+        move.push_back(new DisplaceMove(path,actionPtr,random));
+    }
+    else {
+        /* We determine which type of diagonal path update we will use */
+        //if (constants()->attemptProb("bisection") > 0.0)
+        //    move.push_back(new BisectionMove(path,actionPtr,random));
+        //else
+        //    move.push_back(new StagingMove(path,actionPtr,random));
+
+        /* We determine which type of diagonal path update we will use */
+        if (params.count("full_updates")) {
+            move.push_back(new StagingMove(path,actionPtr,random));
+            constants()->setAttemptProb("staging",0.15);
+            constants()->setAttemptProb("bisection",0.0);
+        }
+        else {
+            move.push_back(new BisectionMove(path,actionPtr,random));
+            constants()->setAttemptProb("bisection",0.15);
+            constants()->setAttemptProb("staging",0.0);
+        }
+
+        /* Include all other moves */
+        move.push_back(new OpenMove(path,actionPtr,random));
+        move.push_back(new CloseMove(path,actionPtr,random));
+        move.push_back(new InsertMove(path,actionPtr,random));
+        move.push_back(new RemoveMove(path,actionPtr,random));
+        move.push_back(new AdvanceHeadMove(path,actionPtr,random));
+        move.push_back(new RecedeHeadMove(path,actionPtr,random));
+        move.push_back(new AdvanceTailMove(path,actionPtr,random));
+        move.push_back(new RecedeTailMove(path,actionPtr,random));
+        move.push_back(new SwapHeadMove(path,actionPtr,random));
+        move.push_back(new SwapTailMove(path,actionPtr,random));
+    }
+
+    return move.release();
+}
+
+/*************************************************************************//**
+ * Create a list of estimators to be measured
+ *
+ * @param path A reference to the paths
+ * @param actionPtr The action in use
+ * @param random The random number generator 
+ * @return a list of estimators
+******************************************************************************/
+auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::estimators(Path &path, 
+        ActionBase *actionPtr, MTRand &random) {
+
+    boost::ptr_vector<EstimatorBase> estimator;
+    
+    if (params.count("pigs")) {
+        estimator.push_back(new PotentialEnergyEstimator(path,actionPtr));
+        estimator.push_back(new KineticEnergyEstimator(path,actionPtr));
+        estimator.push_back(new VelocityEstimator(path));
+        estimator.push_back(new PIGSOneBodyDensityMatrixEstimator(path,actionPtr,random));
+    }
+    /* The finite temperature measurments */
+    else {
+
+        /* !!NB!! Scalar estimators, the order here is important! */
+        estimator.push_back(new EnergyEstimator(path,actionPtr));
+        estimator.push_back(new NumberParticlesEstimator(path));
+        estimator.push_back(new DiagonalFractionEstimator(path));
+        estimator.push_back(new SuperfluidFractionEstimator(path));
+        estimator.push_back(new WormPropertiesEstimator(path));
+
+        /* Vector estimators */
+        estimator.push_back(new PermutationCycleEstimator(path));
+        estimator.push_back(new NumberDistributionEstimator(path));
+        estimator.push_back(new PairCorrelationEstimator(path,actionPtr));
+        estimator.push_back(new OneBodyDensityMatrixEstimator(path,actionPtr,random));
+
+        /* Time Consuming local estmiators */
+    //    /* z-averaged estimators */
+    //    estimator.push_back(new ParticlePositionEstimator(path));
+    //    estimator.push_back(new PlaneParticlePositionEstimator(path));
+    //    estimator.push_back(new LocalSuperfluidDensityEstimator(path));
+    //    estimator.push_back(new PlaneWindingSuperfluidDensityEstimator(path));
+    //    estimator.push_back(new PlaneAreaSuperfluidDensityEstimator(path));
+
+        /* Cylinder estimators */
+        if (constants()->extPotentialType().find("tube") != string::npos) {
+            double maxR = params["estimator_radius"].as<double>();
+            estimator.push_back(new CylinderEnergyEstimator(path,actionPtr,maxR));
+            estimator.push_back(new CylinderNumberParticlesEstimator(path,maxR));
+            estimator.push_back(new CylinderSuperfluidFractionEstimator(path,maxR));
+            estimator.push_back(new CylinderRadialPotentialEstimator(path,actionPtr,random,maxR));
+            estimator.push_back(new CylinderNumberDistributionEstimator(path,maxR));
+            estimator.push_back(new CylinderPairCorrelationEstimator(path,actionPtr,maxR));
+            estimator.push_back(new CylinderOneBodyDensityMatrixEstimator(path,actionPtr,random,maxR));
+
+            /* Radially averaged estimators */
+            estimator.push_back(new RadialWindingSuperfluidDensityEstimator(path));
+            estimator.push_back(new RadialAreaSuperfluidDensityEstimator(path));
+            estimator.push_back(new RadialDensityEstimator(path));
+        }
+    } // pimc
+
+    return estimator.release();
+}
+
+/*************************************************************************//**
+ * Compare a char array with an option name
+ *
+ * @param argv The commmand line string
+ * @param target The target option name
+******************************************************************************/
+bool Setup::checkOption(const string option, const string target) {
+
+//    bool test;
+
+    /* We test for a long option */
+    if (option.find("--") != string::npos) {
+        return (option.find(target) != string::npos);
+ //       cout << target << ": ";
+ //       cout << option.find("--") << ": ";
+ //       cout << string::npos << ": ";
+    }
+    /* otherwise we test for exact equality */
+    else
+        return (option == target);
+
+//    cout << option << " " << target << " " << test << endl;
+
+ //   return test;
+}
+
 /*************************************************************************//**
  * Output the simulation parameters to a log file.
  *
@@ -558,31 +919,39 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 	/* Construct the command that would be required to restart the simulation */
 	bool outputC0 = false;
 	bool outputD = false;
+	bool outputd = false;
+
 	for (int n = 0; n < argc; n++) {
 
-		if ((argv[n][0] == '-') && (argv[n][1] == 's'))
-			n++;
-		else if ((argv[n][0] == '-') && (argv[n][1] == 'C')) {
+        /* convert the argument to a string */
+        string arg(argv[n]);
+
+		if (checkOption(arg,"-s") || checkOption(arg,"start_with_state") ) {
+            n++;
+        }
+		else if ( checkOption(arg,"-C") || checkOption(arg,"worm_constant") ) {
 			communicate()->file("log")->stream() << format("-C %10.4e ") % constants()->C0();
 			n++;
 			outputC0 = true;
 		}
-		else if ((argv[n][0] == '-') && (argv[n][1] == 'p')) {
+		else if (checkOption(arg,"-p") || checkOption(arg,"process")) {
 			communicate()->file("log")->stream() << format("-p %03d ") % params["process"].as<uint32>();
 			n++;
 		}
-		else if ((argv[n][0] == '-') && (argv[n][1] == 'D')) {
-            communicate()->file("log")->stream() << format("-D %10.4e ") % constants()->Delta();
+		else if (checkOption(arg,"-D") || checkOption(arg,"com_delta")) {
+            communicate()->file("log")->stream() << format("-D %10.4e ") % constants()->comDelta();
 			outputD = true;
 			n++;
 		}
-        else if ((argv[n][0] == '-') && (argv[n][1] == '-') && (argv[n][2] == 'r') && 
-                (argv[n][3] == 'e') && (argv[n][4] == 'l') && (argv[n][5] == 'a') && 
-                (argv[n][6] == 'x')) {
-            // Do nothing
+		else if (checkOption(arg,"-d") || checkOption(arg,"displace_delta")) {
+            communicate()->file("log")->stream() << format("-d %10.4e ") % constants()->displaceDelta();
+			outputd = true;
+			n++;
+		}
+		else {
+			communicate()->file("log")->stream() << arg << " ";
         }
-		else 
-			communicate()->file("log")->stream() << argv[n] << " ";
+
 	}
 
     /* Output the restart flag */
@@ -592,9 +961,13 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 	if (!outputC0)
 		communicate()->file("log")->stream() << format("-C %10.4e ") % constants()->C0();
 
-	/* If we haven't specified Delta, output it now */
+	/* If we haven't specified the center of mass Delta, output it now */
 	if (!outputD)
-        communicate()->file("log")->stream() << format("-D %10.4e ") % constants()->Delta();
+        communicate()->file("log")->stream() << format("-D %10.4e ") % constants()->comDelta();
+
+	/* If we haven't specified the displace delta, output it now */
+    if (constants()->pigs() && !outputd)
+        communicate()->file("log")->stream() << format("-d %10.4e ") % constants()->displaceDelta();
 
 	communicate()->file("log")->stream() << endl << endl;
 	communicate()->file("log")->stream() << "---------- Begin Simulation Parameters ----------" << endl;
@@ -603,8 +976,15 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 		communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Ensenble" % "canonical";
 	else
 		communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Ensenble" % "grand canonical";
+	if (constants()->pigs())
+		communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Simulation Type" % "PIGS";
+	else
+		communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Simulation Type" % "PIMC";
+	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Action Type" % params["action"].as<string>();
 	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Interaction Potential" % 
 		params["interaction_potential"].as<string>();
+
+    /* Ouptut a possible delta function width and strength */
 	if ( (params["interaction_potential"].as<string>().find("delta") != string::npos) ||
 			(params["interaction_potential"].as<string>().find("lorentzian") != string::npos) ) {
 		communicate()->file("log")->stream() << format("%-24s\t:\t%8.3e\n") % "Delta Width" 
@@ -612,8 +992,16 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 		communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") % "Delta Strength" 
 			% params["delta_strength"].as<double>();
 	}
+    /* Output a possible scattering length */
+	if ( (params["interaction_potential"].as<string>().find("hard_sphere") != string::npos) ||
+         (params["interaction_potential"].as<string>().find("hard_rod") != string::npos) ) {
+		communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") % "Scattering Length" 
+			% params["scattering_length"].as<double>();
+    }
 	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") 
 		% "External Potential" % params["external_potential"].as<string>();
+	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") 
+		% "Wavefunction Type" % params["wavefunction"].as<string>();
 	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%7.5f\n") % "Temperature" % params["temperature"].as<double>();
 	communicate()->file("log")->stream() << 
@@ -624,6 +1012,8 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 		format("%-24s\t:\t%d\n") % "Number Time Slices" % constants()->numTimeSlices();
 	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%7.5f\n") % "Imaginary Time Step" % constants()->tau();
+	communicate()->file("log")->stream() << 
+		format("%-24s\t:\t%7.5f\n") % "Imaginary Time Length" % constants()->imagTimeLength();
 	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%d\n") % "Initial Number Particles" % params["number_particles"].as<int>();
 	communicate()->file("log")->stream() << 
@@ -652,8 +1042,12 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Initial Worm Constant" % 
 		params["worm_constant"].as<double>();
 	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Worm Constant" % constants()->C0();
-	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Inital CoM Shift" % params["Delta"].as<double>();
-	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5g\n") % "CoM Shift" % constants()->Delta();
+	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Inital CoM Delta" % params["com_delta"].as<double>();
+	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5g\n") % "CoM Delta" % constants()->comDelta();
+    if (constants()->pigs()) {
+        communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Inital Displace Delta" % params["displace_delta"].as<double>();
+        communicate()->file("log")->stream() << format("%-24s\t:\t%7.5g\n") % "Displace Delta" % constants()->displaceDelta();
+    }
 	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%d\n") % "Bisection Parameter" % constants()->b();
 	communicate()->file("log")->stream() << 
@@ -668,5 +1062,4 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 	communicate()->file("log")->stream() << format("%-24s\t:\t%d\n") % "Random Number Seed" % _seed;
 	communicate()->file("log")->stream() << endl;
 	communicate()->file("log")->stream() << "---------- End Simulation Parameters ------------" << endl;
-
 }

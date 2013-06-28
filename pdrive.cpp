@@ -11,11 +11,13 @@
 #include "path.h"
 #include "potential.h"
 #include "action.h"
+#include "wavefunction.h"
 #include "pimc.h"
 #include "lookuptable.h"
 #include "communicator.h"
 #include "setup.h"
 #include "cmc.h"
+#include "move.h"
 
 /**
  * Main driver.
@@ -94,16 +96,30 @@ int main (int argc, char *argv[]) {
         CMC.run(constants()->numEqSteps(),0);
     }
 
+    /* Allow for one broken path */
+    int numberBroken = 0;
+    if (constants()->pigs())
+        numberBroken = 1;
+
 	/* Setup the path data variable */
-	Path path(boxPtr,lookup,constants()->numTimeSlices(),initialPos);
+	Path path(boxPtr,lookup,constants()->numTimeSlices(),initialPos,numberBroken);
+
+    /* The Trial Wave Function (constant for pimc) */
+    WaveFunctionBase *waveFunctionPtr = NULL;
+	waveFunctionPtr = setup.waveFunction(path);
 
 	/* Setup the action */
-	GSFAction action(path,lookup,externalPotentialPtr,interactionPotentialPtr);	
-	//PrimitiveAction action(path,lookup,externalPotentialPtr,interactionPotentialPtr);	
-	//NonLocalAction action(path,lookup,externalPotentialPtr,interactionPotentialPtr,"Pair Product Approximation");	
+    ActionBase *actionPtr = NULL;
+    actionPtr = setup.action(path,lookup,externalPotentialPtr,interactionPotentialPtr,waveFunctionPtr);	
 
+    /* The list of Monte Carlo updates (moves) that will be performed */
+    boost::ptr_vector<MoveBase> moves(setup.moves(path,actionPtr,random));
+
+    /* The list of estimators that will be performed */
+    boost::ptr_vector<EstimatorBase> estimators(setup.estimators(path,actionPtr,random));
+    
 	/* Setup the pimc object */
-	PathIntegralMonteCarlo pimc(path,&action,random,setup.params["estimator_radius"].as<double>(),
+	PathIntegralMonteCarlo pimc(path,actionPtr,random,moves,estimators,
 			!setup.params["start_with_state"].as<string>().empty());
 
 	/* If this is a fresh run, we equilibrate and output simulation parameters to disk */
@@ -161,6 +177,8 @@ int main (int argc, char *argv[]) {
 	delete interactionPotentialPtr;
 	delete externalPotentialPtr;
 	delete boxPtr;
+    delete waveFunctionPtr;
+    delete actionPtr;
 
 	initialPos.free();
 

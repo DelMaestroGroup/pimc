@@ -26,11 +26,12 @@ class ConstantParameters
 {
 	public:
 		static ConstantParameters* getInstance();
-		void initConstants(bool,double,double,double,double,double,double,double,
-				int,int,int,uint32,uint32,double,uint32,string,string,int,double);
+		void initConstants(bool,bool,double,double,double,double,double,double,double,double,
+				int,int,int,uint32,uint32,double,uint32,string,string,string,string,int,double);
 
 		/* All the get methods */
 		double T() const {return T_;}					///< Get temperature.
+        double imagTimeLength() const { return imagTimeLength_;}    ///< Get the extent in imaginary time.
 		double mu() const {return mu_;} 				///< Get chemical potential.
 		double tau() const {return tau_;}				///< Get imaginary time step
 		double m() const {return m_;}					///< Get mass.
@@ -38,10 +39,11 @@ class ConstantParameters
 		double rc() const {return rc_;}					///< Get potential cutoff
 		double rc2() const {return rc2_;}				///< Get potential cutoff squared
 		double C0() const {return C0_;}					///< Get worm factor C0
-		double Delta() const {return Delta_;}			///< Get center of mass shift
 		double C() const {return C_;}					///< Get full worm constant
 		double V() const {return V_;}					///< Get cell volume
 		double L() const {return L_;}					///< Get maximum side length
+		double comDelta() const {return comDelta_;}		///< Get center of mass shift
+		double displaceDelta() const {return displaceDelta_;}		///< Get center of mass shift
 
 		/** Get deBroglie wavelength */
 		double dBWavelength() const {return dBWavelength_;} ///< Get deBroglie wavelength
@@ -54,16 +56,28 @@ class ConstantParameters
         double attemptProb(string type) {
             if (attemptProb_.count(type))
                 return attemptProb_[type];
-            else
+            else {
                 cerr << "Attempt probability for " << type << " does not exist!" << endl;
                 exit(EXIT_FAILURE);
                 return 0.0;
+            }
         }
 
-		bool restart() const {return restart_;}			///< Get restart state
+        /* Set the move attempt probability */
+        void setAttemptProb(string type,double prob) {
+            if (attemptProb_.count(type))
+                attemptProb_[type] = prob;
+            else {
+                cerr << "Attempt probability for " << type << " does not exist!" << endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+
+		bool restart() const {return restart_;}			                    ///< Get restart state
         bool wallClockOn() const {return wallClockOn_;}                     ///< Get wallclockOn
         uint32 wallClock() const {return wallClock_;}                       ///< Get wallclock limit
 		bool canonical() const { return canonical_;}                        ///< Get ensemble
+        bool pigs() const { return pigs_;}                                  ///< Are we at T=0?
         bool window() const { return window_;}                              ///< Get window on/off
         int windowWidth() const { return windowWidth_;}                     ///< Get window 1/2 width
         bool gaussianEnsemble() const { return gaussianEnsemble_;}          ///< Get enesemble weight on/off
@@ -77,20 +91,23 @@ class ConstantParameters
 		uint32 id() {return id_;}						///< Get simulation ID
 		uint32 numEqSteps() {return numEqSteps_;}	///< Get the number of equilibration steps
 
-
 		string intPotentialType() const {return intPotentialType_;}	///< Get interaction potential type
 		string extPotentialType() const {return extPotentialType_;}	///< Get external potential type
+        string waveFunctionType() const {return waveFunctionType_;}	///< Get wave function type
+        string actionType() const {return actionType_;}	            ///< Get wave action type
 
 		/* Set methods */
 		void setmu(double _mu) {mu_ = _mu;}				///< Set the value of the chemical potential
-		void setDelta(double _Delta) {Delta_ = _Delta;}	///< Set the CoM move size
+		void setCoMDelta(double _comDelta) {comDelta_ = _comDelta;}	///< Set the CoM move size
+		void setDisplaceDelta(double _displaceDelta) {_displaceDelta = _displaceDelta;}	///< Set the displace move size
 
 		/* Increment/decrement methods */
-		void shiftC0(double frac) {C0_ += frac*C0_; getC();}		///< Shift the value of C0
-		void getC() {C_ = C0_ / (1.0*Mbar_*numTimeSlices_*V_);}		///< Get the value of the worm constant 
-		void shiftDelta(double frac) {Delta_ += frac*Delta_; }		///< Shift the CoM move size
-		void shiftmu (double frac) { mu_ += frac*mu_; }				///< Shift the chemical potential
-        void incid() {++id_;}                                       ///< Increment the PIMCID by 1
+		void shiftC0(double frac) {C0_ += frac*C0_; getC();}		        ///< Shift the value of C0
+		void getC() {C_ = C0_ / (1.0*Mbar_*numTimeSlices_*V_);}		        ///< Get the value of the worm constant 
+		void shiftCoMDelta(double frac) {comDelta_ += frac*comDelta_; }		///< Shift the CoM move size
+		void shiftDisplaceDelta(double frac) {displaceDelta_ += frac*displaceDelta_; }		///< Shift the displace move size
+		void shiftmu (double frac) { mu_ += frac*mu_; }				        ///< Shift the chemical potential
+        void incid() {++id_;}                                               ///< Increment the PIMCID by 1
 
 	protected:
 		ConstantParameters();
@@ -99,12 +116,14 @@ class ConstantParameters
 
 	private:
 		double T_;				// Temperature [K]
+		double imagTimeLength_;	// Temperature [K]
 		double mu_;				// Chemical Potential [K]
 		double tau_;			// Imaginary time step (tau = beta/numTimeSlices)
 		double lambda_;			// hbar^2 / (2*mass*k_B) [K A^2]
 		double m_;				// The particle mass
 		double dBWavelength_;	// Thermal de Broglie wavelength
-		double Delta_;			// The size of center of mass and displace moves
+		double comDelta_;	    // The size of center of mass move
+        double displaceDelta_;  // The size of the displace move shift
 
 		double rc_;				// The potential cutoff length
 		double rc2_;			// The potential cutoff length squared
@@ -126,14 +145,16 @@ class ConstantParameters
         uint32 wallClock_;          // The wall clock limit in seconds
         bool wallClockOn_;          // Is the wall clock on?
         bool canonical_;            // Are we in the canonical ensemble?
+        bool pigs_;                 // Used to determine the mode T>0 or T=0.
         bool window_;               // Are we using a particle number window?
         int windowWidth_;           // Half width of particle number window
         bool gaussianEnsemble_;     // Are we using guassian ensemble weight?
         double gaussianEnsembleSD_; // Standard deviation of ensemble weight
 
-
-		string intPotentialType_; // The type of interaction potential
-		string extPotentialType_; // The type of external potential
+		string intPotentialType_;   // The type of interaction potential
+		string extPotentialType_;   // The type of external potential
+        string waveFunctionType_;   // The type of trial wave function
+        string actionType_;         // The type of action
 
 		map <string,double> attemptProb_;	// The move attempt probabilities
 };

@@ -29,10 +29,11 @@ class LookupTable;
 class Path {
 
 	public:
-		Path (const Container *, LookupTable &, int, const Array<dVec,1>&);
+		Path (const Container *, LookupTable &, int, const Array<dVec,1>&, int numberBroken = 0);
 		~Path();
 
 		const int numTimeSlices;		///< A local constant copy of the number of time slices
+        int breakSlice;                 ///< The location of the break in the path (0=>no break)
 
 		const Container *boxPtr;		///< A constant reference to the container class
 		Worm worm;						///< Details on the worm
@@ -152,8 +153,10 @@ inline dVec Path::getSeparation(const beadLocator &bead1, const beadLocator &bea
 inline dVec Path::getVelocity (const beadLocator &beadIndex) const {
 	dVec vel;
 
-	if (all(beadIndex==XXX) || all(next(beadIndex)==XXX))
-		return 0.0;
+	if (all(beadIndex==XXX) || all(next(beadIndex)==XXX)) {
+        vel = 0.0;
+        return (vel);
+    }
 
 	/* Calculate the 'velocity' and implement periodic boundary conditions */
 	vel = beads(next(beadIndex)) - beads(beadIndex);
@@ -209,6 +212,8 @@ inline beadLocator Path::prev(const beadLocator &beadIndex, int numLinks) const 
 		bI = prev(bI);
 	return bI;
 }
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 /** Output bead-link info, used for debugging.*/
 template<class Tstream>

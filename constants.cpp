@@ -17,12 +17,14 @@
 /**************************************************************************//**
  *  An empty constructor which simply sets all constants to null.
 ******************************************************************************/
-ConstantParameters::ConstantParameters() : T_(), mu_(), tau_(), lambda_(), m_(),
+ConstantParameters::ConstantParameters() : T_(), imagTimeLength_(), mu_(), tau_(), lambda_(), m_(),
 	dBWavelength_(), rc_(), C0_(), C_(), V_(), L_(), Mbar_(), b_(), numTimeSlices_(), 
     initialNumParticles_(), deltaNumParticles_(), id_(), restart_(),
-    wallClock_(),  canonical_(), window_(), intPotentialType_(),
-    extPotentialType_()
-{ }
+    wallClock_(),  canonical_(), pigs_(), window_(), intPotentialType_(),
+    extPotentialType_(), waveFunctionType_(), actionType_()
+{ 
+    /* set all data members to null values */
+}
 
 /**************************************************************************//**
  *  Initialize all constants from passed values.
@@ -32,11 +34,11 @@ ConstantParameters::ConstantParameters() : T_(), mu_(), tau_(), lambda_(), m_(),
  *	lambda = hbar^2/2 m k_B is computed in units where lenghts are measured in 
  *	angstroms and energies in kelvin.
 ******************************************************************************/
-void ConstantParameters::initConstants(bool _canonical, double _T, double _mu, double _m,
-		double _rc, double _C0, double _V, double _L, int _initialNumParticles, 
+void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, double _imagTimeLength, 
+        double _mu, double _m, double _rc, double _C0, double _V, double _L, int _initialNumParticles, 
 		int _Mbar, int _numTimeSlices, uint32 _id, uint32 _process, double _wallClock,
-		uint32 _numEqSteps, string _intPotentialType, string _extPotentialType,
-        int _window, double _gaussianEnsembleSD ) {
+		uint32 _numEqSteps, string _intPotentialType, string _extPotentialType, 
+        string _waveFunctionType, string _actionType, int _window, double _gaussianEnsembleSD ) {
 
 	/* The simulation ID is the number of seconds since January 1 2009 */
 	if (_id == 0) {
@@ -59,6 +61,9 @@ void ConstantParameters::initConstants(bool _canonical, double _T, double _mu, d
         wallClock_ = uint32( floor(_wallClock*3600) );
     }
 
+    /* Are we at T = 0 (pigs) or T>0 (pimc) */
+    pigs_ = _pigs;
+
 	/* Are we working in the grand canonical ensemble? */
 	canonical_ = _canonical;
     
@@ -80,11 +85,11 @@ void ConstantParameters::initConstants(bool _canonical, double _T, double _mu, d
         gaussianEnsembleSD_ = _gaussianEnsembleSD;
     }
 
-
 	/* Assigned values */
 	b_             = int (ceil(log(1.0*_Mbar) / log(2.0)-EPS));
 	Mbar_          = _Mbar;
 	T_             = _T;
+    imagTimeLength_ = _imagTimeLength;
 	mu_            = _mu;
 	m_             = _m;
 	lambda_        = 24.24 / m_;
@@ -104,6 +109,8 @@ void ConstantParameters::initConstants(bool _canonical, double _T, double _mu, d
 
 	intPotentialType_ = _intPotentialType;
 	extPotentialType_ = _extPotentialType;
+    waveFunctionType_ = _waveFunctionType;
+    actionType_ = _actionType;
 
 	PIMC_ASSERT(Mbar_ < numTimeSlices_);
 	PIMC_ASSERT(Mbar_ > 1);
@@ -120,28 +127,58 @@ void ConstantParameters::initConstants(bool _canonical, double _T, double _mu, d
 
 	/* Computed values */
 	dBWavelength_ = 2.0*sqrt(M_PI * lambda_ / T_);
-	Delta_        = 0.04*dBWavelength_;
+	comDelta_ = 0.04*dBWavelength_;
+    displaceDelta_ = 0.04*dBWavelength_;
 	getC();
 
-	/* Here we set all the attempt probabilities */
-    attemptProb_["open"] = 0.4;
-    attemptProb_["insert"] = 0.4;
-    attemptProb_["close"] = 0.15;
-    attemptProb_["advance head"] = 0.075;
-    attemptProb_["recede head"] = 0.075;
-    attemptProb_["advance tail"] = 0.075;
-    attemptProb_["recede tail"] = 0.075;
-    attemptProb_["remove"] = 0.15;
-    attemptProb_["swap head"] = 0.10;
-    attemptProb_["swap tail"] = 0.10;
-    attemptProb_["staging"] = 0.00;
-    attemptProb_["bisection"] = 0.15;
-    attemptProb_["center of mass"] = 0.05;
+    /* Set the move probabilities */
+
+    /* At present, the pigs code has only diagonal moves */
+    if (pigs_) {
+        attemptProb_["open"] = 0.0;
+        attemptProb_["insert"] = 0.0;
+        attemptProb_["close"] = 0.0;
+        attemptProb_["advance head"] = 0.0;
+        attemptProb_["recede head"] = 0.0;
+        attemptProb_["advance tail"] = 0.0;
+        attemptProb_["recede tail"] = 0.0;
+        attemptProb_["remove"] = 0.0;
+        attemptProb_["swap head"] = 0.0;
+        attemptProb_["swap tail"] = 0.0;
+        attemptProb_["staging"] = 0.6;
+        attemptProb_["bisection"] = 0.0;
+        attemptProb_["center of mass"] = 0.1;
+        attemptProb_["displace"] = 0.3;
+    }
+    else {
+        attemptProb_["open"] = 0.4;
+        attemptProb_["insert"] = 0.4;
+        attemptProb_["close"] = 0.15;
+        attemptProb_["advance head"] = 0.075;
+        attemptProb_["recede head"] = 0.075;
+        attemptProb_["advance tail"] = 0.075;
+        attemptProb_["recede tail"] = 0.075;
+        attemptProb_["remove"] = 0.15;
+        attemptProb_["swap head"] = 0.10;
+        attemptProb_["swap tail"] = 0.10;
+
+        /* !!NB!! Bisection currently doesn't work for pair_product actions */
+        if (actionType_ == "pair_product") {
+            attemptProb_["staging"] = 0.15;
+            attemptProb_["bisection"] = 0.00;
+        }
+        else {
+            attemptProb_["staging"] = 0.00;
+            attemptProb_["bisection"] = 0.15;
+        }
+        attemptProb_["center of mass"] = 0.05;
+        attemptProb_["displace"] = 0.0;
+    }
 
     double totProb = attemptProb_["close"] + attemptProb_["advance head"] + attemptProb_["recede head"]
         + attemptProb_["advance tail"] + attemptProb_["recede head"] + attemptProb_["remove"]
         + attemptProb_["swap head"] + attemptProb_["swap tail"] + attemptProb_["staging"]
-        + attemptProb_["bisection"] + attemptProb_["center of mass"];
+        + attemptProb_["bisection"] + attemptProb_["center of mass"] + attemptProb_["displace"];
 
 	if (abs(totProb - 1.0) > EPS) {
 		cout << "Close + AdvanceHead + RecedeHead + AdvanceTail + RecedeTail + Remove + SwapHead " 
@@ -151,7 +188,7 @@ void ConstantParameters::initConstants(bool _canonical, double _T, double _mu, d
 	PIMC_ASSERT(totProb-1.0 < EPS);
 
     totProb = attemptProb_["open"] + attemptProb_["insert"] + attemptProb_["staging"]
-       + attemptProb_["bisection"] + attemptProb_["center of mass"];
+       + attemptProb_["bisection"] + attemptProb_["center of mass"] + attemptProb_["displace"];
 	
 	if (abs(totProb - 1.0) > EPS) {
 		cout << "Open + Insert + Staging + Bisection + CoM Probability != 1" << endl;

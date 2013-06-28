@@ -9,6 +9,7 @@
 #include "path.h"
 #include "potential.h"
 #include "lookuptable.h"
+#include "wavefunction.h"
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -21,13 +22,14 @@
 ******************************************************************************/
 ActionBase::ActionBase (const Path &_path, LookupTable &_lookup, 
 		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
-        bool _local, string _name) :
+        WaveFunctionBase *_waveFunctionPtr, bool _local, string _name) :
 	local(_local), 
     externalPtr(_externalPtr),
     interactionPtr(_interactionPtr),
     name(_name),
     lookup(_lookup),
-    path(_path)
+    path(_path),
+    waveFunctionPtr(_waveFunctionPtr)
 {
 
     /* The default tau scale is 1 */
@@ -251,35 +253,21 @@ double ActionBase::potentialAction (const beadLocator &startBead,
  *  Setup the path data members and local action factors.
 ******************************************************************************/
 LocalAction::LocalAction (const Path &_path, LookupTable &_lookup, 
-		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, string _name) :
-    ActionBase(_path,_lookup,_externalPtr,_interactionPtr,false,_name) 
+		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
+        WaveFunctionBase *_waveFunctionPtr, const TinyVector<double,2> &_VFactor, 
+        const TinyVector<double,2> & _gradVFactor, bool _local, string _name) :
+    ActionBase(_path,_lookup,_externalPtr,_interactionPtr,_waveFunctionPtr,
+            _local,_name), 
+    VFactor(_VFactor),
+    gradVFactor(_gradVFactor)
 {
-    /* By default, there is no even/odd difference and the correction
-     * coming from gradients of the potential is zero */
-    VFactor= 1.0;
-    gradVFactor = 0.0;
-    eFactor = 0.0;
-
-    setFactor();
-
+    shift = 1;
 }
 
 /**************************************************************************//**
  *  Empty base constructor.
 ******************************************************************************/
 LocalAction::~LocalAction() {
-}
-
-/**************************************************************************//**
- *  Setup the local potential action and force correction factors.
- *
- *  We pre-compute constant numbers that don't change during the
- *  simulation and are used to compute the action
-******************************************************************************/
-void LocalAction::setFactor() {
-    potentialFactor = constants()->tau()*VFactor;
-    fFactor = constants()->tau() * constants()->tau() * constants()->tau() * 
-        constants()->lambda() * gradVFactor;
 }
 
 /**************************************************************************//**
@@ -337,6 +325,13 @@ double LocalAction::potentialAction (const beadLocator &beadIndex) {
  	 	corU = gradVFactor[eo] * tau() * tau() * tau() * constants()->lambda() 
  	 		* gradVnnSquared(beadIndex);
      
+     /* We tack on a trial wave function and boundary piece if necessary */  
+     if ((constants()->pigs()) && 
+             ((beadIndex[0] == 0) || (beadIndex[0] == (constants()->numTimeSlices()-1))) ) {
+         bareU *= 0.5;
+         bareU -= log(waveFunctionPtr->PsiTrial(beadIndex[0]));
+     }
+
      return (bareU + corU);
 }
 
@@ -347,7 +342,17 @@ double LocalAction::potentialAction (const beadLocator &beadIndex) {
  *  when attempting updates that use single slice rejection.
 ******************************************************************************/
 double LocalAction::barePotentialAction (const beadLocator &beadIndex) {
-    return VFactor[beadIndex[0]%2]*tau()*Vnn(beadIndex);
+
+    double bareU = VFactor[beadIndex[0]%2]*tau()*Vnn(beadIndex);
+
+     /* We tack on a trial wave function and boundary piece if necessary */  
+     if ((constants()->pigs()) && 
+             ((beadIndex[0] == 0) || (beadIndex[0]== (constants()->numTimeSlices()-1))) ) {
+         bareU *= 0.5;
+         bareU -= log(waveFunctionPtr->PsiTrial(beadIndex[0]));
+     }
+
+    return bareU;
 }
 
 /**************************************************************************//**
@@ -917,115 +922,6 @@ double LocalAction::gradVnnSquared(const beadLocator &bead1) {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// PRIMITIVE ACTION CLASS ----------------------------------------------------
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-
-/**************************************************************************//**
- * Constructor.
-******************************************************************************/
-PrimitiveAction::PrimitiveAction(const Path &_path, LookupTable &_lookup, 
-		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, string _name) :
-    LocalAction(_path,_lookup,_externalPtr,_interactionPtr,_name) 
-{
-	/* Set the action shift */
-	shift = 1;
-
-	/* We have no even/odd slice difference here */
-	VFactor = 1.0;
-	gradVFactor = 0.0;
-	eFactor = 0.0;
-
-    setFactor();
-}
-
-/**************************************************************************//**
- * Destructor.
-******************************************************************************/
-PrimitiveAction::~PrimitiveAction() {
-}
-
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// LI-BROUGHTON ACTION CLASS -------------------------------------------------
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-
-/**************************************************************************//**
- * Constructor.
-******************************************************************************/
-LiBroughtonAction::LiBroughtonAction(const Path &_path, LookupTable &_lookup, 
-		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, string _name) :
-    LocalAction(_path,_lookup,_externalPtr,_interactionPtr,_name) 
-{
-	/* Set the action shift */
-	shift = 1;
-
-	/* We have no even/odd slice difference here */
-	VFactor = 1.0;
-	gradVFactor = 1.0 / 12.0;
-	eFactor = 1.0 / 24.0;
-
-    setFactor();
-}
-
-/**************************************************************************//**
- * Destructor.
-******************************************************************************/
-LiBroughtonAction::~LiBroughtonAction() {
-}
-
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// GSF ACTION CLASS ----------------------------------------------------------
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-
-/**************************************************************************//**
- * Constructor.
-******************************************************************************/
-GSFAction::GSFAction(const Path &_path, LookupTable &_lookup, 
-		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, string _name) :
-    LocalAction(_path,_lookup,_externalPtr,_interactionPtr,_name) 
-{
-	/* Set the action shift */
-	shift = 1;
-
-	/* Set the value of alpha */ 
-	//alpha = 1.0 / 3.0;
-	alpha = 0.0;
-
-	/* There are different pre-factors for even/odd slices */
-//	VFactor[0] = 4.0/3.0;
-//	VFactor[1] = 2.0/3.0;
-//
-//	gradVFactor[0] = 2.0*(1.0 - alpha)/9.0;
-//	gradVFactor[1] = 2.0*alpha/9.0;
-//
-//	eFactor[0] = (1.0 - alpha)/9.0;
-//	eFactor[1] = alpha/9.0;
-	
-	/* There are different pre-factors for even/odd slices, we use the 
-	 * Prokof'ev version here. I have taken alpha = 0 here. */
-	VFactor[0] = 2.0/3.0;
-	VFactor[1] = 4.0/3.0;
-
-	gradVFactor[0] = 0.0;
-	gradVFactor[1] = 2.0/9.0;
-
-	eFactor[0] = 0.0;
-	eFactor[1] = 1.0/9.0;
-
-    setFactor();
-}
-
-/**************************************************************************//**
- * Destructor.
-******************************************************************************/
-GSFAction::~GSFAction() {}
-
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
 // NON LOCAL ACTION BASE CLASS -----------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -1034,14 +930,16 @@ GSFAction::~GSFAction() {}
  *  Setup the path data members for non-local actions.
 ******************************************************************************/
 NonLocalAction::NonLocalAction (const Path &_path, LookupTable &_lookup, 
-		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, string _name) :
-    ActionBase(_path,_lookup,_externalPtr,_interactionPtr,false,_name) 
+		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
+        WaveFunctionBase *_waveFunctionPtr, bool _local, string _name) :
+    ActionBase(_path,_lookup,_externalPtr,_interactionPtr,_waveFunctionPtr,
+            _local,_name) 
 {
 //
 }
 
 /**************************************************************************//**
- *  Empty base constructor.
+ *  Empty constructor.
 ******************************************************************************/
 NonLocalAction::~NonLocalAction() {
 }

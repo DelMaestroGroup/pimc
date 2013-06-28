@@ -11,13 +11,16 @@
 
 #include "common.h"
 #include "communicator.h"
-#include "move.h"
 #include "estimator.h"
-//#include <boost/ptr_container/ptr_map.hpp>
 
 class ActionBase;
 class Path;
 class LookupTable;
+class MoveBase;
+class EstimatorBase;
+
+typedef boost::ptr_vector<EstimatorBase> estimator_vector;
+typedef boost::ptr_vector<MoveBase> move_vector;
 
 // ========================================================================  
 // PathIntegralMonteCarlo Class
@@ -31,7 +34,8 @@ class LookupTable;
  */
 class PathIntegralMonteCarlo {
 	public:
-		PathIntegralMonteCarlo (Path &, ActionBase *, MTRand &, const double, const bool);
+		PathIntegralMonteCarlo (Path &, ActionBase *, MTRand &, 
+                move_vector &, estimator_vector &, const bool);
 		~PathIntegralMonteCarlo ();
 
 		/* The equilibration relaxation */
@@ -55,8 +59,10 @@ class PathIntegralMonteCarlo {
 		int numStoredBins;			///< Number of stored estimators
 		int numDiagonal;			///< Number of consecutive diagonal configs
 		int numConfig;				///< Number of configurations;
-		int numCoM;					///< Number of Center of Mass moves
+		int numCoMAttempted;					///< Number of Center of Mass moves
 		int numCoMAccepted;			///< Number of equil CoM moves accepted
+		int numDisplaceAttempted;	///< Number of equil Displace moves
+		int numDisplaceAccepted;    ///< Number of equil Displace moves accepted
 
 	private:
 		int configNumber;			// The output configuration number
@@ -64,6 +70,11 @@ class PathIntegralMonteCarlo {
         int numSteps;               // The number of steps performed during equilibration
         int numUpdates;             // The maximum number of updates per step.
         int numParticles;           // The number of particles
+
+        int comIndex;               // The index of the CoM move
+        int diagIndex;              // The index of the diagonal path update (bisection or staging)
+        int displaceIndex;          // The index of a possible displace move
+
 		bool savedState;			// We have saved at least one state
 		bool startWithState;		// Are we starting from a saved state
         bool success;               // Track move success/failure
@@ -71,51 +82,8 @@ class PathIntegralMonteCarlo {
 		MTRand &random;				// The global random number generator
 		Path &path;					// The actual wordline paths
 
-		/* The actual moves to be performed */
-		CenterOfMassMove centerOfMass;
-		StagingMove    	 staging;
-        BisectionMove    bisection;
-		OpenMove         open;
-		CloseMove        close;
-		InsertMove       insert;
-		RemoveMove       remove;
-		AdvanceHeadMove	 advanceHead;
-		RecedeHeadMove 	 recedeHead;
-		AdvanceTailMove	 advanceTail;
-		RecedeTailMove 	 recedeTail;
-		SwapHeadMove 	 swapHead;
-		SwapTailMove 	 swapTail;
-
-		/* The estimators that we will measure */
-		DiagonalFractionEstimator       diagonalFraction;
-		EnergyEstimator                 energy;
-		NumberParticlesEstimator        numberParticles;
-        ParticlePositionEstimator       particlePositions;
-        PlaneParticlePositionEstimator  planeParticlePositions;
-		SuperfluidFractionEstimator     superfluidFraction;
-        LocalSuperfluidDensityEstimator localSuperfluidDensity;
-        PlaneWindingSuperfluidDensityEstimator   planeWindingSuperfluidDensity;
-        PlaneAreaSuperfluidDensityEstimator   planeAreaSuperfluidDensity;
-        RadialWindingSuperfluidDensityEstimator  radialWindingSuperfluidDensity;
-        RadialAreaSuperfluidDensityEstimator     radialAreaSuperfluidDensity;
-		PermutationCycleEstimator       permutationCycle;
-		OneBodyDensityMatrixEstimator   oneBodyDensityMatrix;
-		PairCorrelationEstimator        pairCorrelation;
-		RadialDensityEstimator          radialDensity;
-		WormPropertiesEstimator         wormProperties;
-		NumberDistributionEstimator     numberDistribution;
-
-		/* The cylindrical estimators */
-		CylinderEnergyEstimator               cylEnergy;
-		CylinderNumberParticlesEstimator      cylNumberParticles;
-		CylinderSuperfluidFractionEstimator   cylSuperFluidFraction;
-		CylinderPairCorrelationEstimator      cylPairCorrelation;
-		CylinderOneBodyDensityMatrixEstimator cylOneBodyDensityMatrix;
-		CylinderNumberDistributionEstimator   cylNumberDistribution;
-		CylinderRadialPotentialEstimator      cylRadialPotential;
-
-		vector <EstimatorBase*> estimator;		// The estimator array
-		vector <MoveBase*> move;				// The move array
+        move_vector move;		    // The move array
+        estimator_vector estimator;	// The estimator array
 
 		vector <double> attemptDiagProb;		// The cumulative diagonal attempt Probabilities
 		vector <double> attemptOffDiagProb;		// The cumulative off-diagonal attempt Probabilities
@@ -135,7 +103,6 @@ class PathIntegralMonteCarlo {
 
 		/* Perform a Metropolis update */
 		string update(const double,const int);
-		string update1(const double,const int);
 };
 
 #endif

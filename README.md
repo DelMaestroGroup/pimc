@@ -204,12 +204,12 @@ If you want to perform a quick test-run for bulk helium you could try something 
 In order for this to work, you will need a folder named `OUTPUT` in the directory where you type
 the command as it will produce output files in `OUTPUT` that contain all the results of the
 code.  Each run of the code is associated with a unique identifying integer:
-the `PIMCID`.  The options used in this demo include:
+the `PIMCID`.  The options used in this demo include a subset of all the possible options:
 
 | Code Option | Description |
 | :-----------: | ----------- |
 |`T`     |  temperature in kelvin |
-|`N`     |  number of bosons |
+|`N`     |  number of particles |
 |`n`     |  density in &Aring;<sup>-ndim</sup> (ndim=spatial dimension) |
 |`t`     |  the imaginary time step tau |
 |`M`     |  number of time slices involved in a bisection move |
@@ -221,52 +221,76 @@ the `PIMCID`.  The options used in this demo include:
 |`l`     |  potential cutoff length in &Aring; | 
 |`u`     |  chemical potential in kelvin | 
 |`relax` |  adjust the worm constant to ensure we are in the diagonal ensemble ~75% of the simulation |
+|`o`     |  the number of configurations to be stored to disk| 
+|`p`     |  process or cpu number| 
+|`R`     |  restart the simulation with a PIMCID| 
+|`W`     |  the wall clock run limit in hours| 
+|`s`     |  supply a gce-state-* file to start the simulation from| 
+|`P`     |  number of imaginary time slices|
+|`D`     |  size of the center of mass move in &Aring;|
+|`d`     |  size of the single slice displace move in &Aring;|
+|`m`     |  mass of the particles in AMU |
+|`b`     |  the type of simulation cell|
+|`L`     |  linear system size in &Aring;|
+|`a`     |  scattering length  in &Aring;|
+|`c`     |  strength of the integrated delta function interaction|
+|`Lx`     |  linear system size in the x-direction &Aring;|
+|`Ly`     |  linear system size in the y-direction in &Aring;|
+|`Lz`     |  linear system size in the z-direction in &Aring;|
+|`action`     |  the type of effective action used in the simulation |
+|`canonical`     |  restrict to the canonical ensemble |
+|`window`     |  the particle number window for restricting number fluctuations in the canonical ensemble|
+|`imaginary_time_length`  |  the imaginary time extent in K<sup>-1</sup>|
+|`wavefunction`  |  the type of trial wavefunction|
+|`dimension`  |  output the spatial dimension that the code was compiled with |
+|`pigs`     |  perform a simulation at T = 0 K|
+|`pigs`     |  perform a simulation at T = 0 K|
 
 All options, including lists of possible values and default values can be seen
 by using the `--help flag`.
 
 The output of the above command should yield:
 
-    [PIMCID: 126039759] - Equilibration Stage.
-    0.63	 1.00000	 0.95000	   17	0.023354
-    0.70	 0.95000	 0.90250	   14	0.019233
-    0.56	 0.90250	 0.81225	   17	0.023354
-    0.74	 0.81225	 0.77164	   17	0.023354
-    0.60	 0.77164	 0.73306	   18	0.024728
-    0.76	 0.73306	 0.73306	   17	0.023354
-    0.74	 0.73306	 0.69640	   14	0.019233
-    0.82	 0.69640	 0.69640	   17	0.023354
-    0.75	 0.69640	 0.69640	   16	0.021980
-    0.71	 0.69640	 0.66158	   18	0.024728
-    0.83	 0.66158	 0.66158	   18	0.024728
-    0.81	 0.66158	 0.66158	   18	0.024728
-    0.76	 0.66158	 0.66158	   18	0.024728
-    0.80	 0.66158	 0.66158	   19	0.026101
-    0.84	 0.66158	 0.66158	   16	0.021980
-    0.69	 0.66158	 0.62850	   17	0.023354
+    [PIMCID: XXXXXXXXX] - Equilibration Stage.
+    0.61	 1.00000	 0.95000	   16	0.021980
+    0.68	 0.95000	 0.90250	   16	0.021980
+    0.82	 0.90250	 0.90250	   15	0.020606
+    0.49	 0.90250	 0.72200	   18	0.024728
+    0.75	 0.72200	 0.72200	   15	0.020606
+    0.69	 0.72200	 0.68590	   16	0.021980
+    0.79	 0.68590	 0.68590	   18	0.024728
+    0.77	 0.68590	 0.68590	   17	0.023354
+    0.75	 0.68590	 0.65160	   19	0.026101
+    0.75	 0.65160	 0.61902	   19	0.026101
+    0.81	 0.61902	 0.61902	   18	0.024728
+    0.76	 0.61902	 0.61902	   17	0.023354
+    0.81	 0.61902	 0.61902	   19	0.026101
+    0.77	 0.61902	 0.61902	   19	0.026101
+    0.66	 0.61902	 0.58807	   18	0.024728
+    0.85	 0.58807	 0.61748	   20	0.027475
 
-    [PIMCID: 126039759] - Measurement Stage.
-    [PIMCID: 126039759] - Bin #   1 stored to disk.
-    [PIMCID: 126039759] - Bin #   2 stored to disk.
-    [PIMCID: 126039759] - Bin #   3 stored to disk.
-    [PIMCID: 126039759] - Bin #   4 stored to disk.
-    [PIMCID: 126039759] - Bin #   5 stored to disk.
-    [PIMCID: 126039759] - Bin #   6 stored to disk.
-    [PIMCID: 126039759] - Bin #   7 stored to disk.
-    [PIMCID: 126039759] - Bin #   8 stored to disk.
-    [PIMCID: 126039759] - Bin #   9 stored to disk.
-    [PIMCID: 126039759] - Bin #  10 stored to disk.
-    [PIMCID: 126039759] - Bin #  11 stored to disk.
-    [PIMCID: 126039759] - Bin #  12 stored to disk.
-    [PIMCID: 126039759] - Bin #  13 stored to disk.
-    [PIMCID: 126039759] - Bin #  14 stored to disk.
-    [PIMCID: 126039759] - Bin #  15 stored to disk.
-    [PIMCID: 126039759] - Bin #  16 stored to disk.
-    [PIMCID: 126039759] - Bin #  17 stored to disk.
-    [PIMCID: 126039759] - Bin #  18 stored to disk.
-    [PIMCID: 126039759] - Bin #  19 stored to disk.
-    [PIMCID: 126039759] - Bin #  20 stored to disk.
-    [PIMCID: 126039759] - Measurement complete.
+    [PIMCID: XXXXXXXXX] - Measurement Stage.
+    [PIMCID: XXXXXXXXX] - Bin #   1 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #   2 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #   3 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #   4 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #   5 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #   6 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #   7 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #   8 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #   9 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #  10 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #  11 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #  12 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #  13 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #  14 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #  15 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #  16 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #  17 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #  18 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #  19 stored to disk.
+    [PIMCID: XXXXXXXXX] - Bin #  20 stored to disk.
+    [PIMCID: XXXXXXXXX] - Measurement complete.
 
 during the relaxation process where `PIMCID` will be replaced with an integer
 and 20 measurements will be output to disk.  To analyze the results the code
@@ -290,24 +314,24 @@ you will need to download and install the gradient files from
 
 After this has been completed, you can analyze the results of your run via
 
-    python SCRIPTS/pimcave.py OUTPUT/gce-estimator-05.000-008.996-+000.020-0.01000-pimcid.dat
+    python SCRIPTS/pimcave.py OUTPUT/gce-estimator-05.000-008.996-+000.020-0.01000-XXXXXXXXX.dat
 
-where `pimcid` needs to be replaced with the unique identifier generated on
+where `XXXXXXXXX` needs to be replaced with the unique identifier generated on
 your machine.  The results should yield:
 
-    # PIMCID: 126039759
+    # PIMCID: XXXXXXXXX
     # Number Samples     20
-    K                  375.57537	    18.37762
-    V                 -501.39256	    18.46109
-    E                 -125.81719	    13.42753
-    E_mu              -126.17684	    13.42957
-    K/N                 20.75984	     0.77635
-    V/N                -27.69348	     0.57022
-    E/N                 -6.93364	     0.71329
-    N                   17.98250	     0.29209
-    N^2                325.24550	    10.71591
-    density              0.02470	     0.00040
-    diagonal             0.79468	     0.01644
+    K                  308.56301	    15.62070
+    V                 -438.07237	    13.08230
+    E                 -129.50936	    15.00721
+    E_mu              -129.84771	    15.00886
+    K/N                 18.16914	     0.81560
+    V/N                -25.75882	     0.44198
+    E/N                 -7.58968	     0.84098
+    N                   16.91750	     0.24312
+    N^2                287.65850	     8.06524
+    density              0.02324	     0.00033
+    diagonal             0.74373	     0.01779
 
 The basic idea of running the program is that one needs to setup the simulation
 cell, by defining either its specific geometry via the size (`L`) flag, or by a
@@ -387,9 +411,9 @@ a few things.  For example, in order to implement a new type of measurement,
 one would need to write a derived [Estimator](@ref EstimatorBase) class along
 with modifying the Communicator class to define an output path.  New types of
 particles and external environments can be added by adding new 
-[Potential](@ref PotentialBase) then updating Setup to allow for their specification at the
-command line.  Finally, radically different systems can be studied by modifying
-the [Container](@ref Container) class.
+[Potential](@ref PotentialBase) then updating Setup to allow for their
+specification at the command line.  Finally, radically different systems can be
+studied by modifying the [Container](@ref Container) class.
 
 Python Script User Guide {#scripts}
 =========================

@@ -31,11 +31,12 @@ class MoveBase {
 
 	public:
 		MoveBase (Path &, ActionBase *, MTRand &, string _name="", 
-                ensemble _operateOnConfig=ANY);
+                ensemble _operateOnConfig=ANY, bool _varLength=false);
 		virtual ~MoveBase();
 
 		string name;	                ///< The name of the estimator
         ensemble operateOnConfig;       ///< What configurations do we operate on?
+        bool variableLength;            ///< Does the move have a variable length?
 
 		/** Get the acceptance ratio. */
 		double getAcceptanceRatio() {
@@ -95,6 +96,7 @@ class MoveBase {
 
 		double oldAction;				///< The original potential action
 		double newAction;				///< The new potential action
+        double deltaAction;             ///< The action difference
 
 		double sqrt2LambdaTau;			///< sqrt(2 * Lambda * tau)
 		double sqrtLambdaTau;		    ///< sqrt(Lambda * tau)
@@ -117,14 +119,31 @@ class MoveBase {
 		// Returns a new bead position based on the bisection algorithm */
 		dVec newBisectionPosition(const beadLocator&, const int); 	
 
-		///@cond DEBUG
 		double newK,oldK;				// The old and new action pieces
 		double newV,oldV;
 
 		/* Debugging methods */
 		void printMoveState(string);
 		void checkMove(int,double);
-		///@endcond DEBUG
+};
+
+// ========================================================================  
+// Displace Move Class 
+// ========================================================================  
+/* A derived class which performs a simple single slice displacement move.
+ */
+class DisplaceMove: public MoveBase {
+
+	public:
+		DisplaceMove(Path &, ActionBase *, MTRand &, 
+                string _name="displace", ensemble _operateOnConfig=ANY);
+		~DisplaceMove();
+
+		bool attemptMove();
+
+	private:
+		beadLocator beadIndex;	// The index of the bead being moved
+		void undoMove();		// revert everything back
 };
 
 // ========================================================================  
@@ -197,7 +216,7 @@ class BisectionMove: public MoveBase {
 		int level;							// The current level
 		int shift;							// The distance between slices at a given level
 
-		double deltaAction,oldDeltaAction;	// The old and new action differences
+		double oldDeltaAction;	            // The old and new action differences
 
 		void keepMove(); 					// Keep the move
 		void undoMove(); 					// Undo the move
@@ -214,7 +233,7 @@ class OpenMove: public MoveBase {
 
 	public:
 		OpenMove(Path &, ActionBase *, MTRand &, string _name="open",
-                ensemble _operateOnConfig=DIAGONAL);
+                ensemble _operateOnConfig=DIAGONAL, bool _varLength=true);
 		~OpenMove();
 
 		bool attemptMove();
@@ -240,7 +259,7 @@ class CloseMove: public MoveBase {
 
 	public:
 		CloseMove(Path &, ActionBase *, MTRand &, string _name="close",
-                ensemble _operateOnConfig=OFFDIAGONAL);
+                ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~CloseMove();
 
 		bool attemptMove();
@@ -267,7 +286,7 @@ class InsertMove: public MoveBase {
 
 	public:
 		InsertMove(Path &, ActionBase *, MTRand &, string _name="insert",
-                ensemble _operateOnConfig=DIAGONAL);
+                ensemble _operateOnConfig=DIAGONAL, bool _varLength=true);
 		~InsertMove();
 
 		bool attemptMove();
@@ -293,7 +312,7 @@ class RemoveMove: public MoveBase {
 
 	public:
 		RemoveMove(Path &, ActionBase *, MTRand &, string _name="remove",
-                ensemble _operateOnConfig=OFFDIAGONAL);
+                ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~RemoveMove();
 
 		
@@ -318,7 +337,7 @@ class AdvanceHeadMove: public MoveBase {
 	public:
 		AdvanceHeadMove(Path &, ActionBase *, MTRand &, 
                 string _name="advance head", 
-                ensemble _operateOnConfig=OFFDIAGONAL);
+                ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~AdvanceHeadMove();
 		
 		bool attemptMove();
@@ -352,7 +371,7 @@ class AdvanceTailMove: public MoveBase {
 	public:
         AdvanceTailMove(Path &, ActionBase *, MTRand &, 
                 string _name="advance tail",
-                ensemble _operateOnConfig=OFFDIAGONAL);
+                ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~AdvanceTailMove();
 
 		bool attemptMove();
@@ -379,7 +398,7 @@ class RecedeHeadMove: public MoveBase {
 	public:
 		RecedeHeadMove(Path &, ActionBase *, MTRand &,
                 string _name="recede head",
-                ensemble _operateOnConfig=OFFDIAGONAL);
+                ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~RecedeHeadMove();
 		
 		bool attemptMove();
@@ -405,7 +424,7 @@ class RecedeTailMove: public MoveBase {
 	public:
 		RecedeTailMove(Path &, ActionBase *, MTRand &,
                 string _name="recede tail",
-                ensemble _operateOnConfig=OFFDIAGONAL);
+                ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~RecedeTailMove();
 		
 		bool attemptMove();

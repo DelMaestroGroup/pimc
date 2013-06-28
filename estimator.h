@@ -120,6 +120,8 @@ class EnergyEstimator: public EstimatorBase {
 
 };
 
+
+
 // ========================================================================  
 // Number Particles Estimator Class 
 // ========================================================================  
@@ -675,4 +677,176 @@ class CylinderRadialPotentialEstimator: public EstimatorBase {
 		void accumulate();				// Accumulate values
 		void accumulate1();				// Accumulate values
 };
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// BEGIN PIGS ESTIMATORS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+// ========================================================================  
+// Potential Energy Estimator Class 
+// ========================================================================  
+/** 
+ * Computes the potential energy along the worldline.
+ *
+ */
+class PotentialEnergyEstimator: public EstimatorBase {
+
+	public:
+		PotentialEnergyEstimator(const Path &, ActionBase *, 
+                int _frequency=1, string _label="potential");
+		~PotentialEnergyEstimator();
+
+	private:
+		ActionBase *actionPtr;
+		void accumulate();		// Accumulate values
+
+};
+
+// ========================================================================
+// Kinetic Energy Estimator Class
+// ========================================================================
+/**
+ * Computes the total energy using a mixed estimator
+ */
+class KineticEnergyEstimator: public EstimatorBase {
+    
+public:
+    KineticEnergyEstimator(const Path &, ActionBase *,
+                           int _frequency=1, string _label="kinetic");
+    ~KineticEnergyEstimator();
+    
+private:
+    ActionBase *actionPtr;
+    void accumulate();		// Accumulate values
+    
+};
+
+//// ========================================================================
+//// Local Energy Estimator Class
+//// ========================================================================
+///**
+// * Computes the local energy along the worldline.
+// *
+// */
+//class LocalEnergyEstimator: public EstimatorBase {
+//    
+//public:
+//    LocalEnergyEstimator(const Path &, ActionBase *,
+//                             int _frequency=1, string _label="local");
+//    ~LocalEnergyEstimator();
+//    
+//private:
+//    ActionBase *actionPtr;
+//    void accumulate();		// Accumulate values
+//    
+//};
+//
+//// ========================================================================  
+//// Total Energy Estimator Class 
+//// ========================================================================  
+///** 
+// * Computes the total energy using a mixed estimator
+// */
+//class TotalEnergyEstimator: public EstimatorBase {
+//
+//	public:
+//		TotalEnergyEstimator(const Path &, ActionBase *, const MTRand &,
+//                int _frequency=1, string _label="energy");
+//		~TotalEnergyEstimator();
+//
+//	private:
+//		ActionBase *actionPtr;
+// 		MTRand random;					// A local copy of the random number generator
+//        dVec newPosition(const beadLocator &);
+//		void accumulate();		// Accumulate values
+//
+//};
+
+// ========================================================================  
+// Position Estimator Class 
+// ========================================================================  
+/** 
+ * Computes the average value of the position in 1D.
+ *
+ */
+class PositionEstimator: public EstimatorBase {
+
+	public:
+		PositionEstimator(const Path &, int _frequency=1, 
+                string _label="position");
+		~PositionEstimator();
+
+	private:
+		void accumulate();		// Accumulate values
+
+};
+
+
+// ========================================================================
+// Velocity Estimator Class
+// ========================================================================
+/**
+ * Computes the imaginary time resolved "velocity" for the first particle .
+ *
+ */
+class VelocityEstimator: public EstimatorBase {
+    
+public:
+    VelocityEstimator(const Path &, int _frequency=1,
+                      string _label="velocity");
+    ~VelocityEstimator();
+    
+private:
+    void accumulate();		// Accumulate values
+    
+};
+// ========================================================================
+// One Body Density Matrix Estimator Class
+// ========================================================================
+/**
+ * Compute the one body density matrix n(r) which can be used to find the
+ * momentum distribution function and structure factor.
+ *
+ * We use a reference to the global random number generator, and thus
+ * this estimator can effect final results.  We also need a non-constant
+ * local reference to the Path which is used for temporary updates.
+ */
+class PIGSOneBodyDensityMatrixEstimator: public EstimatorBase {
+    
+public:
+    PIGSOneBodyDensityMatrixEstimator(Path &, ActionBase *, const MTRand &,
+                                  int _frequency=20, string _label="obdm");
+    ~PIGSOneBodyDensityMatrixEstimator();
+    
+    void sample();				// Sample the estimator
+    void outputFooter();		// Output the acceptance footer to disk
+    
+private:
+    Path &lpath;					// A non-constant local reference to the path
+    ActionBase *actionPtr;			// The action pointer
+    MTRand random;					// A local copy of the random number generator
+    
+    double dR;						// The discretization
+    int numReps;					// The number of measurments reps
+    uint32 numAccepted;				// The number of moves accepted
+    uint32 numAttempted;			// The number of moves attempted
+    
+    
+    dVec newTailPos,oldTailPos;		// The new and old tail position
+    dVec newRanPos,neighborPos;		// The random shift
+    
+    double sqrt2LambdaTau;			// sqrt(2 * lambda * tau)
+    double rho0Norm;				// Free density matrix
+    double oldAction,newAction;		// The old and new action
+    
+    /* Get a random vector */
+    dVec getRandomVector(const double);
+    
+    /* Accumulate values */
+    void accumulate();	
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// END PIGS ESTIMATORS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 #endif

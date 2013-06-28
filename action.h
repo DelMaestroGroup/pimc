@@ -6,7 +6,6 @@
  * @brief Action class definitions.
  */
 
-//#include "pimc.h"
 #include "constants.h"
 
 #ifndef ACTION_H 
@@ -15,6 +14,7 @@
 class Path;
 class PotentialBase;
 class LookupTable;
+class WaveFunctionBase;
 
 // ========================================================================  
 // ActionBase Class
@@ -22,7 +22,7 @@ class LookupTable;
 /** 
  * Holds a base class that all action classes will be derived from. 
  *
- * Implements the details of the action, includign the potential and kinetic
+ * Implements the details of the action, including the potential and kinetic
  * pieces.  Two types of actions, local and non-local derive from this base 
  * class and the actually used actions then derive from these.
  */
@@ -30,7 +30,7 @@ class ActionBase {
 
 	public:
 		ActionBase (const Path &, LookupTable &, PotentialBase *, 
-                PotentialBase *, bool _local=true, string _name="Base");
+                PotentialBase *, WaveFunctionBase *, bool _local=true, string _name="Base");
 		virtual ~ActionBase();
 
 		/** Returns the action name */
@@ -89,10 +89,9 @@ class ActionBase {
 
 		LookupTable &lookup;			///< We need a non-constant reference for updates
 		const Path &path;				///< A reference to the paths
+        WaveFunctionBase *waveFunctionPtr;   ///< A pointer to a trial wave function object
 
 		int shift;						///< The scaling factor for tau
-
-		TinyVector <double,2> eFactor;	///< The even/odd slice energy factor
 
 		/* These definitions are needed for weighting in the canonical ensemble */
 		bool canonical;					///< Are we in the canonical ensemble?
@@ -125,12 +124,12 @@ class LocalAction : public ActionBase {
 
     public:
 		LocalAction (const Path &, LookupTable &, PotentialBase *, 
-                PotentialBase *, string _name="Local");
+                PotentialBase *, WaveFunctionBase *, const TinyVector<double,2>&, 
+                const TinyVector<double,2>&, bool _local=true, string _name="Local");
 		virtual ~LocalAction();
 
         /* The potential action */
 		double potentialAction ();
-		//double potentialAction (const beadLocator &, const beadLocator &);
 		double potentialAction (const beadLocator &);
 
         /* The bare potential action and its correction */
@@ -153,13 +152,6 @@ class LocalAction : public ActionBase {
 
 		TinyVector <double,2> VFactor;	    ///< The even/odd slice potential factor
 		TinyVector <double,2> gradVFactor;	///< The even/odd slice correction factor
-
-        /* Short-hands for potential action and correction terms */
-        TinyVector <double,2> potentialFactor;  ///< The even/odd slice total potential factor
-        TinyVector <double,2> fFactor;  ///< The even/odd slice force correction potential factor
-
-        /* Setup the time-saving action factors */
-        virtual void setFactor();
 
 		/* The full potential for a single bead and all beads at a single
 		 * time slice. */
@@ -187,66 +179,20 @@ class LocalAction : public ActionBase {
 };
 
 // ========================================================================  
-// PrimitiveAction Class
-// ========================================================================  
-/** 
- * The basic primitive action, accurate to order O(\tau^2)
- */
-class PrimitiveAction: public LocalAction {
-
-	public:
-		PrimitiveAction (const Path &, LookupTable &, PotentialBase *, 
-                PotentialBase *, string _name="Primitive");
-		~PrimitiveAction();
-};
-
-// ========================================================================  
-// LiBroughtonAction Class
-// ========================================================================  
-/** 
- * The Li-Broughton action which should be valid up to order tau^4.
- */
-class LiBroughtonAction : public LocalAction {
-
-	public:
-		LiBroughtonAction (const Path &, LookupTable &, PotentialBase *, 
-                PotentialBase *, string _name="Li-Broughton");
-		~LiBroughtonAction();
-};
-
-// ========================================================================  
-// GSFAction Class
-// ========================================================================  
-/**
- * Implementation of the Generalized Suzuki Factorization action
- * accurate up to order tau^5. 
- * @see J. Chem. Phys. 115, 7832 (2001) for details of the implementation.
- */
-class GSFAction : public LocalAction {
-
-	public:
-		GSFAction (const Path &, LookupTable &, PotentialBase *, 
-                PotentialBase *, string _name="Generalized Suzuki Factorization");
-		~GSFAction();
-
-	private:
-		double alpha;			// The parameter of the GSF algorithm
-
-};
-
-// ========================================================================  
 // NonLocalAction Class
 // ========================================================================  
 /** 
  * A base class to be inherited by actions that are non-local in imaginary 
  * time.
  *
+ * @see Section IV.F in D. M. Ceperley, Rev. Mod. Phys. 67, 279–355 (1995).
  */
 class NonLocalAction : public ActionBase {
 
     public:
 		NonLocalAction (const Path &, LookupTable &, PotentialBase *, 
-                PotentialBase *, string _name="Non-local");
+                PotentialBase *, WaveFunctionBase *, bool _local=false,
+                string _name="Non-local");
         virtual ~NonLocalAction();
 
         /* The potential Action */
@@ -260,20 +206,4 @@ class NonLocalAction : public ActionBase {
     protected:
 		double U(int);
 };
-
-// ========================================================================  
-// PairProductAction Class
-// ========================================================================  
-/** 
- * The Pair Product Action without any external potential.
- *
- * @see Section IV.F in D. M. Ceperley, Rev. Mod. Phys. 67, 279–355 (1995).
- */
-//class PairProductAction: public NonLocalAction {
-//
-//	public:
-//		PairProductAction(const Path &, string _name="Pair Product Approximation"); 
-//		~PairProductAction();
-//};
-
 #endif

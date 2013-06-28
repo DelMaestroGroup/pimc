@@ -20,9 +20,11 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <sstream>
 
 #include <blitz/array.h>
 #include <boost/format.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 
 /* Debugging librarys and definitions. There is only an effect if
  * the code is compiled with PIMC_DEBUG on.*/
@@ -52,6 +54,11 @@
  * or it defaults to 1D. */
 #ifndef NDIM
 #define NDIM 1 ///< Number of spatial dimnsions
+#endif
+
+/* Used for getting the repo version number into the code */
+#ifndef SVN_VERSION
+#define SVN_VERSION "none"
 #endif
 
 /* We Default to turning on the NN lookup table. Comment this line out for testing
