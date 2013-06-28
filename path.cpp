@@ -62,10 +62,13 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
         nextLink(numTimeSlices-1,Range::all()) = XXX;
 
         /* Here we break worldlines at the center of the path if requested*/
-        breakSlice = (numTimeSlices-1)/2-1;
-        for (int n=0; n<numberBroken; n++){
-            nextLink(breakSlice,n) = XXX;
-            prevLink(breakSlice+1,n) = XXX;
+        breakSlice = 0;
+        if (numberBroken > 0){
+            breakSlice = (numTimeSlices-1)/2-1;
+            for (int n=0; n<numberBroken; n++){
+                nextLink(breakSlice,n) = XXX;
+                prevLink(breakSlice+1,n) = XXX;
+            }
         }
     }
     else {
