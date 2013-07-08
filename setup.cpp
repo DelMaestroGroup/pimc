@@ -782,12 +782,14 @@ auto_ptr< boost::ptr_vector<MoveBase> > Setup::moves(Path &path,
         //    move.push_back(new StagingMove(path,actionPtr,random));
 
         /* We determine which type of diagonal path update we will use */
-        if (params.count("full_updates")) {
+        if ( (params.count("full_updates")) || 
+                (params["action"].as<string>() == "pair_product") ) {
             move.push_back(new StagingMove(path,actionPtr,random));
             constants()->setAttemptProb("staging",0.15);
             constants()->setAttemptProb("bisection",0.0);
         }
-        else {
+        else 
+        {
             move.push_back(new BisectionMove(path,actionPtr,random));
             constants()->setAttemptProb("bisection",0.15);
             constants()->setAttemptProb("staging",0.0);

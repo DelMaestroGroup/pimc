@@ -270,7 +270,7 @@ void EnergyEstimator::accumulate() {
 
 	totVop += tailV;
 
-    totV = totVop;
+    //totV = totVop;
 
 	/* Now we accumulate the average total, kinetic and potential energy, 
 	 * as well as their values per particles. */

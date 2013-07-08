@@ -729,7 +729,7 @@ bool BisectionMove::attemptMove() {
 	beadLocator beadIndex;
 	beadIndex = startBead;
 	for (int k = 0; k < (numActiveBeads+1); k++) {
-		if (!path.worm.beadOn(beadIndex) || all(beadIndex==path.worm.head))
+		if (!path.worm.beadOn(beadIndex) || all(path.next(beadIndex)==XXX))
 			return false;
 		beadIndex = path.next(beadIndex);
 	}
