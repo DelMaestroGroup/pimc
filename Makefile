@@ -69,7 +69,7 @@ DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
 
 ifeq ($(opts), basic)
-OPTS = -Wall -O3 -mtune=native
+OPTS = -Wall -O3 -mtune=native -DNDEBUG
 else ifeq ($(opts), strict)
 OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
 endif #basic, elseif strict

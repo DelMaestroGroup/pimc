@@ -99,7 +99,7 @@ int main (int argc, char *argv[]) {
     /* Allow for one broken path */
     int numberBroken = 0;
     if (constants()->pigs())
-        numberBroken = 0;
+        numberBroken = 1;
 
 	/* Setup the path data variable */
 	Path path(boxPtr,lookup,constants()->numTimeSlices(),initialPos,numberBroken);

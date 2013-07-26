@@ -74,6 +74,7 @@ class PathIntegralMonteCarlo {
         int comIndex;               // The index of the CoM move
         int diagIndex;              // The index of the diagonal path update (bisection or staging)
         int displaceIndex;          // The index of a possible displace move
+        int obdmIndex;              // The index of the One Body Density Matrix estimator
 
 		bool savedState;			// We have saved at least one state
 		bool startWithState;		// Are we starting from a saved state

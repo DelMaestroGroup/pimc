@@ -97,10 +97,16 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_action
 	if (startWithState || constants()->restart())
 		loadState();
 
-    /* Setup all the estimators for measurement i/o */
+    /* Setup all the estimators for measurement i/o and detgermine where the
+     * obdm estimator lives */
     for (estimator_vector::iterator estimatorPtr = estimator.begin();
-            estimatorPtr != estimator.end(); ++estimatorPtr)
+            estimatorPtr != estimator.end(); ++estimatorPtr) {
         estimatorPtr->prepare();
+
+        /* Find the index of the OBDM estimator */
+        if (estimatorPtr->getName() == "One Body Density Matrix")
+            obdmIndex = std::distance(estimator.begin(), estimatorPtr);
+    }
 }
 
 /**************************************************************************//**
@@ -329,10 +335,10 @@ void PathIntegralMonteCarlo::step() {
         moveName = update(random.rand(),n);
 
         /* We measure the one body density matrix here to ensure adequate statistics */
-        //oneBodyDensityMatrix.sample();
+		estimator.at(obdmIndex).sample();
 
-        //if (constants()->extPotentialType().find("tube") != string::npos)
-        //		cylOneBodyDensityMatrix.sample();
+        if (constants()->extPotentialType().find("tube") != string::npos)
+        		cylOneBodyDensityMatrix.sample();
 
 	} // n
 
