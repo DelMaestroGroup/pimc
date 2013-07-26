@@ -883,22 +883,17 @@ auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::estimators(Path &path,
 ******************************************************************************/
 bool Setup::checkOption(const string option, const string target) {
 
-//    bool test;
-
-    /* We test for a long option */
-    if (option.find("--") != string::npos) {
-        return (option.find(target) != string::npos);
- //       cout << target << ": ";
- //       cout << option.find("--") << ": ";
- //       cout << string::npos << ": ";
-    }
-    /* otherwise we test for exact equality */
-    else
+    /* check short options first  */
+    if (option[0] == '-' && option[1] != '-') 
         return (option == target);
 
-//    cout << option << " " << target << " " << test << endl;
+    /* Now test for a long option, making sure to ignore any short
+     * option targets */
+    else if (target[0] != '-')
+        return (option.find(target) != string::npos);
 
- //   return test;
+    /* otherwise return false */
+    return false;
 }
 
 /*************************************************************************//**
@@ -927,6 +922,7 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 
         /* convert the argument to a string */
         string arg(argv[n]);
+
 
 		if (checkOption(arg,"-s") || checkOption(arg,"start_with_state") ) {
             n++;
