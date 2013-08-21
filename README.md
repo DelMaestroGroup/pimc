@@ -31,7 +31,7 @@ blitz) are installed in a `local` folder inside your home directory: `~/local`.
 Dependencies {#dependencies}
 ------------
 
-The code is written in C++ and makes use of both the <a
+The code is written in c++ and makes use of both the <a
 href="http://www.oonumerics.org/blitz/">blitz++</a> and <a
 href="http://www.boost.org/">boost</a> libraries.  Unfortunately the blitz++
 library hosted on the official website (version 0.9) is somewhat out of date and
