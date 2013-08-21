@@ -36,18 +36,18 @@ class PotentialBase {
 		virtual ~PotentialBase();
 	
 		/** The potential */
-		virtual double V(const dVec &r) { return 0.0; }
+		virtual double V(const dVec &) { return 0.0; }
 
 		/** The effective potential for the pair product approximation */
-		virtual double V(const dVec &sep1, const dVec &sep2, double lamtau) { return 0.0; }
+		virtual double V(const dVec &, const dVec &, double) { return 0.0; }
 
 		/** The gradient of the potential*/
-		virtual dVec gradV(const dVec &r) { return 0.0; }
+		virtual dVec gradV(const dVec &) { return 0.0; }
 
         /** The derivative of the effective potential with respect to lambda
          *  and tau */
-        virtual double dVdlambda(const dVec &sep1, const dVec &sep2, double lambda, double tau) {return 0.0;}
-        virtual double dVdtau(const dVec &sep1, const dVec &sep2, double lambda, double tau) {return 0.0;}
+        virtual double dVdlambda(const dVec &, const dVec &, double , double) {return 0.0;}
+        virtual double dVdtau(const dVec &, const dVec &, double , double) {return 0.0;}
 		
 		/** Default Initial configuration of particles*/
 		virtual Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
@@ -505,9 +505,7 @@ class Gasparini_1_Potential : public PotentialBase {
 		}
 
 		/** The gradient of the potential. */
-		dVec gradV(const dVec &r) {
-			return 0.0;
-		}
+		dVec gradV(const dVec &) { return 0.0; }
     
         /** Initial configuration corresponding to FixedAziz potential */
 		Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 

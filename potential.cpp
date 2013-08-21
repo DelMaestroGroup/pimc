@@ -1020,7 +1020,7 @@ Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
 
 /**************************************************************************//**
  *  Constructor.
- *  @param a The radius of the hard sphere (also the scattering length)
+ *  @param _a The radius of the hard sphere (also the scattering length)
 ******************************************************************************/
 HardSpherePotential::HardSpherePotential(double _a) : 
 	PotentialBase(),
@@ -1146,7 +1146,7 @@ double HardSpherePotential::dVdtau(const dVec &sep1, const dVec &sep2,
 
 /**************************************************************************//**
  *  Constructor.
- *  @param a The radius of the hard rod (also the scattering length)
+ *  @param _a The radius of the hard rod (also the scattering length)
 ******************************************************************************/
 HardRodPotential::HardRodPotential(double _a) : 
 	PotentialBase(),
@@ -1170,7 +1170,7 @@ HardRodPotential::~HardRodPotential() {
  *
  *  @param sep1 The first separation
  *  @param sep2 The second separation
- *  @param lambdaTau The product of \lambda = \hbar^2/2m and \tau
+ *  @param lambdaTau The product of \f$\lambda = \hbar^2/2m\f$ and \f$\tau\f$
  *  @return the two-body effective pair potential
 ******************************************************************************/
 double HardRodPotential::V(const dVec &sep1, const dVec &sep2, 
@@ -1180,7 +1180,7 @@ double HardRodPotential::V(const dVec &sep1, const dVec &sep2,
     double r2 = sqrt(dot(sep2,sep2));
 
     if ((sep1[0]*sep2[0] < 0.0))
-        return log(BIG);
+       return log(BIG);
 
     double t1 = -(r1-a)*(r2-a)/(2.0*lambdaTau);
     return (-log(1.0 - exp(t1)));
@@ -1195,7 +1195,7 @@ double HardRodPotential::V(const dVec &sep1, const dVec &sep2,
  *
  *  @param sep1 the first separation
  *  @param sep2 the second separation
- *  @param lambda \lambda = \hbar^2/2m
+ *  @param lambda \f$\lambda = \hbar^2/2m\f$
  *  @param tau the imaginary timestep tau
  *  @return the derivative of the effective potential with respect to lambda
 ******************************************************************************/
@@ -1220,7 +1220,7 @@ double HardRodPotential::dVdlambda(const dVec &sep1, const dVec &sep2,
  *
  *  @param sep1 the first separation
  *  @param sep2 the second separation
- *  @param lambda \lambda = \hbar^2/2m
+ *  @param lambda \f$\lambda = \hbar^2/2m\f$
  *  @param tau the imaginary timestep tau
  *  @return the derivative of the effective potential with respect to tau
 ******************************************************************************/

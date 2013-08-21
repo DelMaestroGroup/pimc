@@ -32,21 +32,11 @@ class WaveFunctionBase {
         string name;
 
 		/** The Constant Trial Wave Function*/
-		virtual double psiTrial(const double r) {
-            return 1.0;
-        };
-        virtual double PsiTrial(const int slice) {
-            return 1.0;
-        };
-        virtual double delPsiTrial(const double r) {
-            return 0.0;
-        };
-        virtual double delSqPsiTrial(const double r) {
-            return 0.0;
-        };
-        virtual double gradSqPsiTrial(const int slice) {
-            return 0.0;
-        };
+		virtual double psiTrial(const double) { return 1.0; };
+        virtual double PsiTrial(const int) { return 1.0; };
+        virtual double delPsiTrial(const double ) { return 0.0; };
+        virtual double delSqPsiTrial(const double ) { return 0.0; };
+        virtual double gradSqPsiTrial(const int) { return 0.0; };
 
 	protected:
 		const Path &path;				///< A reference to the paths
@@ -58,7 +48,7 @@ class WaveFunctionBase {
 // SechWaveFunction Class
 // ========================================================================  
 /**
- * Implementation of the \Psi_T = sech(a*x) trial wave function suitable
+ * Implementation of the Psi_T = sech(a*x) trial wave function suitable
  * for the simple harmonic osscilator.
  * @see A. Sarsa, K. E. Schmidt, and W. R. Magro, J. Chem. Phys. 113, 1366 (2000).
  */

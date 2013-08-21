@@ -13,13 +13,15 @@
 #include "communicator.h"
 #include "estimator.h"
 
-class ActionBase;
 class Path;
 class LookupTable;
 class MoveBase;
 class EstimatorBase;
 
+/** A vector containing measurable estimators */
 typedef boost::ptr_vector<EstimatorBase> estimator_vector;
+
+/** A vector containing Monte Carlo updates */
 typedef boost::ptr_vector<MoveBase> move_vector;
 
 // ========================================================================  
@@ -34,8 +36,8 @@ typedef boost::ptr_vector<MoveBase> move_vector;
  */
 class PathIntegralMonteCarlo {
 	public:
-		PathIntegralMonteCarlo (Path &, ActionBase *, MTRand &, 
-                move_vector &, estimator_vector &, const bool);
+		PathIntegralMonteCarlo (Path &, MTRand &, move_vector &, 
+                estimator_vector &, const bool);
 		~PathIntegralMonteCarlo ();
 
 		/* The equilibration relaxation */

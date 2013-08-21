@@ -191,7 +191,7 @@ move.o: move.cpp common.h.gch path.h action.h lookuptable.h communicator.h
 path.o: path.cpp common.h.gch constants.h container.h worm.h lookuptable.h communicator.h
 	$(COMPILE_WPCH) -c path.cpp
 
-pimc.o: pimc.cpp common.h.gch communicator.h estimator.h path.h action.h lookuptable.h
+pimc.o: pimc.cpp common.h.gch communicator.h estimator.h path.h lookuptable.h
 	$(COMPILE_WPCH) -c pimc.cpp
 
 worm.o: worm.cpp common.h.gch constants.h path.h

@@ -99,7 +99,7 @@ int main (int argc, char *argv[]) {
     /* Allow for one broken path */
     int numberBroken = 0;
     if (constants()->pigs())
-        numberBroken = 1;
+        numberBroken = 0;
 
 	/* Setup the path data variable */
 	Path path(boxPtr,lookup,constants()->numTimeSlices(),initialPos,numberBroken);
@@ -119,7 +119,7 @@ int main (int argc, char *argv[]) {
     boost::ptr_vector<EstimatorBase> estimators(setup.estimators(path,actionPtr,random));
     
 	/* Setup the pimc object */
-	PathIntegralMonteCarlo pimc(path,actionPtr,random,moves,estimators,
+	PathIntegralMonteCarlo pimc(path,random,moves,estimators,
 			!setup.params["start_with_state"].as<string>().empty());
 
 	/* If this is a fresh run, we equilibrate and output simulation parameters to disk */

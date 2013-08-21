@@ -56,7 +56,7 @@
 #define NDIM 1 ///< Number of spatial dimnsions
 #endif
 
-/* Used for getting the repo version number into the code */
+/** Used for getting the repo version number into the code */
 #ifndef SVN_VERSION
 #define SVN_VERSION "none"
 #endif

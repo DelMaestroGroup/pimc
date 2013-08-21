@@ -36,9 +36,11 @@ class ActionBase {
 		/** Returns the action name */
 		string getActionName () { return name; }
 
-		/* The kinetic Action  */
+		/** The full kinetic Action  */
 		double kineticAction ();
+		/** The kinetic Action at a single slice  */
 		double kineticAction (const beadLocator &);
+		/** The kinetic Action for wlLength slices */
 		double kineticAction (const beadLocator &, int wlLength);
 
         /** The effective potential inter-ACTION for various pass conditions. */

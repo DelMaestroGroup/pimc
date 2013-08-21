@@ -7,7 +7,6 @@
 
 #include "pimc.h"
 #include "path.h"
-#include "action.h"
 #include "lookuptable.h"
 #include "move.h"
 
@@ -25,8 +24,8 @@
  *  The initialization depends on whether or not we are restarting, or starting
  *  from a user supplied state.
 ******************************************************************************/
-PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, move_vector &_move, estimator_vector &_estimator, 
+PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, MTRand &_random, 
+        move_vector &_move, estimator_vector &_estimator, 
         const bool _startWithState) :
 	random(_random),
 	path(_path),
@@ -335,10 +334,10 @@ void PathIntegralMonteCarlo::step() {
         moveName = update(random.rand(),n);
 
         /* We measure the one body density matrix here to ensure adequate statistics */
-		estimator.at(obdmIndex).sample();
+		//estimator.at(obdmIndex).sample();
 
-        if (constants()->extPotentialType().find("tube") != string::npos)
-        		cylOneBodyDensityMatrix.sample();
+        //if (constants()->extPotentialType().find("tube") != string::npos)
+        //		cylOneBodyDensityMatrix.sample();
 
 	} // n
 
@@ -733,7 +732,7 @@ void PathIntegralMonteCarlo::loadState() {
 ******************************************************************************/
 void PathIntegralMonteCarlo::outputPDB() {
 
-	int numParticles = path.getNumParticles();
+	numParticles = path.getNumParticles();
 	int numTimeSlices = path.numTimeSlices;
 
 	configNumber++;

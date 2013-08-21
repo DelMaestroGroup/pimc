@@ -91,9 +91,9 @@ double ActionBase::rho0(const dVec &r1, const dVec &r2, int M) {
  *  The free-particle density matrix for two beadLocators with imaginary
  *  time separation M.
 ******************************************************************************/
-double ActionBase::rho0(const beadLocator &bead1, const beadLocator &bead2, int M) {
+double ActionBase::rho0(const beadLocator &bead1, const beadLocator &bead4, int M) {
 	dVec vel;
-	vel = path.getSeparation(bead1,bead2);
+	vel = path.getSeparation(bead1,bead4);
 	double rho0Norm = pow(4.0*M_PI*constants()->lambda()*M*constants()->tau(),-0.5*NDIM);
 	return ( rho0Norm * exp(-dot(vel,vel) / (4.0*constants()->lambda()*M*constants()->tau()) ) );
 }
@@ -309,6 +309,8 @@ double LocalAction::potentialAction () {
  *
  *  !!NB!! If we are using checkMove to debug moves you *MUST* always include
  *  the correction term.
+ *
+ *  @param beadIndex the bead that we are computing the potential action for
 ******************************************************************************/
 double LocalAction::potentialAction (const beadLocator &beadIndex) {
 

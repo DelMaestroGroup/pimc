@@ -119,8 +119,8 @@ class MoveBase {
 		// Returns a new bead position based on the bisection algorithm */
 		dVec newBisectionPosition(const beadLocator&, const int); 	
 
-		double newK,oldK;				// The old and new action pieces
-		double newV,oldV;
+		double newK,oldK;				///< The old and new kinetic action
+		double newV,oldV;               ///< The old and new potential action
 
 		/* Debugging methods */
 		void printMoveState(string);
@@ -130,7 +130,8 @@ class MoveBase {
 // ========================================================================  
 // Displace Move Class 
 // ========================================================================  
-/* A derived class which performs a simple single slice displacement move.
+/**
+ * A derived class which performs a simple single slice displacement move.
  */
 class DisplaceMove: public MoveBase {
 
@@ -195,7 +196,7 @@ class StagingMove: public MoveBase {
 // ========================================================================  
 // Bisection Move Class 
 // ========================================================================  
-/* A derived class which performs a bisection move, which exactly samples
+/** A derived class which performs a bisection move, which exactly samples
  * the kinetic action.
  */
 class BisectionMove: public MoveBase {
