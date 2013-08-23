@@ -56,10 +56,23 @@ class ActionBase {
         /* Various derivatives of the potential action */
 		virtual double derivPotentialActionTau (int) { return 0.0; }
 		virtual double derivPotentialActionLambda (int) { return 0.0; }
+        virtual double secondderivPotentialActionTau (int) { return 0.0; }
 
         /* Various derivatives of the potential action with a cutoff */
 		virtual double derivPotentialActionTau (int,double) { return 0.0; }
 		virtual double derivPotentialActionLambda (int,double) { return 0.0; }
+        
+        /* gradient of the potential action */
+        virtual dVec gradPotentialAction(int) { return 0.0; }
+
+        /* (r-R) \dot gradU -> for centroid virial estimator.
+         * It is necessary to split the terms in order to compute
+         * the specific heat efficiently.*/
+        virtual double deltaDOTgradUterm1(int) { return 0.0; }
+        virtual double deltaDOTgradUterm2(int) { return 0.0; }
+
+        /* return virial kinetic energy estimator term */
+        virtual double virKinCorr(int) { return 0.0; }
 
         /* The bare local potential at a single time slice */
         virtual double potential(int) { return 0.0; }
@@ -67,7 +80,8 @@ class ActionBase {
 
 		/** The public method that sets the tau scaling factor. */
 		void setShift(int _shift) { shift = _shift; }
-		/** Get the tau scaling factor. */
+		
+        /** Get the tau scaling factor. */
 		int getShift() { return shift; }
 
 		/** The free-particle density matrix */
@@ -142,8 +156,19 @@ class LocalAction : public ActionBase {
         /* Various derivatives of the potential action */
 		double derivPotentialActionTau (int);
 		double derivPotentialActionLambda (int);
+        double secondderivPotentialActionTau (int);
 		double derivPotentialActionTau (int,double);
 		double derivPotentialActionLambda (int,double);
+ 
+        /* gradient of the potential action */
+        virtual dVec gradPotentialAction(int slice) { return gradU(slice); }
+
+        /* delta \dot gradU -> for centroid virial estimators */
+        virtual double deltaDOTgradUterm1(int slice) { return deltadotgradUterm1(slice); }
+        virtual double deltaDOTgradUterm2(int slice) { return deltadotgradUterm2(slice); }
+
+        /* Returns virial kinetic energy correction term. */
+        virtual double virKinCorr(int slice) { return virialKinCorrection(slice); }
 
         /* The bare local potential at a single time slice */
         virtual double potential(int slice) { return V(slice); }
@@ -177,7 +202,24 @@ class LocalAction : public ActionBase {
 
 		/* The gradient of the potential squared for a single bead using the 
 		 * nearest neighbor lookup table */
-		double gradVnnSquared(const beadLocator&);	
+		double gradVnnSquared(const beadLocator&);
+
+        /* gradient and Laplacian of potential energy */
+        dVec gradientV(const int);
+
+        /* T-matrix needed for grad((gradV)^2) */
+        dMat tMatrix(const int);
+
+        /* delta \dot gradU -> for centroid virial estimator */
+        double deltadotgradUterm1(const int);
+        double deltadotgradUterm2(const int);
+
+        /* virial kinetic energy term */
+        double virialKinCorrection(const int);
+
+        /* gradient of potential action */
+        dVec gradU(const int);
+
 };
 
 // ========================================================================  

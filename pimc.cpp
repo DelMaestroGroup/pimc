@@ -96,7 +96,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, MTRand &_random,
 	if (startWithState || constants()->restart())
 		loadState();
 
-    /* Setup all the estimators for measurement i/o and detgermine where the
+    /* Setup all the estimators for measurement i/o and determine where the
      * obdm estimator lives */
     for (estimator_vector::iterator estimatorPtr = estimator.begin();
             estimatorPtr != estimator.end(); ++estimatorPtr) {

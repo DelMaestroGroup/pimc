@@ -128,8 +128,8 @@ void Setup::getOptions(int argc, char *argv[])
 		("radius,r", po::value<double>(), "tube radius [angstroms]")
 		("estimator_radius,w", po::value<double>()->default_value(2.0),
 		 "maximum radius for cylinder estimators") 
-        ("barrier_width_y,y", po::value<double>(), "barrier width scale factor in y-direction [Gasparini]")
-        ("barrier_width_z,z", po::value<double>(), "barrier width scale factor in z-direction [Gasparini]")
+        ("empty_width_y,y", po::value<double>(), "how much space (in y-) around barrier [Gasparini]")
+        ("empty_width_z,z", po::value<double>(), "how much space (in z-) around barrier [Gasparini]")
 		;
 
 	potentialOptions.add_options()
@@ -178,6 +178,8 @@ void Setup::getOptions(int argc, char *argv[])
 		("action", po::value<string>()->default_value("gsf"), 
 		 str(format("action type {%s}") % actionNames).c_str())
 		("full_updates", "perform full staging updates")
+        ("virial_Window,V", po::value<int>()->default_value(0),
+         "centroid virial energy estimator window")
 		;
 
 	cmdLineOptions.add(generalOptions).add(algorithmicOptions).add(physicalOptions);
@@ -346,7 +348,7 @@ bool Setup::parseOptions() {
 
     /* Need to specify a y- barrier width scale factor for Gasparini potential */
 	if ( (params["external_potential"].as<string>().find("gasp_prim") != string::npos) &&
-             (!params.count("barrier_width_y")) ) {
+             (!params.count("empty_width_y")) ) {
 		cerr << endl << "ERROR: Incomplete specification for external potential!" << endl << endl;
 		cerr << "Action: specify a y- scale factor (y) for the Gasparini potential." << endl;
 		return 1;
@@ -354,7 +356,7 @@ bool Setup::parseOptions() {
 
     /* Need to specify a z- barrier width scale factor for Gasparini potential */
 	if ( (params["external_potential"].as<string>().find("gasp_prim") != string::npos) && 
-            (!params.count("barrier_width_z")) ) {
+            (!params.count("empty_width_z")) ) {
 		cerr << endl << "ERROR: Incomplete specification for external potential!" << endl << endl;
 		cerr << "Action: specify a z- scale factor (z) for the Gasparini potential." << endl;
 		return 1;
@@ -551,11 +553,12 @@ void Setup::setConstants() {
 
     /* At present, we need to make sure that if a pair_product action has been
      * selected, that we turn off the cuttoff by making it the size of the box */
-    if (params["action"].as<string>() == "pair_product")
+    if (params["action"].as<string>() == "pair_product"){
         if (params.count("potential_cutoff"))
             setOption("potential_cutoff",side[NDIM-1]);
         else
             insertOption("potential_cutoff",side[NDIM-1]);
+    }
 
     /* If we haven't set a potential_cutoff, set it to the size of the box */
     if (!params.count("potential_cutoff"))
@@ -585,7 +588,9 @@ void Setup::setConstants() {
             params["wavefunction"].as<string>(),
             params["action"].as<string>(),
             params["window"].as<int>(),
-            params["gaussian_ensemble_SD"].as<double>() );
+            params["gaussian_ensemble_SD"].as<double>(),
+            params["virial_Window"].as<int>() );
+
 
     /* If we have specified either the center of mass or displace shift on the
      * command line, we update their values. */
@@ -671,8 +676,8 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
 	else if (constants()->extPotentialType() == "fixed_aziz") 
 		externalPotentialPtr = new FixedAzizPotential(boxPtr);
     else if (constants()->extPotentialType() == "gasp_prim")
-        externalPotentialPtr = new Gasparini_1_Potential(params["barrier_width_z"].as<double>(),
-                params["barrier_width_y"].as<double>(),boxPtr);
+        externalPotentialPtr = new Gasparini_1_Potential(params["empty_width_z"].as<double>(),
+                params["empty_width_y"].as<double>(),boxPtr);
 
 	return externalPotentialPtr;
 }
@@ -846,13 +851,19 @@ auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::estimators(Path &path,
         estimator.push_back(new PairCorrelationEstimator(path,actionPtr));
         estimator.push_back(new OneBodyDensityMatrixEstimator(path,actionPtr,random));
 
-        /* Time Consuming local estmiators */
+        /* Time Consuming local estimators */
     //    /* z-averaged estimators */
     //    estimator.push_back(new ParticlePositionEstimator(path));
     //    estimator.push_back(new PlaneParticlePositionEstimator(path));
     //    estimator.push_back(new LocalSuperfluidDensityEstimator(path));
     //    estimator.push_back(new PlaneWindingSuperfluidDensityEstimator(path));
     //    estimator.push_back(new PlaneAreaSuperfluidDensityEstimator(path));
+    //    estimator.push_back(new LocalPermutationEstimator(path));
+    
+        /* Excluded volume estimators */
+        if (constants()->extPotentialType().find("gasp_prim") != string::npos){
+            estimator.push_back(new BipartitionDensityEstimator(path,actionPtr));
+        }
 
         /* Cylinder estimators */
         if (constants()->extPotentialType().find("tube") != string::npos) {
@@ -922,7 +933,6 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 
         /* convert the argument to a string */
         string arg(argv[n]);
-
 
 		if (checkOption(arg,"-s") || checkOption(arg,"start_with_state") ) {
             n++;
@@ -1058,6 +1068,14 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%d\n") % "Number Bins Stored" % params["number_bins_stored"].as<int>();
 	communicate()->file("log")->stream() << format("%-24s\t:\t%d\n") % "Random Number Seed" % _seed;
+    if (params["virial_Window"].as<int>() == 0){
+        communicate()->file("log")->stream() << 
+            format("%-24s\t:\t%d\n") % "Virial Window" % constants()->numTimeSlices();
+    }
+    else{
+        communicate()->file("log")->stream() << 
+            format("%-24s\t:\t%d\n") % "Virial Window" % params["virial_Window"].as<int>();
+    }
 	communicate()->file("log")->stream() << endl;
 	communicate()->file("log")->stream() << "---------- End Simulation Parameters ------------" << endl;
 }

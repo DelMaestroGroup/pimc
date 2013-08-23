@@ -44,6 +44,9 @@ class PotentialBase {
 		/** The gradient of the potential*/
 		virtual dVec gradV(const dVec &) { return 0.0; }
 
+        /** Grad^2 of the potential*/
+		virtual double grad2V(const dVec &) { return 0.0; }
+
         /** The derivative of the effective potential with respect to lambda
          *  and tau */
         virtual double dVdlambda(const dVec &, const dVec &, double , double) {return 0.0;}
@@ -56,6 +59,10 @@ class PotentialBase {
 		void output(const double);
 
 		double tailV;		///< Tail correction factor.
+
+        /** Array to hold data elements*/
+		virtual Array<double,1> getExcLen();
+
 };
 
 // ========================================================================  
@@ -76,12 +83,14 @@ class TabulatedPotential {
 	protected:
 		Array <double,1> lookupV;			///< A potential lookup table
 		Array <double,1> lookupdVdr;		///< A lookup table for dVint/dr
+		Array <double,1> lookupd2Vdr2;		///< A lookup table for d2Vint/dr2
 
 		double dr;							///< The discretization for the lookup table
 		int tableLength;					///< The number of elements in the lookup table
 
 		TinyVector<double,2> extV;			///< Extremal value of V
 		TinyVector<double,2> extdVdr;		///< Extremal value of dV/dr
+		TinyVector<double,2> extd2Vdr2;		///< Extremal value of d2V/dr2
 
 		/* Initialize all data structures */
 		void initLookupTable(const double, const double);
@@ -94,8 +103,13 @@ class TabulatedPotential {
 
 		/** The functional value of V */
 		virtual double valueV (const double) = 0;				
-		/** The functional value of dV/dr */
-		virtual double valuedVdr (const double) = 0;					
+		
+        /** The functional value of dV/dr */
+		virtual double valuedVdr (const double) = 0;
+
+        /** The functional value of d2V/dr2 */
+		virtual double valued2Vdr2 (const double) = 0;					
+	
 };
 
 // ========================================================================  
@@ -340,6 +354,9 @@ class LJCylinderPotential : public PotentialBase, public TabulatedPotential {
 		/* The gradient of the LJ Wall potential */
 		dVec gradV(const dVec &);
 
+        /* Laplacian of the LJ Wall potential */
+        double grad2V(const dVec &);
+
 		/** Initial configuration corresponding to the LJ cylinder potential */
 		Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
 
@@ -356,7 +373,8 @@ class LJCylinderPotential : public PotentialBase, public TabulatedPotential {
 
 		/* Used to construct the lookup tables */
 		double valueV (const double);				
-		double valuedVdr (const double);					
+		double valuedVdr (const double);				
+        double valued2Vdr2 (const double);
 };
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -381,6 +399,24 @@ inline dVec LJCylinderPotential::gradV(const dVec &r) {
 	return gV;
 }
 
+/** 
+ * Return the Laplacian of aziz potential for separation r using a 
+ * lookup table. 
+ */
+inline double LJCylinderPotential::grad2V(const dVec &r) {
+	double rnorm = sqrt(r[0]*r[0] + r[1]*r[1]);
+	dVec tempr;
+	tempr = r;
+	tempr[2] = 0.0; // PBC in z-direction
+	int k = static_cast<int>(rnorm/dR);
+	double g2V;
+	if (k >= tableLength)
+		g2V = extd2Vdr2[1];
+	else
+		g2V = lookupd2Vdr2(k);
+	return g2V;
+}
+
 // ========================================================================  
 // Aziz Potential Class
 // ========================================================================  
@@ -399,6 +435,9 @@ class AzizPotential : public PotentialBase, public TabulatedPotential {
 		/* The gradient of the Aziz potential */
 		dVec gradV(const dVec &);
 
+        /* The Laplacian of the Aziz potential */
+		double grad2V(const dVec &);
+
 	private:
 		/* All the parameters of the Aziz potential */
 		double rm, A, epsilon, alpha, D, C6, C8, C10;
@@ -406,8 +445,9 @@ class AzizPotential : public PotentialBase, public TabulatedPotential {
 		/* Used to construct the lookup tables */
 		double valueV (const double);				
 		double valuedVdr (const double);					
+        double valued2Vdr2 (const double);
 
-		/* The F-function needed for the Aziz potential */
+        /* The F-function needed for the Aziz potential */
 		double F(const double x) {
 			return (x < D ? exp(-(D/x - 1.0)*(D/x - 1.0)) : 1.0 );
 		}
@@ -417,7 +457,17 @@ class AzizPotential : public PotentialBase, public TabulatedPotential {
 			double ix = 1.0/x;
 			double r = 2.0*D*ix*ix*(D*ix-1.0)*exp(-(D*ix - 1.0)*(D*ix - 1.0));
 			return (x < D ? r : 0.0 );
+		}   
+     
+        /* The 2nd derivative of the F-function needed for the Aziz potential
+         * Double checked with Mathematica --MTG */
+		double d2F(const double x) {
+			double ix = 1.0/x;
+			double r = 2.0*D*ix*ix*ix*( 2.0*D*D*D*ix*ix*ix - 4.0*D*D*ix*ix 
+                    - D*ix + 2.0) * exp(-(D*ix - 1.0)*(D*ix - 1.0));
+			return (x < D ? r : 0.0 );
 		}
+
 };
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -447,6 +497,21 @@ inline dVec AzizPotential::gradV(const dVec &r) {
 	return gV;
 }
 
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+/** 
+ * Return the Laplacian of aziz potential for separation r using a 
+ * lookup table. 
+ */
+
+inline double AzizPotential::grad2V(const dVec &r) {
+	double rnorm = sqrt(dot(r,r));
+	double g2V;
+	//g2V = (newtonGregory(lookupd2Vdr2,extd2Vdr2,rnorm)/rnorm)*r;
+	//g2V = (direct(lookupd2Vdr2,extd2Vdr2,rnorm)/rnorm)*r;
+	g2V = direct(lookupd2Vdr2,extd2Vdr2,rnorm);
+	return g2V;
+}
 // ========================================================================  
 // FixedAzizPotential Class
 // ========================================================================  
@@ -485,11 +550,11 @@ class FixedAzizPotential : public PotentialBase  {
 };
 
 // ========================================================================  
-// Gasparini_1_Potential Class (Primitive Approximation)
+// Excluded Volume Class (volume excluded w/ large potential)
 // ========================================================================  
 /**
  * Computes potential energy for Gasparini potential.
- * This is the case of Primitive Approx. (gradV = 0 for all positions)
+ * This is the case of gradV = 0 for all positions in cell.
  */
 class Gasparini_1_Potential : public PotentialBase {
 	public:
@@ -497,23 +562,30 @@ class Gasparini_1_Potential : public PotentialBase {
 		~Gasparini_1_Potential ();
 
         /** The potential */
-        double V(const dVec &r) { 
+        double V(const dVec &r){ 
             double r2 = 0.0;
-            if ((r[2] >= -az) && (r[2] <= az) && (r[1] >= -ay) && (r[1] <= ay))
+            if ((r[2] >= -excZ) && (r[2] <= excZ) && (r[1] >= -excY) && (r[1] <= excY))
                 r2 = 1.0*V0;
             return r2;
 		}
 
 		/** The gradient of the potential. */
 		dVec gradV(const dVec &) { return 0.0; }
+
+        /** Laplacian of the potential. */
+        double grad2V(const dVec &r) { return 0.0; }
+
     
         /** Initial configuration corresponding to FixedAziz potential */
 		Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
 
+        /** get the exclusion lengths ay and az */
+		Array<double,1> getExcLen(); 
+
         /* parameters needed for Gasp Potential_1 */
-        const double az;        //scales the length (z)
-        const double ay;        //scales the width (y,x)
-        const double V0;       //scales the potential step
+        const double excZ;      //half amt. of exclusion (z)
+        const double excY;      //half amt. of exclusion (y)
+        const double V0;        //scales the potential step
 };
 
 // ========================================================================  

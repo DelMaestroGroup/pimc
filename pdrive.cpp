@@ -63,7 +63,7 @@ int main (int argc, char *argv[]) {
 	Container *boxPtr = NULL;
 	boxPtr = setup.cell(); 
 
-	/* Create the worldliens */
+	/* Create the worldlines */
 	if (setup.worldlines())
 		return 1;
 

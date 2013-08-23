@@ -110,6 +110,16 @@ void PotentialBase::output(const double maxSep) {
 	}
 }
 
+/**************************************************************************//**
+ * Initialize getExcLen method.  
+ *
+ * This is only used for Gasparini potential, could probably be better.
+******************************************************************************/
+Array<double,1> PotentialBase::getExcLen() {
+	/* The particle configuration */
+	Array<double,1> excLens(0);
+	return excLens;
+}
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // TABULATED POTENTIAL CLASS -------------------------------------------------
@@ -122,6 +132,7 @@ void PotentialBase::output(const double maxSep) {
 TabulatedPotential::TabulatedPotential() { 
 	extV = 0.0;
 	extdVdr = 0.0;
+    extd2Vdr2 = 0.0;
 }
 
 /**************************************************************************//**
@@ -130,6 +141,7 @@ TabulatedPotential::TabulatedPotential() {
 TabulatedPotential::~TabulatedPotential() {
 	lookupV.free();
 	lookupdVdr.free();
+    lookupd2Vdr2.free();
 }
 
 /**************************************************************************//**
@@ -139,19 +151,22 @@ TabulatedPotential::~TabulatedPotential() {
 void TabulatedPotential::initLookupTable(const double _dr, const double maxSep) {
 
 	/* We now calculate the lookup tables for the interaction potential and 
-	 * its derivative. */
+	 * its first and second derivatives. */
 	dr = _dr;
 	tableLength = int(maxSep/dr);
 	lookupV.resize(tableLength);
 	lookupdVdr.resize(tableLength);
+    lookupd2Vdr2.resize(tableLength);
 	lookupV = 0.0;
 	lookupdVdr = 0.0;
+    lookupd2Vdr2 = 0.0;
 
 	double r = 0;
 
 	for (int n = 0; n < tableLength; n++) {
 		lookupV(n)    = valueV(r);
 		lookupdVdr(n) = valuedVdr(r);
+        lookupd2Vdr2(n) = valued2Vdr2(r);
 		r += dr;
 	}
 
@@ -725,6 +740,45 @@ double LJCylinderPotential::valuedVdr(const double r) {
 }
 
 /**************************************************************************//**
+ *  Return the second r-derivative of the LJ Cylinder potential for separation r.
+ *
+ * This has been checked with Mathematica --MTG.
+******************************************************************************/
+double LJCylinderPotential::valued2Vdr2(const double r) {
+ 
+    double x = r / R; 
+
+    if (x >= 1.0) 
+        x = 1.0 - EPS;
+
+    /* d2V/dr2 */
+    /*if (x < EPS){
+    // related to hard core limit, this will likely need to be implemented. 
+    return (1.28121E8/pow(R,11.0) - 102245.0/pow(R,5.0))*x;
+    }
+    else {*/
+    double x2 = x*x;
+    double x4 = x2*x2;
+    double x6 = x2*x4;
+    double x8 = x4*x4;
+    double x10 = x8*x2;
+    double f1 = 1.0 / (1.0 - x2);
+    double sigoR3 = pow(sigma/R,3.0);
+    double sigoR9 = sigoR3*sigoR3*sigoR3;
+
+    double Kx2 = boost::math::ellint_1(x);
+    double Ex2 = boost::math::ellint_2(x);
+
+    double d2v9dx2 = (2.0/240)*pow(f1,11)*((1925.0*x10 + 319451.0*x8 + 2079074.0*x6 + 2711942.0*x4
+                + 764873.0*x2 + 20975.0)*Ex2
+            - (729400.0*x10 + 430024.0*x8 + 344752.0*x6 + 767248.0*x4 + 386200.0*x2 + 12712.0)*Kx2); // checked --MTG
+    double d2v3dx2 = 8.0*pow(f1,5)*((11.0 + 80.0*x2  + 5.0*x4)*Ex2 + 4.0*(5.0*x4 - 4.0*x2 - 1.0)*Kx2); // checked --MTG
+
+    return ((M_PI*epsilon*sigma*sigma*sigma*density/(3.0*R*R))*(sigoR9*d2v9dx2 - sigoR3*d2v3dx2));
+    //}
+}
+
+/**************************************************************************//**
  * Return an initial particle configuration.
  *
  * Return a set of initial positions inside the cylinder.
@@ -821,6 +875,7 @@ AzizPotential::AzizPotential(const dVec &side) : PotentialBase(), TabulatedPoten
 	/* The extremal values are all zero here */
 	extV = 0.0;
 	extdVdr = 0.0;
+    extd2Vdr2 = 0.0;
 
 	/* We take the maximum possible separation */
 	double L = max(side);
@@ -907,9 +962,44 @@ double AzizPotential::valuedVdr(const double r) {
 	}
 }
 
+/**************************************************************************//**
+ *  Return the second r-derivative of the Aziz potential for separation r.
+ *
+ *  Double checked and working with Mathematica. -MTG
+******************************************************************************/
+double AzizPotential::valued2Vdr2(const double r) {
+	double x = r / rm;
+
+	double T1 = A * alpha * alpha * exp(-alpha*x);
+	
+	/* d^2V/dR^2 */
+	/* No self interactions */
+	if (x < EPS) 
+		return 0.0;
+	/* Hard core limit */
+	else if (x < 0.01)
+		return ( ( epsilon / rm ) * T1 );
+	else {
+		/* The various inverse powers of x */
+		double ix = 1.0 / x;
+		double ix2 = ix*ix;
+		double ix6 = ix2 * ix2 * ix2;
+		double ix7 = ix6 * ix;
+		double ix8 = ix6 * ix2;
+		double ix9 = ix8 * ix;
+		double ix10 = ix8 * ix2;
+		double ix11 = ix10 * ix;
+		double ix12 = ix11 * ix;
+		double T2 = - ( 42.0*C6*ix8 + 72.0*C8*ix10 + 110.0*C10*ix12 ) * F(x);
+		double T3 = 2.0*( 6.0*C6*ix7 + 8.0*C8*ix9 + 10.0*C10*ix11 ) * dF(x);
+		double T4 = - ( C6*ix6 + C8*ix8 + C10*ix10 ) * d2F(x);
+		return ( ( epsilon / (rm*rm) ) * (T1 + T2 + T3 + T4) );
+	}
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// GASPARINI_1_POTENTIAL CLASS -----------------------------------------------
+// EXCLUDED VOLUME CLASS -----------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 /**************************************************************************//**
@@ -917,8 +1007,8 @@ double AzizPotential::valuedVdr(const double r) {
 ******************************************************************************/
 Gasparini_1_Potential::Gasparini_1_Potential(double _az, double _ay, const Container *_boxPtr) :
     PotentialBase(),
-    az(0.5*_boxPtr->side[2]*_az),
-    ay(0.5*_boxPtr->side[1]*_ay),
+    excZ(0.5*_boxPtr->side[2]-_az),
+    excY(0.5*_boxPtr->side[1]-_ay),
     V0(1.0E6)
 {
     // Empty Constructor
@@ -939,9 +1029,6 @@ Gasparini_1_Potential::~Gasparini_1_Potential() {
 Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
         MTRand &random, const int numParticles) {
 
-	/* The particle configuration */
-	Array<dVec,1> initialPos(numParticles);
-
 	/* label the lengths of the sides of the simulation cell */
     dVec lside;
     lside[0] = boxPtr->side[0];
@@ -951,66 +1038,162 @@ Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
     /* calculate actual volume */
     double volTot = product(lside);
 
-    /* get linear size per particle for actual volume */
-    double initSide = pow((1.0*numParticles/volTot),-1.0/(1.0*NDIM));
+    /* calculate density */
+    double density = (1.0*numParticles/volTot);
 
-	/* For the ENTIRE SIMULATION CELL (even excluded volume) 
-     * We determine the number of initial grid boxes there are in 
-	 * each dimension and compute their size */
-	int totNumGridBoxes = 1;
-	iVec numNNGrid;
-	dVec sizeNNGrid;
+    /* calculate excluded volume */
+    double volExc = lside[0]*(2.0*excY)*(2.0*excZ);
 
-	for (int i = 0; i < NDIM; i++) {
-		numNNGrid[i] = static_cast<int>(ceil((boxPtr->side[i] / initSide) - EPS));
+    /* calculate actual number of particles */
+    int correctNum = int(numParticles-density*volExc);
 
-		/* Make sure we have at least one grid box */
-		if (numNNGrid[i] < 1)
-			numNNGrid[i] = 1;
+    /* The particle configuration */
+	Array<dVec,1> initialPos(correctNum);
 
-		/* Compute the actual size of the grid */
-		sizeNNGrid[i] = lside[i] / (1.0 * numNNGrid[i]);
+    /* get linear size per particle  */
+    double initSide = pow((1.0*correctNum/(volTot-volExc)),-1.0/(1.0*NDIM));
 
-		/* Determine the total number of grid boxes */
-		totNumGridBoxes *= numNNGrid[i];
-	}
+    /* For accessible volume, determine the number of 
+     * initial grid boxes there are in each dimension and compute
+     * their size. */
+    int totNumGridBoxes1 = 1;
+    int totNumGridBoxes2 = 1;
+    iVec numNNGrid1;
+    iVec numNNGrid2;
+    dVec sizeNNGrid1;
+    dVec sizeNNGrid2;
 
-  	/* Now, we place the particles at the middle of each box
-     * UNLESS that middle falls within our excluded volume */
-	PIMC_ASSERT(totNumGridBoxes>=numParticles);
-	dVec pos;
-    int numIn = 0;
-    double jump = 0.5;
+    /* divide space into two regions, insert particles appropriately */
+    double V1 = (lside[1]-2.0*excY)*(2.0*excZ)*lside[0];
+    double V2 = (lside[2]-2.0*excZ)*lside[1]*lside[0];
+
+    double fracV1 = V1/(V1+V2);
+
+    int numIn1 = int(correctNum*fracV1);
+    int numIn2 = (correctNum-numIn1);
     
-    while (numIn < numParticles){
-        for (int n = 0; n < totNumGridBoxes; n++) {
+    /* grid space in volume 1 */
+    /* x */
+    numNNGrid1[0] = static_cast<int>(ceil((1.0*lside[0]/initSide)-EPS));
+    if (numNNGrid1[0] < 1)
+        numNNGrid1[0] = 1;
+    sizeNNGrid1[0] = 1.0*lside[0]/(1.0*numNNGrid1[0]);
+    totNumGridBoxes1 *= numNNGrid1[0];
+    /* y */
+    numNNGrid1[1] = static_cast<int>(ceil(((lside[1]-2.0*excY)/initSide)-EPS));
+    if (numNNGrid1[1] < 1)
+        numNNGrid1[1] = 1;
+    sizeNNGrid1[1] = (lside[1]-2.0*excY)/(1.0*numNNGrid1[1]);
+    totNumGridBoxes1 *= numNNGrid1[1];
+    /* z */
+    numNNGrid1[2] = static_cast<int>(ceil(((2.0*excZ)/initSide)-EPS));
+    if (numNNGrid1[2] < 1)
+        numNNGrid1[2] = 1;
+    sizeNNGrid1[2] = (2.0*excZ)/(1.0*numNNGrid1[2]);
+    totNumGridBoxes1 *= numNNGrid1[2];
+    
+    /* grid space in volume 2 */
+    /* x */
+    numNNGrid2[0] = static_cast<int>(ceil((1.0*lside[0]/initSide)-EPS));
+    if (numNNGrid2[0] < 1)
+        numNNGrid2[0] = 1;
+    sizeNNGrid2[0] = 1.0*lside[0]/(1.0*numNNGrid2[0]);
+    totNumGridBoxes2 *= numNNGrid2[0];
+    /* y */
+    numNNGrid2[1] = static_cast<int>(ceil((1.0*lside[1]/initSide)-EPS));
+    if (numNNGrid2[1] < 1)
+        numNNGrid2[1] = 1;
+    sizeNNGrid2[1] = 1.0*lside[1]/(1.0*numNNGrid2[1]);
+    totNumGridBoxes2 *= numNNGrid2[1];
+    /* z */
+    numNNGrid2[2] = static_cast<int>(ceil(((lside[2]-2.0*excZ)/initSide)-EPS));
+    if (numNNGrid2[2] < 1)
+        numNNGrid2[2] = 1;
+    sizeNNGrid2[2] = (lside[2]-2.0*excZ)/(1.0*numNNGrid2[2]);
+    totNumGridBoxes2 *= numNNGrid2[2];
+    
+    /* Place particles in the middle of the boxes -- volume 1 */
+    PIMC_ASSERT(totNumGridBoxes1>=numIn1);
+    dVec pos1;
 
-            /* put correct number of particles in box, no more */
-            if (numIn >= numParticles)
-                break;
-            
-            iVec gridIndex;
-            /* update grid index */
-            for (int i = 0; i < NDIM; i++) {
-                int scale = 1;
-                for (int j = i+1; j < NDIM; j++) 
-                    scale *= numNNGrid[j];
-                gridIndex[i] = (n/scale) % numNNGrid[i];
-            }
-            /* place particle in position vector, skipping over excluded volume */
-            for (int i = 0; i < NDIM; i++)
-                pos[i] = (gridIndex[i]+jump)*sizeNNGrid[i] - 0.5*lside[i];
-
-            if (((pos[2] < -az) || (pos[2] > az)) && ((pos[1] < -ay) || (pos[1] > ay))){
-                initialPos(numIn) = pos;
-                numIn++;
-            }
+    for (int n = 0; n < totNumGridBoxes1; n++) {
+        iVec gridIndex1;
+        /* update grid index */
+        for (int i = 0; i < NDIM; i++) {
+            int scale = 1;
+            for (int j = i+1; j < NDIM; j++) 
+                scale *= numNNGrid1[j];
+            gridIndex1[i] = (n/scale) % numNNGrid1[i];
         }
-        jump += 0.1;
+        /* place particle in position vector, skipping over excluded volume */
+        pos1[0] = (gridIndex1[0]+0.5)*sizeNNGrid1[0] + +0.5*lside[0] + 2.0*EPS;
+        pos1[1] = (gridIndex1[1]+0.5)*sizeNNGrid1[1] + excY + 2.0*EPS;
+        pos1[2] = (gridIndex1[2]+0.5)*sizeNNGrid1[2] - excZ + 2.0*EPS;
+
+        if ((pos1[1]<-excY || pos1[1]>excY) || (pos1[2]<-excZ || pos1[2]>excZ))
+            boxPtr->putInside(pos1);
+
+        if (n < numIn1){
+			initialPos(n) = pos1;
+        }
+		else 
+			break;
     }
 
-	return initialPos;
+    /* Place particles in the middle of the boxes -- volume 2 */
+    PIMC_ASSERT(totNumGridBoxes2>=numIn2);
+    dVec pos2;
+
+    for (int n = 0; n < totNumGridBoxes2; n++) {
+        iVec gridIndex2;
+        /* update grid index */
+        for (int i = 0; i < NDIM; i++) {
+            int scale = 1;
+            for (int j = i+1; j < NDIM; j++) 
+                scale *= numNNGrid2[j];
+            gridIndex2[i] = (n/scale) % numNNGrid2[i];
+        }
+        /* place particles in position vectors */
+        pos2[0] = (gridIndex2[0]+0.5)*sizeNNGrid2[0] + 0.5*lside[0] + 2.0*EPS;
+        pos2[1] = (gridIndex2[1]+0.5)*sizeNNGrid2[1] + 0.5*lside[1] + 2.0*EPS;
+        pos2[2] = (gridIndex2[2]+0.5)*sizeNNGrid2[2] + excZ + 2.0*EPS;
+
+        if ((pos2[1]<-excY || pos2[1]>excY) || (pos2[2]<-excZ || pos2[2]>excZ))
+            boxPtr->putInside(pos2);
+        
+        if (n < numIn2){
+			initialPos(n+numIn1) = pos2;
+        }
+		else 
+			break;
+    }
+    /* do we want to output the initial config to disk? */
+    bool outToDisk = 1;
+    ofstream OF;
+    if (outToDisk){
+        OF.open("./OUTPUT/initialConfig.dat");
+        OF<<"# Cartesian Coordinates of initial Positions (X-Y-Z)"<<endl;
+        OF<<"# "<<lside[0]<<"\t"<<lside[1]<<"\t"<<lside[2]<<endl;
+        OF<<"# "<< excY <<"\t"<< excZ <<endl;
+        for (int i=0; i< int(initialPos.size()); i++)
+            OF<<initialPos(i)(0)<< "\t"<<initialPos(i)(1)<<"\t"<<initialPos(i)(2)<<endl;
+        OF.close();
+    }
+    
+    return initialPos;
 }
+/*************************************************************************//**
+ *  Returns the exclusion lengths ay and az
+******************************************************************************/
+Array<double,1> Gasparini_1_Potential::getExcLen(){
+
+    Array<double, 1> excLens(2);
+    excLens(0) = excY; // was ay
+    excLens(1) = excZ; // was az
+	
+    return (excLens);
+}
+
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

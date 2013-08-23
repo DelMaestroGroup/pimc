@@ -21,7 +21,7 @@ ConstantParameters::ConstantParameters() : T_(), imagTimeLength_(), mu_(), tau_(
 	dBWavelength_(), rc_(), C0_(), C_(), V_(), L_(), Mbar_(), b_(), numTimeSlices_(), 
     initialNumParticles_(), deltaNumParticles_(), id_(), restart_(),
     wallClock_(),  canonical_(), pigs_(), window_(), intPotentialType_(),
-    extPotentialType_(), waveFunctionType_(), actionType_()
+    extPotentialType_(), waveFunctionType_(), actionType_(), virialWindow_()
 { 
     /* set all data members to null values */
 }
@@ -38,7 +38,8 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
         double _mu, double _m, double _rc, double _C0, double _V, double _L, int _initialNumParticles, 
 		int _Mbar, int _numTimeSlices, uint32 _id, uint32 _process, double _wallClock,
 		uint32 _numEqSteps, string _intPotentialType, string _extPotentialType, 
-        string _waveFunctionType, string _actionType, int _window, double _gaussianEnsembleSD ) {
+        string _waveFunctionType, string _actionType, int _window, double _gaussianEnsembleSD, 
+        int _virialWindow) {
 
 	/* The simulation ID is the number of seconds since January 1 2009 */
 	if (_id == 0) {
@@ -102,6 +103,13 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
 	L_             = _L;
 	numEqSteps_    = _numEqSteps;
 
+    /* set windowing constant for centroid virial estimator
+     * to be number of time slices if nothing is supplied */
+    if (int(_virialWindow)==0)
+        virialWindow_ = _numTimeSlices;
+    else
+        virialWindow_  = int(_virialWindow);
+    
 	initialNumParticles_ = _initialNumParticles;
 
 	/* We arbitrarily set the particle weighting number (for now) */

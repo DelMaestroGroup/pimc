@@ -429,6 +429,28 @@ double LocalAction::derivPotentialActionTau (int slice) {
 }
 
 /**************************************************************************//**
+ *  The second derivative of the potential action wrt tau on all links 
+ *  starting on slice.
+ *
+ *  It is essential to have these slice overloaded values as we need to be
+ *  careful of the factor of 1/2 or i<j in the full potential action.
+ *
+ *  @param slice the imaginary timeslice of the first link
+******************************************************************************/
+double LocalAction::secondderivPotentialActionTau (int slice) {
+
+    double d2U = 0.0;
+    eo = (slice % 2);
+
+ 	/* As long as there is a finite correction, we include it */
+ 	if ( gradVFactor[eo] > EPS )
+ 		d2U += 6.0 * gradVFactor[eo] * tau() * constants()->lambda() 
+ 			* gradVSquared(slice);
+    return (d2U);
+
+}
+
+/**************************************************************************//**
  *  The derivative of the potential action wrt lambda for all links starting
  *  on slice.
  *
@@ -486,7 +508,7 @@ double LocalAction::derivPotentialActionTau (int slice, double maxR) {
 double LocalAction::derivPotentialActionLambda (int slice, double maxR) {
     eo = (slice % 2);
 
- 	/* As long as thers is a finite correction, we include it */
+ 	/* As long as there is a finite correction, we include it */
  	if ( gradVFactor[eo] > EPS )
  		return gradVFactor[eo] * tau() * tau() * tau() * gradVSquared(slice,maxR);
     else
@@ -922,6 +944,367 @@ double LocalAction::gradVnnSquared(const beadLocator &bead1) {
 	return totF2;
 }
 
+/**************************************************************************//**
+ *  Return the gradient of the full potential for all beads at a single
+ *  time slice. 
+ *
+ *  This includes both the external and interaction potentials.
+******************************************************************************/
+dVec LocalAction::gradientV(const int slice) {
+
+	int numParticles = path.numBeadsAtSlice(slice);
+
+	/* The two interacting particles */
+	beadLocator bead1;
+	bead1[0] = bead2[0] = slice;
+
+	dVec gV;					// The 'force'
+
+	/* We loop over the first bead */
+	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+		gV = 0.0;
+		/* Sum up potential for all other active beads in the system */
+		for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
+
+			/* Avoid self interactions */
+			if (!all(bead1==bead2)) {
+
+				/* The interaction component of the force */
+				gV += interactionPtr->gradV(path.getSeparation(bead1,bead2));
+			} 
+		} // end bead2
+
+		/* Now add the external component */
+		gV += externalPtr->gradV(path(bead1));
+	} // end bead1
+
+	return gV;
+}
+
+/*************************************************************************//**
+ *  Returns the T-matrix needed to compute gradU.
+ *
+ *  This is used for the virial energy estimator in the TI or GSF action.
+ *  CURRENTLY ONLY RETURNS VALUES FOR INTERACTIONS, NOT EXTERNAL.
+******************************************************************************/
+dMat LocalAction::tMatrix(const int slice) {
+
+	int numParticles = path.numBeadsAtSlice(slice);
+
+    dMat tMat = 0.0; // tMat(row, col)
+
+    dVec rDiff = 0.0;
+    double rmag = 0.0;
+    double d2V = 0.0;
+    double dV = 0.0;
+    
+    /* two interacting particles */
+    beadLocator bead1;
+    bead1[0] = bead2[0] = slice;
+    
+    for (int a=0; a<NDIM; a++){
+        for (int b=0; b<NDIM; b++){
+
+            /* loop over first bead */
+            for (bead1[1]=0; bead1[1]<numParticles; bead1[1]++){
+                
+                /* loop over all other beads */
+                for (bead2[1]=0; bead2[1]<numParticles; bead2[1]++){
+
+                    /* avoid self-interactions */
+                    if (!all(bead1==bead2)) {
+                        
+                        rDiff = path.getSeparation(bead1, bead2);
+                        rmag = sqrt(dot(rDiff,rDiff));
+                        d2V = interactionPtr->grad2V(rDiff);
+                        d2V += externalPtr->grad2V(path(bead1));
+                        dV = sqrt(dot(interactionPtr->gradV(rDiff)
+                                    ,interactionPtr->gradV(rDiff)));
+                        dV += sqrt(dot(externalPtr->gradV(path(bead1))
+                                    ,externalPtr->gradV(path(bead1))));
+
+                        tMat(a,b) += rDiff(a)*rDiff(b)*d2V/(rmag*rmag);
+                        if (a != b)
+                            tMat(a,b) -= (rDiff(a)*rDiff(b)/pow(rmag,3))*dV;
+                        else
+                            tMat(a,b) += (1.0/rmag - rDiff(a)*rDiff(b)/pow(rmag,3))*dV;
+                    }
+                } // end bead2
+            } // end bead1
+        }
+    }
+
+    tMat /= 2.0; // don't want to double count interactions
+	
+    return ( tMat ); 
+}
+
+/**************************************************************************//**
+ *  Return the sum over particles at a given time slice of the 
+ *  gradient of the action potential for a single bead dotted into the
+ *  bead's position minus the center of mass of the WL that it belongs to. 
+ *  
+ *  NOTE:  This is the first term.  These were split up because it is
+ *      beneficial to be able to return them separately when computing
+ *      the specific heat via the centroid virial estimator.
+ *
+ *  This includes both the external and interaction potentials.
+******************************************************************************/
+double LocalAction::deltadotgradUterm1(const int slice) {
+
+    int eo = slice % 2;
+	int numParticles = path.numBeadsAtSlice(slice);
+    int virialWindow = constants()->virialWindow();
+
+	/* The two interacting particles */
+	beadLocator bead1, beadNext, beadPrev, beadNextOld, beadPrevOld;
+	bead1[0] = bead2[0] = slice;
+
+	dVec gVi, gVe, gV, delta;
+    double rDotgV = 0.0;
+
+	/* We loop over the first bead */
+	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+        gVi = 0.0;
+        gVe = 0.0;
+        gV = 0.0;
+        delta = 0.0;
+		/* Sum potential of bead1 interacting with all other beads at
+         * a given time slice.*/
+		for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
+
+			/* Avoid self interactions */
+			if (!all(bead1==bead2)) {
+
+				/* The interaction component of the force */
+				gVi += interactionPtr->gradV(path.getSeparation(bead1,bead2));
+			} 
+        } // end bead2
+		
+		/* Now add the external component */
+        gVe += externalPtr->gradV(path(bead1));
+        
+        /* Compute deviation of bead from COM of worldline, 
+         * WITHOUT mirror image conv. */
+        dVec runTotMore = 0.0;
+        dVec runTotLess = 0.0;
+        dVec COM = 0.0;
+        dVec pos1 = path(bead1);
+        beadNextOld = bead1;
+        beadPrevOld = bead1;
+        for (int gamma = 0; gamma < virialWindow; gamma++) {
+            // move along worldline to next (previous) bead
+            beadNext = path.next(bead1, gamma);
+            beadPrev = path.prev(bead1, gamma);
+            // keep running total of distance from first bead
+            // to the current beads of interest 
+            runTotMore += path.getSeparation(beadNext, beadNextOld);
+            runTotLess += path.getSeparation(beadPrev, beadPrevOld);
+            // update center of mass of WL
+            COM += (pos1 + runTotMore) + (pos1 + runTotLess);
+            // store current bead locations
+            beadNextOld = beadNext;
+            beadPrevOld = beadPrev;
+        }
+        COM /= (2.0*virialWindow);
+
+        delta = pos1 - COM; // end delta computation.
+        path.boxPtr->putInBC(delta);
+        
+        gV += (gVe + gVi);
+
+        rDotgV += dot(gV, delta);
+
+	} // end bead1
+
+    return (VFactor[eo]*constants()->tau()*rDotgV);
+}
+
+/**************************************************************************//**
+ *  Return the sum over particles at a given time slice of the 
+ *  gradient of the action potential for a single bead dotted into the
+ *  bead's position minus the center of mass of the WL that it belongs to. 
+ *  
+ *  NOTE:  This is the second term
+ *
+ *  This includes both the external and interaction potentials.
+******************************************************************************/
+double LocalAction::deltadotgradUterm2(const int slice) {
+
+    int eo = slice % 2;
+    int numParticles = path.numBeadsAtSlice(slice);
+    int virialWindow = constants()->virialWindow();
+
+    /* The two interacting particles */
+    beadLocator bead1, beadNext, beadPrev, beadNextOld, beadPrevOld;
+    bead1[0] = bead2[0] = slice;
+
+    dVec gVi, gVe, gV, g2V, delta;
+
+    double term2 = 0.0;
+    if (gradVFactor[eo] > EPS){
+
+        /* constants for tMatrix */
+        dVec rDiff = 0.0;
+        double rmag = 0.0;
+        double d2V = 0.0;
+        double dV = 0.0;
+        double dVe = 0.0;
+        double dVi = 0.0;
+        double g2Vi = 0.0;
+        double g2Ve = 0.0;
+
+        /* We loop over the first bead */
+        for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+            gV = 0.0;
+            g2V = 0.0;
+            delta = 0.0;
+            dMat tMat = 0.0; // tMat(row, col)
+            dVec gVdotT = 0.0;
+
+            /* compute external potential derivatives */
+            gVe = externalPtr->gradV(path(bead1));
+            dVe = sqrt(dot(gVe,gVe));
+            g2Ve = externalPtr->grad2V(path(bead1));
+
+            gV += gVe;  // update full slice gradient at bead1
+
+            /* Sum potential of bead1 interacting with all other beads at
+             * a given time slice.*/
+            for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
+
+                /* separation vector */
+                rDiff = path.getSeparation(bead1, bead2);
+                rmag = sqrt(dot(rDiff,rDiff));
+
+                /* Avoid self interactions */
+                if (!all(bead1==bead2)) {
+
+                    /* Compute interaction potential derivatives */
+                    gVi = interactionPtr->gradV(rDiff);
+                    dVi = sqrt(dot(gVi,gVi));
+                    g2Vi = interactionPtr->grad2V(rDiff);
+                    
+                    /* total derivatives between bead1 and bead2 at bead1 */
+                    dV = dVi + dVe;
+                    d2V = g2Vi + g2Ve;
+
+                    /* compute the T-matrix for bead1 interacting with bead2 */
+                    for (int a=0; a<NDIM; a++){
+                        for (int b=0; b<NDIM; b++){
+                            tMat(a,b) += rDiff(a)*rDiff(b)*d2V/(rmag*rmag)
+                                - rDiff(a)*rDiff(b)*dV/pow(rmag,3);
+                            if (a == b)
+                                tMat(a,b) += dV/rmag;
+                        }
+                    }   // end T-matrix 
+                    
+                    gV += gVi;  // update full slice gradient at bead1
+
+                }   
+            }   // end bead2
+
+            /* blitz++ product function seems broken in my current 
+             * version, so this performs matrix-vector mult. 
+             * Checked --MTG */
+            for(int j=0; j<NDIM; j++){
+                for(int i=0; i<NDIM; i++){
+                    gVdotT(j) += gV(i)*tMat(j,i);
+                }
+            }  
+            
+            /* Compute deviation of bead from COM of worldline, 
+             * WITHOUT mirror image conv.*/
+            dVec runTotMore = 0.0;
+            dVec runTotLess = 0.0;
+            dVec COM = 0.0;
+            dVec pos1 = path(bead1);
+            beadNextOld = bead1;
+            beadPrevOld = bead1;
+            for (int gamma = 0; gamma < virialWindow; gamma++) {
+                // move along worldline to next (previous) bead
+                beadNext = path.next(bead1, gamma);
+                beadPrev = path.prev(bead1, gamma);
+                // keep running total of distance from first bead
+                // to the current beads of interest
+                runTotMore += path.getSeparation(beadNext, beadNextOld);
+                runTotLess += path.getSeparation(beadPrev, beadPrevOld);
+                // update center of mass of WL
+                COM += (pos1 + runTotMore) + (pos1 + runTotLess);
+                // store current bead locations
+                beadNextOld = beadNext;
+                beadPrevOld = beadPrev;
+            }
+            COM /= (2.0*virialWindow);
+            delta = pos1 - COM; // end delta computation.
+           
+            path.boxPtr->putInBC(delta);
+
+            term2 += dot(gVdotT, delta);
+
+        }   // end bead1
+
+        term2 *= (2.0 * gradVFactor[eo] * pow(tau(),3) * constants()->lambda());
+    }
+
+    return (term2);
+}
+
+/*************************************************************************//**
+ *  Returns the value of the virial kinetic energy correction term.
+ *
+ * @see S. Jang, S. Jang and G.A. Voth, J. Chem. Phys. 115, 7832 (2001).
+******************************************************************************/
+double LocalAction::virialKinCorrection(const int slice) {
+
+    double vKC = 0.0;
+
+	/* Combine the potential and a possible correction */
+    eo = (slice % 2);
+
+    /* We only add the correction if it is finite */
+    if ( gradVFactor[eo] > EPS ) {
+        
+        vKC += gradVSquared(slice);
+        
+        /* scale by constants */
+        vKC *= gradVFactor[eo] * pow(tau(),3) * constants()->lambda();
+    }
+	
+    return ( vKC );
+}
+
+/*************************************************************************//**
+ *  Returns the value of the gradient of the potential action for all
+ *  beads at a given time slice.
+ *
+ *  This should be used for the pressure.
+******************************************************************************/
+dVec LocalAction::gradU(const int slice) {
+
+    dVec gU2 = 0.0;
+    dMat tM = tMatrix(slice);
+    dVec gV = gradientV(slice);
+
+	/* Combine the potential and a possible correction */
+    eo = (slice % 2);
+    dVec gU1 = VFactor[eo]*tau()*gradientV(slice);
+
+    /* We only add the correction if it is finite */
+    if ( gradVFactor[eo] > EPS ) {
+        /* blitz++ product function seems broken in my current 
+         * version, so this performs matrix-vector mult. */
+        for(int j=0; j<NDIM; j++){
+            for(int i=0; i<NDIM; i++){
+                gU2(i) += gV(j)*tM(i,j);
+            }
+        }
+        /* now scale by constants */
+        gU2 *= 2.0 * gradVFactor[eo] * pow(tau(),3) * constants()->lambda();
+    }
+	
+    return ( gU1+gU2 );
+}
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // NON LOCAL ACTION BASE CLASS -----------------------------------------------
@@ -988,7 +1371,7 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
     /* Needed to compute the effective action */
     double lambdaTau = constants()->lambda() * constants()->tau();
 
-    /* Now calculate the total effective interation potential, neglecting self-interactions */
+    /* Now calculate the total effective interaction potential, neglecting self-interactions */
     double totU = 0.0;
 
     for (bead2[1]= 0; bead2[1] < path.numBeadsAtSlice(bead1[0]); bead2[1]++) {

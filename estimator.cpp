@@ -172,7 +172,7 @@ void EstimatorBase::output() {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// ENERGY ESTIMATOR CLASS ----------------------------------------------------
+// THERMODYNAMIC AND VIRIAL ENERGY ESTIMATOR CLASS ---------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
@@ -181,6 +181,8 @@ void EstimatorBase::output() {
  * 
  * We measure the total Kinetic, Potential and E-mu*N as well as the kinetic,
  * potential and total energy per particle.
+ *
+ *
 ******************************************************************************/
 EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
 		int _frequency, string _label) : 
@@ -189,10 +191,12 @@ EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
 	/* Set estimator name and header, we will always report the energy
 	 * first, hence the comment symbol*/
 	name = "Energy";
-	header = str(format("#%15s%16s%16s%16s%16s%16s%16s") 
-			% "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
+	header = str(format("#%15s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s") 
+            % "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N"
+            % "Ecv" % "Ecv/N" % "Vcv" % "Vcv/N" % "Kcv" % "Kcv/N" % "Kcvop" 
+            % "Kcvop/N" % "EEcv*Beta^2"% "Ecv*Beta" % "dEdB");
     endLine = false;
-    initialize(7);
+    initialize(18);
 }
 
 /*************************************************************************//**
@@ -204,31 +208,51 @@ EnergyEstimator::~EnergyEstimator() {
 /*************************************************************************//**
  *  Accumluate the energy.
  *
- *  We use the thermodynamic estimator for the kinetic energy and the
- *  potential estimator for the potential energy. A possible shift is 
- *  made due to a tail correction.
+ * We use the thermodynamic estimator for the kinetic energy and the
+ * potential estimator for the potential energy. A possible shift is 
+ * made due to a tail correction.
+ *
+ * We measure the Centroid Virial energy estimator and the potential energy
+ * estimator via the operator method.  The potential is subtracted off
+ * from the total energy to get the kinetic energy.  A tail correction term
+ * is included for the potential energy due to periodic BC.
+ *
+ * We also measure the centroid virial specific heat terms so that the 
+ * specific heat may be computed post-process.
+ *
 ******************************************************************************/
 void EnergyEstimator::accumulate() {
 
-	double totK = 0.0;
+    /* Thermodynamic terms */
+    double totK = 0.0;
 	double totVop = 0.0;
 	double totV = 0.0;
 
+    /* Centroid Virial terms */
+    double totEcv = 0.0; // = T1+T2+T3+T4+t2+tailV
+    double Kcv = 0.0; // = T1+T2+T3+T4+virKinTerm
+    double T2 = 0.0;
+    double T3 = 0.0;
+    double T4 = 0.0;
+    double virKinTerm = 0.0;
+
 	int numParticles  = path.getTrueNumParticles();
 	int numTimeSlices = path.numTimeSlices;
+    double beta = 1.0*numTimeSlices*constants()->tau();
+    int virialWindow = constants()->virialWindow();
 
 	/* The total tail correction */
 	double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
 		* actionPtr->interactionPtr->tailV;
 
-	/* The kinetic normalization factor */
+	/* The thermodynamic kinetic normalization factor */
 	double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * numTimeSlices);
 
-	/* The classical contribution to the kinetic energy per particle 
+	/* The classical contribution to the thermodynamic kinetic energy per particle 
 	 * including the chemical potential */
 	double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
 
-	/* We first calculate the kinetic energy.  Even though there
+	/* We first calculate the thermodynamic kinetic energy.  Even though there
 	 * may be multiple mixing and swaps, it doesn't matter as we always
 	 * just advance one time step at a time, as taken care of through the
 	 * linking arrays.  This has been checked! */
@@ -245,8 +269,8 @@ void EnergyEstimator::accumulate() {
 	/* Normalize the accumulated link-action part */
 	totK *= kinNorm;
 
-	/* Now we compute the potential and kinetic energy.  We use an operator estimater
-	 * for V and the thermodynamic estimator for K */
+	/* Now we compute the thermodynamic potential and kinetic energy.  
+     * We use an operator estimator for V and the thermodynamic estimator for K */
 	int eo;
     double t1 = 0.0;
     double t2 = 0.0;
@@ -259,7 +283,7 @@ void EnergyEstimator::accumulate() {
 	}
 
     t1 *= constants()->lambda()/(constants()->tau()*numTimeSlices);
-    t2 /= 1.0*numTimeSlices;
+    t2 /= (1.0*numTimeSlices);
 
 	/* Normalize the action correction and the total potential*/
 	totVop /= (0.5 * numTimeSlices);
@@ -267,23 +291,85 @@ void EnergyEstimator::accumulate() {
 	/* Perform all the normalizations and compute the individual energy terms */
 	totK += (classicalKinetic + t1);
     totV = t2 - t1 + tailV;
-
 	totVop += tailV;
+    totV = totVop;
 
-    //totV = totVop;
+    /* The boundary term associated with the centroid virial estimator.
+     * Used when we subtract off the COM of a given worldline. */ 
+	double T1 = 0.5 * NDIM * numParticles / (1.0*virialWindow*constants()->tau());
+
+    /* Calculate the exchange energy for centroid virial energy.
+     * Reduces to thermodynamic kinetic energy.  Checked --MTG */
+	double exchangeNorm = 1.0/(4.0*virialWindow*pow(constants()->tau(),2)*constants()->lambda()*numTimeSlices);
+	beadLocator bead1, beadNext, beadNextOld;
+    dVec vel1, vel2;
+	for (int slice = 0; slice < numTimeSlices; slice++) {
+		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+			bead1 = slice,ptcl; // current bead
+            vel2 = path.getVelocity(bead1);
+            beadNextOld = bead1;
+            vel1 = 0.0;
+            /* get r_{current + window} - r_{current} */
+            for (int gamma = 1; gamma <= virialWindow; gamma++) {
+                beadNext = path.next(bead1, gamma);
+                vel1 += path.getSeparation(beadNext, beadNextOld);
+                beadNextOld = beadNext;
+            }
+            T2 -= dot(vel1,vel2);
+        }
+    }	
+    T2 *= exchangeNorm;
+
+    /* Now compute third term for centroid virial
+     * estimator. T3+T4 as well as the kinetic energy correction */
+    for (int slice = 0; slice < numTimeSlices; slice++) {
+        T3 += actionPtr->deltaDOTgradUterm1(slice);
+        T4 += actionPtr->deltaDOTgradUterm2(slice);
+        virKinTerm += actionPtr->virKinCorr(slice);
+    }
+    
+    T3 /= (2.0*beta);
+    T4 /= (1.0*beta);
+    virKinTerm /= (0.5*beta);
+
+    /* Compute total centroid virial energy */
+    totEcv = T1 + T2 + T3 + T4 + t2 + tailV;
+
+    /* Compute centroid virial kinetic energy */
+    Kcv = T1 + T2 + T3 + T4 + virKinTerm;
+
+    /* Compute dE/d(\beta) for centroid virial specific heat:
+     * C_V^{CV}/(k_B \beta^2) = <E^2> - <E>^2 - <dEdB> */
+    double dEdB = (-1.0*T1 - 2.0*T2 + 2.0*T4)/constants()->tau(); // checked
+
+    for (int slice = 0; slice<numTimeSlices; slice++){
+        dEdB += actionPtr->secondderivPotentialActionTau(slice)/(1.0*numTimeSlices);
+    }
+    dEdB *= beta*beta/(1.0*numTimeSlices);
 
 	/* Now we accumulate the average total, kinetic and potential energy, 
 	 * as well as their values per particles. */
 	estimator(0) += totK;
 	estimator(1) += totV;
 	estimator(2) += totK + totV;
-
 	estimator(3) += totK + totV - constants()->mu()*numParticles;
-
 	estimator(4) += totK/(1.0*numParticles);
 	estimator(5) += totV/(1.0*numParticles);
-
 	estimator(6) += (totK + totV)/(1.0*numParticles);
+    
+    /* accumulate virial estimators. */
+	estimator(7) += totEcv;
+	estimator(8) += totEcv/(1.0*numParticles);
+    estimator(9) += totEcv - Kcv;
+    estimator(10) += (totEcv - Kcv)/(1.0*numParticles);
+    estimator(11) += Kcv;
+    estimator(12) += Kcv/(1.0*numParticles);
+    estimator(13) += totEcv - totVop;
+    estimator(14) += (totEcv - totVop)/(1.0*numParticles);
+    estimator(15) += totEcv*(totK+totV)*beta*beta;
+    estimator(16) += totEcv*beta;
+    estimator(17) += dEdB;   //  for C_v^{cv}
+
 }
 
 // ---------------------------------------------------------------------------
@@ -456,6 +542,83 @@ void ParticlePositionEstimator::accumulate() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// BIPARTITION DENSITY ESTIMATOR CLASS ---------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor
+ * 
+ *  Measure the density inside of the constrained region (film)
+ *  as well as the unconstrained region (3D bulk) for the excluded volume
+ *  (Gasparini) geometry.
+******************************************************************************/
+BipartitionDensityEstimator::BipartitionDensityEstimator (const Path &_path, 
+        ActionBase *_actionPtr, int _frequency, string _label) : 
+    EstimatorBase(_path,_frequency,_label), actionPtr(_actionPtr) {
+
+	/* Set estimator name and header*/
+	name = "Bipartition Density";
+	header = str(format("#%15s%16s") % "film dens" % "bulk dens");
+    endLine = true;
+    initialize(2);
+    norm(0) = 1.0/(path.numTimeSlices);
+    norm(1) = 1.0/(path.numTimeSlices);
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+BipartitionDensityEstimator::~BipartitionDensityEstimator() { 
+    // empty destructor
+}
+
+/*************************************************************************//**
+ *  Accumulate density properties from both regions.
+ *
+ *  We measure the density in both regions of interest.
+******************************************************************************/
+void BipartitionDensityEstimator::accumulate() {
+
+    /* label the lengths of the sides of the simulation cell */
+    dVec lside;
+    lside[0] = path.boxPtr->side[0];
+    lside[1] = path.boxPtr->side[1];
+    lside[2] = path.boxPtr->side[2];
+
+    /* read in the exclusion lengths */
+    Array<double,1> excLens (actionPtr->externalPtr->getExcLen());
+    double excZ = excLens(1);
+    
+    /* determine volume of film region and bulk region */
+    double bulkVol ((lside[2]-2.0*excZ)*lside[0]*lside[1]);
+    double filmArea (lside[0]*2.0*excZ);
+
+    /* keep track of number of particles in bulk and film */
+    int filmNum (0);
+    int bulkNum (0);
+    
+    dVec pos;
+    beadLocator beadIndex;
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
+
+            pos = path(beadIndex);
+            if (pos[2] > excZ)
+                bulkNum += 1;
+            else if (pos[2] < -excZ)
+                bulkNum += 1;
+            else
+                filmNum += 1;
+        }
+    }
+    /* update estimator with density in both regions*/
+    estimator(0) += 1.0*filmNum/(1.0*filmArea);
+    estimator(1) += 1.0*bulkNum/(1.0*bulkVol);
+}
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // PLANE PARTICLE DENSITY ESTIMATOR CLASS ------------------------------------
@@ -1267,7 +1430,7 @@ void WormPropertiesEstimator::accumulate() {
 /*************************************************************************//**
  * Constructor.
  * 
- * We setup the permuatation cycle estimator to measure cycles which can 
+ * We setup the permutation cycle estimator to measure cycles which can 
  * contain up to 40 particles.
 ******************************************************************************/
 PermutationCycleEstimator::PermutationCycleEstimator(const Path &_path, 
@@ -1352,6 +1515,146 @@ void PermutationCycleEstimator::accumulate() {
 	} // n
 }
 
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// LOCAL PERMUTATION CYCLE ESTIMATOR CLASS -----------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ * Constructor.
+ * 
+ * Local particle permutation number density histogram.
+ *
+ * We setup the permuatation cycle estimator to measure cycles which can 
+ * contain up to 40 particles.
+******************************************************************************/
+LocalPermutationEstimator::LocalPermutationEstimator(const Path &_path, 
+		int _frequency, string _label) : 
+    EstimatorBase(_path,_frequency,_label) {
+
+	/* We just choose arbitrarily to only count cycles including up to 40 particles */
+	maxNumCycles = 40;
+	
+	/* The local permutation cycle estimator has its own file, and consists of 
+	 * maxNumCycles permutation cycles */
+    initialize(path.boxPtr->numGrid);
+
+    /* vector to hold number of worldlines put into a grid space */
+    numBeadInGrid.resize(estimator.size());
+
+	/* Set estimator name and header */
+	name = "Local Permutation";
+    header = str(format("#%15d") % NGRIDSEP);
+
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+LocalPermutationEstimator::~LocalPermutationEstimator() { 
+	doBead.free();
+}
+
+/*************************************************************************//**
+ *  Overload the output of the base class so that a running average
+ *  is kept rather than keeping all data.
+******************************************************************************/
+void LocalPermutationEstimator::output() {
+
+    /* Prepare the position file for writing over old data */
+    communicate()->file(label)->reset();
+
+    (*outFilePtr) << header;
+    if (endLine)
+        (*outFilePtr) << endl;
+
+    /* Now write the running average of the estimator to disk */
+    for (int n = 0; n < numEst; n++)
+        (*outFilePtr) << format("%16.6E\n") %
+            (estimator(n)/totNumAccumulated);
+
+    communicate()->file(label)->rename();
+}
+
+/*************************************************************************//**
+ * Accumulate permuation cycle.
+ * 
+ * Go through each worldline and count how many beads it includes. We must be
+ * careful to avoid any double counting, which is acomplished by marking
+ * beads we have touched.
+ *
+ * Once beads in a worldline are counted, loop through and label the 
+ * positions by the corresponding permutation.
+******************************************************************************/
+void LocalPermutationEstimator::accumulate() {
+
+	/* The start bead for each world line, and the moving index */
+	beadLocator startBead;
+	beadLocator beadIndex;
+
+	int numWorldlines = path.numBeadsAtSlice(0);
+
+	/* We create a local vector, which determines whether or not we have
+	 * already included a bead at slice 0*/
+	doBead.resize(numWorldlines);
+	doBead = true;
+
+	/* We go through each particle/worldline */
+	for (int n = 0; n < numWorldlines; n++) {
+
+		/* The initial bead to be moved */
+		startBead = 0,n;
+
+		/* We make sure we don't try to touch the same worldline twice */
+		if (doBead(n)) {
+
+			/* Mark the beads as touched and increment the number of worldlines */
+			beadIndex = startBead;
+
+			/* The world line length, we simply advance until we have looped back on 
+			 * ourselves. */
+			int wlLength = 0;
+			do {
+				wlLength++;
+
+				/* We turn off any zero-slice beads we have touched */
+				if (beadIndex[0]==0)
+					doBead(beadIndex[1]) = false;
+
+				beadIndex = path.next(beadIndex);
+			} while (!all(beadIndex==startBead)); // up to here, we have computed WL length only.
+
+			/* Accumulate the cycle length counter */
+			int cycleNum = int(wlLength / path.numTimeSlices);
+            
+            /* Loop through worldline again, this time binning the appropriate
+             * permutation number (- 1) corresponding to its spatial coordinates.*/
+            do {
+                int n = path.boxPtr->gridIndex(path(beadIndex));
+                if ((cycleNum > 0) && (cycleNum <= maxNumCycles)){
+                    estimator(n) += (1.0*cycleNum - 1.0);
+                    numBeadInGrid(n) += 1;
+                }
+
+				beadIndex = path.next(beadIndex);
+			} while (!all(beadIndex==startBead));
+		} // doBead
+	} // n
+
+    /* Correct for multiple worldlines being in the same gridpoint
+     * and compute normalization factor. */
+    for (int i(0); i<int(estimator.size()); i++){
+        if ((estimator(i) > 0) && (numBeadInGrid(i) > 0)){
+            estimator(i) /= numBeadInGrid(i);
+        }
+    }
+
+    /* resize array to store number of beads per grid */
+    numBeadInGrid.resize(0);
+    numBeadInGrid.resize(estimator.size());
+        
+}
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // ONE BODY DENSITY MATRIX ESTIMATOR CLASS -----------------------------------

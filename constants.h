@@ -27,7 +27,7 @@ class ConstantParameters
 	public:
 		static ConstantParameters* getInstance();
 		void initConstants(bool,bool,double,double,double,double,double,double,double,double,
-				int,int,int,uint32,uint32,double,uint32,string,string,string,string,int,double);
+				int,int,int,uint32,uint32,double,uint32,string,string,string,string,int,double,int);
 
 		/* All the get methods */
 		double T() const {return T_;}					///< Get temperature.
@@ -44,6 +44,7 @@ class ConstantParameters
 		double L() const {return L_;}					///< Get maximum side length
 		double comDelta() const {return comDelta_;}		///< Get center of mass shift
 		double displaceDelta() const {return displaceDelta_;}		///< Get center of mass shift
+        int virialWindow() const {return virialWindow_;}    ///< Get centroid virial window size.
 
 		/** Get deBroglie wavelength */
 		double dBWavelength() const {return dBWavelength_;} ///< Get deBroglie wavelength
@@ -156,7 +157,9 @@ class ConstantParameters
         string waveFunctionType_;   // The type of trial wave function
         string actionType_;         // The type of action
 
-		map <string,double> attemptProb_;	// The move attempt probabilities
+        int virialWindow_;          // Window size for centroid virial estimator
+		
+        map <string,double> attemptProb_;	// The move attempt probabilities
 };
 
 /**************************************************************************//**

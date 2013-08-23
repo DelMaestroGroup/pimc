@@ -56,7 +56,7 @@
 #define NDIM 1 ///< Number of spatial dimnsions
 #endif
 
-/** Used for getting the repo version number into the code */
+/* Used for getting the repo version number into the code */
 #ifndef SVN_VERSION
 #define SVN_VERSION "none"
 #endif
@@ -80,7 +80,10 @@ using namespace blitz;
 using boost::format;
 
 /** Unsigned integer type, at least 32 bits */
-typedef unsigned long uint32;  		
+typedef unsigned long uint32;
+
+/** A NDIM x NDIM matrix of type double */
+typedef TinyMatrix<double,NDIM,NDIM> dMat;
 
 /** A NDIM-vector of type double */
 typedef TinyVector<double,NDIM> dVec;

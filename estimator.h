@@ -96,13 +96,22 @@ class EstimatorBase {
 
 
 // ========================================================================  
-// Energy Estimator Class 
+// Thermodynamic and Virial Energy Estimator Class 
 // ========================================================================  
 /** 
  * Computes the total energy via the thermodynamic estimator.
+ * Also computes total energy via the centroid virial estimator.
  *
  * Measures the total potential and kinetic energy, as well as the
  * per-particle values using the thermodynamic estimator.
+ *
+ * Measures the virial kinetic energy and subtracts this off of the 
+ * total virial energy to get the potential --> useful for non-local
+ * actions.
+ *
+ * Also measures the total virial energy and subtracts off the potential
+ * which was computed via the operator method --> useful for local actions.
+ *
  *
  * @see S. Jang, S. Jang and G.A. Voth, J. Chem. Phys. 115, 7832 (2001).
  * @see W. Janke and T. Sauer, J. Chem. Phys. 107, 15 (1997).
@@ -119,8 +128,6 @@ class EnergyEstimator: public EstimatorBase {
 		void accumulate();		// Accumulate values
 
 };
-
-
 
 // ========================================================================  
 // Number Particles Estimator Class 
@@ -157,6 +164,25 @@ class ParticlePositionEstimator: public EstimatorBase {
 
     private:
         void accumulate();			// Accumulate values
+};
+
+// ========================================================================  
+// BIPARTITION DENSITY ESTIMATOR CLASS 
+// ========================================================================  
+/** 
+ * Compute density inside film and in bulk separately for Excluded
+ * volume potentials.
+ */
+class BipartitionDensityEstimator: public EstimatorBase {
+
+	public:
+		BipartitionDensityEstimator(const Path &, ActionBase *,
+                int _frequency=1, string _label="bipart_dens");
+		~BipartitionDensityEstimator();
+
+	private:
+		ActionBase *actionPtr;
+		void accumulate();		// Accumulate values
 };
 
 // ========================================================================  
@@ -318,7 +344,6 @@ class RadialWindingSuperfluidDensityEstimator: public EstimatorBase {
 
 };
 
-
 // ========================================================================  
 // Radial Area Superfluid Density Estimator Class 
 // ========================================================================  
@@ -377,6 +402,30 @@ class PermutationCycleEstimator: public EstimatorBase {
 		int maxNumCycles;			// The maximum number of cycles to consider
 		void accumulate();			// Accumulate values
 };
+
+// ========================================================================  
+// Local Permutation Cycle Estimator Class 
+// ========================================================================  
+/** 
+ * Particle permutation number density histogram.
+ * NORMALIZATION NEEDS TO BE FIXED!! 
+ */
+class LocalPermutationEstimator: public EstimatorBase {
+
+	public:
+		LocalPermutationEstimator(const Path &,
+                int _frequency=1, string _label="locperm");
+		~LocalPermutationEstimator();
+
+        void output();
+
+	private:
+        Array <int, 1> numBeadInGrid;
+		Array <bool,1> doBead;		// Used for ensuring we don't double count beads
+		int maxNumCycles;			// The maximum number of cycles to consider
+		void accumulate();			// Accumulate values
+};
+
 
 // ========================================================================  
 // One Body Density Matrix Estimator Class 
