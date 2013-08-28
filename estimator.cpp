@@ -192,9 +192,9 @@ EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
 	 * first, hence the comment symbol*/
 	name = "Energy";
 	header = str(format("#%15s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s") 
-            % "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N"
-            % "Ecv" % "Ecv/N" % "Vcv" % "Vcv/N" % "Kcv" % "Kcv/N" % "Kcvop" 
-            % "Kcvop/N" % "EEcv*Beta^2"% "Ecv*Beta" % "dEdB");
+            % "K_op" % "K_cv" % "V_op" % "V_cv" % "E" % "E_mu" % "K_op/N" % "K_cv/N" % "V_op/N"
+            % " K_cv/N" % "E/N" % "EEcv*Beta^2"% "Ecv*Beta" % "dEdB" % "CvCov1"
+            % "CvCov2" % "CvCov3" % "E_th");
     endLine = false;
     initialize(18);
 }
@@ -223,13 +223,12 @@ EnergyEstimator::~EnergyEstimator() {
 ******************************************************************************/
 void EnergyEstimator::accumulate() {
 
-    /* Thermodynamic terms */
-    double totK = 0.0;
+    /* Set up potential operator energy, thermodynamic energy,
+     * centroid virial energy, centroid virial kinetic energy (see Jang Jang Voth),
+     * and terms that go into both energy estimators. */
 	double totVop = 0.0;
-	double totV = 0.0;
-
-    /* Centroid Virial terms */
-    double totEcv = 0.0; // = T1+T2+T3+T4+t2+tailV
+    double thermE = 0.0; // = thermTerm1 +  + T5 + tailV
+    double totEcv = 0.0; // = T1+T2+T3+T4+T5+tailV
     double Kcv = 0.0; // = T1+T2+T3+T4+virKinTerm
     double T2 = 0.0;
     double T3 = 0.0;
@@ -245,62 +244,18 @@ void EnergyEstimator::accumulate() {
 	double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
 		* actionPtr->interactionPtr->tailV;
 
-	/* The thermodynamic kinetic normalization factor */
-	double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * numTimeSlices);
+	/* The constant term from the thermodynamic energy. */
+	double thermTerm1 = (0.5 * NDIM / constants()->tau()) * numParticles;
 
-	/* The classical contribution to the thermodynamic kinetic energy per particle 
-	 * including the chemical potential */
-	double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
-
-	/* We first calculate the thermodynamic kinetic energy.  Even though there
-	 * may be multiple mixing and swaps, it doesn't matter as we always
-	 * just advance one time step at a time, as taken care of through the
-	 * linking arrays.  This has been checked! */
-	beadLocator beadIndex;
-	dVec vel;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-			beadIndex = slice,ptcl;
-			vel = path.getVelocity(beadIndex);
-			totK -= dot(vel,vel);
-		}
-	}
-
-	/* Normalize the accumulated link-action part */
-	totK *= kinNorm;
-
-	/* Now we compute the thermodynamic potential and kinetic energy.  
-     * We use an operator estimator for V and the thermodynamic estimator for K */
-	int eo;
-    double t1 = 0.0;
-    double t2 = 0.0;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		eo = (slice % 2);
-        t1 += actionPtr->derivPotentialActionLambda(slice);
-        t2 += actionPtr->derivPotentialActionTau(slice);
-		if (eo==0) 
-            totVop  += actionPtr->potential(slice);
-	}
-
-    t1 *= constants()->lambda()/(constants()->tau()*numTimeSlices);
-    t2 /= (1.0*numTimeSlices);
-
-	/* Normalize the action correction and the total potential*/
-	totVop /= (0.5 * numTimeSlices);
-
-	/* Perform all the normalizations and compute the individual energy terms */
-	totK += (classicalKinetic + t1);
-    totV = t2 - t1 + tailV;
-	totVop += tailV;
-    totV = totVop;
-
-    /* The boundary term associated with the centroid virial estimator.
-     * Used when we subtract off the COM of a given worldline. */ 
+    /* The constant term from the centroid virial energy. */ 
 	double T1 = 0.5 * NDIM * numParticles / (1.0*virialWindow*constants()->tau());
 
     /* Calculate the exchange energy for centroid virial energy.
-     * Reduces to thermodynamic kinetic energy.  Checked --MTG */
-	double exchangeNorm = 1.0/(4.0*virialWindow*pow(constants()->tau(),2)*constants()->lambda()*numTimeSlices);
+     * Also computes kinetic piece of thermodynamic energy which 
+     * fluctuates wildly. */
+	double exchangeNorm = 1.0/(4.0*virialWindow*pow(constants()->tau(),2)
+            *constants()->lambda()*numTimeSlices);
+
 	beadLocator bead1, beadNext, beadNextOld;
     dVec vel1, vel2;
 	for (int slice = 0; slice < numTimeSlices; slice++) {
@@ -316,24 +271,44 @@ void EnergyEstimator::accumulate() {
                 beadNextOld = beadNext;
             }
             T2 -= dot(vel1,vel2);
+
+            /* compute second term of thermodynamic estimator */
+            thermE -= dot(vel2,vel2);
         }
     }	
     T2 *= exchangeNorm;
 
-    /* Now compute third term for centroid virial
-     * estimator. T3+T4 as well as the kinetic energy correction */
+    /* Compute T3, T4, T5, operator potential energy, 
+     * and the kinetic energy correction. */
+	int eo;
+    double T5 = 0.0;
     for (int slice = 0; slice < numTimeSlices; slice++) {
+		eo = (slice % 2);
         T3 += actionPtr->deltaDOTgradUterm1(slice);
         T4 += actionPtr->deltaDOTgradUterm2(slice);
+        T5 += actionPtr->derivPotentialActionTau(slice);
         virKinTerm += actionPtr->virKinCorr(slice);
+        if (eo==0) 
+            totVop  += actionPtr->potential(slice);
     }
-    
+
+	totVop /= (0.5 * numTimeSlices);
+	totVop += tailV;
+
     T3 /= (2.0*beta);
     T4 /= (1.0*beta);
+    T5 /= (1.0*numTimeSlices);
     virKinTerm /= (0.5*beta);
 
+    /* Normalize second term of the thermodynamic energy then
+     * add the rest of the terms to it. */
+    thermE *= constants()->fourLambdaTauInv() / (constants()->tau() * numTimeSlices);
+    thermE += thermTerm1;
+    thermE += T5;
+    thermE += tailV;
+ 
     /* Compute total centroid virial energy */
-    totEcv = T1 + T2 + T3 + T4 + t2 + tailV;
+    totEcv = T1 + T2 + T3 + T4 + T5 + tailV;
 
     /* Compute centroid virial kinetic energy */
     Kcv = T1 + T2 + T3 + T4 + virKinTerm;
@@ -347,28 +322,29 @@ void EnergyEstimator::accumulate() {
     }
     dEdB *= beta*beta/(1.0*numTimeSlices);
 
-	/* Now we accumulate the average total, kinetic and potential energy, 
-	 * as well as their values per particles. */
-	estimator(0) += totK;
-	estimator(1) += totV;
-	estimator(2) += totK + totV;
-	estimator(3) += totK + totV - constants()->mu()*numParticles;
-	estimator(4) += totK/(1.0*numParticles);
-	estimator(5) += totV/(1.0*numParticles);
-	estimator(6) += (totK + totV)/(1.0*numParticles);
-    
-    /* accumulate virial estimators. */
-	estimator(7) += totEcv;
-	estimator(8) += totEcv/(1.0*numParticles);
-    estimator(9) += totEcv - Kcv;
-    estimator(10) += (totEcv - Kcv)/(1.0*numParticles);
-    estimator(11) += Kcv;
-    estimator(12) += Kcv/(1.0*numParticles);
-    estimator(13) += totEcv - totVop;
-    estimator(14) += (totEcv - totVop)/(1.0*numParticles);
-    estimator(15) += totEcv*(totK+totV)*beta*beta;
-    estimator(16) += totEcv*beta;
-    estimator(17) += dEdB;   //  for C_v^{cv}
+    /* accumulate all energy estimators. */
+	estimator(0) += totEcv - totVop; // operator kinetic energy
+    estimator(1) += Kcv; // centroid virial kinetic energy
+	estimator(2) += totVop; // operator potential energy
+    estimator(3) += totEcv - Kcv; //centroid virial potential energy
+	estimator(4) += totEcv; // total energy
+	estimator(5) += totEcv - constants()->mu()*numParticles;
+	estimator(6) += (totEcv - totVop)/(1.0*numParticles);
+    estimator(7) += Kcv/(1.0*numParticles);
+	estimator(8) += totVop/(1.0*numParticles);
+    estimator(9) += (totEcv - Kcv)/(1.0*numParticles);
+	estimator(10) += totEcv/(1.0*numParticles);
+
+    /* accumulate specific heat estimators. */
+    estimator(11) += totEcv*thermE*beta*beta;
+    estimator(12) += totEcv*beta;
+    estimator(13) += dEdB;
+    estimator(14) += totEcv*thermE*beta*beta*totEcv*beta;
+    estimator(15) += totEcv*beta*dEdB;
+    estimator(16) += totEcv*thermE*beta*beta*dEdB;
+
+    /* thermodynamic energy */
+    estimator(17) += thermE;
 
 }
 
