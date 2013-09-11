@@ -310,7 +310,7 @@ class HardCylinderPotential : public PotentialBase {
 		/** A step function at rho=R. */
 		double V(const dVec &r) {
 			if (sqrt(r[0]*r[0]+r[1]*r[1]) >= R)
-				return BIG;
+				return LBIG;
 			else
 				return 0.0;
 		}
@@ -321,7 +321,7 @@ class HardCylinderPotential : public PotentialBase {
 			tempr = r;
 			tempr[2] = 0.0;
 			if (abs((r[0]*r[0]+r[1]*r[1])-R*R)<1.0E-3)
-				return BIG*tempr;
+				return LBIG*tempr;
 			else
 				return 0.0*tempr;
 		}
@@ -605,7 +605,7 @@ class HardSpherePotential : public PotentialBase  {
 
 		/** The classical potential */
 		virtual double V(const dVec &r) { 
-            return ((sqrt(dot(r,r)) <= a) ? BIG : 0.0);
+            return ((sqrt(dot(r,r)) <= a) ? LBIG : 0.0);
         }
 
 		/** The effective potential */
@@ -632,7 +632,7 @@ class HardRodPotential : public PotentialBase  {
 
 		/** The classical potential */
 		virtual double V(const dVec &r) { 
-            return ((sqrt(dot(r,r)) <= a) ? BIG : 0.0);
+            return ((sqrt(dot(r,r)) <= a) ? LBIG : 0.0);
         }
 
 		/** The effective potential */

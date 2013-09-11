@@ -36,6 +36,14 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
 	numAccepted = numAttempted = numToMove = 0;
 	success = false;
 
+    /* Setup the move attempt/accept arrays */
+	int b  = int (ceil(log(1.0*constants()->Mbar()) / log(2.0)-EPS));
+	numAcceptedLevel.resize(b+1);
+	numAttemptedLevel.resize(b+1);
+
+    numAcceptedLevel = 0;
+    numAttemptedLevel = 0;
+
 	sqrtLambdaTau = sqrt(constants()->lambda() * constants()->tau());
 	sqrt2LambdaTau = sqrt(2.0)*sqrtLambdaTau;
 }
@@ -285,13 +293,16 @@ DisplaceMove::~DisplaceMove() {
 bool DisplaceMove::attemptMove() {
 
 	success = false;
+    bool start = false;
     
 	/* Randomly select the bead to be moved, either the head or tail */
     if (random.rand() < 0.5) {
         beadIndex[0] = 0;
+        start = true;
     }
     else {
         beadIndex[0] = constants()->numTimeSlices()-1;
+        start = false;
     }
 
     /* We now select the worldline that will be updated */
@@ -308,16 +319,20 @@ bool DisplaceMove::attemptMove() {
             while( !all(path.next(brokenBead)==XXX) ){
                 brokenBead = path.next(brokenBead);
                 if ( brokenBead[0] == path.breakSlice ){
-                    if ( all(path.next(brokenBead)==XXX ) )
+                    if ( all(path.next(brokenBead)==XXX ) ) {
                         beadIndex = brokenBead;
+                        start = false;
+                    }
                 }
             }
         }else{
             while( !all(path.prev(brokenBead)==XXX) ){
                 brokenBead = path.prev(brokenBead);
                 if ( brokenBead[0] == path.breakSlice+1 ){
-                    if ( all(path.prev(brokenBead)==XXX ) )
+                    if ( all(path.prev(brokenBead)==XXX ) ) {
                         beadIndex = brokenBead;
+                        start = true;
+                    }
                 }
             }
         }
@@ -333,10 +348,21 @@ bool DisplaceMove::attemptMove() {
 
         checkMove(0,0);
 
-		/* Compute the total action, a single bead is involved in two 
-		 * pieces of the kinetic action */
-        oldAction = actionPtr->kineticAction(beadIndex) +
-            actionPtr->potentialAction(beadIndex);
+        /* We need to distinguish between local and non-local actions for
+         * effeciency */
+
+        /* Compute the total action, a single bead is involved in two 
+         * pieces of the kinetic action */
+        oldAction = actionPtr->kineticAction(beadIndex);
+        if (actionPtr->local) 
+            oldAction += actionPtr->potentialAction(beadIndex);
+        else {
+            /* Determine if we are starting from or finishing at a path end */
+            if (start)
+                oldAction += actionPtr->potentialAction(beadIndex,path.next(beadIndex));
+            else
+                oldAction += actionPtr->potentialAction(path.prev(beadIndex),beadIndex);
+        }
 
 		/* Save the old position of the particle */
 		originalPos(0) = path(beadIndex);
@@ -345,8 +371,19 @@ bool DisplaceMove::attemptMove() {
 		path.updateBead(beadIndex,path.boxPtr->randUpdate(random,originalPos(0)));
 
 		/* Compute the new part of the potential action */
-        newAction = actionPtr->kineticAction(beadIndex) +
-            actionPtr->potentialAction(beadIndex);
+        newAction = actionPtr->kineticAction(beadIndex);
+
+        /* We need to make the same distinction between local and non-local
+         * actions */
+        if (actionPtr->local) 
+            newAction += actionPtr->potentialAction(beadIndex);
+        else {
+            /* Determine if we are starting from or finishing at a path end */
+            if (start)
+                newAction += actionPtr->potentialAction(beadIndex,path.next(beadIndex));
+            else
+                newAction += actionPtr->potentialAction(path.prev(beadIndex),beadIndex);
+        }
 
         /* The metropolis acceptance step */
         if (random.rand() < exp(-(newAction - oldAction))) {
@@ -604,7 +641,7 @@ bool StagingMove::attemptMove() {
     /* Get the current action for the path segment to be updated */
     oldAction = actionPtr->potentialAction(startBead,path.prev(endBead));
 
-    /* Perorm the staging update, generating the new path and updating bead
+    /* Perform the staging update, generating the new path and updating bead
      * positions, while storing the old one */
 	beadIndex = startBead;
 	int k = 0;
@@ -670,6 +707,7 @@ BisectionMove::BisectionMove(Path &_path, ActionBase *_actionPtr,
 	numAccepted = numAttempted = numToMove = 0;
 
 	/* Initialize the acceptance by level counters */
+    /* These need to use the *actual* value of b */
 	numAcceptedLevel.resize(constants()->b()+1);
 	numAttemptedLevel.resize(constants()->b()+1);
 	numAcceptedLevel  = 0;
@@ -871,12 +909,6 @@ OpenMove::OpenMove (Path &_path, ActionBase *_actionPtr, MTRand &_random,
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
-
-	/* Initialize the acceptance by level counters */
-	numAcceptedLevel.resize(constants()->b()+1);
-	numAttemptedLevel.resize(constants()->b()+1);
-	numAcceptedLevel  = 0;
-	numAttemptedLevel = 0;
 }
 
 /*************************************************************************//**
@@ -1062,12 +1094,6 @@ CloseMove::CloseMove (Path &_path, ActionBase *_actionPtr,
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
-
-	/* Initialize the acceptance by level counters */
-	numAcceptedLevel.resize(constants()->b()+1);
-	numAttemptedLevel.resize(constants()->b()+1);
-	numAcceptedLevel  = 0;
-	numAttemptedLevel = 0;
 }
 
 /*************************************************************************//**
@@ -1259,12 +1285,6 @@ InsertMove::InsertMove (Path &_path, ActionBase *_actionPtr, MTRand &_random,
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
-
-	/* Initialize the acceptance by level counters */
-	numAcceptedLevel.resize(constants()->b()+1);
-	numAttemptedLevel.resize(constants()->b()+1);
-	numAcceptedLevel  = 0;
-	numAttemptedLevel = 0;
 }
 
 /*************************************************************************//**
@@ -1445,12 +1465,6 @@ RemoveMove::RemoveMove (Path &_path, ActionBase *_actionPtr, MTRand &_random,
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
-
-	/* Initialize the acceptance by level counters */
-	numAcceptedLevel.resize(constants()->b()+1);
-	numAttemptedLevel.resize(constants()->b()+1);
-	numAcceptedLevel  = 0;
-	numAttemptedLevel = 0;
 }
 
 /*************************************************************************//**
@@ -1612,12 +1626,6 @@ AdvanceHeadMove::AdvanceHeadMove (Path &_path, ActionBase *_actionPtr,
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
-
-	/* Initialize the acceptance by level counters */
-	numAcceptedLevel.resize(constants()->b()+1);
-	numAttemptedLevel.resize(constants()->b()+1);
-	numAcceptedLevel  = 0;
-	numAttemptedLevel = 0;
 }
 
 /*************************************************************************//**
@@ -1793,12 +1801,6 @@ AdvanceTailMove::AdvanceTailMove (Path &_path, ActionBase *_actionPtr,
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
-
-	/* Initialize the acceptance by level counters */
-	numAcceptedLevel.resize(constants()->b()+1);
-	numAttemptedLevel.resize(constants()->b()+1);
-	numAcceptedLevel  = 0;
-	numAttemptedLevel = 0;
 }
 
 /*************************************************************************//**
@@ -1967,12 +1969,6 @@ RecedeHeadMove::RecedeHeadMove (Path &_path, ActionBase *_actionPtr,
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
-
-	/* Initialize the acceptance by level counters */
-	numAcceptedLevel.resize(constants()->b()+1);
-	numAttemptedLevel.resize(constants()->b()+1);
-	numAcceptedLevel  = 0;
-	numAttemptedLevel = 0;
 }
 
 /*************************************************************************//**
@@ -2136,12 +2132,6 @@ RecedeTailMove::RecedeTailMove (Path &_path, ActionBase *_actionPtr,
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
-
-	/* Initialize the acceptance by level counters */
-	numAcceptedLevel.resize(constants()->b()+1);
-	numAttemptedLevel.resize(constants()->b()+1);
-	numAcceptedLevel  = 0;
-	numAttemptedLevel = 0;
 }
 
 /*************************************************************************//**
@@ -2391,12 +2381,6 @@ SwapHeadMove::SwapHeadMove (Path &_path, ActionBase *_actionPtr,
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
 
-	/* Initialize the acceptance by level counters */
-	numAcceptedLevel.resize(constants()->b()+1);
-	numAttemptedLevel.resize(constants()->b()+1);
-	numAcceptedLevel  = 0;
-	numAttemptedLevel = 0;
-
 	/* Update the sizes of the original position array */
 	originalPos.resize(constants()->Mbar()-1);
 	originalPos = 0.0;
@@ -2632,12 +2616,6 @@ SwapTailMove::SwapTailMove (Path &_path, ActionBase *_actionPtr,
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
-
-	/* Initialize the acceptance by level counters */
-	numAcceptedLevel.resize(constants()->b()+1);
-	numAttemptedLevel.resize(constants()->b()+1);
-	numAcceptedLevel  = 0;
-	numAttemptedLevel = 0;
 
 	/* Update the sizes of the original position array */
 	originalPos.resize(constants()->Mbar()-1);

@@ -94,6 +94,31 @@ class EstimatorBase {
 		void initialize(int);
 };
 
+// ========================================================================  
+// Energy Estimator Class 
+// ========================================================================  
+/** 
+ * Computes the total energy via the thermodynamic estimator.
+ *
+ * Measures the total potential and kinetic energy, as well as the
+ * per-particle values using the thermodynamic estimator.
+ *
+ * @see S. Jang, S. Jang and G.A. Voth, J. Chem. Phys. 115, 7832 (2001).
+ * @see W. Janke and T. Sauer, J. Chem. Phys. 107, 15 (1997).
+ */
+class EnergyEstimator: public EstimatorBase {
+
+	public:
+		EnergyEstimator(const Path &, ActionBase *, 
+                int _frequency=1, string _label="estimator");
+		~EnergyEstimator();
+
+	private:
+		ActionBase *actionPtr;
+		void accumulate();		// Accumulate values
+
+};
+
 
 // ========================================================================  
 // Thermodynamic and Virial Energy Estimator Class 
@@ -116,12 +141,12 @@ class EstimatorBase {
  * @see S. Jang, S. Jang and G.A. Voth, J. Chem. Phys. 115, 7832 (2001).
  * @see W. Janke and T. Sauer, J. Chem. Phys. 107, 15 (1997).
  */
-class EnergyEstimator: public EstimatorBase {
+class VirialEnergyEstimator: public EstimatorBase {
 
 	public:
-		EnergyEstimator(const Path &, ActionBase *, 
+		VirialEnergyEstimator(const Path &, ActionBase *, 
                 int _frequency=1, string _label="estimator");
-		~EnergyEstimator();
+		~VirialEnergyEstimator();
 
 	private:
 		ActionBase *actionPtr;

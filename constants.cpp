@@ -87,7 +87,13 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
     }
 
 	/* Assigned values */
-	b_             = int (ceil(log(1.0*_Mbar) / log(2.0)-EPS));
+	b_  = int (ceil(log(1.0*_Mbar) / log(2.0)-EPS));
+
+    /* We need to make sure b_ < numTimeSlices */
+    while (ipow(2,b_) >= _numTimeSlices)
+        b_--;
+
+	/* Assigned values */
 	Mbar_          = _Mbar;
 	T_             = _T;
     imagTimeLength_ = _imagTimeLength;

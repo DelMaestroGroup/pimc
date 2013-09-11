@@ -114,8 +114,8 @@ void ClassicalMonteCarlo::run(uint32 numMCSteps, bool gce) {
             m++;
         } while (m < numParticles);
 
-//        if ((n % 50) == 0) 
- //           measure(numMeasure);
+        // if ((n % 50) == 0) 
+        //    measure(numMeasure);
     }
 
     /* Update the config array */

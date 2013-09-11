@@ -1236,11 +1236,10 @@ double HardSpherePotential::V(const dVec &sep1, const dVec &sep2,
     double r1 = sqrt(dot(sep1,sep1));
     double r2 = sqrt(dot(sep2,sep2));
 
-    if (r1*r2 < EPS)
-        return log(BIG);
+    if ((r1 <= a ) || (r2 <= a)) 
+        return LBIG;
 
     double cosTheta = dot(sep1,sep2)/(r1*r2);
-
 
     double t1 = -(r1*r2 + a*a - a*(r1 + r2)) * (1.0 + cosTheta);
     t1 /= (4.0*lambdaTau);
@@ -1269,9 +1268,6 @@ double HardSpherePotential::dVdlambda(const dVec &sep1, const dVec &sep2,
 
     double r1 = sqrt(dot(sep1,sep1));
     double r2 = sqrt(dot(sep2,sep2));
-
-    if (r1*r2 < EPS)
-        return log(BIG);
 
     double cosTheta = dot(sep1,sep2)/(r1*r2);
 
@@ -1304,9 +1300,6 @@ double HardSpherePotential::dVdtau(const dVec &sep1, const dVec &sep2,
 
     double r1 = sqrt(dot(sep1,sep1));
     double r2 = sqrt(dot(sep2,sep2));
-
-    if (r1*r2 < EPS)
-        return log(BIG);
 
     double cosTheta = dot(sep1,sep2)/(r1*r2);
 
@@ -1362,10 +1355,13 @@ double HardRodPotential::V(const dVec &sep1, const dVec &sep2,
     double r1 = sqrt(dot(sep1,sep1));
     double r2 = sqrt(dot(sep2,sep2));
 
-    if ((sep1[0]*sep2[0] < 0.0))
-       return log(BIG);
+    /* We need to enforce the distinguishable particle constraint at short
+     * imaginary times */
+    if ( (sep1[0]*sep2[0] < 0.0) || (r1 <= a ) || (r2 <= a) ) 
+        return LBIG;
 
     double t1 = -(r1-a)*(r2-a)/(2.0*lambdaTau);
+
     return (-log(1.0 - exp(t1)));
 }
 

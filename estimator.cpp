@@ -172,7 +172,124 @@ void EstimatorBase::output() {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// THERMODYNAMIC AND VIRIAL ENERGY ESTIMATOR CLASS ---------------------------
+// ENERGY ESTIMATOR CLASS ----------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ * We measure the total Kinetic, Potential and E-mu*N as well as the kinetic,
+ * potential and total energy per particle using the thermodynamic and operator
+ * estimators.
+******************************************************************************/
+EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
+		int _frequency, string _label) : 
+    EstimatorBase(_path,_frequency,_label), actionPtr(_actionPtr) {
+
+	/* Set estimator name and header, we will always report the energy
+	 * first, hence the comment symbol*/
+	name = "Energy";
+	header = str(format("#%15s%16s%16s%16s%16s%16s%16s") 
+			% "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
+    endLine = false;
+    initialize(7);
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+EnergyEstimator::~EnergyEstimator() { 
+}
+
+/*************************************************************************//**
+ *  Accumluate the energy.
+ *
+ *  We use the thermodynamic estimator for the kinetic energy and the
+ *  potential estimator for the potential energy. A possible shift is 
+ *  made due to a tail correction.
+******************************************************************************/
+void EnergyEstimator::accumulate() {
+
+	double totK = 0.0;
+	double totVop = 0.0;
+	double totV = 0.0;
+
+	int numParticles  = path.getTrueNumParticles();
+	int numTimeSlices = path.numTimeSlices;
+
+	/* The total tail correction */
+	double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
+		* actionPtr->interactionPtr->tailV;
+
+	/* The kinetic normalization factor */
+	double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * numTimeSlices);
+
+	/* The classical contribution to the kinetic energy per particle 
+	 * including the chemical potential */
+	double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
+
+	/* We first calculate the kinetic energy.  Even though there
+	 * may be multiple mixing and swaps, it doesn't matter as we always
+	 * just advance one time step at a time, as taken care of through the
+	 * linking arrays.  This has been checked! */
+	beadLocator beadIndex;
+	dVec vel;
+	for (int slice = 0; slice < numTimeSlices; slice++) {
+		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+			beadIndex = slice,ptcl;
+			vel = path.getVelocity(beadIndex);
+			totK -= dot(vel,vel);
+		}
+	}
+
+	/* Normalize the accumulated link-action part */
+	totK *= kinNorm;
+
+	/* Now we compute the potential and kinetic energy.  We use an operator estimater
+	 * for V and the thermodynamic estimator for K */
+	int eo;
+    double t1 = 0.0;
+    double t2 = 0.0;
+	for (int slice = 0; slice < numTimeSlices; slice++) {
+		eo = (slice % 2);
+        t1 += actionPtr->derivPotentialActionLambda(slice);
+        t2 += actionPtr->derivPotentialActionTau(slice);
+		if (eo==0) 
+            totVop  += actionPtr->potential(slice);
+	}
+
+    t1 *= constants()->lambda()/(constants()->tau()*numTimeSlices);
+    t2 /= 1.0*numTimeSlices;
+
+	/* Normalize the action correction and the total potential*/
+	totVop /= (0.5 * numTimeSlices);
+
+	/* Perform all the normalizations and compute the individual energy terms */
+	totK += (classicalKinetic + t1);
+    totV = t2 - t1 + tailV;
+
+	totVop += tailV;
+
+    totV = totVop;
+
+	/* Now we accumulate the average total, kinetic and potential energy, 
+	 * as well as their values per particles. */
+	estimator(0) += totK;
+	estimator(1) += totV;
+	estimator(2) += totK + totV;
+
+	estimator(3) += totK + totV - constants()->mu()*numParticles;
+
+	estimator(4) += totK/(1.0*numParticles);
+	estimator(5) += totV/(1.0*numParticles);
+
+	estimator(6) += (totK + totV)/(1.0*numParticles);
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// VIRIAL ENERGY ESTIMATOR CLASS ---------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
@@ -184,7 +301,7 @@ void EstimatorBase::output() {
  *
  *
 ******************************************************************************/
-EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
+VirialEnergyEstimator::VirialEnergyEstimator (const Path &_path, ActionBase *_actionPtr,
 		int _frequency, string _label) : 
     EstimatorBase(_path,_frequency,_label), actionPtr(_actionPtr) {
 
@@ -202,7 +319,7 @@ EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
 /*************************************************************************//**
  *  Destructor.
 ******************************************************************************/
-EnergyEstimator::~EnergyEstimator() { 
+VirialEnergyEstimator::~VirialEnergyEstimator() { 
 }
 
 /*************************************************************************//**
@@ -221,7 +338,7 @@ EnergyEstimator::~EnergyEstimator() {
  * specific heat may be computed post-process.
  *
 ******************************************************************************/
-void EnergyEstimator::accumulate() {
+void VirialEnergyEstimator::accumulate() {
 
     /* Set up potential operator energy, thermodynamic energy,
      * centroid virial energy, centroid virial kinetic energy (see Jang Jang Voth),

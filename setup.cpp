@@ -832,13 +832,14 @@ auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::estimators(Path &path,
     if (params.count("pigs")) {
         estimator.push_back(new PotentialEnergyEstimator(path,actionPtr));
         estimator.push_back(new KineticEnergyEstimator(path,actionPtr));
-        estimator.push_back(new VelocityEstimator(path));
-        estimator.push_back(new PIGSOneBodyDensityMatrixEstimator(path,actionPtr,random));
+        //estimator.push_back(new VelocityEstimator(path));
+        //estimator.push_back(new PIGSOneBodyDensityMatrixEstimator(path,actionPtr,random));
     }
     /* The finite temperature measurments */
     else {
 
         /* !!NB!! Scalar estimators, the order here is important! */
+        //estimator.push_back(new VirialEnergyEstimator(path,actionPtr));
         estimator.push_back(new EnergyEstimator(path,actionPtr));
         estimator.push_back(new NumberParticlesEstimator(path));
         estimator.push_back(new DiagonalFractionEstimator(path));
@@ -846,10 +847,10 @@ auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::estimators(Path &path,
         estimator.push_back(new WormPropertiesEstimator(path));
 
         /* Vector estimators */
-        estimator.push_back(new PermutationCycleEstimator(path));
+        //estimator.push_back(new PermutationCycleEstimator(path));
         estimator.push_back(new NumberDistributionEstimator(path));
         estimator.push_back(new PairCorrelationEstimator(path,actionPtr));
-        estimator.push_back(new OneBodyDensityMatrixEstimator(path,actionPtr,random));
+        //estimator.push_back(new OneBodyDensityMatrixEstimator(path,actionPtr,random));
 
         /* Time Consuming local estimators */
     //    /* z-averaged estimators */

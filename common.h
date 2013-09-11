@@ -73,6 +73,7 @@
 #define NGRIDSEP 50     ///< Spatial separations to be used in each dimension of the particle position grid
 #define EPS 1.0E-7 		///< A small number
 #define BIG 1.0E30		///< A big number
+#define LBIG 69.07755279 ///< The log of a big number
 #define XXX	-1		    ///< Used to refer to a nonsense beadIndex
 
 using namespace std;
