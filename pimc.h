@@ -41,7 +41,7 @@ class PathIntegralMonteCarlo {
 		~PathIntegralMonteCarlo ();
 
 		/* The equilibration relaxation */
-		void equilStep(const uint32, const bool);
+		void equilStep(const uint32, const bool, const bool);
 
 		/* The equilibration relaxation with off diagonal updates */
 		void equilStepOffDiagonal(const uint32, const bool);
@@ -61,10 +61,13 @@ class PathIntegralMonteCarlo {
 		int numStoredBins;			///< Number of stored estimators
 		int numDiagonal;			///< Number of consecutive diagonal configs
 		int numConfig;				///< Number of configurations;
-		int numCoMAttempted;					///< Number of Center of Mass moves
+		int numCoMAttempted;		///< Number of Center of Mass moves
 		int numCoMAccepted;			///< Number of equil CoM moves accepted
 		int numDisplaceAttempted;	///< Number of equil Displace moves
 		int numDisplaceAccepted;    ///< Number of equil Displace moves accepted
+        int numMuAttempted;         ///< Number of moves between mu adjustments
+        int numNAttempted;          ///< The number of particle measurements
+        int cN;                     ///< The current total number of particles
 
 	private:
 		int configNumber;			// The output configuration number

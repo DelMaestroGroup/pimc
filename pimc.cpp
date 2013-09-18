@@ -52,6 +52,9 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, MTRand &_random,
 	numCoMAccepted = 0;
 	numDisplaceAttempted = 200;
 	numDisplaceAccepted = 0;
+    numMuAttempted = 5000;
+    numNAttempted = 0;
+    cN = 0;
 
 	/* Have we saved a state? */
 	savedState  = constants()->restart();
@@ -153,7 +156,7 @@ string PathIntegralMonteCarlo::update(const double x, const int sweep) {
  *  all moves adjusting C0 to yield a diagonal fraction near 0.75 and and for 
  *  the final 1/3 we just equilibrate.
 ******************************************************************************/
-void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
+void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, const bool relaxmu) {
 
 	double x;
 
@@ -249,6 +252,28 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0) {
         numSteps++;
 
         for (int n = 0; n < numUpdates; n++) {
+
+            /* Relax the chemical potential to get a desired average number of
+             * particles */
+            if (equilFrac < 2.0/3.0) {
+                cN += path.getTrueNumParticles();
+                numNAttempted += 1;
+                if ( (relaxmu) && (numNAttempted == numMuAttempted) ) {
+
+                    double aveN = cN / (1.0*numNAttempted);
+
+                    /* The factor that we shift the chemical potenital by */
+                    double factor = (1.0 - aveN/constants()->initialNumParticles());
+
+                    cout << format("mu: %8.5E\t%8.5E\t") % constants()->mu() % factor;
+                    constants()->shiftmu(factor);
+                    cout << format("%8.5E\t%8.5f\t%5d\n") % constants()->mu() 
+                        % aveN % path.getTrueNumParticles();
+
+                    cN = 0;
+                    numNAttempted = 0;
+                }
+            }
 
             /* Generate random number and run through all moves */
             x = random.rand();

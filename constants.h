@@ -107,7 +107,7 @@ class ConstantParameters
 		void getC() {C_ = C0_ / (1.0*Mbar_*numTimeSlices_*V_);}		        ///< Get the value of the worm constant 
 		void shiftCoMDelta(double frac) {comDelta_ += frac*comDelta_; }		///< Shift the CoM move size
 		void shiftDisplaceDelta(double frac) {displaceDelta_ += frac*displaceDelta_; }		///< Shift the displace move size
-		void shiftmu (double frac) { mu_ += frac*mu_; }				        ///< Shift the chemical potential
+		void shiftmu (double frac) { mu_ += frac; }				        ///< Shift the chemical potential
         void incid() {++id_;}                                               ///< Increment the PIMCID by 1
 
 	protected:

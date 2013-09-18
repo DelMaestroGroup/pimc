@@ -90,11 +90,11 @@ int main (int argc, char *argv[]) {
 
     /* Perform a classical canonical pre-equilibration to obtain a suitable
      * initial state */
-//	if (!constants()->restart()) {
-//        ClassicalMonteCarlo CMC(externalPotentialPtr,interactionPotentialPtr,random,boxPtr,
-//                initialPos);
-//        CMC.run(constants()->numEqSteps(),0);
-//    }
+	if (!constants()->restart()) {
+        ClassicalMonteCarlo CMC(externalPotentialPtr,interactionPotentialPtr,random,boxPtr,
+                initialPos);
+        CMC.run(constants()->numEqSteps(),0);
+    }
 
     /* Allow for one broken path */
     int numberBroken = 0;
@@ -128,7 +128,7 @@ int main (int argc, char *argv[]) {
 		/* Equilibrate */
 		cout << format("[PIMCID: %09d] - Equilibration Stage.") % constants()->id() << endl;
 		for (uint32 n = 0; n < constants()->numEqSteps(); n++) 
-			pimc.equilStep(n,setup.params.count("relax"));
+			pimc.equilStep(n,setup.params.count("relax"),setup.params.count("relaxmu"));
 
 		/* Output simulation details/parameters */
 		setup.outputOptions(argc,argv,seed,boxPtr,lookup.getNumNNGrid());

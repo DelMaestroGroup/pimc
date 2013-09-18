@@ -165,6 +165,7 @@ void Setup::getOptions(int argc, char *argv[])
 
 	algorithmicOptions.add_options()
 		("relax", "perform a worm constant relaxation")
+		("relaxmu", "perform a chemical potential relaxation to target a fixed density")
 		("number_time_slices,P", po::value<int>(), "number of time slices")
 		("imaginary_time_step,t", po::value<double>(), "imaginary time step [kelvin^(-1)]")
 		("worm_constant,C", po::value<double>()->default_value(1.0), "worm acceptance constant")
