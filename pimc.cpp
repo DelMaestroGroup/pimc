@@ -66,29 +66,33 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (Path &_path, MTRand &_random,
      * various diagonal moves */ 
     double cumDiagProb = 0.0;
     double cumOffDiagProb = 0.0;
+    string moveName;
 	for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
+
+        /* Get the namne of the move and check if it is the generic diagonal
+         * move */
+        moveName = movePtr->name;
+        if ((moveName == "bisection") || (moveName == "staging"))
+            moveName = "diagonal";
+                
+        /* Accumulate the diagonal moves */
         if ( (movePtr->operateOnConfig == DIAGONAL) || movePtr->operateOnConfig == ANY ) {
-            cumDiagProb += constants()->attemptProb(movePtr->name);
+            cumDiagProb += constants()->attemptProb(moveName);
             attemptDiagProb.push_back(cumDiagProb);
         }
         else 
             attemptDiagProb.push_back(cumDiagProb);
 
+        /* Accumulate the off-diagonal moves */
         if ( (movePtr->operateOnConfig == OFFDIAGONAL) || movePtr->operateOnConfig == ANY) {
-            cumOffDiagProb += constants()->attemptProb(movePtr->name);
+            cumOffDiagProb += constants()->attemptProb(moveName);
             attemptOffDiagProb.push_back(cumOffDiagProb);
         }
         else
             attemptOffDiagProb.push_back(cumOffDiagProb);
 
-        if (movePtr->name == "center of mass")
-            comIndex = std::distance(move.begin(), movePtr);
-        else if (movePtr->name == "bisection")
-            diagIndex = std::distance(move.begin(), movePtr);
-        else if (movePtr->name == "staging")
-            diagIndex = std::distance(move.begin(), movePtr);
-        else if (movePtr->name == "displace")
-            displaceIndex = std::distance(move.begin(), movePtr);
+        /* Find the indices of moves in case we need them */
+        moveIndex[moveName] = std::distance(move.begin(), movePtr);
     }
 
     /* Make sure the move cumulative probability arrays add up to 1 */
@@ -127,6 +131,14 @@ string PathIntegralMonteCarlo::update(const double x, const int sweep) {
 	string moveName = "NONE";
     int index;
 
+    /* If we have no beads, all we can do is insert */
+    if (path.worm.getNumBeadsOn() == 0) {
+        index = moveIndex["insert"];
+        success = move.at(index).attemptMove();
+        moveName = move.at(index).name;
+        return moveName;
+    }
+
     /* Determine the index of the move to be performed */
 	if (path.worm.isConfigDiagonal)
         index = std::lower_bound(attemptDiagProb.begin(),attemptDiagProb.end(),x)
@@ -164,6 +176,10 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
 	double equilFrac = (1.0*iStep) / (1.0*constants()->numEqSteps());
     numParticles = path.getTrueNumParticles();
 
+    /* Always do at least one move */
+    if (numParticles == 0)
+        ++numParticles;
+
 	/* For the first 1/3 of equilibration steps, we only do diagonal moves */
 	if (equilFrac < 1.0/3.0 && !startWithState) {
 
@@ -175,15 +191,18 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
              * optimization of simulation parameters */
             if (x < constants()->attemptProb("center of mass")) {
 
-                move.at(comIndex).attemptMove();
+                /* Get the move index for the center of mass */
+                int index = moveIndex["center of mass"];
+
+                move.at(index).attemptMove();
 
                 /* We check how many CoM moves we have tried.  Every 200 moves, we see if we need
                  * to adjust comDelta, provided we are in the pre-equilibration diagonal state. */
-                if ( (move.at(comIndex).getNumAttempted() > 0) 
-                        && (move.at(comIndex).getNumAttempted() % numCoMAttempted == 0) 
+                if ( (move.at(index).getNumAttempted() > 0) 
+                        && (move.at(index).getNumAttempted() % numCoMAttempted == 0) 
                         && (constants()->comDelta() < 0.5*blitz::min(path.boxPtr->side)) ) {
 
-                    numCoMAccepted  = move.at(comIndex).getNumAccepted() - numCoMAccepted;
+                    numCoMAccepted  = move.at(index).getNumAccepted() - numCoMAccepted;
                     double CoMRatio = 1.0*numCoMAccepted / numCoMAttempted;
                     if (CoMRatio < 0.2)
                         constants()->shiftCoMDelta(-0.6);
@@ -199,20 +218,22 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
                         constants()->shiftCoMDelta(0.6);
 
                     /* Reset the counters */
-                    numCoMAccepted = move.at(comIndex).getNumAccepted();
+                    numCoMAccepted = move.at(index).getNumAccepted();
                 } // CoM Delta Shift
 
             } // Center of mass move
             /* Now try a displace move */
             else if (x < constants()->attemptProb("center of mass") + constants()->attemptProb("displace")) {
-                move.at(displaceIndex).attemptMove();
+
+                int index = moveIndex["displace"];
+                move.at(index).attemptMove();
 
                 /* We check how many displacde moves we have tried.  Every numDisplaceAttempted moves, we see if we need
                  * to adjust delta, provided we are in the pre-equilibration diagonal state. */
-                if ( (move.at(displaceIndex).getNumAttempted() > 0) 
-                        && (move.at(displaceIndex).getNumAttempted() % numDisplaceAttempted == 0) ) {
+                if ( (move.at(index).getNumAttempted() > 0) 
+                        && (move.at(index).getNumAttempted() % numDisplaceAttempted == 0) ) {
 
-                    numDisplaceAccepted = move.at(displaceIndex).getNumAccepted() - numDisplaceAccepted;
+                    numDisplaceAccepted = move.at(index).getNumAccepted() - numDisplaceAccepted;
                     double displaceRatio = 1.0*numDisplaceAccepted / numDisplaceAttempted;
                     if (displaceRatio < 0.2)
                         constants()->shiftDisplaceDelta(-0.6);
@@ -229,13 +250,13 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
 
                     //cout << "delta: " << constants()->delta() << " " << displaceRatio << endl;
                     /* Reset the counters */
-                    numDisplaceAccepted = move.at(displaceIndex).getNumAccepted();
+                    numDisplaceAccepted = move.at(index).getNumAccepted();
                 }
             } // displace move
             else {
                 /* Attemp a diagonal path update*/
                 for (int sweep = 0; sweep < numImagTimeSweeps; sweep++)
-                    move.at(diagIndex).attemptMove();
+                    move.at(moveIndex["diagonal"]).attemptMove();
             } 
 
         } // numParticles
@@ -245,8 +266,8 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
     /* Start the 2/3 off diagonal portion of the equilibration */
 	else {
 
-        /* How many updates should we perform? */
-        numUpdates = int(ceil(path.worm.getNumBeadsOn()/(1.0*constants()->Mbar())));
+        /* How many updates should we perform? We always try atleast 1 */
+        numUpdates = max(1,int(ceil(path.worm.getNumBeadsOn()/(1.0*constants()->Mbar()))));
 
         /* Increment the number of off-diagonal steps */
         numSteps++;
@@ -351,7 +372,8 @@ void PathIntegralMonteCarlo::step() {
 	uint32 binSize = 100;		// The number of MC steps in an output bin
 	string moveName;
 
-    numUpdates = int(ceil(path.worm.getNumBeadsOn()/(1.0*constants()->Mbar())));
+    numUpdates = max(1,int(ceil(path.worm.getNumBeadsOn()/(1.0*constants()->Mbar()))));
+
     numParticles = path.getTrueNumParticles();
 
 	/* We run through all moves, making sure that we could have touched each bead at least once */
@@ -366,10 +388,10 @@ void PathIntegralMonteCarlo::step() {
 
 	} // n
 
-	/* Perform all measurements */
-	for (estimator_vector::iterator estimatorPtr = estimator.begin();
-			estimatorPtr != estimator.end(); ++estimatorPtr)
-		estimatorPtr->sample();
+	/* Perform all measurements provided we have at least 1 particle */
+    for (estimator_vector::iterator estimatorPtr = estimator.begin();
+            estimatorPtr != estimator.end(); ++estimatorPtr)
+        estimatorPtr->sample();
 
 	/* Every binSize measurements, we output averages to disk and record the 
 	 * state of the simulation on disk.  */

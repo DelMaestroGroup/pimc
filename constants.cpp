@@ -159,8 +159,7 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
         attemptProb_["remove"] = 0.0;
         attemptProb_["swap head"] = 0.0;
         attemptProb_["swap tail"] = 0.0;
-        attemptProb_["staging"] = 0.6;
-        attemptProb_["bisection"] = 0.0;
+        attemptProb_["diagonal"] = 0.6;
         attemptProb_["center of mass"] = 0.1;
         attemptProb_["displace"] = 0.3;
     }
@@ -175,37 +174,28 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
         attemptProb_["remove"] = 0.15;
         attemptProb_["swap head"] = 0.10;
         attemptProb_["swap tail"] = 0.10;
-
-        /* !!NB!! Bisection currently doesn't work for pair_product actions */
-        if (actionType_ == "pair_product") {
-            attemptProb_["staging"] = 0.15;
-            attemptProb_["bisection"] = 0.00;
-        }
-        else {
-            attemptProb_["staging"] = 0.00;
-            attemptProb_["bisection"] = 0.15;
-        }
+        attemptProb_["diagonal"] = 0.15;
         attemptProb_["center of mass"] = 0.05;
         attemptProb_["displace"] = 0.0;
     }
 
     double totProb = attemptProb_["close"] + attemptProb_["advance head"] + attemptProb_["recede head"]
         + attemptProb_["advance tail"] + attemptProb_["recede head"] + attemptProb_["remove"]
-        + attemptProb_["swap head"] + attemptProb_["swap tail"] + attemptProb_["staging"]
-        + attemptProb_["bisection"] + attemptProb_["center of mass"] + attemptProb_["displace"];
+        + attemptProb_["swap head"] + attemptProb_["swap tail"] + attemptProb_["diagonal"] 
+        + attemptProb_["center of mass"] + attemptProb_["displace"];
 
 	if (abs(totProb - 1.0) > EPS) {
 		cout << "Close + AdvanceHead + RecedeHead + AdvanceTail + RecedeTail + Remove + SwapHead " 
-			 << "+ Staging + CoM Probability != 1" << endl;
+			 << "+ Diagonal + CoM Probability != 1" << endl;
 		exit(EXIT_FAILURE);
 	}
 	PIMC_ASSERT(totProb-1.0 < EPS);
 
-    totProb = attemptProb_["open"] + attemptProb_["insert"] + attemptProb_["staging"]
-       + attemptProb_["bisection"] + attemptProb_["center of mass"] + attemptProb_["displace"];
+    totProb = attemptProb_["open"] + attemptProb_["insert"] + attemptProb_["diagonal"]
+       + attemptProb_["center of mass"] + attemptProb_["displace"];
 	
 	if (abs(totProb - 1.0) > EPS) {
-		cout << "Open + Insert + Staging + Bisection + CoM Probability != 1" << endl;
+		cout << "Open + Insert + Diagonal + CoM Probability != 1" << endl;
 		exit(EXIT_FAILURE);
 	}
 	PIMC_ASSERT(totProb-1.0 < EPS);

@@ -179,6 +179,7 @@ void Setup::getOptions(int argc, char *argv[])
 		("action", po::value<string>()->default_value("gsf"), 
 		 str(format("action type {%s}") % actionNames).c_str())
 		("full_updates", "perform full staging updates")
+		("staging", "perform staging instead of bisection for the diagonal update")
         ("virial_Window,V", po::value<int>()->default_value(0),
          "centroid virial energy estimator window")
 		;
@@ -782,24 +783,12 @@ auto_ptr< boost::ptr_vector<MoveBase> > Setup::moves(Path &path,
     }
     else {
         /* We determine which type of diagonal path update we will use */
-        //if (constants()->attemptProb("bisection") > 0.0)
-        //    move.push_back(new BisectionMove(path,actionPtr,random));
-        //else
-        //    move.push_back(new StagingMove(path,actionPtr,random));
-
-        /* We determine which type of diagonal path update we will use */
-        if ( (params.count("full_updates")) || 
+        if ( (params.count("full_updates")) || params.count("staging") || 
                 (params["action"].as<string>() == "pair_product") ) {
             move.push_back(new StagingMove(path,actionPtr,random));
-            constants()->setAttemptProb("staging",0.15);
-            constants()->setAttemptProb("bisection",0.0);
         }
         else 
-        {
             move.push_back(new BisectionMove(path,actionPtr,random));
-            constants()->setAttemptProb("bisection",0.15);
-            constants()->setAttemptProb("staging",0.0);
-        }
 
         /* Include all other moves */
         move.push_back(new OpenMove(path,actionPtr,random));
@@ -849,7 +838,12 @@ auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::estimators(Path &path,
 
         /* Vector estimators */
         //estimator.push_back(new PermutationCycleEstimator(path));
-        estimator.push_back(new NumberDistributionEstimator(path));
+        
+        /* We only measure the number distribution function if we are grand
+         * canonical */
+        if (!constants()->canonical())
+            estimator.push_back(new NumberDistributionEstimator(path));
+
         estimator.push_back(new PairCorrelationEstimator(path,actionPtr));
         //estimator.push_back(new OneBodyDensityMatrixEstimator(path,actionPtr,random));
 

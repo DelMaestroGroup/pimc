@@ -76,9 +76,6 @@ class PathIntegralMonteCarlo {
         int numUpdates;             // The maximum number of updates per step.
         int numParticles;           // The number of particles
 
-        int comIndex;               // The index of the CoM move
-        int diagIndex;              // The index of the diagonal path update (bisection or staging)
-        int displaceIndex;          // The index of a possible displace move
         int obdmIndex;              // The index of the One Body Density Matrix estimator
 
 		bool savedState;			// We have saved at least one state
@@ -93,6 +90,8 @@ class PathIntegralMonteCarlo {
 
 		vector <double> attemptDiagProb;		// The cumulative diagonal attempt Probabilities
 		vector <double> attemptOffDiagProb;		// The cumulative off-diagonal attempt Probabilities
+
+		map <string,int> moveIndex;	            // A map to keep track of move names
 
 		/* Output estimators to disk */
 		void output();
