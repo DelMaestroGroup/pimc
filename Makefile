@@ -119,7 +119,7 @@ else ifeq ($(OVERRIDE), westgrid)
 CXX = icpc
 LD = icpc
 OPTS = -O3 -ipo -axSSE4.1,axAVX  #-w -vec-report0 -opt-report0
-CODEDIR = $$HOME/loc
+CODEDIR = $$HOME/local
 CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include # $(DEBUG)
 LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_system -limf
 #Westgrid end######################################################
