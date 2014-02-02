@@ -244,7 +244,8 @@ the `PIMCID`.  The options used in this demo include a subset of all the possibl
 |`wavefunction`  |  the type of trial wavefunction|
 |`dimension`  |  output the spatial dimension that the code was compiled with |
 |`pigs`     |  perform a simulation at T = 0 K|
-|`pigs`     |  perform a simulation at T = 0 K|
+|`max_wind`     |  The maximum winding sector to be sampled.  Default=1|
+|`staging`     |  Use staging instead of bisection for diagonal updates.|
 
 All options, including lists of possible values and default values can be seen
 by using the `--help flag`.
@@ -252,22 +253,22 @@ by using the `--help flag`.
 The output of the above command should yield:
 
     [PIMCID: XXXXXXXXX] - Equilibration Stage.
-    0.61	 1.00000	 0.95000	   16	0.021980
-    0.68	 0.95000	 0.90250	   16	0.021980
-    0.82	 0.90250	 0.90250	   15	0.020606
-    0.49	 0.90250	 0.72200	   18	0.024728
-    0.75	 0.72200	 0.72200	   15	0.020606
-    0.69	 0.72200	 0.68590	   16	0.021980
-    0.79	 0.68590	 0.68590	   18	0.024728
-    0.77	 0.68590	 0.68590	   17	0.023354
-    0.75	 0.68590	 0.65160	   19	0.026101
-    0.75	 0.65160	 0.61902	   19	0.026101
-    0.81	 0.61902	 0.61902	   18	0.024728
-    0.76	 0.61902	 0.61902	   17	0.023354
-    0.81	 0.61902	 0.61902	   19	0.026101
-    0.77	 0.61902	 0.61902	   19	0.026101
-    0.66	 0.61902	 0.58807	   18	0.024728
-    0.85	 0.58807	 0.61748	   20	0.027475
+    0.59     1.00000         0.90000           16   0.021980
+    0.62     0.90000         0.85500           18   0.024728
+    0.55     0.85500         0.76950           18   0.024728
+    0.47     0.76950         0.61560           17   0.023354
+    0.55     0.61560         0.55404           17   0.023354
+    0.72     0.55404         0.52634           15   0.020606
+    0.53     0.52634         0.47370           16   0.021980
+    0.80     0.47370         0.47370           16   0.021980
+    0.65     0.47370         0.45002           14   0.019233
+    0.73     0.45002         0.42752           15   0.020606
+    0.65     0.42752         0.40614           14   0.019233
+    0.64     0.40614         0.38584           14   0.019233
+    0.66     0.38584         0.36654           15   0.020606
+    0.68     0.36654         0.34822           12   0.016485
+    0.75     0.34822         0.33081           16   0.021980
+    0.75     0.33081         0.33081           16   0.021980
 
     [PIMCID: XXXXXXXXX] - Measurement Stage.
     [PIMCID: XXXXXXXXX] - Bin #   1 stored to disk.
@@ -321,17 +322,17 @@ your machine.  The results should yield:
 
     # PIMCID: XXXXXXXXX
     # Number Samples     20
-    K                  308.56301	    15.62070
-    V                 -438.07237	    13.08230
-    E                 -129.50936	    15.00721
-    E_mu              -129.84771	    15.00886
-    K/N                 18.16914	     0.81560
-    V/N                -25.75882	     0.44198
-    E/N                 -7.58968	     0.84098
-    N                   16.91750	     0.24312
-    N^2                287.65850	     8.06524
-    density              0.02324	     0.00033
-    diagonal             0.74373	     0.01779
+    K                  314.36857        14.53029
+    V                 -410.96886        15.11486
+    E                  -96.60029        11.95825
+    E_mu               -96.92523        11.96040
+    K/N                 19.25585         0.70307
+    V/N                -25.10260         0.53518
+    E/N                 -5.84675         0.68732
+    N                   16.24700         0.27261
+    N^2                265.75300         8.68820
+    density              0.02232         0.00037
+    diagonal             0.77454         0.02084
 
 The basic idea of running the program is that one needs to setup the simulation
 cell, by defining either its specific geometry via the size (`L`) flag, or by a

@@ -87,6 +87,7 @@ class ActionBase {
 		/** The free-particle density matrix */
 		double rho0(const dVec&, const dVec&, int); 
 		double rho0(const beadLocator&, const beadLocator&, int); 
+		double rho0(const dVec&, const int); 
 		
 		/** The ensemble particle number weighting factor */
 		double ensembleWeight(const int);

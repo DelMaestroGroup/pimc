@@ -180,6 +180,7 @@ void Setup::getOptions(int argc, char *argv[])
 		 str(format("action type {%s}") % actionNames).c_str())
 		("full_updates", "perform full staging updates")
 		("staging", "perform staging instead of bisection for the diagonal update")
+		("max_wind", po::value<int>()->default_value(1), "the maximum winding number to sample")
         ("virial_Window,V", po::value<int>()->default_value(0),
          "centroid virial energy estimator window")
 		;
@@ -462,7 +463,6 @@ bool Setup::worldlines() {
             numTimeSlices = static_cast<int>(1.0/(params["temperature"].as<double>() * tau) + EPS);
             if ((numTimeSlices % 2) != 0)
                 numTimeSlices--;
-            //setOption("imaginary_time_step",1.0/(params["temperature"].as<double>()*numTimeSlices));
             insertOption("number_time_slices",numTimeSlices);
         }
         else {
@@ -495,7 +495,6 @@ bool Setup::worldlines() {
             if ((numTimeSlices % 2) == 0)
                 numTimeSlices--;
             insertOption("number_time_slices",numTimeSlices);
-            //setOption("imaginary_time_step",params["imaginary_time_length"].as<double>()/numTimeSlices);
         }
         /* Fixing the number of time steps and the size of the time step.  */
         else {
@@ -535,6 +534,7 @@ bool Setup::worldlines() {
 	setOption("Mbar",Mbar);
 
 	if (Mbar > numTimeSlices) {
+        cerr << Mbar << " " << numTimeSlices << endl;
 		cerr << endl << "ERROR: Update length > number time slices!" << endl << endl;
         cerr << "Action: Increase number_time_slices (P) OR" <<  endl;
         cerr << "        Increase Mbar (M) OR"  << endl;
@@ -591,6 +591,7 @@ void Setup::setConstants() {
             params["action"].as<string>(),
             params["window"].as<int>(),
             params["gaussian_ensemble_SD"].as<double>(),
+            params["max_wind"].as<int>(),
             params["virial_Window"].as<int>() );
 
 
@@ -841,10 +842,11 @@ auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::estimators(Path &path,
         
         /* We only measure the number distribution function if we are grand
          * canonical */
-        if (!constants()->canonical())
-            estimator.push_back(new NumberDistributionEstimator(path));
+        // if (!constants()->canonical())
+        //     estimator.push_back(new NumberDistributionEstimator(path));
 
-        estimator.push_back(new PairCorrelationEstimator(path,actionPtr));
+        // estimator.push_back(new PairCorrelationEstimator(path,actionPtr));
+
         //estimator.push_back(new OneBodyDensityMatrixEstimator(path,actionPtr,random));
 
         /* Time Consuming local estimators */

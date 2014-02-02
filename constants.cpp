@@ -21,7 +21,7 @@ ConstantParameters::ConstantParameters() : T_(), imagTimeLength_(), mu_(), tau_(
 	dBWavelength_(), rc_(), C0_(), C_(), V_(), L_(), Mbar_(), b_(), numTimeSlices_(), 
     initialNumParticles_(), deltaNumParticles_(), id_(), restart_(),
     wallClock_(),  canonical_(), pigs_(), window_(), intPotentialType_(),
-    extPotentialType_(), waveFunctionType_(), actionType_(), virialWindow_()
+    extPotentialType_(), waveFunctionType_(), actionType_(), virialWindow_(), maxWind_()
 { 
     /* set all data members to null values */
 }
@@ -39,7 +39,7 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
 		int _Mbar, int _numTimeSlices, uint32 _id, uint32 _process, double _wallClock,
 		uint32 _numEqSteps, string _intPotentialType, string _extPotentialType, 
         string _waveFunctionType, string _actionType, int _window, double _gaussianEnsembleSD, 
-        int _virialWindow) {
+        int _maxWind, int _virialWindow) {
 
 	/* The simulation ID is the number of seconds since January 1 2009 */
 	if (_id == 0) {
@@ -85,6 +85,9 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
         gaussianEnsemble_ = true;
         gaussianEnsembleSD_ = _gaussianEnsembleSD;
     }
+
+    /* The maximum winding number sampled */
+    maxWind_ = _maxWind;
 
 	/* Assigned values */
 	b_  = int (ceil(log(1.0*_Mbar) / log(2.0)-EPS));

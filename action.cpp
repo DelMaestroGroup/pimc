@@ -99,6 +99,19 @@ double ActionBase::rho0(const beadLocator &bead1, const beadLocator &bead4, int 
 }
 
 /**************************************************************************//**
+ *  The free-particle density matrix for a given spatial and temporal
+ *  separation.
+ *
+ *  @param vel The spatial separtion R - R'
+ *  @param M The imaginary time separation
+ *  @return The free density matrix
+******************************************************************************/
+double ActionBase::rho0(const dVec &vel, const int M) {
+	double rho0Norm = pow(4.0*M_PI*constants()->lambda()*M*constants()->tau(),-0.5*NDIM);
+	return ( rho0Norm * exp(-dot(vel,vel) / (4.0*constants()->lambda()*M*constants()->tau()) ) );
+}
+
+/**************************************************************************//**
  *  The ensemble weighting factor.
  *
  *  For the grand canonical ensemble we return 1, for the canonical ensemble

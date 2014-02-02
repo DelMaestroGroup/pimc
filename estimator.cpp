@@ -281,10 +281,11 @@ void EnergyEstimator::accumulate() {
 
 	estimator(3) += totK + totV - constants()->mu()*numParticles;
 
-	estimator(4) += totK/(1.0*numParticles);
-	estimator(5) += totV/(1.0*numParticles);
-
-	estimator(6) += (totK + totV)/(1.0*numParticles);
+    if (numParticles > 0) {
+        estimator(4) += totK/(1.0*numParticles);
+        estimator(5) += totV/(1.0*numParticles);
+        estimator(6) += (totK + totV)/(1.0*numParticles);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1567,7 +1568,13 @@ void PermutationCycleEstimator::accumulate() {
 
 	int numParticles = path.getTrueNumParticles();
 	int numWorldlines = path.numBeadsAtSlice(0);
-	double cycleNorm = 1.0 / (1.0*numParticles);
+
+	double cycleNorm;
+
+    if (numParticles > 0)
+        cycleNorm = 1.0 / (1.0*numParticles);
+    else
+        cycleNorm = 0.0;
 
 	/* We create a local vector, which determines whether or not we have
 	 * already included a bead at slice 0*/
@@ -2074,7 +2081,7 @@ void PairCorrelationEstimator::accumulate() {
 			(1.0*sum(actionPtr->sepHist)));
 	}
 	else
-		estimator += 1.0;
+		estimator += 0.0;
 }
 
 // ---------------------------------------------------------------------------

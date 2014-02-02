@@ -93,6 +93,13 @@ class MoveBase {
 
 		Array <dVec,1> originalPos;		///< The original particle positions
 		Array <dVec,1> newPos;		    ///< New particle positions
+        
+		vector <double> cumrho0;		///< The cumulative free density matrix weights
+        Array <iVec,1> winding;         ///< The winding vectors         
+        vector <int> windingSector;     ///< Used to the indices of different winding sectors
+
+        int maxWind;                    ///< The largest winding number
+        int numWind;                    ///< The total number of winding vectors
 
 		double oldAction;				///< The original potential action
 		double newAction;				///< The new potential action
@@ -112,6 +119,27 @@ class MoveBase {
 
 		/* Returns a new bead position based on the staging algorithm */
 		dVec newStagingPosition(const beadLocator &, const beadLocator &, const int, const int);
+		dVec newStagingPosition(const beadLocator &, const beadLocator &, const int, const int, iVec &);
+
+        /** Obtain a winding sector for a stage-like move */
+        iVec sampleWindingSector(const beadLocator &, const beadLocator &, const int, double &);
+
+        /** Find the winding number for a path between two beads */
+        iVec getWindingNumber(const beadLocator &, const beadLocator &);
+
+        /** A functor which allows us to compare two winding numbers in terms
+         * of the magnitude of their winding vectors */
+        struct doCompare
+        { 
+            doCompare( const MoveBase& move) : _move(move) { } 
+            const MoveBase & _move;
+
+            /** overload () to act as a comparison of magnitudes */
+            bool operator()( const int & i1, const int & i2  ) { 
+                return (dot(_move.winding(i1),_move.winding(i1))
+                        <  dot(_move.winding(i2),_move.winding(i2)));
+            }
+        };
 
 		/* Return a new bead position which samples the free particle density matrix */
 		dVec newFreeParticlePosition(const beadLocator &);
@@ -456,6 +484,7 @@ class SwapMoveBase: public MoveBase {
 	protected:
 		int swapLength;						///< The length of worldLine to be moved
 		int numLevels;						///< The number of bisection levels
+        unsigned int sizeCDF;               ///< The size of the cumulative distribution function
 
 		vector <double> cumulant;			///< The cumulant array used in selecting a pivot
 
@@ -465,10 +494,13 @@ class SwapMoveBase: public MoveBase {
 		double SigmaSwap;					///< Probability normalization factor
 
 		/* Returns the normalization factor for the probability dist. */
-		double getNorm(const beadLocator&);
+		double getNorm(const beadLocator&, const int sign=1);
 		
 		/* Gets the bead where the swap will pivot. */
 		beadLocator selectPivotBead();
+
+        /* An overloaded version which also gets the winding sector */
+		beadLocator selectPivotBead(iVec&);
 };
 
 // ========================================================================  

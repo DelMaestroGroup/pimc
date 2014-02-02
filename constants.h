@@ -27,7 +27,7 @@ class ConstantParameters
 	public:
 		static ConstantParameters* getInstance();
 		void initConstants(bool,bool,double,double,double,double,double,double,double,double,
-				int,int,int,uint32,uint32,double,uint32,string,string,string,string,int,double,int);
+				int,int,int,uint32,uint32,double,uint32,string,string,string,string,int,double,int,int);
 
 		/* All the get methods */
 		double T() const {return T_;}					///< Get temperature.
@@ -89,6 +89,7 @@ class ConstantParameters
 		int numTimeSlices() {return numTimeSlices_;}	///< Get number of time slices
 		int initialNumParticles() { return initialNumParticles_;}	///< Get initial number of particles
 		int deltaNumParticles() { return deltaNumParticles_;}	///< Get the canonical fluctuation weight
+        int maxWind() { return maxWind_;}               ///< Get the maximum winding number sampled
 		uint32 id() {return id_;}						///< Get simulation ID
 		uint32 numEqSteps() {return numEqSteps_;}	///< Get the number of equilibration steps
 
@@ -157,7 +158,9 @@ class ConstantParameters
         string waveFunctionType_;   // The type of trial wave function
         string actionType_;         // The type of action
 
-        int virialWindow_;          // Window size for centroid virial estimator
+        int virialWindow_;        // Window size for centroid virial estimator
+        int maxWind_;             // The maximum winding number sampled
+
 		
         map <string,double> attemptProb_;	// The move attempt probabilities
 };

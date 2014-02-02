@@ -67,7 +67,7 @@
 
 #include "MersenneTwister.h"
 
-#define NPCFSEP 400 	///< Spatial separations to be used in the pair correlation function
+#define NPCFSEP 50 	    ///< Spatial separations to be used in the pair correlation function
 #define NOBDMSEP 50	 	///< Spatial separations to be used in the one body density matrix
 #define NRADSEP 200	 	///< Spatial separations to be used in the radial density
 #define NGRIDSEP 50     ///< Spatial separations to be used in each dimension of the particle position grid

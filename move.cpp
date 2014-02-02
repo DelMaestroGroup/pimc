@@ -46,6 +46,69 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
 
 	sqrtLambdaTau = sqrt(constants()->lambda() * constants()->tau());
 	sqrt2LambdaTau = sqrt(2.0)*sqrtLambdaTau;
+    
+    /* Setup the free density matrix arrays for sampling different
+     * winding sectors.  We will sample w = -maxWind ... maxWind */
+    maxWind = constants()->maxWind();
+    numWind = ipow(2*maxWind + 1,NDIM);
+    winding = 0;
+    cumrho0.resize(numWind,0.0);
+
+    /* Now we construct the actual NDIM-vector winding numbers */
+    winding.resize(numWind);
+
+    /* For each integer labelling a winding sector, we construct the winding
+     * vector and append to a matrix */
+	iVec wind;
+    for (int n = 0; n < numWind; n++ ) {
+        for (int i = 0; i < NDIM; i++) {
+            int scale = 1;
+            for (int j = i+1; j < NDIM; j++) 
+                scale *= (2*maxWind + 1);
+            wind[i] = (n/scale) % (2*maxWind + 1);
+
+            /* Wrap into the appropriate winding sector */
+            wind[i] -= (wind[i] > maxWind)*(2*maxWind + 1);
+        }
+
+        /* Adjust for any non-periodic boundary conditions */
+        for (int i = 0; i < NDIM; i++) {
+            if (!path.boxPtr->periodic[i])
+                wind[i] = 0;
+        }
+
+        /* Store the winding number */
+        winding(n) = wind;
+    }
+
+    /* Now we would like to sort the winding number array for the effecient
+     * calculation of maximal probabilities. We sort based on the magnitude of
+     * the winding vector. */
+    vector <int> sortWinding;
+    for (int n = 0; n < numWind; n++ )
+        sortWinding.push_back(n);
+    std::sort(sortWinding.begin(), sortWinding.end(), doCompare(*this));
+
+    /* Now, we apply the result of the sort to the winding array */
+
+    /* The temporary copy of the winding number array */
+    Array <iVec,1> tempWinding;
+    tempWinding.resize(numWind);
+    tempWinding = winding;
+
+    /* Perform the re-ordering */
+    for (int n = 0; n < numWind; n++) 
+        winding(n) = tempWinding(sortWinding[n]);
+
+    /* Now we determine the indices of the different winding sectors.  These
+     * are used for optimization purposes during tower sampling */
+    for (int n = 0; n < numWind-1; n++) {
+        if (abs(dot(winding(n),winding(n)) - dot(winding(n+1),winding(n+1))) > EPS)
+            windingSector.push_back(n);
+    }
+    /* Add the last index */
+    if (windingSector.back() != numWind-1)
+        windingSector.push_back(numWind-1);
 }
 
 /*************************************************************************//**
@@ -54,7 +117,6 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
 MoveBase::~MoveBase() {
 	originalPos.free();
 }
-
 
 ///@cond DEBUG
 /*************************************************************************//**
@@ -202,6 +264,166 @@ dVec MoveBase::newStagingPosition(const beadLocator &neighborIndex, const beadLo
     path.boxPtr->putInside(newRanPos);
 
     return newRanPos;
+}
+
+/*************************************************************************//**
+* Returns a new staging position which will exactly sample the kinetic
+* action in different winding sectors.
+*
+* @param neighborIndex The index of the bead to be updated's neighbor
+* @param endIndex The index of the final bead in the stage
+* @param stageLength The length of the stage
+* @param k The position along the stage
+* @return A NDIM-vector which holds a new random position.
+******************************************************************************/
+dVec MoveBase::newStagingPosition(const beadLocator &neighborIndex, const beadLocator &endIndex,
+        const int stageLength, const int k, iVec &wind) {
+    
+	PIMC_ASSERT(path.worm.beadOn(neighborIndex));
+    
+    /* The rescaled value of lambda used for staging */
+    double f1 = 1.0 * (stageLength - k - 1);
+    double f2 = 1.0 / (1.0*(stageLength - k));
+    double sqrtLambdaKTau = sqrt2LambdaTau * sqrt(f1 * f2);
+    
+	/* We find the new 'midpoint' position which exactly samples the kinetic 
+	 * density matrix */
+	neighborPos = path(neighborIndex);
+    newRanPos = (path(endIndex)+path.boxPtr->side*wind)-neighborPos;
+	newRanPos *= f2;
+	newRanPos += neighborPos;
+    
+	/* This is the random kick around that midpoint */
+	for (int i = 0; i < NDIM; i++)
+		newRanPos[i] = random.randNorm(newRanPos[i],sqrtLambdaKTau);
+    
+    /* Make sure we choose the correct winding trajectory */
+	for (int i = 0; i < NDIM; i++) {
+        if (newRanPos[i] < -0.5*path.boxPtr->side[i])
+            wind[i]++;
+        else if (newRanPos[i] > 0.5*path.boxPtr->side[i])
+            wind[i]--;
+    }
+
+    path.boxPtr->putInside(newRanPos);
+    
+    /* Make sure we are inside the box */
+    // bool outside = false;
+    // do {
+    //     outside = false;
+    //     path.boxPtr->putInside(newRanPos);
+    //     for (int i = 0; i < NDIM; i++) {
+    //         if (newRanPos[i] > 0.5*path.boxPtr->side[i] || newRanPos[i] < -0.5*path.boxPtr->side[i]){
+    //             outside = true;
+    //             break;
+    //         }
+    //     }
+    // } while (outside);
+    assert(newRanPos[0] < 0.5*path.boxPtr->side[0] || newRanPos[0] >= -0.5*path.boxPtr->side[0]);
+    
+    return newRanPos;
+}
+
+/*************************************************************************//**
+ * Determine the winding sector to sample for a stage like move.
+ *
+ * Perform tower sampling to select a winding sector from the free particle 
+ * kinetic density matrix.
+ *
+ * @param startBead The index of the start of the stage
+ * @param endBead The index of the final bead in the stage
+ * @param stageLength The length of the stage
+ * @return A integer NDIM-vector which holds the winding vector to be sampled.
+******************************************************************************/
+iVec MoveBase::sampleWindingSector(const beadLocator &startBead, const beadLocator &endBead, 
+        const int stageLength, double &totalrho0) {
+
+    /* For now, we hard-code the tolerance at 0.001% */
+    double tolerance = 1.0E-6;
+
+    /* Get the w = 0 sector separation */ 
+    dVec vel,velW;
+    vel = path(endBead) - path(startBead);
+
+    /* Initialize the probability and cumulative probabilities */
+    cumrho0.assign(numWind,0.0);
+    totalrho0 = 0.0;
+
+    cumrho0[0] = actionPtr->rho0(vel,stageLength);
+    totalrho0 = cumrho0[0];
+    double maxrho0 = totalrho0;
+    
+    /* Sample the free density matrix for different winding sectors */
+    int maxn = numWind;
+    for (int n = 1; n < numWind; n++) {
+        velW = vel + winding(n)*path.boxPtr->side;
+        double crho0 = actionPtr->rho0(velW,stageLength);
+        totalrho0 += crho0;
+        cumrho0[n] = cumrho0[n-1] + crho0;
+
+        /* If we are still in the lowest winding sectors, find the maximum
+         * probability */
+        if (n <= windingSector[NDIM+1])  {
+            if (crho0 > maxrho0)
+                maxrho0 = crho0;
+        }
+        /* Otherwise, test if we can exit */
+        else {
+            if (crho0/maxrho0 < tolerance) {
+                maxn = n;
+                break;
+            }
+        }
+    }
+
+    /* Normalize the cumulative probability array */
+	for (int n = 0; n < maxn; n++)
+        cumrho0[n] /= totalrho0;
+
+    /* Perform tower sampling to select the winding vector */
+    int index;
+    index = std::lower_bound(cumrho0.begin(),cumrho0.begin()+maxn,random.rand())
+            - cumrho0.begin();
+
+    return winding(index);
+}
+
+/*************************************************************************//**
+ * Find the winding number for a given path between two beads.
+ *
+ * By following a trajectory between two beads, accumulate the winding number
+ * by tracking when periodic boundary conditions are invoked.
+ *
+ * @param startBead The index of the start of the stage
+ * @param endBead The index of the final bead in the stage
+ * @return A integer NDIM-vector which holds the winding vector of the path.
+******************************************************************************/
+iVec MoveBase::getWindingNumber(const beadLocator &startBead, const beadLocator &endBead) { 
+
+    iVec wind;
+    wind = 0;
+    beadLocator beadIndex;
+    beadIndex = startBead;
+    dVec vel;
+    do {
+        /* Get the vector separation */
+        vel = path(path.next(beadIndex)) - path(beadIndex);
+
+        for (int i = 0; i < NDIM; i++) {
+
+            /* Only worry about the winding number for PBC */
+            if (path.boxPtr->periodic[i]) {
+                if (vel[i] < -0.5*path.boxPtr->side[i])
+                    ++wind[i];
+                if (vel[i] >= 0.5*path.boxPtr->side[i])
+                    --wind[i];
+            }
+        }
+
+        beadIndex = path.next(beadIndex);
+    } while (!all(beadIndex==endBead));
+
+    return wind;
 }
 
 /*************************************************************************//**
@@ -484,6 +706,7 @@ bool CenterOfMassMove::attemptMove() {
 
     int wlLength = 0;
 	beadLocator beadIndex;
+
     /* Make sure the worldline to be moved is shorter than the number of time
      * slices */
     beadIndex = startBead;
@@ -638,6 +861,10 @@ bool StagingMove::attemptMove() {
 	numAttempted++;
 	totAttempted++;
 
+    double totalrho0;
+    iVec wind;
+    wind = sampleWindingSector(startBead,endBead,constants()->Mbar(),totalrho0);
+
     /* Get the current action for the path segment to be updated */
     oldAction = actionPtr->potentialAction(startBead,path.prev(endBead));
 
@@ -650,7 +877,7 @@ bool StagingMove::attemptMove() {
 		beadIndex = path.next(beadIndex);
 		originalPos(k) = path(beadIndex);
 		path.updateBead(beadIndex,
-				newStagingPosition(path.prev(beadIndex),endBead,constants()->Mbar(),k));
+				newStagingPosition(path.prev(beadIndex),endBead,constants()->Mbar(),k,wind));
 		++k;
 	} while (!all(beadIndex==path.prev(endBead)));
 
@@ -752,6 +979,10 @@ bool BisectionMove::attemptMove() {
     /* We cannot perform this move at present when using a pair product action */
     if (constants()->actionType() == "pair_product")
         return false;
+
+    /* Only do bisections when we have at least one particle */
+	if (path.getTrueNumParticles()==0)
+		return false;
 
 	/* Randomly select the start bead of the bisection */
 	startBead[0] = random.randInt(path.numTimeSlices-1);
@@ -929,6 +1160,10 @@ bool OpenMove::attemptMove() {
 
 	success = false;
 
+    /* Only do an open move when we have at least one particle */
+	if (path.getTrueNumParticles()==0)
+		return false;
+
     /* Get the length of the proposed gap to open up. We only allow even 
      * gaps. */
     gapLength = 2*(1 + random.randInt(constants()->Mbar()/2-1));
@@ -943,19 +1178,26 @@ bool OpenMove::attemptMove() {
     /* Find the tail bead */
     tailBead = path.next(headBead,gapLength);
 
-    /* Determine how far apart they are */
+    /* Get the current winding number of the chosen trajectory */
+    double totalrho0;
+    iVec wind;
+    wind = sampleWindingSector(headBead,tailBead,gapLength,totalrho0);
+
+    /* Determine the separation in this winding sector */
     dVec sep;
-    sep = path.getSeparation(headBead,tailBead);
+    sep = path(tailBead) - path(headBead) + wind*path.boxPtr->side;
 
     /* We make sure that the proposed worm is not too costly */
-    if ( !path.worm.tooCostly(sep,gapLength) ) {
+   if ( !path.worm.tooCostly(sep,gapLength) ) 
+     {
 
         checkMove(0,0.0);
 
         /* We use the 'true' number of particles here because we are still diagonal, 
          * so it corresponds to the number of worldlines*/
         double norm = (constants()->C() * constants()->Mbar() * path.worm.getNumBeadsOn())
-                / actionPtr->rho0(headBead,tailBead,gapLength);
+                / totalrho0;
+                /// actionPtr->rho0(sep,gapLength);
 
         /* We rescale to take into account different attempt probabilities */
         norm *= constants()->attemptProb("close")/constants()->attemptProb("open");
@@ -1118,7 +1360,7 @@ bool CloseMove::attemptMove() {
 	 * gap is neither too large or too small and that the worm cost is reasonable.
 	 * Otherwise, we simply exit the move */
     if ( (path.worm.gap > constants()->Mbar()) || (path.worm.gap == 0)
-            || path.worm.tooCostly() )
+        || path.worm.tooCostly() )
 		return false;
 
     checkMove(0,0.0);
@@ -1136,9 +1378,14 @@ bool CloseMove::attemptMove() {
 	headBead = path.worm.head;
 	tailBead = path.worm.tail;
 
-	/* Compute the part of the acceptance probability that does not
-	 * depend on the change in potential energy */
-	double norm = actionPtr->rho0(path.worm.head,path.worm.tail,path.worm.gap) /  
+    /* Sample the winding sector */
+    double totalrho0;
+    iVec wind;
+    wind = sampleWindingSector(headBead,tailBead,path.worm.gap,totalrho0);
+
+  /* Compute the part of the acceptance probability that does not
+   * depend on the change in potential energy */
+	double norm = totalrho0 /  
 		(constants()->C() * constants()->Mbar() * 
          (path.worm.getNumBeadsOn() + path.worm.gap - 1));
 
@@ -1171,7 +1418,7 @@ bool CloseMove::attemptMove() {
 
         for (int k = 0; k < (path.worm.gap-1); k++) {
             beadIndex = path.addNextBead(beadIndex,
-                    newStagingPosition(beadIndex,path.worm.tail,path.worm.gap,k));
+                    newStagingPosition(beadIndex,path.worm.tail,path.worm.gap,k,wind));
             deltaAction = actionPtr->barePotentialAction(beadIndex) - actionShift;
 
             /* We perform a metropolis test on the single bead */
@@ -1206,7 +1453,7 @@ bool CloseMove::attemptMove() {
         beadIndex = path.worm.head;
         for (int k = 0; k < (path.worm.gap-1); k++) {
             beadIndex = path.addNextBead(beadIndex,
-                    newStagingPosition(beadIndex,path.worm.tail,path.worm.gap,k));
+                    newStagingPosition(beadIndex,path.worm.tail,path.worm.gap,k,wind));
         }
         path.next(beadIndex) = path.worm.tail;
         path.prev(path.worm.tail) = beadIndex;
@@ -1223,7 +1470,6 @@ bool CloseMove::attemptMove() {
             undoMove();
             checkMove(2,0.0);
         }
-    
     }
 
 	return success;
@@ -1485,9 +1731,8 @@ RemoveMove::~RemoveMove() {
 bool RemoveMove::attemptMove() {
 
 	/* We first make sure we are in an off-diagonal configuration, and the worm isn't
-	 * too short or long, also that we don't remove our last particle */
-    if ( (path.worm.length > constants()->Mbar()) || (path.worm.length < 1)
-			|| (path.getTrueNumParticles() < 1) ) 
+	 * too short or long */
+    if ( (path.worm.length > constants()->Mbar()) || (path.worm.length < 1))
         return false;
 
     numLevels = int(ceil(log(1.0*path.worm.length) / log(2.0)-EPS));
@@ -1503,7 +1748,7 @@ bool RemoveMove::attemptMove() {
     double norm = 1.0 / (constants()->C() * constants()->Mbar() * path.numTimeSlices 
             * path.boxPtr->volume);
     double muShift = path.worm.length * constants()->mu() * constants()->tau();
-    
+
     /* We rescale to take into account different attempt probabilities */
     norm *= constants()->attemptProb("insert") / constants()->attemptProb("remove");
 
@@ -2318,28 +2563,125 @@ SwapMoveBase::~SwapMoveBase() {
  * We compute the normalization constant used in both the pivot selection
  * probability as well as the overall acceptance probabilty.  
  * @see Eq. (2.23) of PRE 74, 036701 (2006).
+ *
+ * @param sign corrects for always measuring distances forward in imaginary
+ *             time
 ******************************************************************************/
-double SwapMoveBase::getNorm(const beadLocator &beadIndex) {
+double SwapMoveBase::getNorm(const beadLocator &beadIndex, const int sign) {
 
 	double Sigma = 0.0;
 	double crho0;
+    dVec sep;
+    int index = 0;
+
+    sizeCDF = path.lookup.fullNumBeads*numWind;
+
+    /* Check if we need to resisize our cumulative distribution funciton */
+     if (cumulant.size() < sizeCDF)
+         cumulant.assign(sizeCDF,0.0);
+
+    /* For each particle, we find the free particle weight for all winding
+     * sectors.  We start with W = 0. */
 
 	/* We sum up the free particle density matrices for each bead
 	 * in the list */
-	Sigma = actionPtr->rho0(beadIndex,path.lookup.fullBeadList(0),swapLength);
-	cumulant.at(0) = Sigma;
+    sep = path(path.lookup.fullBeadList(0)) - path(beadIndex);
+	Sigma = actionPtr->rho0(sep,swapLength);
+	cumulant.at(index) = Sigma;
+    ++index;
 	for (int n = 1; n < path.lookup.fullNumBeads; n++) {
-		crho0 = actionPtr->rho0(beadIndex,path.lookup.fullBeadList(n),swapLength);
+        sep = path(path.lookup.fullBeadList(n)) - path(beadIndex);
+		crho0 = actionPtr->rho0(sep,swapLength);
 		Sigma += crho0;
-		cumulant.at(n) = cumulant.at(n-1) + crho0;
+		cumulant.at(index) = cumulant.at(index-1) + crho0;
+        ++index;
 	}
 
+    /* Now we repeat for all winding sectors */
+    for (int w = 1; w < numWind; w++) {
+
+        /* Go through every particle in the lookup table. */
+        for (int n = 0; n < path.lookup.fullNumBeads; n++) {
+            sep = path(path.lookup.fullBeadList(n)) - path(beadIndex) 
+                + sign*winding(w)*path.boxPtr->side;
+            crho0 = actionPtr->rho0(sep,swapLength);
+            Sigma += crho0;
+            cumulant.at(index) = cumulant.at(index-1) + crho0;
+            ++index;
+        }
+    }
+
 	/* Normalize the cumulant */
-	for (int n = 0; n < path.lookup.fullNumBeads; n++)
+	for (unsigned int n = 0; n < sizeCDF; n++)
         cumulant.at(n) /= Sigma;
 
-
 	return Sigma;
+}
+
+///*************************************************************************//**
+// * Get the normalization constant for a swap move.
+// * 
+// * We compute the normalization constant used in both the pivot selection
+// * probability as well as the overall acceptance probabilty.  
+// * @see Eq. (2.23) of PRE 74, 036701 (2006).
+//******************************************************************************/
+//double SwapMoveBase::getNorm(const beadLocator &beadIndex) {
+//
+//	double Sigma = 0.0;
+//	double crho0;
+//
+//	/* We sum up the free particle density matrices for each bead
+//	 * in the list */
+//	Sigma = actionPtr->rho0(beadIndex,path.lookup.fullBeadList(0),swapLength);
+//	cumulant.at(0) = Sigma;
+//	for (int n = 1; n < path.lookup.fullNumBeads; n++) {
+//		crho0 = actionPtr->rho0(beadIndex,path.lookup.fullBeadList(n),swapLength);
+//		Sigma += crho0;
+//		cumulant.at(n) = cumulant.at(n-1) + crho0;
+//	}
+//
+//	/* Normalize the cumulant */
+//	for (int n = 0; n < path.lookup.fullNumBeads; n++)
+//        cumulant.at(n) /= Sigma;
+//
+//
+//	return Sigma;
+//}
+
+/*************************************************************************//**
+ * Select the pivot bead for a swap move.
+ * 
+ * Here we select a pivot bead from a list with the probability given by 
+ * Eq. (2.22) of PRE 74, 036701 (2006).  We use the trick in Ceperly's 
+ * lecture notes where we evaluate the cumulative distribution function
+ * then generate a uniform random variable and find where it lies in 
+ * the ordered CDF list.
+ *
+ * @parm wind the chosen winding number sector.
+******************************************************************************/
+beadLocator SwapMoveBase::selectPivotBead(iVec &wind) {
+	
+	/* Generate a uniform deviate, and figure out where it fits in our cumulant
+	 * array using a binary search.  This is basic tower sampling */
+
+    int index = std::lower_bound(cumulant.begin(),cumulant.begin()+sizeCDF,
+            random.rand()) - cumulant.begin();
+    /* We need to determine the pivot index and winding sector */
+    
+    /* row index */
+    int w = (index/path.lookup.fullNumBeads) % numWind; 
+
+    /* column index */
+    int p = index % path.lookup.fullNumBeads;
+
+	/* Copy over the pivot bead and return it */
+	beadLocator pivotBead;
+	pivotBead = path.lookup.fullBeadList(p);
+
+    /* Get the winding number */
+    wind = winding(w);
+	
+	return pivotBead;
 }
 
 /*************************************************************************//**
@@ -2354,10 +2696,10 @@ double SwapMoveBase::getNorm(const beadLocator &beadIndex) {
 beadLocator SwapMoveBase::selectPivotBead() {
 	
 	/* Generate a uniform deviate, and figure out where it fits in our cumulant
-	 * array using a binary search */
-	double u = random.rand();
-    int index = std::lower_bound(cumulant.begin(),cumulant.end(),u)
-            - cumulant.begin();
+	 * array using a binary search.  This is basic tower sampling */
+    int index = std::lower_bound(cumulant.begin(),cumulant.end(),random.rand()) 
+        - cumulant.begin();
+
 	/* Copy over the pivot bead and return it */
 	beadLocator pivotBead;
 	pivotBead = path.lookup.fullBeadList(index);
@@ -2426,13 +2768,13 @@ bool SwapHeadMove::attemptMove() {
 		/* We can only try to make a move if we have at least one bead to swap with */
 		if (path.lookup.fullNumBeads > 0) {
 
-			cumulant.resize(path.lookup.fullNumBeads);
-
 			/* We compute the normalization factors using the head bead */
 			SigmaHead = getNorm(path.worm.head);
 
-			/* Get the pivot bead */
-			pivot = selectPivotBead();
+            iVec wind;
+            wind = 0;
+			/* Get the pivot bead and winding number sector */
+			pivot = selectPivotBead(wind);
 
 			/* Now we try to find the swap bead.  If we find the worm tail, we immediatly
 			 * exit the move */
@@ -2460,17 +2802,15 @@ bool SwapHeadMove::attemptMove() {
 				 * which contains all beads in neighborhood of the swap bead
 				 * grid box, but at a time slice advanced by Mbar. We only need to
 				 * do this if head and swap are in different grid boxes. */ 
-				if (!path.lookup.gridShare(path.worm.head,swap)) {
+				if (!path.lookup.gridShare(path.worm.head,swap))
 					path.lookup.updateFullInteractionList(swap,pivotSlice);
-					cumulant.resize(path.lookup.fullNumBeads);
-				}
 
 				/* Get the normalization factor for the new list */
 				SigmaSwap = getNorm(swap);
 
 				/* We now perform a pre-metropolis step on the selected bead. If this 
 				 * is not accepted, it is extremely likely that the potential change
-				 * will have any effect, so we don't bother with it. */
+				 * will not have any effect, so we don't bother with it. */
                 double PNorm = min(SigmaHead/SigmaSwap,1.0);
 				if (random.rand() < PNorm) {
 
@@ -2519,7 +2859,7 @@ bool SwapHeadMove::attemptMove() {
 					do {
 						if (!all(beadIndex==path.worm.special1) && !all(beadIndex==pivot)) {
 							path.updateBead(beadIndex,
-									newStagingPosition(path.prev(beadIndex),pivot,swapLength,k));
+                                    newStagingPosition(path.prev(beadIndex),pivot,swapLength,k,wind));
 							++k;
 						}
 						beadIndex = path.next(beadIndex);
@@ -2660,13 +3000,14 @@ bool SwapTailMove::attemptMove() {
 		/* We can only try to make a move if we have at least one bead to swap with */
 		if (path.lookup.fullNumBeads > 0) {
 
-			cumulant.resize(path.lookup.fullNumBeads);
-
 			/* We compute the normalization factors using the tail bead */
-			SigmaTail = getNorm(path.worm.tail);
+            /* We have a factor of -1 here due to the tail */
+			SigmaTail = getNorm(path.worm.tail,-1);
 
-			/* Get the pivot bead */
-			pivot = selectPivotBead();
+			/* Get the pivot bead and winding sector */
+            iVec wind;
+            wind = 0;
+			pivot = selectPivotBead(wind);
 
 			/* Now we try to find the swap bead.  If we find the worm head, we immediatly
 			 * exit the move */
@@ -2694,10 +3035,8 @@ bool SwapTailMove::attemptMove() {
 				 * which contains all beads in neighborhood of the swap bead
 				 * grid box, but at a time slice advanced by Mbar. We only 
 				 * do this if tail and swap are in different grid boxes. */ 
-				if (!path.lookup.gridShare(path.worm.tail,swap)) {
+				if (!path.lookup.gridShare(path.worm.tail,swap))
 					path.lookup.updateFullInteractionList(swap,pivotSlice);
-					cumulant.resize(path.lookup.fullNumBeads);
-				}
 
 				/* Get the normalization factor for the new list */
 				SigmaSwap = getNorm(swap);
@@ -2716,14 +3055,14 @@ bool SwapTailMove::attemptMove() {
 					oldAction = newAction = 0.0;
 
                     /* Store the old trajectory and compute its action */
-					beadIndex = swap;
+					beadIndex = pivot;
 					do {
 						if (!all(beadIndex==swap) && !all(beadIndex==pivot)) {
 							originalPos(k) = path(beadIndex);
 							++k;
 						}
-						beadIndex = path.prev(beadIndex);
-					} while (!all(beadIndex==path.prev(pivot)));
+						beadIndex = path.next(beadIndex);
+					} while (!all(beadIndex==path.next(swap)));
 
                     oldAction = actionPtr->potentialAction(pivot,swap);
 
@@ -2748,15 +3087,15 @@ bool SwapTailMove::attemptMove() {
 
                     /* Propose a new path trajectory and compute its action */
 					k = 0;
-					beadIndex = path.worm.special1;
+					beadIndex = pivot;
 					do {
 						if (!all(beadIndex==path.worm.special1) && !all(beadIndex==pivot)) {
 							path.updateBead(beadIndex,
-									newStagingPosition(path.next(beadIndex),pivot,swapLength,k));
+									newStagingPosition(path.prev(beadIndex),path.worm.special1,swapLength,k,wind));
 							++k;
 						}
-						beadIndex = path.prev(beadIndex);
-					} while (!all(beadIndex==path.prev(pivot)));
+						beadIndex = path.next(beadIndex);
+					} while (!all(beadIndex==path.next(path.worm.special1)));
 
                     newAction = actionPtr->potentialAction(pivot,path.worm.special1);
 
@@ -2817,13 +3156,13 @@ void SwapTailMove::undoMove() {
 	path.next(prevSwap)       = swap;
 
 	beadLocator beadIndex;
-	beadIndex = path.prev(swap);
+	beadIndex = path.next(pivot);
 	int k = 0;
 	do {
 		path.updateBead(beadIndex,originalPos(k));
 		++k;
-		beadIndex = path.prev(beadIndex);
-	} while (!all(beadIndex==pivot));
+		beadIndex = path.next(beadIndex);
+	} while (!all(beadIndex==swap));
 
 	/* Unset the special beads */
 	path.worm.special1 = XXX;
