@@ -2284,7 +2284,7 @@ bool RecedeHeadMove::attemptMove() {
                 beadIndex = path.prev(beadIndex);
             } while (!all(beadIndex==headBead));
 
-            deltaAction =- (actionPtr->barePotentialAction(headBead) - 0.5*actionShift);
+            deltaAction = -(actionPtr->barePotentialAction(headBead) - 0.5*actionShift);
             deltaAction -= actionPtr->potentialActionCorrection(path.worm.special1,path.worm.head);
 
             /* Perform final metropolis test */
