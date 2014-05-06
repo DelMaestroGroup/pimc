@@ -50,6 +50,7 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
     /* Setup the free density matrix arrays for sampling different
      * winding sectors.  We will sample w = -maxWind ... maxWind */
     maxWind = constants()->maxWind();
+
     numWind = ipow(2*maxWind + 1,NDIM);
     winding = 0;
     cumrho0.resize(numWind,0.0);

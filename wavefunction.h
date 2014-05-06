@@ -32,7 +32,6 @@ class WaveFunctionBase {
         string name;
 
 		/** The Constant Trial Wave Function*/
-		virtual double psiTrial(const double) { return 1.0; };
         virtual double PsiTrial(const int) { return 1.0; };
         virtual double delPsiTrial(const double ) { return 0.0; };
         virtual double delSqPsiTrial(const double ) { return 0.0; };
@@ -58,7 +57,7 @@ class SechWaveFunction: public WaveFunctionBase {
 		SechWaveFunction(const Path &, string _name="SHO sech");
 		~SechWaveFunction();
 
-        double psiTrial (const int);
+        double PsiTrial (const int);
 
 	private:
 		double a;			// The parameter of the wave function 
@@ -79,13 +78,12 @@ public:
     JastrowWaveFunction(const Path &, string _name="Jastrow");
     ~JastrowWaveFunction();
     
-    double psiTrial (const double);
     double PsiTrial (const int);
-    
     double delPsiTrial(const double r);
     double delSqPsiTrial(const double r);
     double gradSqPsiTrial(const int);
-    
+
+    double twoBodyPsiTrial (const double);
     
 private:
     double alpha;			// The parameter of the wave function

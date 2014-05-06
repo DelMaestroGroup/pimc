@@ -216,7 +216,6 @@ class StagingMove: public MoveBase {
 
 	private:
 		beadLocator startBead,endBead;		// The start and end of the stage
-		bool foundTail;						// Have we found the worm tail?
 
 		void undoMove(); 					// Undo the move
 };
@@ -295,7 +294,6 @@ class CloseMove: public MoveBase {
 
 	private:
 		beadLocator headBead,tailBead;	// The temporary head and tail slices
-		int healLength;					// The proposed WL length to close
 		int numLevels;						// The 2^numLevels = num slices moved
 
 		Array <int,1> oldBeadOn;		// The old and new bead states
@@ -380,7 +378,6 @@ class AdvanceHeadMove: public MoveBase {
 		void undoMove();				// Undo a move
 		void keepMove();				// keep the move
 
-		int healLength;
 		beadLocator startBead;			
 		Array <dVec,1> newPos;					// The modified particle positions
 		Array <unsigned int,1> oldBeadOn;		// The old and new bead states

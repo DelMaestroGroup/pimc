@@ -9,6 +9,8 @@ ifeq ($(findstring g++,$(CXX)), g++)
 TOOLSET = gcc
 else ifeq ($(findstring icpc,$(CXX)), icpc)
 TOOLSET = intel
+else ifeq ($(findstring c++,$(CXX)), c++)
+TOOLSET = clang
 endif
 
 #Number of dimensions to compile for
@@ -85,7 +87,22 @@ OPTS   = -Wall -fast -fno-math-errno
 
 BOOSTVER ?= -il-mt-1_49
 LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
-endif #gcc, elseif intel
+
+#clang
+else ifeq ($(TOOLSET), clang)
+DEBUG  = -D PIMC_DEBUG -g
+LDEBUG = -lblitz
+
+ifeq ($(opts), basic)
+OPTS = -std=c++11 -stdlib=libc++ -Wall -O3 -mtune=native -Wno-deprecated-register
+else ifeq ($(opts), strict)
+OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
+endif #basic, elseif strict
+
+#BOOSTVER ?= -gcc42-mt-1_49
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
+
+endif #gcc, elseif intel elseif clang
 #OS X end##########################################################
 
 endif #linux, elseif osx
@@ -123,7 +140,29 @@ CODEDIR = $$HOME/local
 CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include # $(DEBUG)
 LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_system -limf
 #Westgrid end######################################################
-endif# sharcnet, elseif westgrid
+
+###################################################################
+# System g++ macbook 
+else ifeq ($(OVERRIDE), macbook)
+
+CODEDIR = /usr/local
+DEBUG  = -D PIMC_DEBUG -g
+LDEBUG = -lblitz
+CXX = g++-mp-4.8
+BOOSTVER = -gcc48-mt-1_55
+
+ifeq ($(opts), basic)
+OPTS = -Wall -O3 -mtune=native  #-DNDEBUG
+else ifeq ($(opts), strict)
+OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
+endif #basic, elseif strict
+
+CXXFLAGS  = $(OPTS) $(DIM) $(DEBUG) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
+#macbook end
+######################################################
+
+endif # sharcnet, elseif westgrid, elseif macbook
 ##User Overrides end################################################
 
 ####################################################################
@@ -208,3 +247,6 @@ common.h.gch: common.h
 
 clean:
 	$(RM) $(PROG) $(OBJS) common.h.gch
+
+print-%:
+	@echo '$*=$($*)'

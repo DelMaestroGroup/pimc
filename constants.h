@@ -101,7 +101,7 @@ class ConstantParameters
 		/* Set methods */
 		void setmu(double _mu) {mu_ = _mu;}				///< Set the value of the chemical potential
 		void setCoMDelta(double _comDelta) {comDelta_ = _comDelta;}	///< Set the CoM move size
-		void setDisplaceDelta(double _displaceDelta) {_displaceDelta = _displaceDelta;}	///< Set the displace move size
+		void setDisplaceDelta(double _displaceDelta) {displaceDelta_ = _displaceDelta;}	///< Set the displace move size
 
 		/* Increment/decrement methods */
 		void shiftC0(double frac) {C0_ += frac*C0_; getC();}		        ///< Shift the value of C0

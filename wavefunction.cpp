@@ -58,7 +58,7 @@ SechWaveFunction::~SechWaveFunction() {
 /**************************************************************************//**
  * The value of the trial wave function.
 ******************************************************************************/
-double SechWaveFunction::psiTrial(const int slice) {
+double SechWaveFunction::PsiTrial(const int slice) {
 
     /* The cumulative value */
     double psiT = 1.0;
@@ -105,10 +105,9 @@ JastrowWaveFunction::~JastrowWaveFunction() {
 /**************************************************************************//**
 * The value of the 2-body trial wave function.
 ******************************************************************************/
-double JastrowWaveFunction::psiTrial(const double r) {
+double JastrowWaveFunction::twoBodyPsiTrial(const double r) {
     
     double psiT = exp( -0.5*alpha/(1.0+beta*pow(r,5.0)));
-    //double psiT = exp( -0.5*beta/pow(r,5.0) );
     return psiT;
 }
 
@@ -118,8 +117,6 @@ double JastrowWaveFunction::psiTrial(const double r) {
 double JastrowWaveFunction::delPsiTrial(const double r) {
     
     double delpsiT = 2.5*alpha*beta*pow(r,4.0)/pow((1.0+beta*pow(r,5.0)),2.0);
-    //double delpsiT = 2.5*beta/pow(r,6.0);
-    
     return delpsiT;
 }
 
@@ -131,7 +128,6 @@ double JastrowWaveFunction::delSqPsiTrial(const double r) {
     double delSqPsiT = -1.25*alpha*beta*pow(r,3.0)*(-8.0+
                     beta*(4.0-5.0*alpha)*pow(r,5.0)+12.0*pow(beta,2.0)*pow(r,10.0) )/
                         ( pow((1.0+beta*pow(r,5.0)),4.0) );
-    //double delSqPsiT = -15*beta/pow(r,7.0)+25/4.0*pow(beta,2.0)/pow(r,12.0);
     return delSqPsiT;
 }
 
@@ -154,7 +150,7 @@ double JastrowWaveFunction::PsiTrial(const int slice) {
         for (bead2[1] = bead1[1]+1; bead2[1] < numParticles; bead2[1]++) {
             sep = path.getSeparation(bead2,bead1);
             r = sqrt(dot(sep,sep));
-            psiT *= psiTrial(r);
+            psiT *= twoBodyPsiTrial(r);
         } // bead2
         
 	} // bead1
