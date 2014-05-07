@@ -626,6 +626,8 @@ double LocalAction::V(const int slice, const double maxR) {
 	double totVext = 0.0;
 	dVec r1,r2;
 
+    double r1sq,r2sq;
+
 	beadLocator bead1;
 	bead1[0] = bead2[0] = slice;
 
@@ -640,7 +642,11 @@ double LocalAction::V(const int slice, const double maxR) {
 
 		r1 = path(bead1);
 
-		if (r1[0]*r1[0] + r1[1]*r1[1] < maxR*maxR) {
+        r1sq = 0.0;
+        for (int i = 0; i < NDIM-1; i++)
+            r1sq += r1[i]*r1[i];
+
+		if (r1sq < maxR*maxR) {
 
 			/* Evaluate the external potential */
 			totVext += externalPtr->V(path(bead1));
@@ -649,8 +655,13 @@ double LocalAction::V(const int slice, const double maxR) {
 			 * potential */
 			for (bead2[1] = bead1[1]+1; bead2[1] < numParticles; bead2[1]++) {
 				r2 = path(bead2);
+
+                r2sq = 0.0;
+                for (int i = 0; i < NDIM-1; i++)
+                    r2sq += r2[i]*r2[i];
+
 				sep = path.getSeparation(bead2,bead1);
-				if (r2[0]*r2[0] + r2[1]*r2[1] < maxR*maxR) {
+				if (r2sq < maxR*maxR) {
 					int nR = int(abs(sep[2])/dSep);
 					if (nR < NPCFSEP)
 						++cylSepHist(nR);

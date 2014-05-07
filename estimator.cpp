@@ -733,8 +733,8 @@ PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_pat
     numGrid = (2*NGRIDSEP)*(2*NGRIDSEP);
 
 	/* The spatial discretization */
-	dx  = path.boxPtr->side[0] / (2.0*NGRIDSEP);
-	dy  = path.boxPtr->side[1] / (2.0*NGRIDSEP);
+    for (int i = 0; i < NDIM; i++)
+        dl[i]  = path.boxPtr->side[i] / (2.0*NGRIDSEP);
 
 	/* This is a diagonal estimator that gets its own file */
 	initialize(numGrid);
@@ -747,7 +747,12 @@ PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_pat
 	for (int n = 1; n < numGrid; n++) 
 		header.append(str(format("%16.3E") % (1.0*n)));
 
-    norm = 1.0/(1.0*path.numTimeSlices*dx*dy*path.boxPtr->side[NDIM-1]);
+    /* Compute the area of a grid box */
+    double A = 1.0;
+    for (int i = 0; i < NDIM-1; i++)
+        A *= dl[i];
+
+    norm = 1.0/(1.0*path.numTimeSlices*A*path.boxPtr->side[NDIM-1]);
     side = path.boxPtr->side;
 }
 
@@ -772,13 +777,17 @@ void PlaneParticlePositionEstimator::accumulate() {
             beadIndex = slice,ptcl;
             pos = path(beadIndex);
 
-            int i = static_cast<int>(abs(pos[0] + 0.5*side[0] - EPS ) / (dx + EPS));
-            int j = static_cast<int>(abs(pos[1] + 0.5*side[1] - EPS ) / (dy + EPS));
-			int k = 2*NGRIDSEP*j + i;
+            int index = 0;
+            for (int i = 0; i < NDIM-1; i++) {  
+                int scale = 1;
+                for (int j = i+1; j < NDIM-1; j++) 
+                    scale *= 2*NGRIDSEP;
+                index += scale*static_cast<int>(abs(pos[i] + 0.5*side[i] - EPS ) / (dl[i] + EPS));
+            }
 
             /* update our particle position histogram */
-            if (k < numGrid)
-                estimator(k) += 1.0;
+            if (index < numGrid)
+                estimator(index) += 1.0;
         }
     }
 }
@@ -2130,12 +2139,16 @@ RadialDensityEstimator::~RadialDensityEstimator() {
 void RadialDensityEstimator::accumulate() {
 
 	dVec pos;
+    double rsq;
 	beadLocator beadIndex;
 	for (int slice = 0; slice < path.numTimeSlices; slice++) {
 		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
 			beadIndex = slice,ptcl;
 			pos = path(beadIndex);
-			int k = int(sqrt(pos[0]*pos[0]+pos[1]*pos[1])/dR);
+            rsq = 0.0;
+            for (int i = 0; i < NDIM-1; i++)
+                rsq += pos[i]*pos[i]; 
+			int k = int(sqrt(rsq/dR));
 			if (k < NRADSEP)
 				estimator(k) += 1.0;
 		}

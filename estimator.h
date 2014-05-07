@@ -226,8 +226,7 @@ class PlaneParticlePositionEstimator: public EstimatorBase {
 
     private:
         int numGrid;                // The number of grid points
-        double dx;                  // The linear x-size of the spatial bin
-        double dy;                  // The linear y-size of the spatial bin
+        dVec dl;                    // The linear size of each spatial bin
         void accumulate();			// Accumulate values
         dVec side;                  // Local copy of container geometry
 };
