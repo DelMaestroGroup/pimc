@@ -152,7 +152,7 @@ CXX = g++-mp-4.8
 BOOSTVER = -gcc48-mt-1_55
 
 ifeq ($(opts), basic)
-OPTS = -Wall -O3 -mtune=native  #-DNDEBUG
+OPTS = -Wall -O3 -std=c++11 -mtune=native  -Wno-unused-local-typedefs
 else ifeq ($(opts), strict)
 OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
 endif #basic, elseif strict
