@@ -678,9 +678,8 @@ void BipartitionDensityEstimator::accumulate() {
 
     /* label the lengths of the sides of the simulation cell */
     dVec lside;
-    lside[0] = path.boxPtr->side[0];
-    lside[1] = path.boxPtr->side[1];
-    lside[2] = path.boxPtr->side[2];
+    for (int i = 0; i < NDIM; i++)
+        lside[i] = path.boxPtr->side[i];
 
     /* read in the exclusion lengths */
     Array<double,1> excLens (actionPtr->externalPtr->getExcLen());

@@ -875,6 +875,7 @@ double LocalAction::gradVSquared(const int slice, const double maxR) {
 	beadLocator bead1;
 	bead1[0] = bead2[0] = slice;
 	dVec r1;
+    double r1sq;
 
 	dVec F;					// The 'force'
 
@@ -882,7 +883,11 @@ double LocalAction::gradVSquared(const int slice, const double maxR) {
 	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
 
 		r1 = path(bead1);
-		if (r1[0]*r1[0] + r1[1]*r1[1] < maxR*maxR) {
+        r1sq = 0.0;
+        for (int i = 0; i < NDIM-1; i++)
+            r1sq += r1[i]*r1[i];
+
+		if (r1sq < maxR*maxR) {
 
 			F = 0.0;
 			/* Sum up potential for all other active beads in the system */
