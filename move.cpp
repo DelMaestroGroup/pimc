@@ -53,7 +53,6 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
 
     numWind = ipow(2*maxWind + 1,NDIM);
     winding = 0;
-    cumrho0.resize(numWind,0.0);
 
     /* Now we construct the actual NDIM-vector winding numbers */
     winding.resize(numWind);
@@ -98,7 +97,7 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
     tempWinding = winding;
 
     /* Perform the re-ordering */
-    for (int n = 0; n < numWind; n++) 
+    for (int n = 0; n < numWind; n++)
         winding(n) = tempWinding(sortWinding[n]);
 
     /* Now we determine the indices of the different winding sectors.  These
@@ -110,6 +109,8 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
     /* Add the last index */
     if (windingSector.back() != numWind-1)
         windingSector.push_back(numWind-1);
+
+    tempWinding.free();
 }
 
 /*************************************************************************//**
@@ -346,44 +347,39 @@ iVec MoveBase::sampleWindingSector(const beadLocator &startBead, const beadLocat
     dVec vel,velW;
     vel = path(endBead) - path(startBead);
 
-    /* Initialize the probability and cumulative probabilities */
-    cumrho0.assign(numWind,0.0);
-    totalrho0 = 0.0;
-
-    cumrho0[0] = actionPtr->rho0(vel,stageLength);
+    /* Define and initialize the probability and cumulative probabilities */
+    vector <double> cumrho0;		
+    cumrho0.push_back(actionPtr->rho0(vel,stageLength));
     totalrho0 = cumrho0[0];
     double maxrho0 = totalrho0;
     
     /* Sample the free density matrix for different winding sectors */
-    int maxn = numWind;
     for (int n = 1; n < numWind; n++) {
         velW = vel + winding(n)*path.boxPtr->side;
         double crho0 = actionPtr->rho0(velW,stageLength);
         totalrho0 += crho0;
-        cumrho0[n] = cumrho0[n-1] + crho0;
+        cumrho0.push_back(cumrho0[n-1] + crho0);
 
         /* If we are still in the lowest winding sectors, find the maximum
          * probability */
-        if (n <= windingSector[NDIM+1])  {
+        if (n < windingSector[1])  {
             if (crho0 > maxrho0)
                 maxrho0 = crho0;
         }
         /* Otherwise, test if we can exit */
         else {
-            if (crho0/maxrho0 < tolerance) {
-                maxn = n;
+            if (abs(crho0/maxrho0) < tolerance) 
                 break;
-            }
         }
     }
 
-    /* Normalize the cumulative probability array */
-	for (int n = 0; n < maxn; n++)
-        cumrho0[n] /= totalrho0;
+    /* Normalize the cumulative probability */
+	for (uint32 n = 0; n < cumrho0.size(); ++n)
+       cumrho0[n] /= totalrho0;
 
     /* Perform tower sampling to select the winding vector */
     int index;
-    index = std::lower_bound(cumrho0.begin(),cumrho0.begin()+maxn,random.rand())
+    index = std::lower_bound(cumrho0.begin(),cumrho0.end(),random.rand())
             - cumrho0.begin();
 
     return winding(index);
@@ -2776,7 +2772,7 @@ bool SwapHeadMove::attemptMove() {
             wind = 0;
 			/* Get the pivot bead and winding number sector */
 			pivot = selectPivotBead(wind);
-
+            
 			/* Now we try to find the swap bead.  If we find the worm tail, we immediatly
 			 * exit the move */
 			beadLocator beadIndex;

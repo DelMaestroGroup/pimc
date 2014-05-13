@@ -94,9 +94,8 @@ class MoveBase {
 		Array <dVec,1> originalPos;		///< The original particle positions
 		Array <dVec,1> newPos;		    ///< New particle positions
         
-		vector <double> cumrho0;		///< The cumulative free density matrix weights
         Array <iVec,1> winding;         ///< The winding vectors         
-        vector <int> windingSector;     ///< Used to the indices of different winding sectors
+        vector <int> windingSector;     ///< Used to index different winding sectors
 
         int maxWind;                    ///< The largest winding number
         int numWind;                    ///< The total number of winding vectors

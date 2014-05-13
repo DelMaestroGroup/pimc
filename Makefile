@@ -99,9 +99,8 @@ else ifeq ($(opts), strict)
 OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
 endif #basic, elseif strict
 
-#BOOSTVER ?= -gcc42-mt-1_49
 LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
-
+#PROG = pimc_clang.e
 endif #gcc, elseif intel elseif clang
 #OS X end##########################################################
 
@@ -169,7 +168,7 @@ endif # sharcnet, elseif westgrid, elseif macbook
 ####################################################################
 ##Linking and Compiling Variables
 RM     = /bin/rm -f
-PROG   = pimc.e
+PROG  ?= pimc.e
 SOURCE = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp wavefunction.cpp cmc.cpp
 OBJS   = $(SOURCE:.cpp=.o)
 

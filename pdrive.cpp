@@ -91,10 +91,10 @@ int main (int argc, char *argv[]) {
     /* Perform a classical canonical pre-equilibration to obtain a suitable
      * initial state */
 	if (!constants()->restart()) {
-        ClassicalMonteCarlo CMC(externalPotentialPtr,interactionPotentialPtr,random,boxPtr,
-                initialPos);
-        CMC.run(constants()->numEqSteps(),0);
-    }
+       ClassicalMonteCarlo CMC(externalPotentialPtr,interactionPotentialPtr,random,boxPtr,
+               initialPos);
+       CMC.run(constants()->numEqSteps(),0);
+   }
 
     /* Allow for one broken path */
     int numberBroken = 0;
