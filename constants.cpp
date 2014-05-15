@@ -112,12 +112,7 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
 	L_             = _L;
 	numEqSteps_    = _numEqSteps;
 
-    /* set windowing constant for centroid virial estimator
-     * to be number of time slices if nothing is supplied */
-    if (int(_virialWindow)==0)
-        virialWindow_ = _numTimeSlices;
-    else
-        virialWindow_  = int(_virialWindow);
+    virialWindow_  = _virialWindow;
     
 	initialNumParticles_ = _initialNumParticles;
 

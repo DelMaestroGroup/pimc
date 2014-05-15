@@ -65,6 +65,12 @@ class ActionBase {
         /* gradient of the potential action */
         virtual dVec gradPotentialAction(int) { return 0.0; }
 
+        /* r \dot gradU -> for virial estimator.
+         * It is necessary to split the terms in order to compute
+         * the specific heat efficiently.*/
+        virtual double rDOTgradUterm1(int) { return 0.0; }
+        virtual double rDOTgradUterm2(int) { return 0.0; }
+
         /* (r-R) \dot gradU -> for centroid virial estimator.
          * It is necessary to split the terms in order to compute
          * the specific heat efficiently.*/
@@ -164,6 +170,10 @@ class LocalAction : public ActionBase {
         /* gradient of the potential action */
         virtual dVec gradPotentialAction(int slice) { return gradU(slice); }
 
+        /* R \dot gradU -> for virial estimators */
+        double rDOTgradUterm1(int); 
+        double rDOTgradUterm2(int); 
+
         /* delta \dot gradU -> for centroid virial estimators */
         virtual double deltaDOTgradUterm1(int slice) { return deltadotgradUterm1(slice); }
         virtual double deltaDOTgradUterm2(int slice) { return deltadotgradUterm2(slice); }
@@ -210,6 +220,10 @@ class LocalAction : public ActionBase {
 
         /* T-matrix needed for grad((gradV)^2) */
         dMat tMatrix(const int);
+
+        /* r \dot gradU -> for virial estimator */
+        double RdotgradUterm1(const int);
+        double RdotgradUterm2(const int);
 
         /* delta \dot gradU -> for centroid virial estimator */
         double deltadotgradUterm1(const int);

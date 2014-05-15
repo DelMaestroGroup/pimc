@@ -353,7 +353,7 @@ double LocalAction::potentialAction (const beadLocator &beadIndex) {
 /**************************************************************************//**
  *  Return the bare potential action for a single bead indexed with beadIndex.  
  *
- *  This action corresponds to the primitive approxiamtion and may be used
+ *  This action corresponds to the primitive approximation and may be used
  *  when attempting updates that use single slice rejection.
 ******************************************************************************/
 double LocalAction::barePotentialAction (const beadLocator &beadIndex) {
@@ -1066,6 +1066,160 @@ dMat LocalAction::tMatrix(const int slice) {
     tMat /= 2.0; // don't want to double count interactions
 	
     return ( tMat ); 
+}
+
+/**************************************************************************//**
+ *  Return the sum over particles at a given time slice of the 
+ *  gradient of the action potential for a single bead dotted into the
+ *  bead's position.  Used for regular virial energy and thermodynamic
+ *  pressure.
+ *  
+ *  NOTE:  This is the first term.  These were split up because it is
+ *      beneficial to be able to return them separately when computing
+ *      the specific heat via the centroid virial estimator.
+ *
+ *  This includes both the external and interaction potentials.
+******************************************************************************/
+double LocalAction::rDOTgradUterm1(const int slice) {
+
+    int eo = slice % 2;
+	int numParticles = path.numBeadsAtSlice(slice);
+
+	/* The two interacting particles */
+	beadLocator bead1;
+	bead1[0] = bead2[0] = slice;
+
+	dVec gVi, gVe, gV;
+    double rDotgV = 0.0;
+
+	/* We loop over the first bead */
+	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+        gVi = 0.0;
+        gVe = 0.0;
+        gV = 0.0;
+		/* Sum potential of bead1 interacting with all other beads at
+         * a given time slice.*/
+		for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
+
+			/* Avoid self interactions */
+			if (!all(bead1==bead2)) {
+
+				/* The interaction component of the force */
+				gVi += interactionPtr->gradV(path.getSeparation(bead1,bead2));
+			} 
+        } // end bead2
+		
+		/* Now add the external component */
+        gVe += externalPtr->gradV(path(bead1));
+        
+        gV += (gVe + gVi);
+
+        rDotgV += dot(gV, path(bead1));
+
+	} // end bead1
+
+    return (VFactor[eo]*constants()->tau()*rDotgV);
+}
+
+/**************************************************************************//**
+ *  Return the sum over particles at a given time slice of the 
+ *  gradient of the action potential for a single bead dotted into the
+ *  bead's position.  Used for regular virial energy and thermodynamic
+ *  pressure.
+ *  
+ *  NOTE:  This is the second term
+ *
+ *  This includes both the external and interaction potentials.
+******************************************************************************/
+double LocalAction::rDOTgradUterm2(const int slice) {
+
+    int eo = slice % 2;
+    int numParticles = path.numBeadsAtSlice(slice);
+
+    /* The two interacting particles */
+    beadLocator bead1;
+    bead1[0] = bead2[0] = slice;
+
+    dVec gVi, gVe, gV, g2V;
+
+    double term2 = 0.0;
+    if (gradVFactor[eo] > EPS){
+
+        /* constants for tMatrix */
+        dVec rDiff = 0.0;
+        double rmag = 0.0;
+        double d2V = 0.0;
+        double dV = 0.0;
+        double dVe = 0.0;
+        double dVi = 0.0;
+        double g2Vi = 0.0;
+        double g2Ve = 0.0;
+
+        /* We loop over the first bead */
+        for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+            gV = 0.0;
+            g2V = 0.0;
+            dMat tMat = 0.0; // tMat(row, col)
+            dVec gVdotT = 0.0;
+
+            /* compute external potential derivatives */
+            gVe = externalPtr->gradV(path(bead1));
+            dVe = sqrt(dot(gVe,gVe));
+            g2Ve = externalPtr->grad2V(path(bead1));
+
+            gV += gVe;  // update full slice gradient at bead1
+
+            /* Sum potential of bead1 interacting with all other beads at
+             * a given time slice.*/
+            for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
+
+                /* separation vector */
+                rDiff = path.getSeparation(bead1, bead2);
+                rmag = sqrt(dot(rDiff,rDiff));
+
+                /* Avoid self interactions */
+                if (!all(bead1==bead2)) {
+
+                    /* Compute interaction potential derivatives */
+                    gVi = interactionPtr->gradV(rDiff);
+                    dVi = sqrt(dot(gVi,gVi));
+                    g2Vi = interactionPtr->grad2V(rDiff);
+                    
+                    /* total derivatives between bead1 and bead2 at bead1 */
+                    dV = dVi + dVe;
+                    d2V = g2Vi + g2Ve;
+
+                    /* compute the T-matrix for bead1 interacting with bead2 */
+                    for (int a=0; a<NDIM; a++){
+                        for (int b=0; b<NDIM; b++){
+                            tMat(a,b) += rDiff(a)*rDiff(b)*d2V/(rmag*rmag)
+                                - rDiff(a)*rDiff(b)*dV/pow(rmag,3);
+                            if (a == b)
+                                tMat(a,b) += dV/rmag;
+                        }
+                    }   // end T-matrix 
+                    
+                    gV += gVi;  // update full slice gradient at bead1
+
+                }   
+            }   // end bead2
+
+            /* blitz++ product function seems broken in my current 
+             * version, so this performs matrix-vector mult. 
+             * Checked --MTG */
+            for(int j=0; j<NDIM; j++){
+                for(int i=0; i<NDIM; i++){
+                    gVdotT(j) += gV(i)*tMat(j,i);
+                }
+            }  
+            term2 += dot(gVdotT, path(bead1));
+
+        }   // end bead1
+
+        term2 *= (2.0 * gradVFactor[eo] * pow(tau(),3) * constants()->lambda());
+    }
+
+    return (term2);
 }
 
 /**************************************************************************//**

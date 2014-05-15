@@ -181,7 +181,7 @@ void Setup::getOptions(int argc, char *argv[])
 		("full_updates", "perform full staging updates")
 		("staging", "perform staging instead of bisection for the diagonal update")
 		("max_wind", po::value<int>()->default_value(1), "the maximum winding number to sample")
-        ("virial_Window,V", po::value<int>()->default_value(0),
+        ("virial_window,V", po::value<int>()->default_value(5),
          "centroid virial energy estimator window")
 		;
 
@@ -522,6 +522,8 @@ bool Setup::worldlines() {
 		Mbar = int(ell*ell/(16*lambda*params["imaginary_time_step"].as<double>()));
 		if (Mbar < 2)
 			Mbar = 2;
+        else if (Mbar > numTimeSlices)
+            Mbar = numTimeSlices/2;
 		insertOption("Mbar",Mbar);
 	}
 	else 
@@ -592,7 +594,7 @@ void Setup::setConstants() {
             params["window"].as<int>(),
             params["gaussian_ensemble_SD"].as<double>(),
             params["max_wind"].as<int>(),
-            params["virial_Window"].as<int>() );
+            params["virial_window"].as<int>() );
 
 
     /* If we have specified either the center of mass or displace shift on the
@@ -830,7 +832,7 @@ auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::estimators(Path &path,
     else {
 
         /* !!NB!! Scalar estimators, the order here is important! */
-        //estimator.push_back(new VirialEnergyEstimator(path,actionPtr));
+        // estimator.push_back(new VirialEnergyEstimator(path,actionPtr));
         estimator.push_back(new EnergyEstimator(path,actionPtr));
         estimator.push_back(new NumberParticlesEstimator(path));
         estimator.push_back(new DiagonalFractionEstimator(path));
@@ -1066,13 +1068,13 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%d\n") % "Number Bins Stored" % params["number_bins_stored"].as<int>();
 	communicate()->file("log")->stream() << format("%-24s\t:\t%d\n") % "Random Number Seed" % _seed;
-    if (params["virial_Window"].as<int>() == 0){
+    if (params["virial_window"].as<int>() == 0){
         communicate()->file("log")->stream() << 
             format("%-24s\t:\t%d\n") % "Virial Window" % constants()->numTimeSlices();
     }
     else{
         communicate()->file("log")->stream() << 
-            format("%-24s\t:\t%d\n") % "Virial Window" % params["virial_Window"].as<int>();
+            format("%-24s\t:\t%d\n") % "Virial Window" % params["virial_window"].as<int>();
     }
 	communicate()->file("log")->stream() << endl;
 	communicate()->file("log")->stream() << "---------- End Simulation Parameters ------------" << endl;

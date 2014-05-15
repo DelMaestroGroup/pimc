@@ -309,12 +309,12 @@ VirialEnergyEstimator::VirialEnergyEstimator (const Path &_path, ActionBase *_ac
 	/* Set estimator name and header, we will always report the energy
 	 * first, hence the comment symbol*/
 	name = "Energy";
-	header = str(format("#%15s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s") 
+	header = str(format("#%15s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s") 
             % "K_op" % "K_cv" % "V_op" % "V_cv" % "E" % "E_mu" % "K_op/N" % "K_cv/N" % "V_op/N"
             % " K_cv/N" % "E/N" % "EEcv*Beta^2"% "Ecv*Beta" % "dEdB" % "CvCov1"
-            % "CvCov2" % "CvCov3" % "E_th");
+            % "CvCov2" % "CvCov3" % "E_th" % "P");
     endLine = false;
-    initialize(18);
+    initialize(19);
 }
 
 /*************************************************************************//**
@@ -338,6 +338,7 @@ VirialEnergyEstimator::~VirialEnergyEstimator() {
  * We also measure the centroid virial specific heat terms so that the 
  * specific heat may be computed post-process.
  *
+ * NB!!! Pressure only works for d=3 at present, need to generalize constants
 ******************************************************************************/
 void VirialEnergyEstimator::accumulate() {
 
@@ -374,6 +375,11 @@ void VirialEnergyEstimator::accumulate() {
 	double exchangeNorm = 1.0/(4.0*virialWindow*pow(constants()->tau(),2)
             *constants()->lambda()*numTimeSlices);
 
+    /* Compute the thermodynamic pressure */
+    double Pressure = 3.0*numParticles;
+    double P2,P3;
+    P2 = P3 = 0.0;
+
 	beadLocator bead1, beadNext, beadNextOld;
     dVec vel1, vel2;
 	for (int slice = 0; slice < numTimeSlices; slice++) {
@@ -394,7 +400,12 @@ void VirialEnergyEstimator::accumulate() {
             thermE -= dot(vel2,vel2);
         }
     }	
+    P2 = thermE;
     T2 *= exchangeNorm;
+
+    /* add second pressure term. */
+    P2 /= (2.0*constants()->lambda()*constants()->tau()*numTimeSlices);
+    Pressure += P2;
 
     /* Compute T3, T4, T5, operator potential energy, 
      * and the kinetic energy correction. */
@@ -408,7 +419,16 @@ void VirialEnergyEstimator::accumulate() {
         virKinTerm += actionPtr->virKinCorr(slice);
         if (eo==0) 
             totVop  += actionPtr->potential(slice);
+
+        P3 += actionPtr->rDOTgradUterm1(slice)
+            + actionPtr->rDOTgradUterm2(slice);
     }
+
+    P3 *= (1.0/(1.0*numTimeSlices));
+    Pressure -= P3;
+
+    /* end pressure calculation */
+    Pressure /= (3.0*constants()->tau()*constants()->V());
 
 	totVop /= (0.5 * numTimeSlices);
 	totVop += tailV;
@@ -463,6 +483,9 @@ void VirialEnergyEstimator::accumulate() {
 
     /* thermodynamic energy */
     estimator(17) += thermE;
+
+    /* Pressure */
+    estimator(18) += Pressure;
 
 }
 
