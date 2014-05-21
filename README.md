@@ -147,8 +147,8 @@ CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
 LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
 endif
 ~~~
-where `target` is replaced with a unique identifier for your machine,
-let's call it foo. If you want to run blitz in debug mode you will need to
+where `target` is replaced with a unique identifier for your machine.
+If you want to run blitz in debug mode you will need to
 explicitly link to the blitz library with `-lblitz` added to `LDFLAGS` above.
 2. Edit the `CODEDIR` variable to point to the location where you have
    installed blitz and boost above.  We suggest `$HOME/local`
