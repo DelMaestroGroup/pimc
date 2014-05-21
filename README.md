@@ -32,18 +32,14 @@ Dependencies {#dependencies}
 ------------
 
 The code is written in c++ and makes use of both the <a
-href="http://www.oonumerics.org/blitz/">blitz++</a> and <a
-href="http://www.boost.org/">boost</a> libraries.  Unfortunately the blitz++
-library hosted on the official website (version 0.9) is somewhat out of date and
-a more recent version with bug-fixes is developed using a mercurial repository.
-If you don't have <a href="http://mercurial.selenic.com/"
-title="mercurial">mercurial</a> installed on your machine you should do that
-now.
+href="http://sourceforge.net/projects/blitz/">blitz++</a> and <a
+href="http://www.boost.org/">boost</a> libraries.  You should be able to
+download `blitz-0.10` and compile from source via the instructions below.
 
 We use many of the boost header-only libraries, but two libraries will need to
 be compiled: boost_program_options and boost_filesystem libraries.  Let us
 assume that you will be installing both blitz and boost in the folder
-`$HOME/local` using the GNU C++ compiler.  For icpc or pathscale, the changes
+`$HOME/local` using the GNU C++ compiler.  For icpc or clang, the changes
 should be obvious, and in particular for the Intel compiler you will need to use
 `intel-linux` as the toolset.
 
@@ -63,15 +59,11 @@ doesn't take very long to compile one can proceed as follows:
 ~~~
 cd $HOME/local/src 
 ~~~
-2. Get the latest version of blitz++ from the mercurial repository
-~~~
-hg clone http://blitz.hg.sourceforge.net:8000/hgroot/blitz/blitz blitz
-~~~
+2. Get the latest version of blitz++ from the sourceforge <a
+href="http://sourceforge.net/projects/blitz/">website</a>
 3. Move into the blitz source directory
-4. Generate a configure script by running
-~~~
-autoreconf -fiv
-~~~
+4. Read the instructions in the `INSTALL` file to determine if there is
+anything special you need to do on your system.
 5. Execute
 ~~~
 ./configure cxx=g++ --prefix=PREFIX
@@ -81,7 +73,7 @@ make install
 where `PREFIX` is the location you want to install the libraries, we suggest
 `$HOME/local` where `$HOME` is your expanded home directory.
 
-*Note:* If attempting to compile blitz-0.9 with gcc version 4.3 or later you may encounter errors
+*Note:* If attempting to compile the old version of blitz-0.9 with gcc version 4.3 or later you may encounter errors
 when attempting to build blitz++.  To fix this, before issuing `make lib` and/or
 `make install` one needs to add headers to a couple of files.  Move to
 `$HOME/local/src/blitz-0.9/blitz` (or similarly, `PREFIX/src/blitz-0.9/blitz`) and
@@ -94,10 +86,10 @@ to the top of the files `funcs.h` and `mathfunc.h` and save.
 ### Boost ###
 
 For detailed instructions on installing boost with compiled libraries please see <a
-href="http://www.boost.org/doc/libs/1_49_0/more/getting_started/unix-variants.html#or-build-custom-binaries">Section 5.2</a> 
+href="http://www.boost.org/doc/libs/1_55_0/more/getting_started/unix-variants.html#or-build-custom-binaries">Section 5.2</a> 
 of the official Boost documentation.
 
-1. Download and decompress boost into `~/local/src/`
+1. Download and decompress boost into `$HOME/local/src/`
 2. Change to the directory `tools/build/v2/` inside the boost source directory
 3. Execute
 ~~~
@@ -135,9 +127,9 @@ Path Integral Monte Carlo {#pimc}
 -------------------------
 
 After successfully installing blitz and boost you are now ready to compile the
-main pimc program on your system.  there are currently three makefiles
-available: `makefile.g++`, `makefile.icc` and `Makefile.path`.  We only include
-details of compiling with g++ here.  For other machines, clusters or
+main pimc program on your system.  There are currently four makefiles
+available: `Makefile`, `makefile.g++`, `makefile.icc` and `Makefile.path`.  We only include
+details of compiling with `g++` here.  For other machines, clusters or
 architectures, please read the details in the makefiles.
 
 In order to compile with g++:
@@ -149,31 +141,29 @@ and copy and paste the following:
 ~~~
 ifdef target
 OPT = -Wall -O3 -fno-math-errno
+BOOSTVER =
 CODEDIR = $$HOME/local
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options -lboost_filesystem -lboost_system
+LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
 endif
 ~~~
 where `target` is replaced with a unique identifier for your machine,
 let's call it foo. If you want to run blitz in debug mode you will need to
-explicitely link to the blitz library with `-lblitz` added to `LDFLAGS` above.
+explicitly link to the blitz library with `-lblitz` added to `LDFLAGS` above.
 2. Edit the `CODEDIR` variable to point to the location where you have
    installed blitz and boost above.  We suggest `$HOME/local`
 3. Edit the `OPT` variable to reflect yoru local compile options.
 4. If you installed boost with the `--layout=versioned` command above and you
    have multiple versions installed on your machine, you may need to append
    the particular version you want to link to in the names of the boost
-   libraries.  This is most easily done by adding a new variable to your
+   libraries.  This is most easily done by updating the `BOOSTVAR` variable in your
    Makefile: `BOOSTVER = -gcc42-mt-1_49` where here we have compiled boost
    v1.49 with gcc v4.2.  This will need to be updated for your particular
-   configuration.  Then, replace the `LDFLAGS` variable with 
-~~~
-LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
-~~~
+   configuration.  
 5. The make process will then take three options:
  - `debug=1` turn on debugging options
  - `ndim=1,2,3` the number of spatial dimensions
- - `target=1` compile for host target
+ - `target=1` compile for host `target`
 5. To compile for bulk (3D) helium in production mode on host target:
 ~~~
 make -f Makefile.g++ ndim=3 target=1
@@ -253,23 +243,22 @@ by using the `--help flag`.
 The output of the above command should yield:
 
     [PIMCID: XXXXXXXXX] - Equilibration Stage.
-    0.59     1.00000         0.90000           16   0.021980
-    0.62     0.90000         0.85500           18   0.024728
-    0.55     0.85500         0.76950           18   0.024728
-    0.47     0.76950         0.61560           17   0.023354
-    0.55     0.61560         0.55404           17   0.023354
-    0.72     0.55404         0.52634           15   0.020606
-    0.53     0.52634         0.47370           16   0.021980
-    0.80     0.47370         0.47370           16   0.021980
-    0.65     0.47370         0.45002           14   0.019233
-    0.73     0.45002         0.42752           15   0.020606
-    0.65     0.42752         0.40614           14   0.019233
-    0.64     0.40614         0.38584           14   0.019233
-    0.66     0.38584         0.36654           15   0.020606
-    0.68     0.36654         0.34822           12   0.016485
-    0.75     0.34822         0.33081           16   0.021980
-    0.75     0.33081         0.33081           16   0.021980
-
+    0.66	 1.00000	 0.95000	   20	0.027475
+    0.69	 0.95000	 0.90250	   18	0.024728
+    0.69	 0.90250	 0.85737	   17	0.023354
+    0.74	 0.85737	 0.81451	   18	0.024728
+    0.71	 0.81451	 0.77378	   18	0.024728
+    0.84	 0.77378	 0.77378	   17	0.023354
+    0.52	 0.77378	 0.69640	   14	0.019233
+    0.72	 0.69640	 0.66158	   16	0.021980
+    0.68	 0.66158	 0.62850	   16	0.021980
+    0.71	 0.62850	 0.59708	   17	0.023354
+    0.81	 0.59708	 0.59708	   18	0.024728
+    0.66	 0.59708	 0.56722	   16	0.021980
+    0.67	 0.56722	 0.53886	   17	0.023354
+    0.84	 0.53886	 0.53886	   20	0.027475
+    0.93	 0.53886	 0.59275	   20	0.027475
+    0.70	 0.59275	 0.56311	   18	0.024728
     [PIMCID: XXXXXXXXX] - Measurement Stage.
     [PIMCID: XXXXXXXXX] - Bin #   1 stored to disk.
     [PIMCID: XXXXXXXXX] - Bin #   2 stored to disk.
@@ -294,45 +283,51 @@ The output of the above command should yield:
     [PIMCID: XXXXXXXXX] - Measurement complete.
 
 during the relaxation process where `PIMCID` will be replaced with an integer
-and 20 measurements will be output to disk.  To analyze the results the code
-includes a number of python programs located in the `SCRIPTS` directory.  Many
-of these depend on some general utility modules that should be added to this
-directory on your local machine.   This can be accomplished by checking them
-out of the subversion repository.
+and 20 measurements will be output to disk.  To analyze the results the code,
+you will need to obtain a number of python programs located in a `SCRIPTS`
+directory which can be obtained via:
 
-1. Move in to the `SCRIPTS` directory
-2. Download the relevent scripts (replacing `svnID` with your svn username)
+    svn checkout --username=SVNID http://svn.delmaestro.org/projects/SCRIPTS/ $HOME/local/pimcscripts
+
+Which will place them in a folder `pimcscripts` in your `$HOME/local/`
+directory.  Many of these depend on some general utility modules that should be
+added to this directory on your local machine.   
+
+1. Move in to the `pimcsripts` directory
+2. Download the relevant scripts (replacing `svnID` with your svn username)
 ~~~
 svn export --username=svnID http://svn.delmaestro.org/pyutils/pyutils.py
 svn export --username=svnID http://svn.delmaestro.org/pyutils/loadgmt.py
 svn export --username=svnID http://svn.delmaestro.org/pyutils/kevent.py
 ~~~
-In order to take advantage of many of the plotting options you will need to
-have various python libraries installed such as
+It may be advantageous to add a new environment variable for the location of
+this folder to your `.bashrc` as you will use these scripts extensively.  In
+order to take advantage of many of the plotting options you will need to have
+various python libraries installed such as
 [Matplotlib](http://matplotlib.sourceforge.net/).  For the extra color options
 you will need to download and install the gradient files from 
 [CPT-City](http://soliton.vm.bytemark.co.uk/pub/cpt-city/pkg/)
 
 After this has been completed, you can analyze the results of your run via
 
-    python SCRIPTS/pimcave.py OUTPUT/gce-estimator-05.000-008.996-+000.020-0.01000-XXXXXXXXX.dat
+    python $HOME/local/pimcsripts/pimcave.py OUTPUT/gce-estimator-05.000-008.996-+000.020-0.01000-XXXXXXXXX.dat
 
 where `XXXXXXXXX` needs to be replaced with the unique identifier generated on
 your machine.  The results should yield:
 
     # PIMCID: XXXXXXXXX
     # Number Samples     20
-    K                  314.36857        14.53029
-    V                 -410.96886        15.11486
-    E                  -96.60029        11.95825
-    E_mu               -96.92523        11.96040
-    K/N                 19.25585         0.70307
-    V/N                -25.10260         0.53518
-    E/N                 -5.84675         0.68732
-    N                   16.24700         0.27261
-    N^2                265.75300         8.68820
-    density              0.02232         0.00037
-    diagonal             0.77454         0.02084
+    K                  332.92686	    15.77642
+    V                 -438.56116	    19.73930
+    E                 -105.63430	    14.58256
+    E_mu              -105.97187	    14.58693
+    K/N                 19.65034	     0.70454
+    V/N                -25.71091	     0.67103
+    E/N                 -6.06056	     0.80983
+    N                   16.87850	     0.34935
+    N^2                287.46950	    11.62243
+    density              0.02319	     0.00048
+    diagonal             0.77904	     0.01467
 
 The basic idea of running the program is that one needs to setup the simulation
 cell, by defining either its specific geometry via the size (`L`) flag, or by a

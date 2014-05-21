@@ -149,7 +149,7 @@ int main (int argc, char *argv[]) {
         estimatorsPtrVec.push_back(setup.estimators(*pathPtrVec[i],actionPtrVec[i],random).release());
         if(i>0){
             stringstream tmpSS;
-            for(int j=0; j<estimatorsPtrVec.back()->size(); j++){
+            for(unsigned j=0; j<estimatorsPtrVec.back()->size(); j++){
                 tmpSS.str("");
                 tmpSS << i+1 ;
                 estimatorsPtrVec.back()->at(j).appendLabel(tmpSS.str());
