@@ -281,7 +281,12 @@ SingleWellPotential::~SingleWellPotential() {
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
+HarmonicPotential::HarmonicPotential(double _omega) : PotentialBase() {
+    omega2 = _omega*_omega;
+}
+
 HarmonicPotential::HarmonicPotential() : PotentialBase() {
+    omega2 = 1.0;
 }
 
 /**************************************************************************//**
@@ -1313,6 +1318,140 @@ double HardSpherePotential::dVdtau(const dVec &sep1, const dVec &sep2,
 
     return -t4;
 }
+
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// 1D Delta Potential Class -----------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+*  Constructor.
+*  @param g The strength of delta interaction
+******************************************************************************/
+Delta1DPotential::Delta1DPotential(double _g) :
+PotentialBase(),
+g(_g) {
+    
+}
+
+/**************************************************************************//**
+*  Destructor.
+******************************************************************************/
+Delta1DPotential::~Delta1DPotential() {
+    // empty deconstructor
+}
+
+/**************************************************************************//**
+*  The effective potential.
+*
+*  Computes the non-local two-body effective pair potential.
+*
+*  @param sep1 The first separation
+*  @param sep2 The second separation
+*  @param lambda \lambda = \hbar^2/2m
+*  @param tau the imaginary timestep tau*  
+*  @return the two-body effective pair potential
+******************************************************************************/
+double Delta1DPotential::V(const dVec &sep1, const dVec &sep2,
+                              double lambda, double tau) {
+    
+    double r1 = sep1[0];
+    double r2 = sep2[0];
+    
+    double s = g/(4.0*lambda)*sqrt(2.0*lambda*tau);
+    double z = 1.0/sqrt(8.0*lambda*tau);
+    double r = z*(abs(r1)+abs(r2));
+    
+    double expArg = s*(s-2*r)+z*z*(r1-r2)*(r1-r2);
+    double erfVal = erfc(r-s);
+    
+    double rho = 1.0+sqrt(M_PI)*s*exp(expArg)*erfVal;
+    
+    if ((rho < exp(-5.0))||(rho > exp(5.0)))
+        cout << rho << endl;
+    
+    return -log(rho);
+}
+
+/**************************************************************************//**
+*  The derivative of the effective potential with respect to lambda.
+*
+*  Computes the non-local two-body effective pair potential.
+*
+*  @param sep1 the first separation
+*  @param sep2 the second separation
+*  @param lambda \lambda = \hbar^2/2m
+*  @param tau the imaginary timestep tau
+*  @return the derivative of the effective potential with respect to lambda
+******************************************************************************/
+double Delta1DPotential::dVdlambda(const dVec &sep1, const dVec &sep2, 
+                                      double lambda, double tau) {
+    
+    double r1 = sep1[0];
+    double r2 = sep2[0];
+    
+    double s = g/(4.0*lambda)*sqrt(2.0*lambda*tau);
+    double z = 1.0/sqrt(8.0*lambda*tau);
+    double r = z*(abs(r1)+abs(r2));
+    double expArg = s*(s-2*r)+z*z*(r1-r2)*(r1-r2);
+    
+    double expVal = exp(expArg);
+    double erfVal = erfc(r-s);
+    double rho = 1.0+sqrt(M_PI)*s*expVal*erfVal;
+    
+    double dsdl = (-1.0)*g*sqrt(tau)/(4.0*sqrt(2.0)*lambda*sqrt(lambda));
+    double dzdl = (-1.0)/(4.0*sqrt(2.0)*lambda*sqrt(lambda*tau));
+    double drdl = (-1.0)*(abs(r1)+abs(r2))/(4.0*sqrt(2.0)*sqrt(lambda*tau)*lambda);
+    double dexpArgdl = dsdl*(s-2.0*r)+s*(dsdl-2.0*drdl)+2.0*z*dzdl*(r1-r2)*(r1-r2);
+    
+    double drhodl = sqrt(M_PI)*dsdl*expVal*erfVal+sqrt(M_PI)*s*expVal*dexpArgdl*erfVal-(2.0)*s*expVal*exp((-1.0)*(r-s)*(r-s))*(drdl-dsdl);
+    
+    return (-1.0)/rho*drhodl;
+}
+
+/**************************************************************************//**
+*  The derivative of the effective potential with respect to tau.
+*
+*  Computes the non-local two-body effective pair potential.
+*
+*  @param sep1 the first separation
+*  @param sep2 the second separation
+*  @param lambda \lambda = \hbar^2/2m
+*  @param tau the imaginary timestep tau
+*  @return the derivative of the effective potential with respect to tau
+******************************************************************************/
+double Delta1DPotential::dVdtau(const dVec &sep1, const dVec &sep2,
+                                   double lambda, double tau) {
+    
+    double r1 = sep1[0];
+    double r2 = sep2[0];
+    
+    double s = g/(4.0*lambda)*sqrt(2.0*lambda*tau);
+    double z = 1.0/sqrt(8.0*lambda*tau);
+    double r = z*(abs(r1)+abs(r2));
+    double expArg = s*(s-2*r)+z*z*(r1-r2)*(r1-r2);
+    
+    double expVal = exp(expArg);
+    double erfVal = erfc(r-s);
+    double rho = 1.0+sqrt(M_PI)*s*expVal*erfVal;
+    
+    double dsdt = g/(4.0*sqrt(2.0)*sqrt(lambda)*sqrt(tau));
+    double dzdt = (-1.0)/(4.0*sqrt(2.0)*tau*sqrt(lambda*tau));
+    double drdt = (-1.0)*(abs(r1)+abs(r2))/(4.0*sqrt(2.0)*sqrt(lambda*tau)*tau);
+    double dexpArgdt = dsdt*(s-2.0*r)+s*(dsdt-2.0*drdt)+2.0*z*dzdt*(r1-r2)*(r1-r2);
+    
+    double drhodt = sqrt(M_PI)*dsdt*expVal*erfVal+sqrt(M_PI)*s*expVal*dexpArgdt*erfVal-(2.0)*s*expVal*exp((-1.0)*(r-s)*(r-s))*(drdt-dsdt);
+    
+    double dVdtau = (-1.0)/rho*drhodt;
+    if ( dVdtau != dVdtau )
+        cout << r1 << '\t' << r2 << '\t' <<  expArg << '\t' <<  expVal << '\t' << erfVal << '\t' << rho << '\t' << drhodt << '\t' << dVdtau << endl;
+    
+    return dVdtau;
+}
+
+
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

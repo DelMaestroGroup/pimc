@@ -170,6 +170,15 @@ void EstimatorBase::output() {
 	reset();
 }
 
+
+/*************************************************************************//**
+*  AppendLabel
+******************************************************************************/
+void EstimatorBase::appendLabel(string append) {
+	label = label + append;
+}
+
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // ENERGY ESTIMATOR CLASS ----------------------------------------------------
@@ -311,7 +320,7 @@ VirialEnergyEstimator::VirialEnergyEstimator (const Path &_path, ActionBase *_ac
 	name = "Energy";
 	header = str(format("#%15s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s") 
             % "K_op" % "K_cv" % "V_op" % "V_cv" % "E" % "E_mu" % "K_op/N" % "K_cv/N" % "V_op/N"
-            % " K_cv/N" % "E/N" % "EEcv*Beta^2"% "Ecv*Beta" % "dEdB" % "CvCov1"
+            % " V_cv/N" % "E/N" % "EEcv*Beta^2"% "Ecv*Beta" % "dEdB" % "CvCov1"
             % "CvCov2" % "CvCov3" % "E_th" % "P");
     endLine = false;
     initialize(19);
@@ -459,6 +468,9 @@ void VirialEnergyEstimator::accumulate() {
         dEdB += actionPtr->secondderivPotentialActionTau(slice)/(1.0*numTimeSlices);
     }
     dEdB *= beta*beta/(1.0*numTimeSlices);
+
+    if (numParticles < 1)
+        cout << numParticles << endl;
 
     /* accumulate all energy estimators. */
 	estimator(0) += totEcv - totVop; // operator kinetic energy
@@ -3139,145 +3151,241 @@ void KineticEnergyEstimator::accumulate() {
 }
 
 
-//// ---------------------------------------------------------------------------
-//// ---------------------------------------------------------------------------
-//// Local ENERGY ESTIMATOR CLASS ------------------------------------------
-//// ---------------------------------------------------------------------------
-//// ---------------------------------------------------------------------------
-///*************************************************************************//**
-//**  Setup the local energy estimator.  We measure it on every other time slice.
-//******************************************************************************/
-//LocalEnergyEstimator::LocalEnergyEstimator (const Path &_path,
-//        ActionBase *_actionPtr, int _frequency, string _label) :
-//EstimatorBase(_path,_frequency,_label),
-//actionPtr(_actionPtr) {
-//    
-//    /* We measure on every other time slice */
-//    initialize( (constants()->numTimeSlices()-1)/2 +1);
-//    
-//	/* Set estimator name and header */
-//	name = "Local Energy";
-//	header = str(format("#%15f") % 0.0);
-//	for (int n = 2; n < constants()->numTimeSlices(); n+=2)
-//		header.append(str(format("%16f") % (n*constants()->tau()) ));
-//}
-//
-///*************************************************************************//**
-//* Destructor.
-//******************************************************************************/
-//LocalEnergyEstimator::~LocalEnergyEstimator() {
-//    // empty destructor
-//}
-//
-///*************************************************************************//**
-//* Accumulate the Local energy
-//******************************************************************************/
-//void LocalEnergyEstimator::accumulate() {
-//    
-////    /* The total tail correction */
-////	double tailV = (1.0*path.getTrueNumParticles()*path.getTrueNumParticles()
-////                    /path.boxPtr->volume)*actionPtr->potentialPtr->getTailV();
-////    
-////	/* We use a simple operator estimator for V. */
-////    for (int slice = 0; slice <= path.numTimeSlices; slice+=2) {
-////        estimator(slice/2) += actionPtr->potentialPtr->V(slice) + tailV;
-////    }
-//    
-//    /* Local Kinetic Energy */
-//    for (int slice = 0; slice <= path.numTimeSlices; slice+=2) {
-//        estimator(slice/2) += -1.0*constants()->lambda()*actionPtr->waveFunctionPtr->gradSqPsiTrial(slice);
-//    }
-//}
-//
-//
-//
-//// ---------------------------------------------------------------------------
-//// ---------------------------------------------------------------------------
-//// TOTAL ENERGY ESTIMATOR CLASS ----------------------------------------------
-//// ---------------------------------------------------------------------------
-//// ---------------------------------------------------------------------------
-//
-///*************************************************************************//**
-// *  Constructor.
-// * 
-// *  Setup the total energy estimator.  We measure it on each time slice.
-//******************************************************************************/
-//TotalEnergyEstimator::TotalEnergyEstimator (const Path &_path, 
-//        ActionBase *_actionPtr, const MTRand &_random, int _frequency, 
-//        string _label) : 
-//    EstimatorBase(_path,_frequency,_label), 
-//    actionPtr(_actionPtr),
-//    random(_random) {
-//
-//    /* We measure on each link slice */
-//    initialize(constants()->numTimeSlices()-1);
-//
-//	/* Set estimator name and header */
-//	name = "Total Energy";
-//	header = str(format("#%15f") % (0.5*constants()->tau()) );
-//	for (int n = 1; n < constants()->numTimeSlices()-1; n++)
-//		header.append(str(format("%16f") % ((n+0.5)*constants()->tau()) ) );
-//}
-//
-///*************************************************************************//**
-// * Destructor.
-//******************************************************************************/
-//TotalEnergyEstimator::~TotalEnergyEstimator() { 
-//    // empty destructor
-//}
-//
-///*************************************************************************//**
-// * Returns a new position which will exactly sample the kinetic action. 
-// *
-// * @param beadIndex The index of the bead to be updated sampled at
-// * @return A NDIM-vector which holds a new random position.
-//******************************************************************************/
-//dVec TotalEnergyEstimator::newPosition(const beadLocator &beadIndex) {
-//
-//    /* The rescaled value of lambda used for staging */
-//	double sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
-//
-//    dVec newRanPos;
-//
-//	/* We find the new 'midpoint' position which exactly samples the kinetic 
-//	 * density matrix */
-//    newRanPos = path.getVelocity(beadIndex);
-//    newRanPos *= 0.5;
-//    newRanPos += path(beadIndex);
-//
-//	/* This is the random kick around that midpoint */
-//	for (int i = 0; i < NDIM; i++)
-//		newRanPos[i] = random.randNorm(newRanPos[i],sqrt2LambdaTau);
-//
-//    path.boxPtr->putInside(newRanPos);
-//
-//    return newRanPos;
-//}
-//
-///*************************************************************************//**
-// * Accumulate the total energy
-//******************************************************************************/
-//void TotalEnergyEstimator::accumulate() {
-//
-//    double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau());
-//    int numTimeSlices = constants()->numTimeSlices();
-//    beadLocator beadIndex;
-// 	dVec vel,pos;
-// 	for (int slice = 0; slice < numTimeSlices-1; slice++) {
-//        double E = 0.0;
-// 		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-// 			beadIndex = slice,ptcl;
-//
-//            E += (0.5 * NDIM / constants()->tau());
-// 			vel = path.getVelocity(beadIndex);
-// 			E -= kinNorm*dot(vel,vel);
-//
-//            //pos = newPosition(beadIndex);
-//            //E += actionPtr->potentialPtr->externalPtr->V(pos);
-// 		}
-//        estimator(slice) += E;
-// 	}
-//}
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// PIGS ENERGY ESTIMATOR CLASS ----------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+*  Constructor.
+*
+* We measure the total Kinetic, Potential and E-mu*N as well as the kinetic,
+* potential and total energy per particle.
+******************************************************************************/
+PigsEnergyEstimator::PigsEnergyEstimator (const Path &_path, ActionBase *_actionPtr,
+                                  int _frequency, string _label) :
+EstimatorBase(_path,_frequency,_label), actionPtr(_actionPtr) {
+    
+	/* Set estimator name and header, we will always report the energy
+	 * first, hence the comment symbol*/
+	name = "Energy";
+	header = str(format("#%15s%16s%16s%16s%16s%16s%16s")
+                 % "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
+    endLine = true;
+    initialize(7);
+}
+
+/*************************************************************************//**
+*  Destructor.
+******************************************************************************/
+PigsEnergyEstimator::~PigsEnergyEstimator() {
+}
+
+/*************************************************************************//**
+*  Accumluate the energy.
+*
+*  We use the thermodynamic estimator for the kinetic energy and the
+*  potential estimator for the potential energy. A possible shift is
+*  made due to a tail correction.
+******************************************************************************/
+void PigsEnergyEstimator::accumulate() {
+    
+	double totK = 0.0;
+	double totVop = 0.0;
+	double totV = 0.0;
+    
+	int numParticles  = path.getTrueNumParticles();
+	int numTimeSlices = path.numTimeSlices;
+    
+	/* The total tail correction */
+	double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
+    * actionPtr->interactionPtr->tailV;
+    
+	/* The kinetic normalization factor */
+	double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * 4.0);
+    
+	/* The classical contribution to the kinetic energy per particle
+	 * including the chemical potential */
+	double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
+    
+	/* We first calculate the kinetic energy.  Even though there
+	 * may be multiple mixing and swaps, it doesn't matter as we always
+	 * just advance one time step at a time, as taken care of through the
+	 * linking arrays.  This has been checked! */
+	beadLocator beadIndex;
+	dVec vel;
+    int midSlice = (numTimeSlices-1)/2;
+	for (int slice = midSlice-2; slice < midSlice+2; slice++) {
+		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+			beadIndex = slice,ptcl;
+			vel = path.getVelocity(beadIndex);
+			totK -= dot(vel,vel);
+		}
+	}
+    
+	/* Normalize the accumulated link-action part */
+	totK *= kinNorm;
+    
+	/* Now we compute the potential and kinetic energy.  We use an operator estimater
+	 * for V and the thermodynamic estimator for K */
+    double t1 = 0.0;
+    double t2 = 0.0;
+    for (int slice = midSlice-2; slice < midSlice+2; slice++) {
+        t1 += actionPtr->derivPotentialActionLambda(slice);
+        t2 += actionPtr->derivPotentialActionTau(slice);
+    }
+    totVop  += actionPtr->potential(midSlice);
+    
+    t1 *= constants()->lambda()/(constants()->tau()*4.0);
+    t2 /= 4.0;
+    
+	/* Perform all the normalizations and compute the individual energy terms */
+	totK += (classicalKinetic + t1);
+    totV = t2 - t1 + tailV;
+    
+	totVop += tailV;
+    
+    totV = totVop;
+    
+	/* Now we accumulate the average total, kinetic and potential energy, 
+	 * as well as their values per particles. */
+	estimator(0) += totK;
+	estimator(1) += totV;
+	estimator(2) += totK + totV;
+    
+	estimator(3) += totK + totV - constants()->mu()*numParticles;
+    
+	estimator(4) += totK/(1.0*numParticles);
+	estimator(5) += totV/(1.0*numParticles);
+    
+	estimator(6) += (totK + totV)/(1.0*numParticles);
+}
+
+
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// TOTAL ENERGY ESTIMATOR CLASS ----------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+*  Constructor.
+*
+*  Setup the total energy estimator.  We measure it on every time slice.
+******************************************************************************/
+TotalEnergyEstimator::TotalEnergyEstimator (const Path &_path,
+                                                ActionBase *_actionPtr, int _frequency,
+                                                string _label) :
+EstimatorBase(_path,_frequency,_label),
+actionPtr(_actionPtr){
+    
+    /* We measure on every other time slice */
+    initialize( (constants()->numTimeSlices()-1) );
+    
+	/* Set estimator name and header */
+	name = "Total Energy";
+	header = str(format("#%15f") % constants()->tau());
+	for (int n = 1; n < (constants()->numTimeSlices()-1); n++)
+		header.append(str(format("%16f") % (n*constants()->tau()) ));
+}
+
+/*************************************************************************//**
+* Destructor.
+******************************************************************************/
+TotalEnergyEstimator::~TotalEnergyEstimator() {
+    // empty destructor
+}
+
+
+/*************************************************************************//**
+* Accumulate the total energy
+******************************************************************************/
+void TotalEnergyEstimator::accumulate() {
+    
+    int numTimeSlices = constants()->numTimeSlices();
+    int numParticles  = path.getTrueNumParticles();
+    
+    /* The kinetic normalization factor */
+    double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau());
+    
+    /* The classical contribution to the kinetic energy per particle
+	 * including the chemical potential */
+	double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
+    
+    beadLocator beadIndex;
+ 	dVec vel,pos;
+ 	for (int slice = 0; slice < (numTimeSlices-1); slice++) {
+        double K = 0.0;
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
+            vel = path.getVelocity(beadIndex);
+            K -= dot(vel,vel);
+        }
+        /* Normalize the accumulated link-action part */
+        K *= kinNorm;
+        
+        //cout << classicalKinetic << '\t' << K << '\t';
+        
+        /* Perform all the normalizations and compute the individual energy terms */
+        K  += (classicalKinetic);
+        
+        double dUdtau = actionPtr->derivPotentialActionTau(slice);
+        //cout << dUdtau << endl;
+        estimator(slice) += K+dUdtau;
+ 	}
+}
+
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// THERMODYNAMIC POTENTIAL ENERGY ESTIMATOR CLASS ----------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+*  Constructor.
+*
+*  Setup the total energy estimator.  We measure it on every time slice.
+******************************************************************************/
+ThermoPotentialEnergyEstimator::ThermoPotentialEnergyEstimator (const Path &_path,
+                                            ActionBase *_actionPtr, int _frequency,
+                                            string _label) :
+EstimatorBase(_path,_frequency,_label),
+actionPtr(_actionPtr){
+    
+    /* We measure on every other time slice */
+    initialize( (constants()->numTimeSlices()-1) );
+    
+	/* Set estimator name and header */
+	name = "Thermodynamic Potential Energy";
+	header = str(format("#%15f") % constants()->tau());
+	for (int n = 1; n < (constants()->numTimeSlices()-1); n++)
+		header.append(str(format("%16f") % (n*constants()->tau()) ));
+}
+
+/*************************************************************************//**
+* Destructor.
+******************************************************************************/
+ThermoPotentialEnergyEstimator::~ThermoPotentialEnergyEstimator() {
+    // empty destructor
+}
+
+/*************************************************************************//**
+* Accumulate the total energy
+******************************************************************************/
+void ThermoPotentialEnergyEstimator::accumulate() {
+    
+    int numTimeSlices = constants()->numTimeSlices();
+    
+ 	for (int slice = 0; slice < (numTimeSlices-1); slice++) {        
+        double dUdtau = actionPtr->derivPotentialActionTau(slice);
+        double dUdlam = actionPtr->derivPotentialActionLambda(slice);
+        //cout << dUdtau << '\t'<< dUdlam << endl;
+        estimator(slice) += dUdtau - (constants()->lambda()/constants()->tau())*dUdlam;
+ 	}
+}
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -3327,6 +3435,116 @@ void PositionEstimator::accumulate() {
         estimator(beadIndex[0]) += x;
     }
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// PARTICLE RESOLVED POSITION ESTIMATOR CLASS --------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+*  Constructor.
+*
+*  Setup the potential energy estimator.  We measure it on each time slice.
+******************************************************************************/
+ParticleResolvedPositionEstimator::ParticleResolvedPositionEstimator (const Path &_path,
+                                      int _frequency, string _label) :
+EstimatorBase(_path,_frequency,_label) {
+    
+    /* We measure on each time slice */
+    initialize(constants()->initialNumParticles()*2);
+    
+	/* Set estimator name and header */
+	name = "Particle Resolved Positions";
+	header = str(format("#%15d") % 0);
+    header.append(str(format("%16d") % 0));
+	for (int n = 1; n < constants()->initialNumParticles(); n++){
+		header.append(str(format("%16d") % n));
+        header.append(str(format("%16d") % n));
+    }
+}
+
+/*************************************************************************//**
+* Destructor.
+******************************************************************************/
+ParticleResolvedPositionEstimator::~ParticleResolvedPositionEstimator() {
+    // empty destructor
+}
+
+/*************************************************************************//**
+* Accumulate the particle resolved positions
+******************************************************************************/
+void ParticleResolvedPositionEstimator::accumulate() {
+    
+	/* We use a simple operator estimator for V. */
+    beadLocator beadIndex;
+    double x;
+    
+    beadIndex[0] = (path.numTimeSlices-1)/2;
+    for (beadIndex[1] = 0; beadIndex[1] <path.numBeadsAtSlice(beadIndex[0]);
+         ++beadIndex[1]){
+        x = path(beadIndex)[0];
+        if ( beadIndex[1] < constants()->initialNumParticles()){
+            estimator(beadIndex[1]*2) += x;
+            estimator(beadIndex[1]*2+1) += x*x;
+        }
+    }
+}
+
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// PARTICLE CORRELATION ESTIMATOR CLASS --------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+*  Constructor.
+*
+*  Setup the potential energy estimator.  We measure it on each time slice.
+******************************************************************************/
+ParticleCorrelationEstimator::ParticleCorrelationEstimator (const Path &_path,
+                                            int _frequency, string _label) :
+EstimatorBase(_path,_frequency,_label) {
+    
+    /* We measure on each time slice */
+    initialize(constants()->initialNumParticles()-1);
+    
+	/* Set estimator name and header */
+	name = "Particle Resolved Positions";
+	header = str(format("#%15d") % 1);
+	for (int n = 2; n < constants()->initialNumParticles(); n++)
+		header.append(str(format("%16d") % n));
+}
+
+/*************************************************************************//**
+* Destructor.
+******************************************************************************/
+ParticleCorrelationEstimator::~ParticleCorrelationEstimator() {
+    // empty destructor
+}
+
+/*************************************************************************//**
+* Accumulate the particle resolved positions
+******************************************************************************/
+void ParticleCorrelationEstimator::accumulate() {
+    
+	/* We use a simple operator estimator for V. */
+    beadLocator beadIndex0,beadIndex;
+    
+    beadIndex0[0] = (path.numTimeSlices-1)/2;
+    beadIndex[0] = beadIndex0[0];
+    dVec r;
+    
+    beadIndex0[1]=0;
+    for (beadIndex[1] = 1; beadIndex[1] <path.numBeadsAtSlice(beadIndex[0]);
+         ++beadIndex[1]){
+        if ( beadIndex[1] < constants()->initialNumParticles())
+            r = path.getSeparation(beadIndex0,beadIndex);
+            estimator(beadIndex[1]-1) += dot(r,r);
+    }
+}
+
 
 
 // ---------------------------------------------------------------------------
@@ -3381,6 +3599,77 @@ void VelocityEstimator::accumulate() {
         estimator(beadIndex[0]) += sqrt(dot(vel,vel));
     }
 }
+
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// SubregionOccupation ESTIMATOR CLASS ---------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+*  Constructor.
+*
+*  Setup the velocity estimator.  We measure it on each time slice.
+******************************************************************************/
+SubregionOccupationEstimator::SubregionOccupationEstimator (const Path &_path,
+                                ActionBase *_actionPtr,int _frequency, string _label) :
+EstimatorBase(_path,_frequency,_label),
+actionPtr(_actionPtr)
+{
+    
+    /* We measure on each time slice */
+    initialize(3);
+    
+	/* Set estimator name and header */
+	name = "SubregionOccupation";
+	header = str(format("#%15s") % "Z");
+	header.append(str(format("%16s") % "pA"));
+    header.append(str(format("%16s") % "pB"));
+}
+
+/*************************************************************************//**
+* Destructor.
+******************************************************************************/
+SubregionOccupationEstimator::~SubregionOccupationEstimator() {
+    // empty destructor
+}
+
+/*************************************************************************//**
+* Accumulate the velocity
+* ******************************************************************************/
+void SubregionOccupationEstimator::accumulate() {
+    
+    beadLocator midLIndex, midRIndex;
+    double rho0Mid,Z,pA,pB;
+    
+    midLIndex[0] = path.breakSlice;
+    midRIndex[0] = path.breakSlice+1;
+    midLIndex[1] = 0;
+    midRIndex[1] = 0;
+    
+    Z = 0.0;
+    if( path.inSubregionA(midRIndex) ){
+        rho0Mid = actionPtr->rho0(midLIndex,midRIndex,1);
+        Z = rho0Mid;
+        pA = rho0Mid;
+        pB = 0.0;
+    }else if( path.inSubregionB(midRIndex) ){
+        Z = 1.0;
+        pA = 0.0;
+        pB = 1.0;
+    }else{
+        Z = 0.0;
+        pA = 0.0;
+        pB = 0.0;
+        cout << "Error!! Invalid configuration for SubregionOccupatoin!!" << endl;
+    }
+    
+    estimator(0) += Z;
+    estimator(1) += pA;
+    estimator(2) += pB;
+}
+
 
 
 // ---------------------------------------------------------------------------
@@ -3505,26 +3794,23 @@ inline dVec PIGSOneBodyDensityMatrixEstimator::getRandomVector(const double r) {
 *****************************************************************************/
 void PIGSOneBodyDensityMatrixEstimator::accumulate() {
    
-   /* We assume the broken bead is bead 0 */
-   int brokenBeadIndex = 0;
-   
    beadLocator beadIndexL,beadIndexR;
    beadIndexL[0] = lpath.breakSlice;
-   beadIndexL[1] = brokenBeadIndex;
+   beadIndexL[1] = path.brokenWorldlinesL.front();
    beadIndexR[0] = lpath.breakSlice+1;
-   beadIndexR[1] = brokenBeadIndex;
+   beadIndexR[1] = path.brokenWorldlinesR.front();
 
    oldTailPos = lpath(beadIndexR);
-   oldAction = actionPtr->potentialAction(beadIndexR);
+   //oldAction = actionPtr->potentialAction(beadIndexR);
 
    dVec pos;
    pos = 0.0;
 
    /* Connection the broken beads*/
-   lpath.next(beadIndexL) = beadIndexR;
-   lpath.prev(beadIndexR) = beadIndexL;
+   //lpath.next(beadIndexL) = beadIndexR;
+   //lpath.prev(beadIndexR) = beadIndexL;
 
-	for (int p = 0; p < numReps; p++) {
+	//for (int p = 0; p < numReps; p++) {
 
 		/* Now we loop through all possible separations, evaluating the potential
 		 * action */
@@ -3539,31 +3825,36 @@ void PIGSOneBodyDensityMatrixEstimator::accumulate() {
 			lpath.updateBead(beadIndexR,newTailPos);
 
 			/* Compute the free particle density matrix */
-			rho0Norm = actionPtr->rho0(beadIndexL,beadIndexR,1);
+            
+            /* CMH: Need to sample winding sector for general dimension here */
+            //double rho0 = actionPtr->rho01D(beadIndexL,beadIndexR,1);
+            
+            double rho0 = 1.0;
 
 			/* action shift coming from a finite chemical potential */
 			//double muShift = lpath.worm.gap*constants()->mu()*constants()->tau();
 
 			/* Copmute the potential the potential action */
-           newAction += actionPtr->potentialAction(beadIndexR);
+            newAction += actionPtr->potentialAction(beadIndexR);
 
 			//double expAction = exp(-newAction + oldAction + muShift);
-           double expAction = exp(-0.5*newAction + 0.5*oldAction);
+            double expAction = exp(-0.5*newAction + 0.5*oldAction);
+            //double expAction = exp(-newAction);
 
-			estimator(n) += rho0Norm*expAction;
+			estimator(n) += rho0*expAction;
 
 			/* Record the probability of accepting the move */
-			if (random.randExc() < rho0Norm*expAction)
+			if (random.randExc() < rho0*expAction)
 				++numAccepted;
 
 		} // end for n
 
-	} // end for k
+	//} // end for k
 
 	/* Now we must undo any damge we have caused by reverting the tail to its previous position*/
 	lpath.updateBead(beadIndexR,oldTailPos);
-	lpath.next(beadIndexL) = XXX;
-	lpath.prev(beadIndexR) = XXX;
+	//lpath.next(beadIndexL) = XXX;
+	//lpath.prev(beadIndexR) = XXX;
 }
 
 /*************************************************************************//**
@@ -3575,6 +3866,330 @@ void PIGSOneBodyDensityMatrixEstimator::outputFooter() {
 	(*outFilePtr) << format("# accepted: %16.8E attempted: %16.8E ratio: %16.4E\n")
 		% (1.0*numAccepted) % (1.0*numAttempted) % (1.0*numAccepted/(1.0*numAttempted));
 }
+
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// DOUBLED ESTIMATOR BASE CLASS ----------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+*  Constructor.
+******************************************************************************/
+DoubledEstimator::DoubledEstimator (const Path &_path, const Path &_path2,
+                                  int _frequency, string _label) :
+EstimatorBase(_path,_frequency,_label), path2(_path2) {
+}
+
+/*************************************************************************//**
+*  Destructor.
+******************************************************************************/
+DoubledEstimator::~DoubledEstimator() {
+}
+
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Swap Estimator Class ----------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+*  Constructor.
+******************************************************************************/
+SwapEstimator::SwapEstimator (Path &_path, Path &_path2,
+                              ActionBase *_actionPtr,ActionBase *_actionPtr2,
+                                    int _frequency, string _label) :
+DoubledEstimator(_path,_path2,_frequency,_label), lpath(_path),lpath2(_path2),
+                actionPtr(_actionPtr), actionPtr2(_actionPtr2) {
+    
+    /* Set estimator name and header */
+	name = "Swap";
+	header = str(format("#%15s%16s%16s") % "Z" % "S" % "ZS");
+    initialize(3);
+}
+
+/*************************************************************************//**
+*  Destructor.
+******************************************************************************/
+SwapEstimator::~SwapEstimator() {
+}
+
+/*************************************************************************//**
+* Accumulate the swap estimator for open paths.
+******************************************************************************/
+void SwapEstimator::accumulate() {
+    if (lpath.breakSlice > 0)
+        accumulateOpen();
+    else
+        accumulateClosed();
+}
+
+/*************************************************************************//**
+* Accumulate the swap estimator for open paths.
+******************************************************************************/
+void SwapEstimator::accumulateOpen() {
+    
+    double S,Z; // Swap and normalization
+    
+    beadLocator beadIndexL,beadIndexR,beadIndexL2,beadIndexR2;
+    beadIndexL[0] = lpath.breakSlice;
+    beadIndexR[0] = lpath.breakSlice+1;
+    beadIndexL2[0] = lpath2.breakSlice;
+    beadIndexR2[0] = lpath2.breakSlice+1;
+    
+    /* Old tail positions & potential actions */
+    vector<dVec> oldTailPos(lpath.brokenWorldlinesR.size());
+    vector<dVec> oldTailPos2(lpath2.brokenWorldlinesR.size());
+
+    for( uint32 i=0; i<lpath.brokenWorldlinesR.size();i++){
+        beadIndexR[1] = lpath.brokenWorldlinesR[i];
+        oldTailPos[i] = lpath(beadIndexR);
+    }
+    for( uint32 i=0; i<lpath2.brokenWorldlinesR.size();i++){
+        beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
+        oldTailPos2[i] = lpath2(beadIndexR2);
+    }
+    
+    /* Compute direct propagator for Z */
+    double oldPotAction,oldPotAction2;
+    double rho0Dir, rho0Dir2;
+    
+    /* Compute direct potential actions for both paths */
+    /* loop over broken beads */
+    oldPotAction = 0.0;
+    for( uint32 i=0; i<lpath.brokenWorldlinesR.size();i++){
+        beadIndexR[1] = lpath.brokenWorldlinesR[i];
+        oldPotAction += actionPtr->potentialAction(beadIndexR);
+    }
+    oldPotAction2 = 0.0;
+    for( uint32 i=0; i<lpath2.brokenWorldlinesR.size();i++){
+        beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
+        oldPotAction2 += actionPtr2->potentialAction(beadIndexR2);
+    }
+    
+    
+    /* Initialize permuation vector */
+    vector<int> permutation(lpath.brokenWorldlinesR.size());
+    int Nperm = 0;
+    double rho0perm;
+    for( uint32 i=0; i<permutation.size(); i++)
+        permutation[i] = i;
+    
+    /* Compute direct free particle density matricies for both paths */
+    if ( lpath.brokenWorldlinesL.size() == 0){
+        rho0Dir = 1.0;
+    }else{
+        rho0Dir = 0.0;
+        /* sum over permutations */
+        do {
+            /* sum over broken worldlines */
+            rho0perm = 1.0;
+            for( uint32 i=0; i<permutation.size(); i++){
+                beadIndexL[1] = lpath.brokenWorldlinesL[i];
+                beadIndexR[1] = lpath.brokenWorldlinesR[permutation[i]];
+                rho0perm *= actionPtr->rho0(beadIndexL,beadIndexR,1);
+            }
+            rho0Dir += rho0perm;
+            Nperm++;
+        } while (next_permutation(permutation.begin(),permutation.end()));
+        rho0Dir *= 1.0/((double)Nperm);
+    }
+    
+    /* Re-initialize permuation vector */
+    permutation.resize(lpath2.brokenWorldlinesR.size());
+    for( uint32 i=0; i<permutation.size(); i++)
+        permutation[i] = i;
+    Nperm = 0;
+    if ( lpath2.brokenWorldlinesL.size() == 0){
+        rho0Dir2 = 1.0;
+    }else{
+        rho0Dir2 = 0.0;
+        /* sum over permutations */
+        do {
+            /* sum over broken worldlines */
+            rho0perm = 1.0;
+            for( uint32 i=0; i<permutation.size(); i++){
+                beadIndexL2[1] = lpath2.brokenWorldlinesL[i];
+                beadIndexR2[1] = lpath2.brokenWorldlinesR[permutation[i]];
+                //cout << beadIndexL2[1] << '\t' << beadIndexR2[1] << '\t' << permutation[i] << endl;
+                rho0perm *= actionPtr2->rho0(beadIndexL2,beadIndexR2,1);
+            }
+            rho0Dir2 += rho0perm;
+            Nperm++;
+        } while (next_permutation(permutation.begin(),permutation.end()));
+        rho0Dir2 *= 1.0/((double)Nperm);
+    }
+    
+    /* Compute the swapped propagator for S */
+   
+    if( (lpath.brokenWorldlinesR.size() == lpath2.brokenWorldlinesR.size()) ){
+        
+        if ( lpath.brokenWorldlinesR.size() == 0){
+            S = 1.0;
+            Z = 1.0;
+        }else{
+            /* Swap the tail positions */
+            for( uint32 i=0; i<oldTailPos2.size(); i++){
+                beadIndexR[1] = lpath.brokenWorldlinesR[i];
+                lpath.updateBead(beadIndexR,oldTailPos2[i]);
+            }
+            for( uint32 i=0; i<oldTailPos.size(); i++){
+                beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
+                lpath2.updateBead(beadIndexR2,oldTailPos[i]);
+            }
+            
+            /* Compute the swapped free particle density matrix */
+            /* Re-initialize permuation vector */
+            for( uint32 i=0; i<permutation.size(); i++)
+                permutation[i] = i;
+            Nperm = 0;
+            double rho0Swap = 0.0;
+            /* sum over permutations */
+            do {
+                /* sum over broken worldlines */
+                rho0perm = 1.0;
+                for( uint32 i=0; i<permutation.size(); i++){
+                    beadIndexL[1] = lpath.brokenWorldlinesL[i];
+                    beadIndexR[1] = lpath.brokenWorldlinesR[permutation[i]];
+                    rho0perm *= actionPtr->rho0(beadIndexL,beadIndexR,1);
+                }
+                rho0Swap += rho0perm;
+                Nperm++;
+            } while (next_permutation(permutation.begin(),permutation.end()));
+            rho0Swap*= 1.0/((double)Nperm);
+            
+            /* Re-initialize permuation vector */
+            for( uint32 i=0; i<permutation.size(); i++)
+                permutation[i] = i;
+            Nperm = 0;
+            double rho0Swap2 = 0.0;
+            /* sum over permutations */
+            do {
+                /* sum over broken worldlines */
+                rho0perm = 1.0;
+                for( uint32 i=0; i<permutation.size(); i++){
+                    beadIndexL2[1] = lpath2.brokenWorldlinesL[i];
+                    beadIndexR2[1] = lpath2.brokenWorldlinesR[permutation[i]];
+                    rho0perm *= actionPtr2->rho0(beadIndexL2,beadIndexR2,1);
+                }
+                rho0Swap2 += rho0perm;
+                Nperm++;
+            } while (next_permutation(permutation.begin(),permutation.end()));
+            rho0Swap2*= 1.0/((double)Nperm);
+
+            /* Compute the potential the potential action */
+            /* Compute direct potential actions for both paths */
+            /* loop over broken beads */
+            double newPotAction = 0.0;
+            for( uint32 i=0; i<lpath.brokenWorldlinesR.size();i++){
+                beadIndexR[1] = lpath.brokenWorldlinesR[i];
+                newPotAction += actionPtr->potentialAction(beadIndexR);
+            }
+            double newPotAction2 = 0.0;
+            for( uint32 i=0; i<lpath2.brokenWorldlinesR.size();i++){
+                beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
+                newPotAction2 += actionPtr2->potentialAction(beadIndexR2);
+            }
+
+            /* Now we must undo any damge we have caused by reverting the tail to its previous position*/
+            for( uint32 i=0; i<oldTailPos.size(); i++){
+                beadIndexR[1] = lpath.brokenWorldlinesR[i];
+                lpath.updateBead(beadIndexR,oldTailPos[i]);
+            }
+            for( uint32 i=0; i<oldTailPos2.size(); i++){
+                beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
+                lpath2.updateBead(beadIndexR2,oldTailPos2[i]);
+            }
+            S = rho0Swap*rho0Swap2*exp(-(0.5)*(newPotAction+newPotAction2)+(0.5)*(oldPotAction+oldPotAction2));
+            Z = rho0Dir*rho0Dir2;
+        }
+    }else{
+        S = 0.0;
+        Z = rho0Dir*rho0Dir2;
+    }
+    
+    /* In the normalization factor we must account for the factor of 1/2 in the 
+       open path weight */
+    //Z = rho0Dir*rho0Dir2*exp(-(oldPotAction+oldPotAction2));
+    //S = rho0Swap*rho0Swap2*exp(-(newPotAction+newPotAction2));
+    
+    //cout << rho0Dir << '\t' << rho0Dir2 << '\t' << Z << '\t' << S << endl;
+    
+    estimator(0) += Z;
+	estimator(1) += S;
+    estimator(2) += S*Z;
+}
+
+/*************************************************************************//**
+* Accumulate the swap estimator for closed.
+******************************************************************************/
+void SwapEstimator::accumulateClosed() {
+    
+    double S,Z; // Swap and normalization
+    
+	/* We assume the broken bead is bead 0 */
+    int swapSlice = (lpath.numTimeSlices-1)/2-1;
+    
+    beadLocator beadIndexL,beadIndexR,beadIndexL2,beadIndexR2;
+    beadIndexL[0] = swapSlice;
+    beadIndexR[0] = swapSlice+1;
+    beadIndexL2[0] = swapSlice;
+    beadIndexR2[0] = swapSlice+1;
+    
+    S = 0.0;
+    Z = 1.0;
+    for (int brokenBeadIndex1=0; brokenBeadIndex1<lpath.getNumParticles(); brokenBeadIndex1++){
+        
+        beadIndexL[1] = brokenBeadIndex1;
+        beadIndexR[1] = brokenBeadIndex1;
+        
+        /* Old tail positions & potential actions */
+        dVec oldTailPos = lpath(beadIndexR);
+        double oldPotAction = actionPtr->potentialAction(beadIndexR);
+        
+        /* Compute direct free particle density matricies */
+        double rho0Dir = actionPtr->rho0(beadIndexL,beadIndexR,1);
+        
+        for (int brokenBeadIndex2=0; brokenBeadIndex2<lpath2.getNumParticles(); brokenBeadIndex2++){
+            
+            beadIndexL2[1] = brokenBeadIndex2;
+            beadIndexR2[1] = brokenBeadIndex2;
+            
+            /* Old tail positions & potential actions */
+            dVec oldTailPos2 = lpath2(beadIndexR2);
+            double oldPotAction2 = actionPtr2->potentialAction(beadIndexR2);
+            
+            /* Compute direct free particle density matricies */
+            double rho0Dir2 = actionPtr2->rho0(beadIndexL2,beadIndexR2,1);
+            
+            /* Swap the tail positions */
+            lpath.updateBead(beadIndexR,oldTailPos2);
+            lpath2.updateBead(beadIndexR2,oldTailPos);
+            
+            /* Compute the swapped free particle density matrix */
+            double rho0Swap = actionPtr->rho0(beadIndexL,beadIndexR,1);
+            double rho0Swap2 = actionPtr2->rho0(beadIndexL2,beadIndexR2,1);
+            
+            /* Copmute the potential the potential action */
+            double newPotAction = actionPtr->potentialAction(beadIndexR);
+            double newPotAction2 = actionPtr2->potentialAction(beadIndexR2);
+            
+            /* Now we must undo any damge we have caused by reverting the tail to its previous position*/
+            lpath.updateBead(beadIndexR,oldTailPos);
+            lpath2.updateBead(beadIndexR2,oldTailPos2);
+           
+            S += (rho0Swap*rho0Swap2/(rho0Dir*rho0Dir2))*exp(-(0.5)*(newPotAction+newPotAction2)+(0.5)*(oldPotAction+oldPotAction2));
+        }
+    }
+    
+    S /= lpath.getNumParticles()*lpath2.getNumParticles();
+    
+    estimator(0) += Z;
+	estimator(1) += S;
+}
+
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // END PIGS ESTIMATORS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//

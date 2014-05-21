@@ -30,7 +30,8 @@ class ActionBase {
 
 	public:
 		ActionBase (const Path &, LookupTable &, PotentialBase *, 
-                PotentialBase *, WaveFunctionBase *, bool _local=true, string _name="Base");
+                PotentialBase *, WaveFunctionBase *, bool _local=true,
+                string _name="Base", double _endFactor=1.0);
 		virtual ~ActionBase();
 
 		/** Returns the action name */
@@ -113,6 +114,7 @@ class ActionBase {
 		LookupTable &lookup;			///< We need a non-constant reference for updates
 		const Path &path;				///< A reference to the paths
         WaveFunctionBase *waveFunctionPtr;   ///< A pointer to a trial wave function object
+        double endFactor;               ///< Mutiplictive factor of the potential action on ends
 
 		int shift;						///< The scaling factor for tau
 
@@ -148,7 +150,8 @@ class LocalAction : public ActionBase {
     public:
 		LocalAction (const Path &, LookupTable &, PotentialBase *, 
                 PotentialBase *, WaveFunctionBase *, const TinyVector<double,2>&, 
-                const TinyVector<double,2>&, bool _local=true, string _name="Local");
+                const TinyVector<double,2>&, bool _local=true, string _name="Local",
+                double _endFactor=1.0);
 		virtual ~LocalAction();
 
         /* The potential action */

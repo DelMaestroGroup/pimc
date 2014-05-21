@@ -36,8 +36,8 @@ typedef boost::ptr_vector<MoveBase> move_vector;
  */
 class PathIntegralMonteCarlo {
 	public:
-		PathIntegralMonteCarlo (Path &, MTRand &, move_vector &, 
-                estimator_vector &, const bool);
+        PathIntegralMonteCarlo (vector<Path *> &,MTRand &,vector<move_vector *> &,
+                                vector<estimator_vector *> &,const bool,uint32 binSize=100);
 		~PathIntegralMonteCarlo ();
 
 		/* The equilibration relaxation */
@@ -53,7 +53,11 @@ class PathIntegralMonteCarlo {
 		void finalOutput();
 
 		/* Save the PIMC state to disk */
-		void saveState(); 
+		void saveState();
+
+        /* NB new method of saving states AGD */
+        void saveStateFromStr();
+        void saveStateString();
 
 		/* Output the world-line configurations in the protein databank format */
 		void outputPDB();
@@ -70,21 +74,32 @@ class PathIntegralMonteCarlo {
         int cN;                     ///< The current total number of particles
 
 	private:
+		MTRand &random;				// The global random number generator
+
 		int configNumber;			// The output configuration number
         int numImagTimeSweeps;      // Partitioning used for updates
         int numSteps;               // The number of steps performed during equilibration
         int numUpdates;             // The maximum number of updates per step.
+        uint32 binSize;                // The maximum number measurements per bin.
         int numParticles;           // The number of particles
 
 		bool savedState;			// We have saved at least one state
+    
+        uint32 Npaths;                 // Number of paths
+    
+        vector<string> stateStrings; // A vector of state strings from the last bin
+
 		bool startWithState;		// Are we starting from a saved state
         bool success;               // Track move success/failure
+    
+        vector<Path *> pathPtrVec; // The vector of all paths
+        Path &path;                         // A reference to the first path in the path vector
 
-		MTRand &random;				// The global random number generator
-		Path &path;					// The actual wordline paths
-
-        move_vector move;		    // The move array
-        estimator_vector estimator;	// The estimator array
+        vector<move_vector *> movePtrVec;  // Vector of all move_vectors
+        move_vector &move;                 // A reference to the first move_vector
+    
+        vector<estimator_vector *> estimatorPtrVec;// Vector of estimators for each path followed by multipath
+        estimator_vector &estimator;                   // A reference to the first estimator_vector
 
 		vector <double> attemptDiagProb;		// The cumulative diagonal attempt Probabilities
 		vector <double> attemptOffDiagProb;		// The cumulative off-diagonal attempt Probabilities
@@ -106,7 +121,8 @@ class PathIntegralMonteCarlo {
 		void shuffleMoves();
 
 		/* Perform a Metropolis update */
-		string update(const double,const int);
+		string update(const double,const int,const int);
+
 };
 
 #endif

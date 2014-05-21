@@ -34,6 +34,10 @@ class Path {
 
 		const int numTimeSlices;		///< A local constant copy of the number of time slices
         int breakSlice;                 ///< The location of the break in the path (0=>no break)
+        vector<int> brokenWorldlinesL;   ///< A list of particles with broken worldlines on left of break
+        vector<int> brokenWorldlinesR;   ///< A list of particles with broken worldlines on right of break
+        vector<int> closedWorldlines;   ///< A list of particles with closed worldlines on left of break
+
 
 		const Container *boxPtr;		///< A constant reference to the container class
 		Worm worm;						///< Details on the worm
@@ -76,6 +80,7 @@ class Path {
 
 		/** Output the world-line configurations in a generic format */
 		void outputConfig(int) const;
+		void outputPIGSConfig(int) const;
 
 		/** Move one link forward in imaginary time */
 		beadLocator& next(int slice, int ptcl) {return nextLink(slice,ptcl);}
@@ -116,6 +121,24 @@ class Path {
 		beadLocator delBeadGetNext(const beadLocator&);
 		/** Delete a bead and move backwards */
 		beadLocator delBeadGetPrev(const beadLocator&);
+    
+        /** Break the link to right of bead **/
+        void breakLink(const beadLocator&);
+        /** Make a link between beads **/
+        void makeLink(const beadLocator&,const beadLocator&);
+        /** Break the link to right of bead t center slice AND update lists **/
+        void removeCenterLink(const beadLocator&);
+        /** Make a link between beads at center slice AND update lists **/
+        void addCenterLink(const beadLocator&,const beadLocator&);
+        /** Checks to see if worldline is broken**/
+        bool isBroken(const beadLocator&) const;
+        /** Returns factor for broken worldines**/
+        double breakFactor(const beadLocator&,const beadLocator&) const;
+        /** Checks to see if bead is in subregion A/B at break slice + 1 **/
+        bool inSubregionA(const beadLocator&) const;
+        bool inSubregionB(const beadLocator&) const;
+        /** Check if only subregion worldlines are broken, for debugging **/
+        bool checkSubregionLinks() const;
 
 		/** Update the position of a bead in the worldine configuration */
 		void updateBead(const beadLocator&, const dVec&);
@@ -125,6 +148,9 @@ class Path {
 
 		/** Initialize any loaded state by left packing the array */
 		void leftPack();
+    
+        /** Reset broken/closed worldline vectors **/
+        void resetBrokenClosedVecs();
 
 	private:
 		friend class PathIntegralMonteCarlo;		// Friends for I/O

@@ -40,6 +40,7 @@ class PotentialBase {
 
 		/** The effective potential for the pair product approximation */
 		virtual double V(const dVec &, const dVec &, double) { return 0.0; }
+		virtual double V(const dVec &, const dVec &, double, double) { return 0.0; }
 
 		/** The gradient of the potential*/
 		virtual dVec gradV(const dVec &) { return 0.0; }
@@ -143,18 +144,21 @@ class FreePotential: public PotentialBase {
 class HarmonicPotential : public PotentialBase {
 	public:
 		HarmonicPotential ();
+        HarmonicPotential (double);
 		~HarmonicPotential ();
+    
+        double omega2;       //The SHO frequency in units of hbar
 
 		/** The potential. */
 		double V(const dVec &r) { 
-			return (dot(r,r)/(4.0*constants()->lambda()));
+			return (omega2*dot(r,r)/(4.0*constants()->lambda()));
 		}
 
 		/** The gradient of the potential. */
 		dVec gradV(const dVec &r) {
 			dVec tempr;
 			tempr = r;
-			return (tempr/(2.0*constants()->lambda()));
+			return (omega2*tempr/(2.0*constants()->lambda()));
 		}
 
 		/** Initial configuration corresponding to Harmonic potential */
@@ -616,6 +620,37 @@ class HardSpherePotential : public PotentialBase  {
 	private:
 		double a;				// The strength of the delta function
 };
+
+
+// ========================================================================
+// 1D Delta Potential Class
+// ========================================================================
+/**
+ * Computes the effective potential from the exact two-body density matrix
+ * for delta interactions in 1D
+ *
+ * @see: S. Pilati, K. Sakkos, J. Boronat, J. Casulleras, and
+ *       S. Giorgini, Phys Rev A 74, 043621 (2006).
+ */
+class Delta1DPotential : public PotentialBase  {
+public:
+    Delta1DPotential (double);
+    ~Delta1DPotential ();
+    
+    /** The classical potential */
+    virtual double V(const dVec &r) {
+        return (0.0);
+    }
+    
+    /** The effective potential */
+    double V(const dVec &, const dVec &, double,double);
+    double dVdlambda(const dVec &, const dVec &, double, double);
+    double dVdtau(const dVec &, const dVec &, double, double);
+    
+private:
+    double g;				// The strength of the delta function
+};
+
 
 // ========================================================================  
 // Hard Rod Potential Class

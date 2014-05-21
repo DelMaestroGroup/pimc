@@ -21,7 +21,8 @@ ConstantParameters::ConstantParameters() : T_(), imagTimeLength_(), mu_(), tau_(
 	dBWavelength_(), rc_(), C0_(), C_(), V_(), L_(), Mbar_(), b_(), numTimeSlices_(), 
     initialNumParticles_(), deltaNumParticles_(), id_(), restart_(),
     wallClock_(),  canonical_(), pigs_(), window_(), intPotentialType_(),
-    extPotentialType_(), waveFunctionType_(), actionType_(), virialWindow_(), maxWind_()
+    extPotentialType_(), waveFunctionType_(), actionType_(), virialWindow_(), maxWind_(), 
+    saveStateFiles_()
 { 
     /* set all data members to null values */
 }
@@ -39,7 +40,8 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
 		int _Mbar, int _numTimeSlices, uint32 _id, uint32 _process, double _wallClock,
 		uint32 _numEqSteps, string _intPotentialType, string _extPotentialType, 
         string _waveFunctionType, string _actionType, int _window, double _gaussianEnsembleSD, 
-        int _maxWind, int _virialWindow) {
+        int _maxWind, int _virialWindow, int _numBroken, double _spatialSubregion,double _endFactor,
+        int _Npaths, bool _saveStateFiles) {
 
 	/* The simulation ID is the number of seconds since January 1 2009 */
 	if (_id == 0) {
@@ -67,6 +69,9 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
 
 	/* Are we working in the grand canonical ensemble? */
 	canonical_ = _canonical;
+
+    /* Are we saving a state file every bin? */
+    saveStateFiles_ = _saveStateFiles;
     
     /* Set the particle number window */
     if ( _window < 0 ){
@@ -107,7 +112,10 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
 	rc2_           = rc_*rc_;
 	C0_            = _C0;
 	numTimeSlices_ = _numTimeSlices;
-	tau_           = 1.0/(numTimeSlices_*T_);
+    if (pigs_)
+        tau_       = 1.0/((numTimeSlices_-1)*T_);
+    else
+        tau_       = 1.0/(numTimeSlices_*T_);
 	V_	           = _V;
 	L_             = _L;
 	numEqSteps_    = _numEqSteps;
@@ -115,6 +123,15 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
     virialWindow_  = _virialWindow;
     
 	initialNumParticles_ = _initialNumParticles;
+    numBroken_ = _numBroken;
+    if( _spatialSubregion < BIG/2.0){
+        spatialSubregionOn_ = true;
+        spatialSubregion_ = _spatialSubregion;
+    }else{
+        spatialSubregionOn_= false;
+    }
+    endFactor_ = _endFactor;
+    Npaths_ = _Npaths;
 
 	/* We arbitrarily set the particle weighting number (for now) */
 	deltaNumParticles_ = 10;
@@ -159,7 +176,10 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
         attemptProb_["swap tail"] = 0.0;
         attemptProb_["diagonal"] = 0.6;
         attemptProb_["center of mass"] = 0.1;
-        attemptProb_["displace"] = 0.3;
+        attemptProb_["displace"] = 0.0;
+	attemptProb_["end staging"] = 0.3;
+        attemptProb_["mid-staging"] = 0.0;
+        attemptProb_["swap break"] = 0.0;
     }
     else {
         attemptProb_["open"] = 0.4;
@@ -175,12 +195,15 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
         attemptProb_["diagonal"] = 0.15;
         attemptProb_["center of mass"] = 0.05;
         attemptProb_["displace"] = 0.0;
+        attemptProb_["end staging"] = 0.0;
+        attemptProb_["swap break"] = 0.0;
+        attemptProb_["mid-staging"] = 0.0;
     }
 
     double totProb = attemptProb_["close"] + attemptProb_["advance head"] + attemptProb_["recede head"]
         + attemptProb_["advance tail"] + attemptProb_["recede head"] + attemptProb_["remove"]
         + attemptProb_["swap head"] + attemptProb_["swap tail"] + attemptProb_["diagonal"] 
-        + attemptProb_["center of mass"] + attemptProb_["displace"];
+        + attemptProb_["center of mass"] + attemptProb_["displace"]+attemptProb_["end staging"]+attemptProb_["mid-staging"]+attemptProb_["swap break"];
 
 	if (abs(totProb - 1.0) > EPS) {
 		cout << "Close + AdvanceHead + RecedeHead + AdvanceTail + RecedeTail + Remove + SwapHead " 
@@ -190,7 +213,10 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
 	PIMC_ASSERT(totProb-1.0 < EPS);
 
     totProb = attemptProb_["open"] + attemptProb_["insert"] + attemptProb_["diagonal"]
-       + attemptProb_["center of mass"] + attemptProb_["displace"];
+       + attemptProb_["center of mass"] + attemptProb_["displace"]
+    + 
+       attemptProb_["swap break"]+attemptProb_["end staging"]+
+            attemptProb_["mid-staging"];
 	
 	if (abs(totProb - 1.0) > EPS) {
 		cout << "Open + Insert + Diagonal + CoM Probability != 1" << endl;

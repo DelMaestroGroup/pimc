@@ -22,14 +22,16 @@
 ******************************************************************************/
 ActionBase::ActionBase (const Path &_path, LookupTable &_lookup, 
 		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
-        WaveFunctionBase *_waveFunctionPtr, bool _local, string _name) :
+        WaveFunctionBase *_waveFunctionPtr, bool _local, string _name, 
+        double _endFactor) :
 	local(_local), 
     externalPtr(_externalPtr),
     interactionPtr(_interactionPtr),
     name(_name),
     lookup(_lookup),
     path(_path),
-    waveFunctionPtr(_waveFunctionPtr)
+    waveFunctionPtr(_waveFunctionPtr),
+    endFactor(_endFactor)
 {
 
     /* The default tau scale is 1 */
@@ -268,9 +270,10 @@ double ActionBase::potentialAction (const beadLocator &startBead,
 LocalAction::LocalAction (const Path &_path, LookupTable &_lookup, 
 		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
         WaveFunctionBase *_waveFunctionPtr, const TinyVector<double,2> &_VFactor, 
-        const TinyVector<double,2> & _gradVFactor, bool _local, string _name) :
+        const TinyVector<double,2> & _gradVFactor, bool _local, string _name,
+        double _endFactor) :
     ActionBase(_path,_lookup,_externalPtr,_interactionPtr,_waveFunctionPtr,
-            _local,_name), 
+            _local,_name,_endFactor), 
     VFactor(_VFactor),
     gradVFactor(_gradVFactor)
 {
@@ -341,11 +344,12 @@ double LocalAction::potentialAction (const beadLocator &beadIndex) {
  	 		* gradVnnSquared(beadIndex);
      
      /* We tack on a trial wave function and boundary piece if necessary */  
-     if ((constants()->pigs()) && 
-             ((beadIndex[0] == 0) || (beadIndex[0] == (constants()->numTimeSlices()-1))) ) {
-         bareU *= 0.5;
-         bareU -= log(waveFunctionPtr->PsiTrial(beadIndex[0]));
-     }
+    if ( constants()->pigs() ){
+        if ( (beadIndex[0] == 0) || (beadIndex[0] == (constants()->numTimeSlices()-1)) ) {
+             bareU *= 0.5*endFactor;
+             bareU -= log(waveFunctionPtr->PsiTrial(beadIndex[0]));
+        }
+    }
 
      return (bareU + corU);
 }

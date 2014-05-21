@@ -27,7 +27,8 @@ class ConstantParameters
 	public:
 		static ConstantParameters* getInstance();
 		void initConstants(bool,bool,double,double,double,double,double,double,double,double,
-				int,int,int,uint32,uint32,double,uint32,string,string,string,string,int,double,int,int);
+				           int,int,int,uint32,uint32,double,uint32,string,string,string,string,
+                           int,double, int,int,int,double,double,int,bool);
 
 		/* All the get methods */
 		double T() const {return T_;}					///< Get temperature.
@@ -92,10 +93,15 @@ class ConstantParameters
         int maxWind() { return maxWind_;}               ///< Get the maximum winding number sampled
 		uint32 id() {return id_;}						///< Get simulation ID
 		uint32 numEqSteps() {return numEqSteps_;}	///< Get the number of equilibration steps
+        int numBroken() {return numBroken_;}            //< Get number of broken paths
+        double spatialSubregion() {return spatialSubregion_;}          //< Get size of subregion
+        bool spatialSubregionOn() {return spatialSubregionOn_;}           //< Get subregion on/off
+        int Npaths() {return Npaths_;}                  //< Get number of paths
 
 		string intPotentialType() const {return intPotentialType_;}	///< Get interaction potential type
 		string extPotentialType() const {return extPotentialType_;}	///< Get external potential type
         string waveFunctionType() const {return waveFunctionType_;}	///< Get wave function type
+        double endFactor() const {return endFactor_;}        ///< Get end factor
         string actionType() const {return actionType_;}	            ///< Get wave action type
 
 		/* Set methods */
@@ -110,6 +116,8 @@ class ConstantParameters
 		void shiftDisplaceDelta(double frac) {displaceDelta_ += frac*displaceDelta_; }		///< Shift the displace move size
 		void shiftmu (double frac) { mu_ += frac; }				        ///< Shift the chemical potential
         void incid() {++id_;}                                               ///< Increment the PIMCID by 1
+
+        bool saveStateFiles() { return saveStateFiles_;}                              ///< Are we saving states every MC bin?
 
 	protected:
 		ConstantParameters();
@@ -139,6 +147,10 @@ class ConstantParameters
 		int numTimeSlices_;		  // Number of imaginary time slices
 		int initialNumParticles_; // The initial number of particles
 		int deltaNumParticles_;   // The particle number fluctuation weight (for canonical sims)
+        int numBroken_;           // The number of broken paths
+        double spatialSubregion_;      // The limits of the spatial sub region for EE
+        bool spatialSubregionOn_;     // True if using a spatial subregion for EE
+        int Npaths_;                // Number of paths used
 
 		uint32 id_;				// The unique simulation ID
 		uint32 numEqSteps_;		// Number of equilibration steps
@@ -156,11 +168,13 @@ class ConstantParameters
 		string intPotentialType_;   // The type of interaction potential
 		string extPotentialType_;   // The type of external potential
         string waveFunctionType_;   // The type of trial wave function
+        double endFactor_;          // The multiplicative factor of the potential on end beads
         string actionType_;         // The type of action
 
         int virialWindow_;        // Window size for centroid virial estimator
         int maxWind_;             // The maximum winding number sampled
 
+        bool saveStateFiles_;       // Are we saving a state file every MC bin?
 		
         map <string,double> attemptProb_;	// The move attempt probabilities
 };

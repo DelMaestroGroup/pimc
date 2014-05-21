@@ -228,16 +228,24 @@ void Communicator::init(double _tau, bool outputWorldline, string _initName,
 void Communicator::initFile(string type) {
 
     /* Check a possible initialization file */
-    if (type == "init") {
+    if (type.find("init") != string::npos ) {
+
+        /* We need to determine the name of the state file.  i.e. does it need
+         * an integer appended after it? */
+        string stateName = "state";
+
+        /* If we have a numerical label, append it to the name of state */
+        if (type != "init")
+            stateName += stateName.substr(4,string::npos);
 
         /* There are only two reasons we would need an init file, either we are
          * restarting, or starting from a given initialization file */
         if (constants()->restart())
-            file_["init"] = new File("state",dataName,ensemble,baseDir);
+            file_[type] = new File(stateName,dataName,ensemble,baseDir);
         else 
-            file_["init"] = new File(initName);
+            file_[type] = new File(initName);
         
-        file_["init"]->open(ios::in);
+        file_[type]->open(ios::in);
     }
 	/* Initialize a possible fixed coordinate file */
     else if (type == "fixed") {

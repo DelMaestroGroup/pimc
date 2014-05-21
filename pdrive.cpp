@@ -73,9 +73,17 @@ int main (int argc, char *argv[]) {
 	/* Setup the simulation communicator */
 	setup.communicator();
 
-	/* Create and initialize the Nearest Neighbor Lookup Table */
-	LookupTable lookup(boxPtr,constants()->numTimeSlices(), constants()->initialNumParticles());
-
+    /* Get number of paths to use */
+    int Npaths = constants()->Npaths();
+    
+    /* Create and initialize the Nearest Neighbor Lookup Table */
+    boost::ptr_vector<LookupTable> lookupPtrVec;
+    for(int i=0; i<Npaths; i++){
+        lookupPtrVec.push_back(
+                new LookupTable(boxPtr,constants()->numTimeSlices(),
+                                constants()->initialNumParticles()));
+    }
+    
 	/* Create and initialize the potential pointers */
 	PotentialBase *interactionPotentialPtr = NULL;
 	interactionPotentialPtr = setup.interactionPotential();
@@ -96,31 +104,71 @@ int main (int argc, char *argv[]) {
        CMC.run(constants()->numEqSteps(),0);
    }
 
-    /* Allow for one broken path */
-    int numberBroken = 0;
-    if (constants()->pigs())
-        numberBroken = 0;
-
 	/* Setup the path data variable */
-	Path path(boxPtr,lookup,constants()->numTimeSlices(),initialPos,numberBroken);
-
+    vector<Path *> pathPtrVec;
+    for(int i=0; i<Npaths; i++){
+        pathPtrVec.push_back(
+                new Path(boxPtr,lookupPtrVec[i],constants()->numTimeSlices(),
+                         initialPos,constants()->numBroken()));
+    }
+    
     /* The Trial Wave Function (constant for pimc) */
     WaveFunctionBase *waveFunctionPtr = NULL;
-	waveFunctionPtr = setup.waveFunction(path);
+	waveFunctionPtr = setup.waveFunction(*pathPtrVec.front());
 
 	/* Setup the action */
-    ActionBase *actionPtr = NULL;
-    actionPtr = setup.action(path,lookup,externalPotentialPtr,interactionPotentialPtr,waveFunctionPtr);	
+    vector<ActionBase *> actionPtrVec;
+    for(int i=0; i<Npaths; i++){
+        actionPtrVec.push_back(
+                setup.action(*pathPtrVec[i],lookupPtrVec[i],externalPotentialPtr,
+                             interactionPotentialPtr,waveFunctionPtr) );
+    }
 
     /* The list of Monte Carlo updates (moves) that will be performed */
-    boost::ptr_vector<MoveBase> moves(setup.moves(path,actionPtr,random));
+    vector< boost::ptr_vector<MoveBase> * > movesPtrVec;
+    for(int i=0; i<Npaths;i++){
+        movesPtrVec.push_back(
+                setup.moves(*pathPtrVec[i],actionPtrVec[i],random).release());
+    }
 
     /* The list of estimators that will be performed */
-    boost::ptr_vector<EstimatorBase> estimators(setup.estimators(path,actionPtr,random));
+    /*vector< boost::ptr_vector<EstimatorBase> * > estimatorsPtrVec;
+    for(int i=0; i<Npaths;i++){
+        estimatorsPtrVec.push_back(
+                setup.estimators(*pathPtrVec[i],actionPtrVec[i],random).release());
+        if(i > 0) {
+            for(uint32 j=0; j<estimatorsPtrVec.back()->size(); j++)
+                estimatorsPtrVec.back()->at(j).appendLabel(str(format("%d") % (i+1)));
+        }
+    }
+    */
+
+   /* The list of estimators that will be performed */
+    vector< boost::ptr_vector<EstimatorBase> * > estimatorsPtrVec;
+    for(int i=0; i<Npaths;i++){
+        estimatorsPtrVec.push_back(setup.estimators(*pathPtrVec[i],actionPtrVec[i],random).release());
+        if(i>0){
+            stringstream tmpSS;
+            for(int j=0; j<estimatorsPtrVec.back()->size(); j++){
+                tmpSS.str("");
+                tmpSS << i+1 ;
+                estimatorsPtrVec.back()->at(j).appendLabel(tmpSS.str());
+            }
+        }
+    }
+    
+    /* Setup the multi-path estimators */
+    if(Npaths>1){
+        estimatorsPtrVec.push_back(setup.multiPathEstimators(pathPtrVec,actionPtrVec).release());
+    }
+
+
+
     
 	/* Setup the pimc object */
-	PathIntegralMonteCarlo pimc(path,random,moves,estimators,
-			!setup.params["start_with_state"].as<string>().empty());
+    PathIntegralMonteCarlo pimc(pathPtrVec,random,movesPtrVec,estimatorsPtrVec,
+                                !setup.params["start_with_state"].as<string>().empty(),
+                                setup.params["bin_size"].as<int>());
 
 	/* If this is a fresh run, we equilibrate and output simulation parameters to disk */
 	if (!constants()->restart()) {
@@ -131,7 +179,7 @@ int main (int argc, char *argv[]) {
 			pimc.equilStep(n,setup.params.count("relax"),setup.params.count("relaxmu"));
 
 		/* Output simulation details/parameters */
-		setup.outputOptions(argc,argv,seed,boxPtr,lookup.getNumNNGrid());
+		setup.outputOptions(argc,argv,seed,boxPtr,lookupPtrVec.front().getNumNNGrid());
 	}
 
 	cout << format("[PIMCID: %09d] - Measurement Stage.") % constants()->id() << endl;
@@ -152,7 +200,7 @@ int main (int argc, char *argv[]) {
 
 		/* Output configurations to disk */
 		if ((numOutput > 0) && ((n % numOutput) == 0)) {
-			path.outputConfig(outNum);
+			pathPtrVec.front()->outputConfig(outNum);
 			outNum++;
 		}
         
@@ -171,6 +219,8 @@ int main (int argc, char *argv[]) {
         cout << format("[PIMCID: %09d] - Measurement complete.") % constants()->id() << endl;
 
 	/* Output Results */
+    if (!constants()->saveStateFiles())
+        pimc.saveStateFromStr();
 	pimc.finalOutput();
 
 	/* Free up memory */
@@ -178,7 +228,6 @@ int main (int argc, char *argv[]) {
 	delete externalPotentialPtr;
 	delete boxPtr;
     delete waveFunctionPtr;
-    delete actionPtr;
 
 	initialPos.free();
 

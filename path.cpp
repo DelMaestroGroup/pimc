@@ -64,14 +64,37 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
         /* Here we break worldlines at the center of the path if requested*/
         breakSlice = 0;
         if (numberBroken > 0){
-            breakSlice = (numTimeSlices-1)/2-1;
+            breakSlice = (numTimeSlices-1)/2;
             for (int n=0; n<numberBroken; n++){
                 nextLink(breakSlice,n) = XXX;
                 prevLink(breakSlice+1,n) = XXX;
+                brokenWorldlinesL.push_back(n);
+                brokenWorldlinesR.push_back(n);
             }
+            for (int n=numberBroken; n<getNumParticles(); n++)
+                closedWorldlines.push_back(n);
+        }else if(constants()->spatialSubregionOn()){
+            breakSlice = (numTimeSlices-1)/2;
+            beadLocator beadIndex;
+            beadIndex[0] =breakSlice+1;
+            for( int n=0; n<getNumParticles(); n++){
+                beadIndex[1] = n;
+                if (inSubregionA(beadIndex)){
+                    nextLink(breakSlice,n) = XXX;
+                    prevLink(breakSlice+1,n) = XXX;
+                    brokenWorldlinesL.push_back(n);
+                    brokenWorldlinesR.push_back(n);
+                }else{
+                    closedWorldlines.push_back(n);
+                }
+            }
+        }else{
+            for (int n=0; n<getNumParticles(); n++)
+                closedWorldlines.push_back(n);
         }
     }
     else {
+        breakSlice = 0;
         /* Here we implement periodic boundary conditions in imaginary time */
         prevLink(0,Range::all())[0] = numTimeSlices-1;
         nextLink(numTimeSlices-1,Range::all())[0] = 0;
@@ -378,6 +401,171 @@ void Path::delBead(const beadLocator &beadIndex) {
 }
 
 /**************************************************************************//**
+ *  Break a link to right of bead.
+ ******************************************************************************/
+void Path::breakLink(const beadLocator &beadIndexL) {
+    beadLocator beadIndexR = next(beadIndexL);
+    nextLink(beadIndexL[0],beadIndexL[1]) = XXX;
+    prevLink(beadIndexR[0],beadIndexR[1]) = XXX;
+}
+
+/**************************************************************************//**
+*  Make a link between beads.
+******************************************************************************/
+void Path::makeLink(const beadLocator &beadIndexL,const beadLocator &beadIndexR) {
+    nextLink(beadIndexL[0],beadIndexL[1]) = beadIndexR;
+    prevLink(beadIndexR[0],beadIndexR[1]) = beadIndexL;
+}
+
+/**************************************************************************//**
+*  Break a link to right of bead AND update lists.
+******************************************************************************/
+void Path::removeCenterLink(const beadLocator &beadIndexL) {
+    /* Get linked bead */
+    beadLocator beadIndexR = next(beadIndexL);
+    
+    /* Break link */
+    breakLink(beadIndexL);
+    
+    /* Update lists */
+    vector<int>::iterator itr;
+    itr = find(closedWorldlines.begin(), closedWorldlines.end(), beadIndexL[1]);
+    closedWorldlines.erase(itr);
+    brokenWorldlinesL.push_back(beadIndexL[1]);
+    brokenWorldlinesR.push_back(beadIndexR[1]);
+}
+
+/**************************************************************************//**
+*  Make a link between beads AND update lists
+******************************************************************************/
+void Path::addCenterLink(const beadLocator &beadIndexL,const beadLocator &beadIndexR) {
+    
+    /* Make new link */
+    makeLink(beadIndexL,beadIndexR);
+    
+    /* Update lists */
+    vector<int>::iterator itr;
+    itr = find(brokenWorldlinesL.begin(), brokenWorldlinesL.end(), beadIndexL[1]);
+    brokenWorldlinesL.erase(itr);
+    itr = find(brokenWorldlinesR.begin(), brokenWorldlinesR.end(), beadIndexR[1]);
+    brokenWorldlinesR.erase(itr);
+    closedWorldlines.push_back(beadIndexL[1]);
+}
+
+/**************************************************************************//**
+*  Reset broken bead lists.
+******************************************************************************/
+
+void Path::resetBrokenClosedVecs(){
+
+    if ( (constants()->pigs())&&(breakSlice > 0) ){
+        
+        beadLocator beadIndex;
+        
+        /* Clear vectors */
+        brokenWorldlinesL.clear();
+        brokenWorldlinesR.clear();
+        closedWorldlines.clear();
+        
+        /* Set brokenWorldlinesL and closedWorldlines by checking breakSlice */
+        beadIndex[0] = breakSlice;
+        for (int ptcl = 0; ptcl < numBeadsAtSlice(beadIndex[0]); ptcl++) {
+            beadIndex[1] = ptcl;
+            if( all(next(beadIndex) == XXX))
+                brokenWorldlinesL.push_back(ptcl);
+            else
+                closedWorldlines.push_back(ptcl);
+        }
+        /* Set brokenWorldlinesR by checking breakSlice+1 */
+        beadIndex[0] = breakSlice+1;
+        for (int ptcl = 0; ptcl < numBeadsAtSlice(beadIndex[0]); ptcl++) {
+            beadIndex[1] = ptcl;
+            if( all(prev(beadIndex) == XXX))
+                brokenWorldlinesR.push_back(ptcl);
+        }
+    }
+};
+
+/**************************************************************************//**
+*  Check to see if worldline is broken at beadIndex
+******************************************************************************/
+bool Path::isBroken(const beadLocator &beadIndex) const{
+    bool broken = false;
+    if ( all(prev(beadIndex)==XXX) || all(next(beadIndex)==XXX) )
+        broken = true;
+    return broken;
+}
+
+/**************************************************************************//**
+*  Return a constatnt factor for worldine breaks
+******************************************************************************/
+double Path::breakFactor(const beadLocator &beadIndex1,
+                         const beadLocator &beadIndex2) const{
+    double factor = 1.0;
+    /*if ( constants()->pigs() ){
+        if ( (breakSlice > 0) && (beadIndex1[0] == (breakSlice+1)) ){
+            if ( isBroken(beadIndex1) || isBroken(beadIndex2) )
+                factor = 0.5;
+        }
+    }*/
+    return factor;
+}
+
+/**************************************************************************//**
+*  Check if bead is in subregion A
+******************************************************************************/
+bool Path::inSubregionA(const beadLocator &beadIndex) const{
+    bool inA = false;
+    if( constants()->spatialSubregionOn() ){
+        if ( (beadIndex[0]==breakSlice+1)&&
+                //(abs(beads(beadIndex)[0]) < constants()->spatialSubregion()) )
+                ( beads(beadIndex)[0] < constants()->spatialSubregion() ) )
+            inA = true;
+    }
+    //cout << beadIndex[0] << '\t' << inA << '\t' << beads(beadIndex) << endl;
+    return inA;
+}
+
+/**************************************************************************//**
+*  Check if bead is in subregion B
+******************************************************************************/
+bool Path::inSubregionB(const beadLocator &beadIndex) const{
+    bool inB = false;
+    if( constants()->spatialSubregionOn() ){
+        if ( (beadIndex[0]==breakSlice+1)&&(!inSubregionA(beadIndex)) )
+            inB = true;
+    }
+    return inB;
+}
+
+/**************************************************************************//**
+*  Check if bead is in subregion B
+******************************************************************************/
+bool Path::checkSubregionLinks() const{
+    bool foundError = false;
+    beadLocator beadIndex;
+    
+    beadIndex[0] = breakSlice+1;
+    for(int n=0; n<getNumParticles(); n++){
+        beadIndex[1] = n;
+        if( inSubregionA(beadIndex)){
+            foundError = (all(prev(beadIndex)!= XXX));
+        }else if( inSubregionB(beadIndex) ){
+            foundError = (all(prev(beadIndex)== XXX));
+        }else{
+            foundError=true;
+        }
+        if(foundError){
+            cout << beadIndex[1] << '\t' << beads(beadIndex) << 't' <<
+            inSubregionA(beadIndex) << '\t' << inSubregionB(beadIndex) << endl;
+            break;
+        }
+    }
+    return foundError;
+}
+
+
+/**************************************************************************//**
  *  Output the world-line configurations in a generic format.
  * 
  *  Output the worldline configuration to disk using a format suitable for 
@@ -499,6 +687,55 @@ void Path::outputConfig(int configNumber) const {
 	endBead.free();
 	wlLength.free();
 	doBead.free();
+}
+
+/**************************************************************************//**
+ *  Output the world-line configurations in a generic format.
+ * 
+ *  Output the worldline configuration to disk using a format suitable for 
+ *  plotting using vpython. 
+******************************************************************************/
+#include "communicator.h"
+void Path::outputPIGSConfig(int configNumber) const {
+
+	int numParticles = getNumParticles();
+
+	/* We go through each particle/worldline */
+	beadLocator beadIndex;
+
+	/* Output the header */
+	communicate()->file("wl")->stream() << format("# START_CONFIG %06d\n") % configNumber;
+
+	/* Output the unit cell information.  It is always cubic.  Everything is scaled by
+	 * an overall factor for better visualization. */
+
+	/* We output the bead block */
+	for (int n = 0; n < numParticles;  n++) {
+        for (int m = 0; m < numTimeSlices; m++) {
+            beadIndex = m,n;
+		
+            communicate()->file("wl")->stream() << format("%8d %8d %8d") % beadIndex[0] 
+            % beadIndex[1] % 1;
+
+			/* Output the coordinates in 3D */
+			int i;
+			for (i = 0; i < NDIM; i++) {
+				communicate()->file("wl")->stream() << format("%16.3E") % (beads(beadIndex)[i]);
+			}
+			while (i < 3) {
+				communicate()->file("wl")->stream() << format("%16.3E") % 0.0;
+				i++;
+			}
+
+			/* Output the bead indices of the connecting beads */
+            communicate()->file("wl")->stream() << format("%8d %8d %8d %8d\n") % prev(beadIndex)[0] 
+                % prev(beadIndex)[1] % next(beadIndex)[0] % next(beadIndex)[1];
+
+            /* Advance the bead index */
+            beadIndex = next(beadIndex);
+		} 
+    }
+	communicate()->file("wl")->stream() << format("# END_CONFIG %06d\n") % configNumber;
 }
 
 /**************************************************************************//**

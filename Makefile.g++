@@ -15,8 +15,26 @@ ifdef ndim
 DIM = -D NDIM=$(ndim)
 endif
 
+ifdef double
+DOUBLE = -D DOUBLEPATH
+endif
+
 
 # Edit below to include details on your specific host
+
+#ifdef chrimac
+OPT = -w -O3 -fno-math-errno
+CODEDIR = $$HOME/local
+CFLAGS  = $(OPT) $(DIM) $(DOUBLE) $(DEBUG) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options -lboost_filesystem -lboost_system
+#endif
+
+#ifdef chracbook
+OPT = -Wall -O3 -fno-math-errno
+CODEDIR = $$HOME/local
+CFLAGS  = $(OPT) $(DIM) $(DEBUG) $(DOUBLE) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options -lboost_filesystem -lboost_system
+#endif
 
 ifdef meron
 OPT = -Wall -O3 -fno-math-errno
@@ -59,9 +77,9 @@ endif
 RM      = /bin/rm -f
 
 PROG    = pimc.e
-SOURCE  = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp cmc.cpp
+SOURCE  = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp cmc.cpp wavefunction.cpp
 OBJS    = $(SOURCE:.cpp=.o)
-HEADERS = common.h pimc.h constants.h container.h path.h worm.h action.h potential.h move.h estimator.h lookuptable.h communicator.h setup.h cmc.h
+HEADERS = common.h pimc.h constants.h container.h path.h worm.h action.h potential.h move.h estimator.h lookuptable.h communicator.h setup.h cmc.h wavefunction.h
 
 # -------------------------------------------------------------------------------
 all: $(PROG)

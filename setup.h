@@ -82,6 +82,7 @@ class Setup {
 
         /* Setup the estimator array */
         auto_ptr< boost::ptr_vector<EstimatorBase> > estimators(Path &, ActionBase *, MTRand &);
+        auto_ptr< boost::ptr_vector<EstimatorBase> > multiPathEstimators(vector<Path *> &,vector<ActionBase *> &);
 
         po::variables_map params;       			///< The command line parameter map
 

@@ -527,9 +527,6 @@ bool DisplaceMove::attemptMove() {
     /* We now select the worldline that will be updated */
     beadIndex[1] = random.randInt(path.numBeadsAtSlice(beadIndex[0])-1);
 
-    /* !!NB!! Ask Chris about this, it seems like the boundaries will never be
-     * moved */
-    
     /* If path is broken, select which end to move */
     if ( (path.breakSlice > 0) && (random.rand() < 0.5) ){
         /* Check if worldline is broken */
@@ -629,6 +626,452 @@ void DisplaceMove::undoMove() {
 	success = false;
 }
 
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// END STAGING MOVE CLASS -------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+* Constructor
+*
+* A constructor which sets up the path data and random members.
+******************************************************************************/
+EndStagingMove::EndStagingMove (Path &_path, ActionBase *_actionPtr,
+                            MTRand &_random, string _name,  ensemble _operateOnConfig) :
+MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+    
+	/* Initialize private data to zera */
+	numAccepted = numAttempted = numToMove = 0;
+    
+	/* We will perform staging moves of length Mbar/2 on the ends */
+	originalPos.resize(constants()->Mbar()/2);
+}
+
+EndStagingMove::~EndStagingMove() {
+}
+
+
+/*************************************************************************//**
+* Perform a single slice update on the head or tail.
+******************************************************************************/
+bool EndStagingMove::attemptMove() {
+    
+    beadLocator beadIndex;
+    beadLocator pivotIndex;          // The bead adjacent to the update that is fixed
+    beadLocator neighborIndex;
+	success = false;
+    bool movedIntoSubregionB;
+    
+	/* Randomly select the bead to be moved, either the head or tail */
+    if (random.rand() < 0.5) {
+        beadIndex[0] = 0;
+        beadIndex[1] = random.randInt(path.numBeadsAtSlice(beadIndex[0])-1);
+        leftMoving = true;
+        leftBead = beadIndex;
+
+    }
+    else {
+        beadIndex[0] = constants()->numTimeSlices()-1;
+        beadIndex[1] = random.randInt(path.numBeadsAtSlice(beadIndex[0])-1);
+        leftMoving = false;
+        rightBead = beadIndex;
+    }
+    
+    /* If path is broken, select which end to move */
+    if ( (path.breakSlice > 0 )
+                && (random.rand() < 0.5) ){
+        /* Check if worldline is broken */
+        beadLocator brokenBead = beadIndex;
+        if ( beadIndex[0] == 0){
+            while( !all(path.next(brokenBead)==XXX) ){
+                brokenBead = path.next(brokenBead);
+                if ( brokenBead[0] == path.breakSlice ){
+                    if ( all(path.next(brokenBead)==XXX ) )
+                        leftMoving = false;
+                        rightBead = brokenBead;
+                }
+            }
+        }else{
+            while( !all(path.prev(brokenBead)==XXX) ){
+                brokenBead = path.prev(brokenBead);
+                if ( brokenBead[0] == path.breakSlice+1 ){
+                    if ( all(path.prev(brokenBead)==XXX ) )
+                        leftMoving = true;
+                        leftBead = brokenBead;
+                }
+            }
+        }
+    }
+    
+    /* Now we have to make sure that we are moving an active trajectory,
+	 * otherwise we exit immediatly */
+    if (leftMoving){
+        /*  For a left moving update, rightBead is prev(pivotIndex) */
+        beadIndex = leftBead;
+        for (int k = 0; k < (constants()->Mbar()/2); k++) {
+            if (!path.worm.beadOn(beadIndex) || all(path.next(beadIndex)==XXX))
+                return false;
+            beadIndex = path.next(beadIndex);
+        }
+        pivotIndex = beadIndex;
+        rightBead = path.prev(pivotIndex);
+    }else{
+        /*  For a right moving update, leftBead is next(pivotIndex) */
+        beadIndex = rightBead;
+        for (int k = 0; k < (constants()->Mbar()/2); k++) {
+            if (!path.worm.beadOn(beadIndex) || all(path.prev(beadIndex)==XXX))
+                return false;
+            beadIndex = path.prev(beadIndex);
+        }
+        pivotIndex = beadIndex;
+        leftBead = path.next(pivotIndex);
+    }
+    
+    /* If we haven't found the worm head, and all beads are on, try to perform the move */
+        
+    /* Increment the attempted counters */
+    numAttempted++;
+    totAttempted++;
+    
+    /* Get the current action for the path segment to be updated */
+    oldAction = actionPtr->potentialAction(leftBead,rightBead);
+    
+    /* Perorm the staging update, generating the new path and updating bead
+     * positions, while storing the old one */
+    movedIntoSubregionB = false;
+    if (leftMoving){
+        neighborIndex = pivotIndex;
+        int k = originalPos.size()-1;
+        dVec pos;
+        do {
+            beadIndex = path.prev(neighborIndex);
+            originalPos(k) = path(beadIndex);
+            path.updateBead(beadIndex,newFreeParticlePosition(neighborIndex));
+            movedIntoSubregionB = path.inSubregionB(beadIndex);
+            --k;
+            neighborIndex = beadIndex;
+        } while (!all(path.prev(neighborIndex)==XXX));
+    }else{
+        neighborIndex = pivotIndex;
+        int k = 0;
+        dVec pos;
+        do {
+            beadIndex = path.next(neighborIndex);
+            originalPos(k) = path(beadIndex);
+            path.updateBead(beadIndex,newFreeParticlePosition(neighborIndex));
+            movedIntoSubregionB = path.inSubregionB(beadIndex);
+            ++k;
+            neighborIndex = beadIndex;
+        } while (!all(path.next(neighborIndex)==XXX));
+
+    }
+    
+    /* Continue with update only if end has not moved into subRegionB */
+    if (!movedIntoSubregionB){
+    
+        /* Get the new action for the updated path segment */
+        newAction = actionPtr->potentialAction(leftBead,rightBead);
+        
+        /* The metropolis acceptance step */
+        if (random.rand() < exp(-(newAction - oldAction))) {
+            keepMove();
+        }
+        else {
+            undoMove();
+        }
+    }else {
+        undoMove();
+    }
+    
+	return success;
+}
+
+/*************************************************************************//**
+* Undo the single slice move by returning the bead to its original position
+******************************************************************************/
+void EndStagingMove::undoMove() {
+    int k = 0;
+	beadLocator beadIndex;
+	beadIndex = leftBead;
+    path.updateBead(beadIndex,originalPos(k));
+	while (!all(beadIndex==rightBead)){
+		beadIndex = path.next(beadIndex);
+        ++k;
+        path.updateBead(beadIndex,originalPos(k));
+	}
+    
+	success = false;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// MID-STAGING MOVE CLASS -------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+* Constructor
+*
+* A constructor which sets up the path data and random members.
+******************************************************************************/
+MidStagingMove::MidStagingMove (Path &_path, ActionBase *_actionPtr,
+                                MTRand &_random, string _name,  ensemble _operateOnConfig) :
+MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+    
+	/* Initialize private data to zera */
+	numAccepted = numAttempted = numToMove = 0;
+    
+	/* We will perform staging moves of length Mbar in the middle of the path */
+	originalPos.resize(constants()->Mbar());
+}
+
+MidStagingMove::~MidStagingMove() {
+}
+
+/*************************************************************************//**
+* CMH: Add a description for this update
+******************************************************************************/
+bool MidStagingMove::attemptMove() {
+    
+    beadLocator beadIndex;
+    beadLocator pivotIndex;         // The bead adjacent to the update that is fixed
+    beadLocator neighborIndex;
+    
+	success = false;
+    bool startBreak;                // Whether the update path starts broken
+    bool endBreak;                  // Whether the update path end broken
+    double centerWeightInit;       // Initial weight of center slice
+    double centerWeightFinal;       // Final weight of center slice after update
+    
+	/* Randomly select the bead to be moved on the left */
+    beadIndex[0] = path.breakSlice-constants()->Mbar()/2+1;
+    beadIndex[1] = random.randInt(path.numBeadsAtSlice(beadIndex[0])-1);
+    leftBead = beadIndex;
+    
+    /* Check if worldline is broken */
+    while( (!all(path.next(beadIndex)==XXX)) && (beadIndex[0] != path.breakSlice) ){
+        beadIndex = path.next(beadIndex);
+    }
+    midBeadL = beadIndex;
+    startBreak = all(path.next(midBeadL)==XXX);
+    
+    double totalrho0;
+    iVec wind;
+    /* Choose right path to update */
+    if( startBreak){
+        midBeadR[0] = path.breakSlice + 1;
+        midBeadR[1] = path.brokenWorldlinesR[random.randInt(path.brokenWorldlinesR.size()-1)];
+        wind = sampleWindingSector(midBeadL,midBeadR,1,totalrho0);
+        centerWeightInit = 1.0/totalrho0;
+    } else {
+        midBeadR = path.next(beadIndex);
+        centerWeightInit = 1.0;
+    }
+    
+    /* Move Mbar/2-1 stepts to rightBead */
+    beadIndex = midBeadR;
+    while( (!all(path.next(beadIndex)==XXX))
+            &&(beadIndex[0] != path.breakSlice+constants()->Mbar()/2) ){
+        beadIndex = path.next(beadIndex);
+    }
+    rightBead = beadIndex;
+    
+    /* Increment the attempted counters */
+    numAttempted++;
+    totAttempted++;
+
+    /* Get the winding sector to sample */
+    wind = sampleWindingSector(path.prev(leftBead),path.next(rightBead),constants()->Mbar()+1,totalrho0);
+    
+    /* Get the current action for the path segment to be updated */
+    oldAction = actionPtr->potentialAction(leftBead,midBeadL);
+    oldAction += actionPtr->potentialAction(midBeadR,rightBead);
+    
+    /* Perform the staging update, generating the new path and updating bead
+     * positions, while storing the old one */
+    beadIndex = path.prev(leftBead);
+    int k = 0;
+    dVec pos;
+    do {
+        beadIndex = path.next(beadIndex);
+        originalPos(k) = path(beadIndex);
+	path.updateBead(beadIndex,
+                newStagingPosition(path.prev(beadIndex),path.next(rightBead),constants()->Mbar()+1,k,wind));
+        ++k;
+    } while (!all(beadIndex==midBeadL));
+
+    beadIndex = midBeadR;
+    originalPos(k) = path(beadIndex);
+    path.updateBead(beadIndex,
+                    newStagingPosition(midBeadL,path.next(rightBead),constants()->Mbar()+1,k,wind));
+
+    k++;
+
+    while (!all(beadIndex==rightBead)){
+        beadIndex = path.next(beadIndex);
+        originalPos(k) = path(beadIndex);
+
+        path.updateBead(beadIndex,
+                        newStagingPosition(path.prev(beadIndex),path.next(rightBead),constants()->Mbar()+1,k,wind));
+        ++k;
+    };
+    
+    /* check if midBead R in A*/
+    endBreak = path.inSubregionA(midBeadR);
+    
+    if (endBreak){
+        wind = sampleWindingSector(midBeadL,midBeadR,1,totalrho0);
+        centerWeightFinal = 1.0/totalrho0;
+    }else{
+        centerWeightFinal = 1.0;
+    }
+    
+    /* Get the new action for the updated path segment */
+    newAction = actionPtr->potentialAction(leftBead,midBeadL);
+    newAction += actionPtr->potentialAction(midBeadR,rightBead);
+    
+    /* The metropolis acceptance step */
+    if (random.rand() < (centerWeightFinal/centerWeightInit)*exp(-(newAction - oldAction))) {
+        keepMove();
+        
+        /* Update broken bead lists, make/break links */
+        if (startBreak && (!endBreak)){
+            path.addCenterLink(midBeadL,midBeadR);
+        }else if((!startBreak) && endBreak){
+            path.removeCenterLink(midBeadL);
+        }
+    }
+    else 
+        undoMove();
+    
+	return success;
+}
+
+
+/*************************************************************************//**
+* Undo the single slice move by returning the bead to its original position
+******************************************************************************/
+void MidStagingMove::undoMove() {
+    int k = 0;
+	beadLocator beadIndex;
+	beadIndex = leftBead;
+    path.updateBead(beadIndex,originalPos(k));
+	while (!all(beadIndex==midBeadL)){
+		beadIndex = path.next(beadIndex);
+        ++k;
+        path.updateBead(beadIndex,originalPos(k));
+	}
+    beadIndex = midBeadR;
+    k++;
+    path.updateBead(beadIndex,originalPos(k));
+	while (!all(beadIndex==rightBead)){
+		beadIndex = path.next(beadIndex);
+        ++k;
+        path.updateBead(beadIndex,originalPos(k));
+	}
+    
+	success = false;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// SWAPBREAK MOVE CLASS -------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+* Constructor
+*
+* A constructor which sets up the path data and random members.
+******************************************************************************/
+SwapBreakMove::SwapBreakMove (Path &_path, ActionBase *_actionPtr,
+                            MTRand &_random, string _name,  ensemble _operateOnConfig) :
+MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+    
+	/* Initialize private data to zera */
+	numAccepted = numAttempted = numToMove = 0;
+    
+}
+
+SwapBreakMove::~SwapBreakMove() {
+}
+
+/*************************************************************************//**
+* CMH: Please add a method description for this move. 
+* 
+******************************************************************************/
+bool SwapBreakMove::attemptMove() {
+    
+	success = false;
+    
+    beadLocator brokenBeadL,brokenBeadR,closedBeadL,closedBeadR;
+    
+	/* Make sure we have at least one broken slice */
+	if (path.breakSlice > 0) {
+        
+        /* Increment the number of displacement moves and the total number
+         * of moves */
+        numAttempted++;
+        totAttempted++;
+        
+        /* Set time slices to broken slice */
+        brokenBeadL[0] = path.breakSlice;
+        brokenBeadR[0] = path.breakSlice+1;
+        closedBeadL[0] = path.breakSlice;
+        
+        /* Select broken bead on left/right to swap */
+        int brokenListIndexL = random.randInt(path.brokenWorldlinesL.size()-1);
+        int brokenListIndexR = random.randInt(path.brokenWorldlinesR.size()-1);
+        
+        brokenBeadL[1] = path.brokenWorldlinesL[brokenListIndexL];
+        brokenBeadR[1] = path.brokenWorldlinesR[brokenListIndexR];
+        
+        /* Select closed world line to swap */
+        int closedListIndex = random.randInt(path.closedWorldlines.size()-1);
+        closedBeadL[1] = path.closedWorldlines[closedListIndex];
+        closedBeadR = path.next(closedBeadL);
+                
+		/* Compute the action for original path */
+        double rho0Old;
+        iVec wind;
+        wind = sampleWindingSector(closedBeadL,closedBeadR,1,rho0Old);
+        
+        /* Close open worldline */
+        path.makeLink(brokenBeadL,brokenBeadR);
+
+        /* Open closed worldline */
+        path.breakLink(closedBeadL);
+        
+        /* Compute the action for new path */
+        double rho0New;
+        wind = sampleWindingSector(brokenBeadL,brokenBeadR,1,rho0New);
+        
+        /* The metropolis acceptance step */
+        if (random.rand() < rho0New/rho0Old ) {
+            
+            /* Update broken/closed wordline lists */
+            path.closedWorldlines[closedListIndex] = brokenBeadL[1];
+            path.brokenWorldlinesL[brokenListIndexL] = closedBeadL[1];
+            path.brokenWorldlinesR[brokenListIndexR] = closedBeadR[1];
+
+			keepMove();
+        }
+		else {
+            /* Undo changes */
+            path.makeLink(closedBeadL,closedBeadR);
+            path.breakLink(brokenBeadL);
+            success = false;
+        }
+        
+	} // if breaklink > 0
+	else
+		success = false;
+    
+	return success;
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // CENTEROFMASS MOVE CLASS ---------------------------------------------------
@@ -665,17 +1108,24 @@ CenterOfMassMove::~CenterOfMassMove() {
 bool CenterOfMassMove::attemptMove() {
 
 	success = false;
+    
+    int startSlice =0;
+    /* If there are broken wordlines, choose between starting and ending bead*/
+    if( (path.breakSlice > 0) &&(random.rand() < 0.5) )
+        startSlice = path.numTimeSlices-1;
 
 	/* We don't bother performing a center of mass move, unless we have at 
-	 * least one bead on slice 0 */
-	if (path.numBeadsAtSlice(0) == 0)
+	 * least one bead on startSlice */
+	if (path.numBeadsAtSlice(startSlice) == 0)
 		return false;
 
 	checkMove(0,0.0);
 
 	/* The initial bead */
     beadLocator firstBead;
-	firstBead = 0,random.randInt(path.numBeadsAtSlice(0)-1);
+	firstBead = startSlice,random.randInt(path.numBeadsAtSlice(startSlice)-1);
+    
+    bool startSubregionA,startSubregionB,endSubregionA,endSubregionB;
 
     /* Now we traverse the path backwards, until we find 1 of two
      * possibilities, either we reach a null bead, or we wrap around */
@@ -746,25 +1196,43 @@ bool CenterOfMassMove::attemptMove() {
 
     /* Go through the worldline and update the position of all the beads */
 	beadIndex = startBead;
+    startSubregionA = false;
+    startSubregionB = false;
+    endSubregionA = false;
+    endSubregionB = false;
 	do {
+        /* Check if bead is in subregion A or B */
+        if ((constants()->spatialSubregionOn())&&(!(startSubregionA||startSubregionB))){
+            startSubregionA = path.inSubregionA(beadIndex);
+            startSubregionB = path.inSubregionB(beadIndex);
+        }
 		pos = path(beadIndex) + originalPos(0);
 		path.boxPtr->putInBC(pos);
 		path.updateBead(beadIndex,pos);
+        if ((constants()->spatialSubregionOn())&&(!(endSubregionA||endSubregionB))){
+            endSubregionA = path.inSubregionA(beadIndex);
+            endSubregionB = path.inSubregionB(beadIndex);
+        }
 		beadIndex = path.next(beadIndex);
 	} while (!all(beadIndex==path.next(endBead)));
-
-    /* Get the new potential action of the path */
-    newAction = actionPtr->potentialAction(startBead,endBead);
-
-	/* The metropolis acceptance step */
-	if (random.rand() < exp(-(newAction - oldAction)))  {
-		keepMove();
-		checkMove(1,newAction-oldAction);
-	}
-	else {
-		undoMove();
+    
+    if ( (startSubregionA && endSubregionB)|| (startSubregionB && endSubregionA) ){
+        undoMove();
 		checkMove(2,0.0);
-	}
+	} else{
+        /* Get the new potential action of the path */
+        newAction = actionPtr->potentialAction(startBead,endBead);
+
+        /* The metropolis acceptance step */
+        if (random.rand() < exp(-(newAction - oldAction)))  {
+            keepMove();
+            checkMove(1,newAction-oldAction);
+        }
+        else {
+            undoMove();
+            checkMove(2,0.0);
+        }
+    }
 
 	return success;
 }
@@ -833,8 +1301,11 @@ bool StagingMove::attemptMove() {
 		return false;
 
 	/* Randomly select the start bead of the stage */
-	startBead[0] = random.randInt(path.numTimeSlices-1);
-
+    if (constants()->pigs())
+        startBead[0] = random.randInt((path.numTimeSlices-1)-constants()->Mbar());
+    else
+        startBead[0] = random.randInt(path.numTimeSlices-1);
+    
     /* We need to worry about the possibility of an empty slice for small
      * numbers of particles. */
     if (path.numBeadsAtSlice(startBead[0]) == 0)
@@ -870,25 +1341,34 @@ bool StagingMove::attemptMove() {
 	beadIndex = startBead;
 	int k = 0;
 	dVec pos;
+    bool movedIntoSubRegionA = false;
 	do {
 		beadIndex = path.next(beadIndex);
 		originalPos(k) = path(beadIndex);
 		path.updateBead(beadIndex,
 				newStagingPosition(path.prev(beadIndex),endBead,constants()->Mbar(),k,wind));
+        if (!movedIntoSubRegionA){
+            movedIntoSubRegionA = path.inSubregionA(beadIndex);
+        }
 		++k;
 	} while (!all(beadIndex==path.prev(endBead)));
 
-    /* Get the new action for the updated path segment */
-    newAction = actionPtr->potentialAction(startBead,path.prev(endBead));
+    if ( !movedIntoSubRegionA ) {
+        /* Get the new action for the updated path segment */
+        newAction = actionPtr->potentialAction(startBead,path.prev(endBead));
 
-	/* The actual Metropolis test */
-	if ( random.rand() < exp(-(newAction-oldAction)) ) {
-		keepMove();
-        checkMove(1,newAction-oldAction);
+        /* The actual Metropolis test */
+        if ( random.rand() < exp(-(newAction-oldAction)) ) {
+            keepMove();
+            checkMove(1,newAction-oldAction);
+        }
+        else {
+            undoMove();
+            checkMove(2,0.0);
+        }
     }
 	else {
 		undoMove();
-        checkMove(2,0.0);
     }
 	
 	return success;

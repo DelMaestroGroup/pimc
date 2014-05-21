@@ -33,7 +33,9 @@ class MoveBase {
 		MoveBase (Path &, ActionBase *, MTRand &, string _name="", 
                 ensemble _operateOnConfig=ANY, bool _varLength=false);
 		virtual ~MoveBase();
-
+    
+        virtual MoveBase* clone() const = 0;
+    
 		string name;	                ///< The name of the estimator
         ensemble operateOnConfig;       ///< What configurations do we operate on?
         bool variableLength;            ///< Does the move have a variable length?
@@ -166,12 +168,84 @@ class DisplaceMove: public MoveBase {
 		DisplaceMove(Path &, ActionBase *, MTRand &, 
                 string _name="displace", ensemble _operateOnConfig=ANY);
 		~DisplaceMove();
-
+    
+        DisplaceMove* clone() const{ return new DisplaceMove(*this); }
+    
 		bool attemptMove();
 
 	private:
 		beadLocator beadIndex;	// The index of the bead being moved
 		void undoMove();		// revert everything back
+};
+
+
+// ========================================================================
+// End Staging Move Class
+// ========================================================================
+/* A derived class which performs a staiging move on the end of a path.
+ */
+class EndStagingMove: public MoveBase {
+    
+public:
+    EndStagingMove(Path &, ActionBase *, MTRand &,
+                 string _name="end staging", ensemble _operateOnConfig=ANY);
+    ~EndStagingMove();
+    
+    EndStagingMove* clone() const{ return new EndStagingMove(*this); }
+
+    bool attemptMove();
+    
+private:
+    bool leftMoving;        // True if update moves left to right
+    beadLocator leftBead;	// The left most bead being moved
+    beadLocator rightBead;	// The left most bead being moved
+    void undoMove();		// revert everything back
+};
+
+
+// ========================================================================
+// End Staging Move Class
+// ========================================================================
+/* A derived class which performs a staiging move on the end of a path.
+ */
+class MidStagingMove: public MoveBase {
+    
+public:
+    MidStagingMove(Path &, ActionBase *, MTRand &,
+                   string _name="mid-staging", ensemble _operateOnConfig=ANY);
+    ~MidStagingMove();
+    
+    MidStagingMove* clone() const{ return new MidStagingMove(*this); }
+    
+    bool attemptMove();
+    
+private:
+    bool leftMoving;        // True if update moves left to right
+    beadLocator leftBead;	// The left most bead being moved
+    beadLocator rightBead;	// The left most bead being moved
+    beadLocator midBeadL;   // Bead on left of break to be updated
+    beadLocator midBeadR;   // Bead on right of break to be updated
+    void undoMove();		// revert everything back
+};
+
+
+// ========================================================================
+// SwapBreak Move Class
+// ========================================================================
+/* A derived class which swaps the location of a broken worldline.
+*/
+class SwapBreakMove: public MoveBase {
+    
+public:
+    SwapBreakMove(Path &, ActionBase *, MTRand &,
+                 string _name="swap break", ensemble _operateOnConfig=ANY);
+    ~SwapBreakMove();
+    
+    SwapBreakMove* clone() const{ return new SwapBreakMove(*this); }
+
+    bool attemptMove();
+    void undoMove(){};
+    
 };
 
 // ========================================================================  
@@ -188,6 +262,8 @@ class CenterOfMassMove: public MoveBase {
                 string _name="center of mass", ensemble _operateOnConfig=ANY);
 		~CenterOfMassMove();
 
+        CenterOfMassMove* clone() const{ return new CenterOfMassMove(*this); }
+    
 		bool attemptMove();
 		bool attemptMove1();
 
@@ -211,6 +287,8 @@ class StagingMove: public MoveBase {
                 ensemble _operateOnConfig=ANY);
 		~StagingMove();
 
+        StagingMove* clone() const{ return new StagingMove(*this); }
+
 		bool attemptMove();
 
 	private:
@@ -231,6 +309,8 @@ class BisectionMove: public MoveBase {
 		BisectionMove(Path &, ActionBase *, MTRand &, string _name="bisection",
                 ensemble _operateOnConfig=ANY);
 		~BisectionMove();
+    
+        BisectionMove* clone() const{ return new BisectionMove(*this); }
 
 		bool attemptMove();
 
@@ -263,6 +343,8 @@ class OpenMove: public MoveBase {
                 ensemble _operateOnConfig=DIAGONAL, bool _varLength=true);
 		~OpenMove();
 
+        OpenMove* clone() const{ return new OpenMove(*this); }
+
 		bool attemptMove();
 
 	private:
@@ -289,6 +371,8 @@ class CloseMove: public MoveBase {
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~CloseMove();
 
+        CloseMove* clone() const{ return new CloseMove(*this); }
+
 		bool attemptMove();
 
 	private:
@@ -314,6 +398,8 @@ class InsertMove: public MoveBase {
 		InsertMove(Path &, ActionBase *, MTRand &, string _name="insert",
                 ensemble _operateOnConfig=DIAGONAL, bool _varLength=true);
 		~InsertMove();
+    
+        InsertMove* clone() const{ return new InsertMove(*this); }
 
 		bool attemptMove();
 
@@ -341,7 +427,8 @@ class RemoveMove: public MoveBase {
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~RemoveMove();
 
-		
+        RemoveMove* clone() const{ return new RemoveMove(*this); }
+
 		bool attemptMove();
 
 	private:
@@ -366,6 +453,8 @@ class AdvanceHeadMove: public MoveBase {
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~AdvanceHeadMove();
 		
+        AdvanceHeadMove* clone() const{ return new AdvanceHeadMove(*this); }
+    
 		bool attemptMove();
 
 	private:
@@ -398,6 +487,8 @@ class AdvanceTailMove: public MoveBase {
                 string _name="advance tail",
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~AdvanceTailMove();
+    
+        AdvanceTailMove* clone() const{ return new AdvanceTailMove(*this); }
 
 		bool attemptMove();
 
@@ -425,6 +516,8 @@ class RecedeHeadMove: public MoveBase {
                 string _name="recede head",
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~RecedeHeadMove();
+    
+        RecedeHeadMove* clone() const{ return new RecedeHeadMove(*this); }
 		
 		bool attemptMove();
 
@@ -452,6 +545,8 @@ class RecedeTailMove: public MoveBase {
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~RecedeTailMove();
 		
+        RecedeTailMove* clone() const{ return new RecedeTailMove(*this); }
+    
 		bool attemptMove();
 
 	private:
@@ -515,6 +610,8 @@ class SwapHeadMove: public SwapMoveBase {
                 ensemble _operateOnConfig=OFFDIAGONAL);
 		~SwapHeadMove();
 
+        SwapHeadMove* clone() const{ return new SwapHeadMove(*this); }
+    
 		bool attemptMove();
 
 	private:
@@ -543,6 +640,9 @@ class SwapTailMove: public SwapMoveBase {
                 ensemble _operateOnConfig=OFFDIAGONAL);
 		~SwapTailMove();
 		
+        SwapTailMove* clone() const{ return new SwapTailMove(*this); }
+
+    
 		bool attemptMove();
 
 	private:
