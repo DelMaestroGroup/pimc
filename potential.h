@@ -125,7 +125,7 @@ class FreePotential: public PotentialBase {
 		~FreePotential();
 
 		/** The potential. */
-		double V(const dVec &sep) { return 0.0*sep[0]; };
+		double V(const dVec &sep) { return 0.0; };
 
 		/** The gradient of the potential. */
 		dVec gradV(const dVec &pos) {

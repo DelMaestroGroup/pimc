@@ -91,6 +91,9 @@ int main (int argc, char *argv[]) {
 	PotentialBase *externalPotentialPtr = NULL;
 	externalPotentialPtr = setup.externalPotential(boxPtr);
 
+    externalPotentialPtr->output(6.0);
+    exit(-1);
+
 	/* Get the initial conditions associated with the external potential */
 	/* Must use the copy constructor as we return a copy */
 	Array<dVec,1> initialPos = 
@@ -132,7 +135,7 @@ int main (int argc, char *argv[]) {
     }
 
     /* The list of estimators that will be performed */
-    /*vector< boost::ptr_vector<EstimatorBase> * > estimatorsPtrVec;
+    vector< boost::ptr_vector<EstimatorBase> * > estimatorsPtrVec;
     for(int i=0; i<Npaths;i++){
         estimatorsPtrVec.push_back(
                 setup.estimators(*pathPtrVec[i],actionPtrVec[i],random).release());
@@ -141,21 +144,21 @@ int main (int argc, char *argv[]) {
                 estimatorsPtrVec.back()->at(j).appendLabel(str(format("%d") % (i+1)));
         }
     }
-    */
+    
 
    /* The list of estimators that will be performed */
-    vector< boost::ptr_vector<EstimatorBase> * > estimatorsPtrVec;
-    for(int i=0; i<Npaths;i++){
-        estimatorsPtrVec.push_back(setup.estimators(*pathPtrVec[i],actionPtrVec[i],random).release());
-        if(i>0){
-            stringstream tmpSS;
-            for(unsigned j=0; j<estimatorsPtrVec.back()->size(); j++){
-                tmpSS.str("");
-                tmpSS << i+1 ;
-                estimatorsPtrVec.back()->at(j).appendLabel(tmpSS.str());
-            }
-        }
-    }
+    // vector< boost::ptr_vector<EstimatorBase> * > estimatorsPtrVec;
+    // for(int i=0; i<Npaths;i++){
+    //     estimatorsPtrVec.push_back(setup.estimators(*pathPtrVec[i],actionPtrVec[i],random).release());
+    //     if(i>0){
+    //         stringstream tmpSS;
+    //         for(unsigned j=0; j<estimatorsPtrVec.back()->size(); j++){
+    //             tmpSS.str("");
+    //             tmpSS << i+1 ;
+    //             estimatorsPtrVec.back()->at(j).appendLabel(tmpSS.str());
+    //         }
+    //     }
+    // }
     
     /* Setup the multi-path estimators */
     if(Npaths>1){
@@ -163,8 +166,6 @@ int main (int argc, char *argv[]) {
     }
 
 
-
-    
 	/* Setup the pimc object */
     PathIntegralMonteCarlo pimc(pathPtrVec,random,movesPtrVec,estimatorsPtrVec,
                                 !setup.params["start_with_state"].as<string>().empty(),
