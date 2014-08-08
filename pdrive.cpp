@@ -91,9 +91,6 @@ int main (int argc, char *argv[]) {
 	PotentialBase *externalPotentialPtr = NULL;
 	externalPotentialPtr = setup.externalPotential(boxPtr);
 
-    externalPotentialPtr->output(6.0);
-    exit(-1);
-
 	/* Get the initial conditions associated with the external potential */
 	/* Must use the copy constructor as we return a copy */
 	Array<dVec,1> initialPos = 
