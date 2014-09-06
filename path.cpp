@@ -682,6 +682,9 @@ void Path::outputConfig(int configNumber) const {
 	}
 	communicate()->file("wl")->stream() << format("# END_CONFIG %06d\n") % configNumber;
 
+    /* Flush the file stream */
+    communicate()->file("wl")->stream().flush();
+
 	/* Free up memory */
 	startBead.free();
 	endBead.free();

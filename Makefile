@@ -240,7 +240,7 @@ cmc.o: cmc.cpp common.h.gch constants.h communicator.h potential.h container.h
 
 # Precompile headers
 common.h.gch: common.h
-	$(COMPILE_PCH) -c common.h
+	$(COMPILE_PCH) -c common.cpp
 
 # -------------------------------------------------------------------------------
 

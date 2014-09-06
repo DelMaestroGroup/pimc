@@ -908,7 +908,7 @@ auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::estimators(Path &path,
 
         /* !!NB!! Scalar estimators, the order here is important! */
         estimator.push_back(new VirialEnergyEstimator(path,actionPtr));
-        //estimator.push_back(new EnergyEstimator(path,actionPtr));
+        // estimator.push_back(new EnergyEstimator(path,actionPtr));
         estimator.push_back(new NumberParticlesEstimator(path));
         estimator.push_back(new DiagonalFractionEstimator(path));
         estimator.push_back(new SuperfluidFractionEstimator(path));

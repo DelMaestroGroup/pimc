@@ -1,19 +1,6 @@
 PIMC Feature List
 =================
 
-Local Superfluid Density Estimators
------------------------------------
-
-### Local Winding Number Estimator
-
-### Local Area Estimator
-
- * Details provided in E. W. Draeger and D. M. Ceperley, Phys. Rev. Lett. 90, 065301 (2003).
- * It appears that one computes the complete area in the n-direction
-
-I have a semi-current version of this working in the code.
-
-
 ### Local Permutation Cycle
 
 Update Constant Singleton to use Associative Containers
@@ -25,6 +12,14 @@ and should simplify extensions.
 ### Concerns
  * map lookups are O(log(n)) should we be concerned by this?
  * would extra freedom of insertion into map lead to bugs?
+
+DONE: Local Superfluid Density Estimators
+-----------------------------------------
+
+### Local Winding Number Estimator
+### Local Area Estimator
+
+ * Details provided in E. W. Draeger and D. M. Ceperley, Phys. Rev. Lett. 90, 065301 (2003).
 
 MOSTLY DONE: Re-Factoring of Communicator
 -----------------------------------------
