@@ -125,7 +125,7 @@ class FreePotential: public PotentialBase {
 		~FreePotential();
 
 		/** The potential. */
-		double V(const dVec &sep) { return 0.0; };
+		double V(const dVec &sep) { return 0.0*sep[0]; };
 
 		/** The gradient of the potential. */
 		dVec gradV(const dVec &pos) {
@@ -420,6 +420,64 @@ inline double LJCylinderPotential::grad2V(const dVec &r) {
 		g2V = lookupd2Vdr2(k);
 	return g2V;
 }
+
+// ========================================================================  
+// LJ Hour Glass Potential Class
+// ========================================================================  
+/** 
+ * Computes the value of the external wall potential for an hour-glass shaped
+ * cavity. 
+ */
+class LJHourGlassPotential : public PotentialBase { 
+
+	public:
+		LJHourGlassPotential (const double, const double, const double);
+		~LJHourGlassPotential ();
+
+		/** The integrated LJ hour glass potential. */
+		double V(const dVec &); 
+
+		/** The gradient of the potential. Use the prrimitive approx. */
+		dVec gradV(const dVec &pos) {
+			return (0.0*pos);
+		}
+
+        /* Laplacian of the LJ Wall potential. Use primitive approx. */
+        double grad2V(const dVec & pos) {
+            return 0.0;
+        }
+
+		/** Initial configuration corresponding to the LJ cylinder potential */
+		Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+
+	private:
+		/* All the parameters needed for the LJ wall potential */
+		double density;
+		double sigma;
+		double epsilon;
+
+		double R;		// Radius of the tube at +/- L/2
+		double dR;		// variation of radius
+
+		double minV;	// The minimum value of the potential
+
+        double dz;      // The length discretization
+        double L;       // The legnth of the pore
+        double invd;    // The inverse of the variation length scale
+        double R0;      // A constant used in the tanh radius function
+
+        int M;          // How many slices we discretize in the z-direction
+
+        /* Different functional forms for the hourglass radius */
+        double Rlinear(double z) {
+            return (2.0*dR*abs(z)/L + R - dR);
+        }
+
+        double Rtanh(double z) {
+            double t = R0*tanh(z*invd);
+            return (dR*t*t + R - dR);
+        }
+};
 
 // ========================================================================  
 // Aziz Potential Class

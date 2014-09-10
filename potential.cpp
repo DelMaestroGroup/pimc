@@ -799,7 +799,7 @@ Array<dVec,1> LJCylinderPotential::initialConfig(const Container *boxPtr, MTRand
 	 * hard wall.  This represents the largest prism that can be put
 	 * inside a cylinder. */
 	dVec lside;
-	lside[0] = lside[1] = sqrt(2.0)*(R-1.0);
+	lside[0] = lside[1] = sqrt(2.0)*(R-sigma);
 	lside[2] = boxPtr->side[NDIM-1];
 
 	/* Get the linear size per particle */
@@ -851,6 +851,185 @@ Array<dVec,1> LJCylinderPotential::initialConfig(const Container *boxPtr, MTRand
 
 	return initialPos;
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// LJ HOUR GLASS POTENTIAL CLASS ---------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+ *  Constructor.
+ *
+ *  We create a Lennard-Jones hourglass, which for now, directly evaluates
+ *  the potential based on breaking up the pore into finite size pieces, 
+ *  each with their own radius.  
+ *  @see C. Chakravarty J. Phys. Chem. B,  101, 1878 (1997).
+ *
+ *  @param _L The length of the cylinder
+ *  @param radius The radius of the cylinder
+ *  @param deltaRadius R(z=0) = radius - deltaRadius
+******************************************************************************/
+LJHourGlassPotential::LJHourGlassPotential(const double _L, 
+        const double radius, const double deltaRadius) : PotentialBase()
+{
+	/* The radius of the tube */
+	R = radius;
+
+	/* The modification in radius: R(z=0) = R - dR */
+    dR = deltaRadius;
+
+    /* the length of the pore */
+    L = _L;
+
+    /* We break up the pore into dR/1000 \AA chunks in length, this choice
+     * is arbitrary. */
+    M = 1000;
+    dz = deltaRadius/M;
+
+    /* The inverse length scale over which the radius changes */
+    invd = 5.0/L;
+    R0 = 1.0/tanh(0.5*L*invd);
+
+	/* The density of nitrogen in silicon nitride */
+	density = 0.078; // atoms / angstrom^3
+
+    /* These are the values we have historically used for amorphous silicon
+     * nitride. */ 
+	epsilon = 10.22; 	// Kelvin
+	sigma   = 2.628;	// angstroms
+}
+
+/**************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+LJHourGlassPotential::~LJHourGlassPotential() {
+}
+
+/**************************************************************************//**
+ *  Return the actual value of the LJ Cylinder potential, for a distance r 
+ *  from the surface of the wall.
+ *
+ *  Checked and working with Mathematica (hourglass_potential_test.nb) on 
+ *  2014-09-04.
+ *
+ *  @param r the position of a particle
+ *  @return the confinement potential
+******************************************************************************/
+double LJHourGlassPotential::V(const dVec &r) {
+
+    double x = 0.0;
+    for (int i = 0; i < NDIM-1; i++)
+        x += r[i]*r[i];
+
+    /* int  m = int((r[NDIM-1] + 0.5*L)/dz); */
+    /* double z = m*dz - 0.5*L */
+    /* double Rz = Rlinear(r[NDIM-1]) */
+
+    double Rz = Rtanh(r[NDIM-1]);
+
+    x = sqrt(x)/Rz;
+
+	if (x >= 1.0)
+		x = 1.0 - EPS;
+	
+    double x2 = x*x;
+	double x4 = x2*x2;
+	double x6 = x2*x4;
+	double x8 = x4*x4;
+	double f1 = 1.0 / (1.0 - x2);
+	double sigoR3 = pow(sigma/Rz,3.0);
+	double sigoR9 = sigoR3*sigoR3*sigoR3;
+
+	double Kx2 = boost::math::ellint_1(x);
+	double Ex2 = boost::math::ellint_2(x);
+
+	double v9 = (1.0*pow(f1,9.0)/(240.0)) * (
+			(1091.0 + 11156*x2 + 16434*x4 + 4052*x6 + 35*x8)*Ex2 - 
+			8.0*(1.0 - x2)*(1.0 + 7*x2)*(97.0 + 134*x2 + 25*x4)*Kx2);
+	double v3 = 2.0*pow(f1,3.0) * ((7.0 + x2)*Ex2 - 4.0*(1.0-x2)*Kx2);
+
+	return ((M_PI*epsilon*sigma*sigma*sigma*density/3.0)*(sigoR9*v9 - sigoR3*v3));
+}
+
+/**************************************************************************//**
+ * Return a set of initial positions inside the hourglass.
+ *
+ * @param boxPtr A pointer to the simulation cell
+ * @param random The random number generator
+ * @param numParticles The initial number of particles
+ * @return An array of classical particle positions
+******************************************************************************/
+Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr, 
+        MTRand &random, const int numParticles) {
+
+	/* The particle configuration */
+	Array<dVec,1> initialPos(numParticles);
+	initialPos = 0.0;
+
+	/* We shift the radius inward to account for the excluded volume from the
+	 * hard wall.  This represents the largest prism that can be put
+	 * inside a cylinder. */
+	dVec lside;
+	lside[0] = lside[1] = sqrt(2.0)*(R-dR-sigma);
+	lside[2] = boxPtr->side[NDIM-1];
+
+    /* Make sure our radius isn't too small */
+	PIMC_ASSERT(lside[0]>0.0);
+
+	/* Get the linear size per particle */
+	double initSide = pow((1.0*numParticles/product(lside)),-1.0/(1.0*NDIM));
+
+	/* We determine the number of initial grid boxes there are in 
+	 * in each dimension and compute their size */
+	int totNumGridBoxes = 1;
+	iVec numNNGrid;
+	dVec sizeNNGrid;
+
+	for (int i = 0; i < NDIM; i++) {
+		numNNGrid[i] = static_cast<int>(ceil((lside[i] / initSide) - EPS));
+
+		/* Make sure we have at least one grid box */
+		if (numNNGrid[i] < 1)
+			numNNGrid[i] = 1;
+
+		/* Compute the actual size of the grid */
+		sizeNNGrid[i] = lside[i] / (1.0 * numNNGrid[i]);
+
+		/* Determine the total number of grid boxes */
+		totNumGridBoxes *= numNNGrid[i];
+	}
+
+	/* Now, we place the particles at the middle of each box */
+	PIMC_ASSERT(totNumGridBoxes>=numParticles);
+	dVec pos;
+	for (int n = 0; n < totNumGridBoxes; n++) {
+
+		iVec gridIndex;
+		for (int i = 0; i < NDIM; i++) {
+			int scale = 1;
+			for (int j = i+1; j < NDIM; j++) 
+				scale *= numNNGrid[j];
+			gridIndex[i] = (n/scale) % numNNGrid[i];
+		}
+
+		for (int i = 0; i < NDIM; i++) 
+			pos[i] = (gridIndex[i]+0.5)*sizeNNGrid[i] - 0.5*lside[i];
+
+		boxPtr->putInside(pos);
+
+		if (n < numParticles)
+			initialPos(n) = pos;
+		else 
+			break;
+	}
+
+	return initialPos;
+}
+
+
+
+
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

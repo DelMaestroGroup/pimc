@@ -52,7 +52,6 @@ Setup::Setup() :
     interactionPotentialName.push_back("delta1D");
     interactionPotentialName.push_back("harmonic");
 
-
     interactionNames = getOptionList(interactionPotentialName);
 
 	/* Define the allowed external  potential names */
@@ -61,10 +60,11 @@ Setup::Setup() :
 	externalPotentialName.push_back("osc_tube");
 	externalPotentialName.push_back("lj_tube");
 	externalPotentialName.push_back("hard_tube");
+	externalPotentialName.push_back("hg_tube");
 	externalPotentialName.push_back("fixed_aziz");
     externalPotentialName.push_back("gasp_prim");
 
-   externalNames = getOptionList(externalPotentialName);
+    externalNames = getOptionList(externalPotentialName);
 
 	/* Define the allowed action names */
 	actionName.push_back("primitive");
@@ -129,6 +129,7 @@ void Setup::getOptions(int argc, char *argv[])
 		("Ly", po::value<double>(), "system size in y-direction [angstroms]")
 		("Lz", po::value<double>(), "system size in z-direction [angstroms]")
 		("radius,r", po::value<double>(), "tube radius [angstroms]")
+		("delta_radius", po::value<double>(), "differential radius for hourglass potential [angstroms]")
 		("estimator_radius,w", po::value<double>()->default_value(2.0),
 		 "maximum radius for cylinder estimators") 
         ("empty_width_y,y", po::value<double>(), "how much space (in y-) around barrier [Gasparini]")
@@ -194,7 +195,7 @@ void Setup::getOptions(int argc, char *argv[])
 		("max_wind", po::value<int>()->default_value(1), "the maximum winding number to sample")
         ("virial_window,V", po::value<int>()->default_value(5), "centroid virial energy estimator window")
         ("time_resolved", "compute time resolved estimators")
-		("save_state", "Save a state file every Monte Carlo bin")
+		("no_save_state", "Only save a state file at the end of a simulation")
 		;
 
 	cmdLineOptions.add(generalOptions).add(algorithmicOptions).add(physicalOptions);
@@ -643,7 +644,7 @@ void Setup::setConstants() {
             params["spatial_subregion"].as<double>(),
             params["end_factor"].as<double>(),
             params["number_paths"].as<int>(),
-            params.count("save_state")
+            (!params.count("no_save_state"))
             );
 
     /* If we have specified either the center of mass or displace shift on the
@@ -1117,6 +1118,12 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
     }
 	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") 
 		% "External Potential" % params["external_potential"].as<string>();
+
+    /* output a possible delta radius for the hourglass potential. */
+	if (params["external_potential"].as<string>().find("hg_tube") != string::npos) 
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
+            % "Delta Radius" % params["delta_radius"].as<double>();
+
 	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") 
 		% "Wavefunction Type" % params["wavefunction"].as<string>();
 	communicate()->file("log")->stream() << 
