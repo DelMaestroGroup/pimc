@@ -739,6 +739,9 @@ void Path::outputPIGSConfig(int configNumber) const {
 		} 
     }
 	communicate()->file("wl")->stream() << format("# END_CONFIG %06d\n") % configNumber;
+
+    /* Flush the file stream */
+    communicate()->file("wl")->stream().flush();
 }
 
 /**************************************************************************//**

@@ -198,7 +198,7 @@ int main (int argc, char *argv[]) {
 
 		/* Output configurations to disk */
 		if ((numOutput > 0) && ((n % numOutput) == 0)) {
-			pathPtrVec.front()->outputConfig(outNum);
+			pathPtrVec.front()->outputPIGSConfig(outNum);
 			outNum++;
 		}
         
