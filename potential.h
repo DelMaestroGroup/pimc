@@ -298,6 +298,52 @@ class LorentzianPotential : public PotentialBase  {
 		double a;				// The order of the limit
 };
 
+// ========================================================================  
+// SutherlandPotential Class
+// ========================================================================  
+/** 
+ * Computes the potential energy for the periodic Sutherland model which
+ * approximates long-range 1/r^2 interactions on a ring.
+ * @see:  B. Sutherland, Phys Rev A 4, 2019 (1971) 
+ */
+class SutherlandPotential : public PotentialBase  {
+	public:
+		SutherlandPotential (double);
+		~SutherlandPotential ();
+
+		/**
+		 * Return the Sutherland potential g/r^2.
+		 */
+		double V(const dVec &r) {
+            double x = pioL*sqrt(dot(r,r));
+			return lambda * g * pioL * pioL / (sin(x)*sin(x));
+		}
+
+		/**
+		 * Return the gradient of the Sutherland potential.
+		 */
+		dVec gradV(const dVec &r) {
+            double x = pioL*sqrt(dot(r,r));
+            double s = sin(x);
+			return (-2.0*lambda * g * pioL * pioL * pioL * cos(x) / (s*s*s)) * r;
+		}
+
+		/**
+		 * Return the Laplacian of the Sutherland potential.
+		 */
+		double grad2V(const dVec &r) {
+            double x = pioL*sqrt(dot(r,r));
+            double s = sin(x);
+			return 2.0*lambda * g * pioL * pioL * pioL * pioL * (2.0+cos(2*x)) / 
+                (s*s*s*s);
+		}
+
+	private:
+		double lambda;		    // A local copy of \hbar^2/2m k_B
+		double g;			    // The interaction constant g
+		double pioL;		    // \pi/L
+};
+
 
 // ========================================================================  
 // Hard Cylinder Potential Class

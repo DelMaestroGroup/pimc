@@ -46,6 +46,7 @@ Setup::Setup() :
 	interactionPotentialName.push_back("aziz");
 	interactionPotentialName.push_back("delta");
 	interactionPotentialName.push_back("lorentzian");
+	interactionPotentialName.push_back("sutherland");
 	interactionPotentialName.push_back("hard_sphere");
 	interactionPotentialName.push_back("hard_rod");
 	interactionPotentialName.push_back("free");
@@ -147,6 +148,8 @@ void Setup::getOptions(int argc, char *argv[])
 		 "delta function potential width")
 		("delta_strength,c", po::value<double>()->default_value(10.0),
 		 "delta function potential integrated strength")
+		("interaction_strength,g", po::value<double>()->default_value(1.0),
+		 "interaction parameter")
         ("omega", po::value<double>()->default_value(1.0),
          "harmonic interaction potential frequency")
 		("fixed,f", po::value<string>()->default_value(""),
@@ -693,6 +696,8 @@ PotentialBase * Setup::interactionPotential() {
 	else if (constants()->intPotentialType() == "delta")
 		interactionPotentialPtr = new DeltaPotential(params["delta_width"].as<double>(),
                 params["delta_strength"].as<double>());
+	else if (constants()->intPotentialType() == "sutherland")
+		interactionPotentialPtr = new SutherlandPotential(params["interaction_strength"].as<double>());
 	else if (constants()->intPotentialType() == "hard_sphere")
         interactionPotentialPtr = new HardSpherePotential(params["scattering_length"].as<double>());
 	else if (constants()->intPotentialType() == "hard_rod")
@@ -1097,6 +1102,12 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
             % params["delta_width"].as<double>();
 		communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") % "Delta Strength"
             % params["delta_strength"].as<double>();
+	}
+
+    /* Ouptut a possible sutherland model interaction strength*/
+	if (params["interaction_potential"].as<string>().find("sutherland") != string::npos) {
+		communicate()->file("log")->stream() << format("%-24s\t:\t%8.3e\n") % "Interaction Strength"
+            % params["interaction_strength"].as<double>();
 	}
 
     // if ( (params["interaction_potential"].as<string>().find("delta1D") != string::npos) ) {
