@@ -733,6 +733,9 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
 		externalPotentialPtr = new HarmonicCylinderPotential(params["radius"].as<double>());
 	else if (constants()->extPotentialType() == "lj_tube")
 		externalPotentialPtr = new LJCylinderPotential(params["radius"].as<double>());
+	else if (constants()->extPotentialType() == "hg_tube")
+		externalPotentialPtr = new LJHourGlassPotential(boxPtr->side[NDIM-1],
+                params["radius"].as<double>(), params["delta_radius"].as<double>());
 	else if (constants()->extPotentialType() == "hard_tube") 
 		externalPotentialPtr = new HardCylinderPotential(params["radius"].as<double>());
 	else if (constants()->extPotentialType() == "single_well")

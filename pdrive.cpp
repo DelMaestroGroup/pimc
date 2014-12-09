@@ -137,7 +137,7 @@ int main (int argc, char *argv[]) {
         estimatorsPtrVec.push_back(
                 setup.estimators(*pathPtrVec[i],actionPtrVec[i],random).release());
         if(i > 0) {
-            for(uint32 j=0; j<estimatorsPtrVec.back()->size(); j++)
+            for(uint32 j = 0; j < estimatorsPtrVec.back()->size(); j++)
                 estimatorsPtrVec.back()->at(j).appendLabel(str(format("%d") % (i+1)));
         }
     }
