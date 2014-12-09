@@ -91,14 +91,6 @@ int main (int argc, char *argv[]) {
 	PotentialBase *externalPotentialPtr = NULL;
 	externalPotentialPtr = setup.externalPotential(boxPtr);
 
-    /* dVec r; */
-    /* r = 0.0; */
-    /* r[0] = 2.0; */
-    /* cout << interactionPotentialPtr->V(r) << endl; */
-    /* cout << interactionPotentialPtr->gradV(r) << endl; */
-    /* exit(-1); */
-
-
 	/* Get the initial conditions associated with the external potential */
 	/* Must use the copy constructor as we return a copy */
 	Array<dVec,1> initialPos = 

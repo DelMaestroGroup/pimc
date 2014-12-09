@@ -325,11 +325,12 @@ class SutherlandPotential : public PotentialBase  {
 		 * Return the gradient of the Sutherland potential.
 		 */
 		dVec gradV(const dVec &r) {
-            double x = pioL*sqrt(dot(r,r));
+            double rnorm = sqrt(dot(r,r));
+            double x = pioL*rnorm;
             double s = sin(x);
             if (s < EPS)
                 return 0.0;
-			return (-2.0*lambda * g * pioL * pioL * pioL * cos(x) / (s*s*s)) * r;
+			return (-2.0*lambda * g * pioL * pioL * pioL * cos(x) / (s*s*s*rnorm)) * r;
 		}
 
 		/**
