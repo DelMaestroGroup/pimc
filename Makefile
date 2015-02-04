@@ -239,6 +239,10 @@ cmc.o: cmc.cpp common.h.gch constants.h communicator.h potential.h container.h
 	$(COMPILE_WPCH) -c cmc.cpp
 
 # Precompile headers
+#common.h.gch: common.h
+#	$(COMPILE_PCH) -c common.cpp
+
+# Precompile headers
 common.h.gch: common.h
 	$(COMPILE_PCH) -c common.h
 

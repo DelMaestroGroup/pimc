@@ -88,6 +88,7 @@ int main (int argc, char *argv[]) {
 	PotentialBase *interactionPotentialPtr = NULL;
 	interactionPotentialPtr = setup.interactionPotential();
 
+
 	PotentialBase *externalPotentialPtr = NULL;
 	externalPotentialPtr = setup.externalPotential(boxPtr);
 

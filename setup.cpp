@@ -863,7 +863,8 @@ auto_ptr< boost::ptr_vector<MoveBase> > Setup::moves(Path &path,
     else {
         /* We determine which type of diagonal path update we will use */
         if ( (params.count("full_updates")) || params.count("staging") || 
-                (params["action"].as<string>() == "pair_product") ) {
+                (params["action"].as<string>() == "pair_product")  ||
+                (params["max_wind"].as<int>() > 1)  ) {
             move.push_back(new StagingMove(path,actionPtr,random));
         }
         else 
