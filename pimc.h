@@ -66,6 +66,7 @@ class PathIntegralMonteCarlo {
 		int numDiagonal;			///< Number of consecutive diagonal configs
 		int numConfig;				///< Number of configurations;
 		int numCoMAttempted;		///< Number of Center of Mass moves
+		int prevNumCoMAttempted;	///< Number of Center of Mass moves attempted
 		int numCoMAccepted;			///< Number of equil CoM moves accepted
 		int numDisplaceAttempted;	///< Number of equil Displace moves
 		int numDisplaceAccepted;    ///< Number of equil Displace moves accepted

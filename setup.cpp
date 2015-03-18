@@ -903,10 +903,10 @@ auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::estimators(Path &path,
         estimator.push_back(new PigsEnergyEstimator(path,actionPtr));
         //estimator.push_back(new ParticleResolvedPositionEstimator(path));
         //estimator.push_back(new ParticleCorrelationEstimator(path));
-        /* if (params.count("time_resolved")){ */
-        /*     estimator.push_back(new PotentialEnergyEstimator(path,actionPtr)); */
-        /*     estimator.push_back(new KineticEnergyEstimator(path,actionPtr)); */
-        /* } */
+        if (params.count("time_resolved")){
+            estimator.push_back(new PotentialEnergyEstimator(path,actionPtr));
+            estimator.push_back(new KineticEnergyEstimator(path,actionPtr));
+        }
         //estimator.push_back(new SubregionOccupationEstimator(path,actionPtr));
         //estimator.push_back(new TotalEnergyEstimator(path,actionPtr));
         //estimator.push_back(new ThermoPotentialEnergyEstimator(path,actionPtr));

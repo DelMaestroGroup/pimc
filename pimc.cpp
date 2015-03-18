@@ -58,6 +58,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (vector<Path *> &_pathPtrVec,
 	numConfig = 0;
 	numDiagonal = 0;
 	numCoMAttempted = 200;
+	prevNumCoMAttempted = 200;
 	numCoMAccepted = 0;
 	numDisplaceAttempted = 200;
 	numDisplaceAccepted = 0;
@@ -213,6 +214,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
                 /* We check how many CoM moves we have tried.  Every 200 moves, we see if we need
                  * to adjust comDelta, provided we are in the pre-equilibration diagonal state. */
                 if ( (move.at(index).getNumAttempted() > 0) 
+                        && (move.at(index).getNumAttempted() > prevNumCoMAttempted)
                         && (move.at(index).getNumAttempted() % numCoMAttempted == 0) 
                         && (constants()->comDelta() < 0.5*blitz::min(path.boxPtr->side)) ) {
 
@@ -233,6 +235,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
 
                     /* Reset the counters */
                     numCoMAccepted = move.at(index).getNumAccepted();
+                    prevNumCoMAttempted = move.at(index).getNumAttempted();
                 } // CoM Delta Shift
 
             } // Center of mass move
