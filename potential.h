@@ -349,6 +349,52 @@ class SutherlandPotential : public PotentialBase  {
 		double pioL;		    // \pi/L
 };
 
+// ========================================================================  
+// Dipolar Potential Class
+// ========================================================================  
+/** 
+ * Computes the potential energy for polarized electrical dipoles with strength
+ * D in reduced units where lengths are measured in units of a = m D / \hbar^2 and
+ * energies in units of \hbar^2 / m a^2.
+ * @see:  http://link.aps.org/doi/10.1103/PhysRevA.87.063604
+ */
+class DipolePotential : public PotentialBase  {
+	public:
+		DipolePotential ();
+		~DipolePotential ();
+
+		/**
+		 * Return the dipole potential 1/r^3.
+		 */
+		double V(const dVec &r) {
+            double x = sqrt(dot(r,r));
+            if (x < EPS)
+                return LBIG;
+            return 1.0/(x*x*x);
+		}
+
+		/**
+		 * Return the gradient of the dipole potential.
+         * \partial (1/r^3) \partial r \hat{r} = -3r^{-5} \vec{r}
+		 */
+		dVec gradV(const dVec &r) {
+            double x = sqrt(dot(r,r));
+            if (x < EPS)
+                return 0.0;
+			return (-3.0/(x*x*x*x*x)) * r;
+		}
+
+		/**
+		 * Return the Laplacian of the dipolar potential.
+		 */
+		double grad2V(const dVec &r) {
+            double x = sqrt(dot(r,r));
+            if (x < EPS)
+                return 0.0;
+			return 6.0/(x*x*x*x*x);
+		}
+};
+
 
 // ========================================================================  
 // Hard Cylinder Potential Class
