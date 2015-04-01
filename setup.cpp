@@ -52,6 +52,7 @@ Setup::Setup() :
 	interactionPotentialName.push_back("free");
     interactionPotentialName.push_back("delta1D");
     interactionPotentialName.push_back("harmonic");
+    interactionPotentialName.push_back("dipole");
 
     interactionNames = getOptionList(interactionPotentialName);
 
@@ -711,6 +712,8 @@ PotentialBase * Setup::interactionPotential() {
 		interactionPotentialPtr = new AzizPotential(side);
     else if (constants()->intPotentialType() == "harmonic")
 		interactionPotentialPtr = new HarmonicPotential(params["omega"].as<double>());
+    else if (constants()->intPotentialType() == "dipole")
+		interactionPotentialPtr = new DipolePotential();
 
 	return interactionPotentialPtr;
 }
