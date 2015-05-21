@@ -347,7 +347,6 @@ VirialEnergyEstimator::~VirialEnergyEstimator() {
  * We also measure the centroid virial specific heat terms so that the 
  * specific heat may be computed post-process.
  *
- * NB!!! Pressure only works for d=3 at present, need to generalize constants
 ******************************************************************************/
 void VirialEnergyEstimator::accumulate() {
 
@@ -385,7 +384,7 @@ void VirialEnergyEstimator::accumulate() {
             *constants()->lambda()*numTimeSlices);
 
     /* Compute the thermodynamic pressure */
-    double Pressure = 3.0*numParticles;
+    double Pressure = NDIM*numParticles;
     double P2,P3;
     P2 = P3 = 0.0;
 
@@ -437,7 +436,7 @@ void VirialEnergyEstimator::accumulate() {
     Pressure -= P3;
 
     /* end pressure calculation */
-    Pressure /= (3.0*constants()->tau()*constants()->V());
+    Pressure /= (NDIM*constants()->tau()*constants()->V());
 
 	totVop /= (0.5 * numTimeSlices);
 	totVop += tailV;
