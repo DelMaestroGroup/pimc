@@ -432,7 +432,7 @@ void VirialEnergyEstimator::accumulate() {
             + actionPtr->rDOTgradUterm2(slice);
     }
 
-    P3 *= (1.0/(1.0*numTimeSlices));
+    P3 *= (1.0/(2.0*numTimeSlices));
     Pressure -= P3;
 
     /* end pressure calculation */

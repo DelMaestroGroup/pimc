@@ -434,7 +434,10 @@ SutherlandPotential::~SutherlandPotential() {
 ******************************************************************************/
 DipolePotential::DipolePotential() : PotentialBase() 
 {
-
+    /* if (NDIM==2) { */
+    /*     int N = constants()->initialNumParticles(); */
+    /*     tailV = M_PI * N * N / (constants()->L() * constants()->L() * constants()->rc()); */
+    /* } */
 }
 
 /**************************************************************************//**

@@ -1093,14 +1093,12 @@ double LocalAction::rDOTgradUterm1(const int slice) {
 	beadLocator bead1;
 	bead1[0] = bead2[0] = slice;
 
-	dVec gVi, gVe, gV;
+	dVec gVi, gV;
     double rDotgV = 0.0;
 
 	/* We loop over the first bead */
 	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
         gVi = 0.0;
-        gVe = 0.0;
-        gV = 0.0;
 		/* Sum potential of bead1 interacting with all other beads at
          * a given time slice.*/
 		for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
@@ -1114,9 +1112,7 @@ double LocalAction::rDOTgradUterm1(const int slice) {
         } // end bead2
 		
 		/* Now add the external component */
-        gVe += externalPtr->gradV(path(bead1));
-        
-        gV += (gVe + gVi);
+        gV = (externalPtr->gradV(path(bead1)) + gVi);
 
         rDotgV += dot(gV, path(bead1));
 
