@@ -4,6 +4,10 @@ CXX     ?= g++
 LD      = $(CXX)
 UNAME   = $(shell uname -s)
 
+# Uncomment and add make print-VAR to output the value of $VAR
+print-%:         
+	@echo '$*=$($*)'
+
 # Determine the comiler toolset, gcc or intel
 ifeq ($(findstring g++,$(CXX)), g++)
 TOOLSET = gcc
@@ -12,6 +16,7 @@ TOOLSET = intel
 else ifeq ($(findstring c++,$(CXX)), c++)
 TOOLSET = clang
 endif
+
 
 #Number of dimensions to compile for
 ndim = 3
