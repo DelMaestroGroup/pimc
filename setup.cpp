@@ -942,7 +942,7 @@ auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::estimators(Path &path,
         /* Time Consuming local estimators */
     //    /* z-averaged estimators */
     //    estimator.push_back(new ParticlePositionEstimator(path));
-    //    estimator.push_back(new PlaneParticlePositionEstimator(path));
+        /* estimator.push_back(new PlaneParticlePositionEstimator(path)); */
     //    estimator.push_back(new LocalSuperfluidDensityEstimator(path));
     //    estimator.push_back(new PlaneWindingSuperfluidDensityEstimator(path));
     //    estimator.push_back(new PlaneAreaSuperfluidDensityEstimator(path));

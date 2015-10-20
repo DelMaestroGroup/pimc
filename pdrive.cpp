@@ -199,7 +199,7 @@ int main (int argc, char *argv[]) {
 
 		/* Output configurations to disk */
 		if ((numOutput > 0) && ((n % numOutput) == 0)) {
-            if (constants->pigs())
+            if (constants()->pigs())
                 pathPtrVec.front()->outputPIGSConfig(outNum);
             else
                 pathPtrVec.front()->outputConfig(outNum);
