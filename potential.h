@@ -231,6 +231,9 @@ class HarmonicCylinderPotential : public PotentialBase {
 /** 
  * Computes the potential energy for delta function interaction potential,
  * approximated here as the limit of a Cauchy distribution.
+ *
+ * NB: Need to add an explanation to compare with the previous version of the
+ *     Gaussian.
  */
 class DeltaPotential : public PotentialBase  {
 	public:
@@ -238,28 +241,28 @@ class DeltaPotential : public PotentialBase  {
 		~DeltaPotential ();
 
 		/**
-		 * Return the delta function potential with strength 2c approximated as
-		 * the limit of a Guassian distribution.
+		 * Return the delta function potential with strength g approximated as
+		 * the limit of a Gaussian distribution.
 		 * Tested and working in Mathematica.
 		 */
 		double V(const dVec &r) {
-			return (norm*exp(-dot(r,r)/(4.0*a)));
+			return (norm*exp(-dot(r,r)*inv2sigma2));
 		}
 
 		/**
 		 * Return the gradient of the delta function potential with strength 
-		 * 2c approximated as the limit of a Guassian distribution.
+		 * g approximated as the limit of a Gaussian distribution.
 		 * Tested and working in Mathematica.
 		 */
 		dVec gradV(const dVec &r) {
-			return (-r*norm*exp(-dot(r,r)/(4.0*a))/(2.0*a));
+			return (-2.0*r*norm*inv2sigma2*exp(-dot(r,r)*inv2sigma2));
 		}
 
 	private:
-		double c;				// The strength of the delta function
 		double norm;			// A normalization constant for fixed strength
-		double a;				// The order of the limit
+        double inv2sigma2;      // 1/(2\sigma^2) where \sigma^2 is the variance
 };
+
 
 // ========================================================================  
 // LorentzianPotential Class
@@ -556,7 +559,7 @@ class LJHourGlassPotential : public PotentialBase {
 		double R;		// Radius of the tube at +/- L/2
 		double dR;		// variation of radius
 
-		double minV;	// The minimum value of the potential
+		/* double minV;	// The minimum value of the potential */
 
         double dz;      // The length discretization
         double L;       // The legnth of the pore

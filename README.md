@@ -243,22 +243,22 @@ by using the `--help flag`.
 The output of the above command should yield:
 
     [PIMCID: XXXXXXXXX] - Equilibration Stage.
-    0.66	 1.00000	 0.95000	   20	0.027475
-    0.69	 0.95000	 0.90250	   18	0.024728
-    0.69	 0.90250	 0.85737	   17	0.023354
-    0.74	 0.85737	 0.81451	   18	0.024728
-    0.71	 0.81451	 0.77378	   18	0.024728
-    0.84	 0.77378	 0.77378	   17	0.023354
-    0.52	 0.77378	 0.69640	   14	0.019233
-    0.72	 0.69640	 0.66158	   16	0.021980
-    0.68	 0.66158	 0.62850	   16	0.021980
-    0.71	 0.62850	 0.59708	   17	0.023354
-    0.81	 0.59708	 0.59708	   18	0.024728
-    0.66	 0.59708	 0.56722	   16	0.021980
-    0.67	 0.56722	 0.53886	   17	0.023354
-    0.84	 0.53886	 0.53886	   20	0.027475
-    0.93	 0.53886	 0.59275	   20	0.027475
-    0.70	 0.59275	 0.56311	   18	0.024728
+    0.66     1.00000         0.95000           16   0.021980
+    0.53     0.95000         0.85500           12   0.016485
+    0.56     0.85500         0.76950           14   0.019233
+    0.69     0.76950         0.73102           15   0.020606
+    0.63     0.73102         0.69447           15   0.020606
+    0.69     0.69447         0.65975           17   0.023354
+    0.82     0.65975         0.65975           18   0.024728
+    0.85     0.65975         0.69274           18   0.024728
+    0.75     0.69274         0.65810           16   0.021980
+    0.65     0.65810         0.62520           16   0.021980
+    0.62     0.62520         0.59394           15   0.020606
+    0.63     0.59394         0.56424           14   0.019233
+    0.70     0.56424         0.53603           17   0.023354
+    0.76     0.53603         0.53603           18   0.024728
+    0.75     0.53603         0.50923           16   0.021980
+    0.78     0.50923         0.50923           18   0.024728
     [PIMCID: XXXXXXXXX] - Measurement Stage.
     [PIMCID: XXXXXXXXX] - Bin #   1 stored to disk.
     [PIMCID: XXXXXXXXX] - Bin #   2 stored to disk.
@@ -313,7 +313,7 @@ After this has been completed, you can analyze the results of your run via
     python $HOME/local/pimcsripts/pimcave.py OUTPUT/gce-estimator-05.000-008.996-+000.020-0.01000-XXXXXXXXX.dat
 
 where `XXXXXXXXX` needs to be replaced with the unique identifier generated on
-your machine.  The results should yield:
+your machine.  The results should yield something like:
 
     # PIMCID: XXXXXXXXX
     # Number Samples     20

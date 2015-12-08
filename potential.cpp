@@ -352,15 +352,14 @@ HarmonicCylinderPotential::~HarmonicCylinderPotential() {
  *  Constructor.
  * 
  *  Setup the delta function strength and normalization constant.
- *  @param _a The width^2 of the Gaussian
- *  @param _c The integrated strength of the Gaussian
+ *  @param _sigma The width of the Gaussian
+ *  @param _g The integrated strength of the Gaussian in 1D
 ******************************************************************************/
-DeltaPotential::DeltaPotential(double _a, double _c) : PotentialBase() 
+DeltaPotential::DeltaPotential(double _sigma, double _g) : PotentialBase() 
 {
 	/* Define the parameters of the delta function potential. */
-	a = _a;
-	c = _c;
-	norm = c/sqrt(a*M_PI);
+	norm = _g/sqrt(2.0*_sigma*_sigma*M_PI);
+    inv2sigma2 = 1.0/(2.0*_sigma*_sigma);
 }
 
 /**************************************************************************//**
