@@ -143,21 +143,6 @@ int main (int argc, char *argv[]) {
         }
     }
     
-
-   /* The list of estimators that will be performed */
-    // vector< boost::ptr_vector<EstimatorBase> * > estimatorsPtrVec;
-    // for(int i=0; i<Npaths;i++){
-    //     estimatorsPtrVec.push_back(setup.estimators(*pathPtrVec[i],actionPtrVec[i],random).release());
-    //     if(i>0){
-    //         stringstream tmpSS;
-    //         for(unsigned j=0; j<estimatorsPtrVec.back()->size(); j++){
-    //             tmpSS.str("");
-    //             tmpSS << i+1 ;
-    //             estimatorsPtrVec.back()->at(j).appendLabel(tmpSS.str());
-    //         }
-    //     }
-    // }
-    
     /* Setup the multi-path estimators */
     if(Npaths>1){
         estimatorsPtrVec.push_back(setup.multiPathEstimators(pathPtrVec,actionPtrVec).release());

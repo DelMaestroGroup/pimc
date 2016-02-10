@@ -25,6 +25,7 @@
 #include <blitz/array.h>
 #include <boost/format.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/ptr_container/ptr_map.hpp>
 
 /* Debugging librarys and definitions. There is only an effect if
  * the code is compiled with PIMC_DEBUG on.*/

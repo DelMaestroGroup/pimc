@@ -76,9 +76,13 @@ class Communicator
 
         /** Get method returning file object */
         File * file(string type) {
-            if (!file_.count(type))
+            try {
+                return &file_.at(type);
+            }
+            catch (boost::bad_ptr_container_operation) {
                 initFile(type);
-            return file_[type];
+                return &file_.at(type);
+            }
         }
 
 	protected:
@@ -97,7 +101,7 @@ class Communicator
         string fixedName;     // A posible fixed file name
         string baseDir;       // The output base directory
 
-		map <string,File*> file_;	// The file map
+        boost::ptr_map<string,File> file_; // The file map
 
         /* Makes sure we have a unique PIMCID */
         void getUniqueID(const double);

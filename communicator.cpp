@@ -241,16 +241,16 @@ void Communicator::initFile(string type) {
         /* There are only two reasons we would need an init file, either we are
          * restarting, or starting from a given initialization file */
         if (constants()->restart())
-            file_[type] = new File(stateName,dataName,ensemble,baseDir);
+            file_.insert(type, new File(stateName,dataName,ensemble,baseDir));
         else 
-            file_[type] = new File(initName);
+            file_.insert(type, new File(initName));
         
-        file_[type]->open(ios::in);
+        file_.at(type).open(ios::in);
     }
 	/* Initialize a possible fixed coordinate file */
     else if (type == "fixed") {
-		file_[type] = new File(fixedName);
-        file_[type]->open(ios::in);
+		file_.insert(type,new File(fixedName));
+        file_.at(type).open(ios::in);
     }
     /* All other file types act normally */
     else {
@@ -264,11 +264,11 @@ void Communicator::initFile(string type) {
         }
 
         /* Construct the file and open it */
-        file_[type] = new File(ctype,dataName,ensemble,outDir);
-        file_[type]->open(mode);
+        file_.insert(type, new File(ctype,dataName,ensemble,outDir));
+        file_.at(type).open(mode);
         
         /* Write the header line */
-        file_[type]->stream() << header;
+        file_.at(type).stream() << header;
     }
 }
 
