@@ -75,14 +75,10 @@ class Communicator
 		void init(double,bool,string,string);
 
         /** Get method returning file object */
-        File * file(string type) {
-            try {
-                return &file_.at(type);
-            }
-            catch (boost::bad_ptr_container_operation) {
+        File *file(string type) {
+            if (!file_.count(type))
                 initFile(type);
-                return &file_.at(type);
-            }
+            return &file_.at(type);
         }
 
 	protected:
