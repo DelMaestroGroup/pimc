@@ -36,8 +36,8 @@ typedef boost::ptr_vector<MoveBase> move_vector;
  */
 class PathIntegralMonteCarlo {
 	public:
-        PathIntegralMonteCarlo (vector<Path *> &,MTRand &,vector<move_vector *> &,
-                                vector<estimator_vector *> &,const bool,uint32 binSize=100);
+        PathIntegralMonteCarlo (boost::ptr_vector<Path> &,MTRand &, boost::ptr_vector<move_vector> &,
+                                boost::ptr_vector<estimator_vector> &, const bool, uint32 binSize=100);
 		~PathIntegralMonteCarlo ();
 
 		/* The equilibration relaxation */
@@ -74,6 +74,8 @@ class PathIntegralMonteCarlo {
         int numNAttempted;          ///< The number of particle measurements
         int cN;                     ///< The current total number of particles
 
+        void printWormState();
+
 	private:
 		MTRand &random;				// The global random number generator
 
@@ -93,14 +95,15 @@ class PathIntegralMonteCarlo {
 		bool startWithState;		// Are we starting from a saved state
         bool success;               // Track move success/failure
     
-        vector<Path *> pathPtrVec; // The vector of all paths
-        Path &path;                         // A reference to the first path in the path vector
+        boost::ptr_vector<Path> &pathPtrVec; // The vector of all paths
+        Path &path;                          // A reference to the first path in the path vector
 
-        vector<move_vector *> movePtrVec;  // Vector of all move_vectors
-        move_vector &move;                 // A reference to the first move_vector
+        boost::ptr_vector<move_vector> &movePtrVec;  // Vector of all move_vectors
+        move_vector &move;                           // A reference to the first move_vector
     
-        vector<estimator_vector *> estimatorPtrVec;// Vector of estimators for each path followed by multipath
-        estimator_vector &estimator;                   // A reference to the first estimator_vector
+        boost::ptr_vector<estimator_vector> &estimatorPtrVec;  // Vector of estimators for 
+                                                               // each path followed by multipath
+        estimator_vector &estimator;                           // A reference to the first estimator_vector
 
 		vector <double> attemptDiagProb;		// The cumulative diagonal attempt Probabilities
 		vector <double> attemptOffDiagProb;		// The cumulative off-diagonal attempt Probabilities

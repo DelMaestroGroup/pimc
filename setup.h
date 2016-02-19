@@ -78,11 +78,12 @@ class Setup {
         ActionBase * action(const Path &, LookupTable &, PotentialBase*, PotentialBase *, WaveFunctionBase *);
 
         /* Setup the move array */
-        auto_ptr< boost::ptr_vector<MoveBase> > moves(Path &, ActionBase *, MTRand &);
+        boost::ptr_vector<MoveBase> * moves(Path &, ActionBase *, MTRand &);
 
         /* Setup the estimator array */
-        auto_ptr< boost::ptr_vector<EstimatorBase> > estimators(Path &, ActionBase *, MTRand &);
-        auto_ptr< boost::ptr_vector<EstimatorBase> > multiPathEstimators(vector<Path *> &,vector<ActionBase *> &);
+        boost::ptr_vector<EstimatorBase> * estimators(Path &, ActionBase *, MTRand &);
+        boost::ptr_vector<EstimatorBase> * multiPathEstimators(boost::ptr_vector<Path> &,
+                                                                         boost::ptr_vector<ActionBase> &);
 
         po::variables_map params;       			///< The command line parameter map
 

@@ -127,6 +127,7 @@ MoveBase::~MoveBase() {
 ******************************************************************************/
 inline void MoveBase::printMoveState(string state) {
 #ifdef DEBUG_WORM
+
 	/* We make a list of all the beads contained in the worm */
 	Array <beadLocator,1> wormBeads;	// Used for debugging
 	wormBeads.resize(path.worm.length+1);

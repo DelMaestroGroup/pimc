@@ -117,7 +117,7 @@ inline beadState Worm::getState(const beadLocator &beadIndex) const {
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-/** Safely delete a bead (int indexec) */
+/** Safely delete a bead (int indexed) */
 inline void Worm::delBead(int slice, int ptcl) {
 	PIMC_ASSERT((slice >= 0) && (slice < constants()->numTimeSlices()));
 	beads(slice,ptcl) = 0;

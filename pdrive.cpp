@@ -106,7 +106,7 @@ int main (int argc, char *argv[]) {
    }
 
 	/* Setup the path data variable */
-    vector<Path *> pathPtrVec;
+    boost::ptr_vector<Path> pathPtrVec;
     for(int i=0; i<Npaths; i++){
         pathPtrVec.push_back(
                 new Path(boxPtr,lookupPtrVec[i],constants()->numTimeSlices(),
@@ -115,37 +115,39 @@ int main (int argc, char *argv[]) {
     
     /* The Trial Wave Function (constant for pimc) */
     WaveFunctionBase *waveFunctionPtr = NULL;
-	waveFunctionPtr = setup.waveFunction(*pathPtrVec.front());
+	waveFunctionPtr = setup.waveFunction(pathPtrVec.front());
 
 	/* Setup the action */
-    vector<ActionBase *> actionPtrVec;
+    boost::ptr_vector<ActionBase> actionPtrVec;
     for(int i=0; i<Npaths; i++){
         actionPtrVec.push_back(
-                setup.action(*pathPtrVec[i],lookupPtrVec[i],externalPotentialPtr,
+                setup.action(pathPtrVec[i],lookupPtrVec[i],externalPotentialPtr,
                              interactionPotentialPtr,waveFunctionPtr) );
     }
 
     /* The list of Monte Carlo updates (moves) that will be performed */
-    vector< boost::ptr_vector<MoveBase> * > movesPtrVec;
+    boost::ptr_vector< boost::ptr_vector<MoveBase> > movesPtrVec;
     for(int i=0; i<Npaths;i++){
         movesPtrVec.push_back(
-                setup.moves(*pathPtrVec[i],actionPtrVec[i],random).release());
+                setup.moves(pathPtrVec[i],&actionPtrVec[i],random));
     }
 
     /* The list of estimators that will be performed */
-    vector< boost::ptr_vector<EstimatorBase> * > estimatorsPtrVec;
+    boost::ptr_vector< boost::ptr_vector<EstimatorBase> > estimatorsPtrVec;
     for(int i=0; i<Npaths;i++){
         estimatorsPtrVec.push_back(
-                setup.estimators(*pathPtrVec[i],actionPtrVec[i],random).release());
+                setup.estimators(pathPtrVec[i],&actionPtrVec[i],random));
+
+        /* Add labels to estimator output files for multiple paths */
         if(i > 0) {
-            for(uint32 j = 0; j < estimatorsPtrVec.back()->size(); j++)
-                estimatorsPtrVec.back()->at(j).appendLabel(str(format("%d") % (i+1)));
+            for(uint32 j = 0; j < estimatorsPtrVec.back().size(); j++)
+                estimatorsPtrVec.back().at(j).appendLabel(str(format("%d") % (i+1)));
         }
     }
     
     /* Setup the multi-path estimators */
     if(Npaths>1){
-        estimatorsPtrVec.push_back(setup.multiPathEstimators(pathPtrVec,actionPtrVec).release());
+        estimatorsPtrVec.push_back(setup.multiPathEstimators(pathPtrVec,actionPtrVec));
     }
 
 
@@ -185,9 +187,9 @@ int main (int argc, char *argv[]) {
 		/* Output configurations to disk */
 		if ((numOutput > 0) && ((n % numOutput) == 0)) {
             if (constants()->pigs())
-                pathPtrVec.front()->outputPIGSConfig(outNum);
+                pathPtrVec.front().outputPIGSConfig(outNum);
             else
-                pathPtrVec.front()->outputConfig(outNum);
+                pathPtrVec.front().outputConfig(outNum);
 
 			outNum++;
 		}

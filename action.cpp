@@ -121,15 +121,6 @@ double ActionBase::rho0(const dVec &vel, const int M) {
  *  nb = number of beads
 ******************************************************************************/
 double ActionBase::ensembleWeight(const int deltaNumBeads) {
-   /*if (!canonical)
-		return 1.0;
-	else {
-		int numBeads = path.worm.getNumBeadsOn();
-		int numBeadsP = numBeads + deltaNumBeads;
-		//double xp = 1.0*(numBeadsP-numBeads0)*(numBeadsP-numBeads0)/deltaNumBeads2;
-		//double x = 1.0*(numBeads-numBeads0)*(numBeads-numBeads0)/deltaNumBeads2;
-		//return exp(-xp+x)
-    }*/
     
     // ensembleWieght returns 1.0 unless window or ensemble weight is used
     if ( window || gaussianEnsemble ){

@@ -780,7 +780,7 @@ WaveFunctionBase * Setup::waveFunction(const Path &path) {
 * to the main program.
 ******************************************************************************/
 ActionBase * Setup::action(const Path &path, LookupTable &lookup, 
-        PotentialBase *externalPotentialPtr, 
+        PotentialBase * externalPotentialPtr, 
         PotentialBase * interactionPotentialPtr, 
         WaveFunctionBase * waveFunctionPtr) {
 
@@ -804,7 +804,7 @@ ActionBase * Setup::action(const Path &path, LookupTable &lookup,
         if (constants()->actionType() == "gsf") {
 
             /* There are different pre-factors for even/odd slices, we use the 
-             * Prokof'ev version here. I have taken alpha = 0 here. */
+             * Prokof'ev version. I have taken alpha = 0 here. */
             VFactor[0] = 2.0/3.0;
             VFactor[1] = 4.0/3.0;
 
@@ -837,56 +837,56 @@ ActionBase * Setup::action(const Path &path, LookupTable &lookup,
  * @param random The random number generator 
  * @return a list of Monte Carlo updates
 ******************************************************************************/
-auto_ptr< boost::ptr_vector<MoveBase> > Setup::moves(Path &path, 
-        ActionBase *actionPtr, MTRand &random) {
+boost::ptr_vector<MoveBase> * Setup::moves(Path &path, ActionBase *actionPtr, 
+        MTRand &random) {
 
-    boost::ptr_vector<MoveBase> move;
+    boost::ptr_vector<MoveBase>* movePtr = new boost::ptr_vector<MoveBase>();
 
     /* All simulations include the Center of Mass move */
-    move.push_back(new CenterOfMassMove(path,actionPtr,random));
+    movePtr->push_back(new CenterOfMassMove(path,actionPtr,random));
 
     /* PIGS simulations use staging and displace moves */
     if (params.count("pigs")) {
-        move.push_back(new StagingMove(path,actionPtr,random));
-        move.push_back(new EndStagingMove(path,actionPtr,random));
+        movePtr->push_back(new StagingMove(path,actionPtr,random));
+        movePtr->push_back(new EndStagingMove(path,actionPtr,random));
 
         if (constants()->numBroken() > 0) {
-            move.push_back(new SwapBreakMove(path,actionPtr,random));
+            movePtr->push_back(new SwapBreakMove(path,actionPtr,random));
             constants()->setAttemptProb("diagonal",0.5);
 	    constants()->setAttemptProb("swap break",0.1);
 	    
         } else if (constants()->spatialSubregionOn() ){
-            move.push_back(new MidStagingMove(path,actionPtr,random));
+            movePtr->push_back(new MidStagingMove(path,actionPtr,random));
             constants()->setAttemptProb("diagonal",0.5);
 	    constants()->setAttemptProb("mid-staging",0.1);
         }
 
-        move.push_back(new DisplaceMove(path,actionPtr,random));
+        movePtr->push_back(new DisplaceMove(path,actionPtr,random));
     }
     else {
         /* We determine which type of diagonal path update we will use */
         if ( (params.count("full_updates")) || params.count("staging") || 
                 (params["action"].as<string>() == "pair_product")  ||
                 (params["max_wind"].as<int>() > 1)  ) {
-            move.push_back(new StagingMove(path,actionPtr,random));
+            movePtr->push_back(new StagingMove(path,actionPtr,random));
         }
         else 
-            move.push_back(new BisectionMove(path,actionPtr,random));
+            movePtr->push_back(new BisectionMove(path,actionPtr,random));
 
         /* Include all other moves */
-        move.push_back(new OpenMove(path,actionPtr,random));
-        move.push_back(new CloseMove(path,actionPtr,random));
-        move.push_back(new InsertMove(path,actionPtr,random));
-        move.push_back(new RemoveMove(path,actionPtr,random));
-        move.push_back(new AdvanceHeadMove(path,actionPtr,random));
-        move.push_back(new RecedeHeadMove(path,actionPtr,random));
-        move.push_back(new AdvanceTailMove(path,actionPtr,random));
-        move.push_back(new RecedeTailMove(path,actionPtr,random));
-        move.push_back(new SwapHeadMove(path,actionPtr,random));
-        move.push_back(new SwapTailMove(path,actionPtr,random));
+        movePtr->push_back(new OpenMove(path,actionPtr,random));
+        movePtr->push_back(new CloseMove(path,actionPtr,random));
+        movePtr->push_back(new InsertMove(path,actionPtr,random));
+        movePtr->push_back(new RemoveMove(path,actionPtr,random));
+        movePtr->push_back(new AdvanceHeadMove(path,actionPtr,random));
+        movePtr->push_back(new RecedeHeadMove(path,actionPtr,random));
+        movePtr->push_back(new AdvanceTailMove(path,actionPtr,random));
+        movePtr->push_back(new RecedeTailMove(path,actionPtr,random));
+        movePtr->push_back(new SwapHeadMove(path,actionPtr,random));
+        movePtr->push_back(new SwapTailMove(path,actionPtr,random));
     }
 
-    return move.release();
+    return movePtr;
 }
 
 /*************************************************************************//**
@@ -897,81 +897,81 @@ auto_ptr< boost::ptr_vector<MoveBase> > Setup::moves(Path &path,
  * @param random The random number generator 
  * @return a list of estimators
 ******************************************************************************/
-auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::estimators(Path &path, 
+boost::ptr_vector<EstimatorBase> * Setup::estimators(Path &path, 
         ActionBase *actionPtr, MTRand &random) {
 
-    boost::ptr_vector<EstimatorBase> estimator;
+    boost::ptr_vector<EstimatorBase>* estimatorPtr = new boost::ptr_vector<EstimatorBase>();
     
     if (params.count("pigs")) {
-        estimator.push_back(new PigsEnergyEstimator(path,actionPtr));
-        //estimator.push_back(new ParticleResolvedPositionEstimator(path));
-        //estimator.push_back(new ParticleCorrelationEstimator(path));
+        estimatorPtr->push_back(new PigsEnergyEstimator(path,actionPtr));
+        //estimatorPtr->push_back(new ParticleResolvedPositionEstimator(path));
+        //estimatorPtr->push_back(new ParticleCorrelationEstimator(path));
         if (params.count("time_resolved")){
-            estimator.push_back(new PotentialEnergyEstimator(path,actionPtr));
-            estimator.push_back(new KineticEnergyEstimator(path,actionPtr));
+            estimatorPtr->push_back(new PotentialEnergyEstimator(path,actionPtr));
+            estimatorPtr->push_back(new KineticEnergyEstimator(path,actionPtr));
         }
-        //estimator.push_back(new SubregionOccupationEstimator(path,actionPtr));
-        //estimator.push_back(new TotalEnergyEstimator(path,actionPtr));
-        //estimator.push_back(new ThermoPotentialEnergyEstimator(path,actionPtr));
-        //estimator.push_back(new VelocityEstimator(path));
-        //estimator.push_back(new PIGSOneBodyDensityMatrixEstimator(path,actionPtr,random));
+        //estimatorPtr->push_back(new SubregionOccupationEstimator(path,actionPtr));
+        //estimatorPtr->push_back(new TotalEnergyEstimator(path,actionPtr));
+        //estimatorPtr->push_back(new ThermoPotentialEnergyEstimator(path,actionPtr));
+        //estimatorPtr->push_back(new VelocityEstimator(path));
+        //estimatorPtr->push_back(new PIGSOneBodyDensityMatrixEstimator(path,actionPtr,random));
     }
     /* The finite temperature measurments */
     else {
 
         /* !!NB!! Scalar estimators, the order here is important! */
         /* estimator.push_back(new VirialEnergyEstimator(path,actionPtr)); */
-        estimator.push_back(new EnergyEstimator(path,actionPtr));
-        estimator.push_back(new NumberParticlesEstimator(path));
-        estimator.push_back(new DiagonalFractionEstimator(path));
-        estimator.push_back(new SuperfluidFractionEstimator(path));
-        estimator.push_back(new WormPropertiesEstimator(path));
+        estimatorPtr->push_back(new EnergyEstimator(path,actionPtr));
+        estimatorPtr->push_back(new NumberParticlesEstimator(path));
+        estimatorPtr->push_back(new DiagonalFractionEstimator(path));
+        estimatorPtr->push_back(new SuperfluidFractionEstimator(path));
+        estimatorPtr->push_back(new WormPropertiesEstimator(path));
 
         /* Vector estimators */
-        //estimator.push_back(new PermutationCycleEstimator(path));
+        //estimatorPtr->push_back(new PermutationCycleEstimator(path));
         
         /* We only measure the number distribution function if we are grand
          * canonical */
         // if (!constants()->canonical())
-        //     estimator.push_back(new NumberDistributionEstimator(path));
+        //     estimatorPtr->push_back(new NumberDistributionEstimator(path));
 
-        // estimator.push_back(new PairCorrelationEstimator(path,actionPtr));
+        // estimatorPtr->push_back(new PairCorrelationEstimator(path,actionPtr));
 
-        //estimator.push_back(new OneBodyDensityMatrixEstimator(path,actionPtr,random));
+        //estimatorPtr->push_back(new OneBodyDensityMatrixEstimator(path,actionPtr,random));
 
         /* Time Consuming local estimators */
     //    /* z-averaged estimators */
-    //    estimator.push_back(new ParticlePositionEstimator(path));
-        /* estimator.push_back(new PlaneParticlePositionEstimator(path)); */
-    //    estimator.push_back(new LocalSuperfluidDensityEstimator(path));
-    //    estimator.push_back(new PlaneWindingSuperfluidDensityEstimator(path));
-    //    estimator.push_back(new PlaneAreaSuperfluidDensityEstimator(path));
-    //    estimator.push_back(new LocalPermutationEstimator(path));
+    //    estimatorPtr->push_back(new ParticlePositionEstimator(path));
+        /* estimatorPtr->push_back(new PlaneParticlePositionEstimator(path)); */
+    //    estimatorPtr->push_back(new LocalSuperfluidDensityEstimator(path));
+    //    estimatorPtr->push_back(new PlaneWindingSuperfluidDensityEstimator(path));
+    //    estimatorPtr->push_back(new PlaneAreaSuperfluidDensityEstimator(path));
+    //    estimatorPtr->push_back(new LocalPermutationEstimator(path));
     
         /* Excluded volume estimators */
         if (constants()->extPotentialType().find("gasp_prim") != string::npos){
-            estimator.push_back(new BipartitionDensityEstimator(path,actionPtr));
+            estimatorPtr->push_back(new BipartitionDensityEstimator(path,actionPtr));
         }
 
         /* Cylinder estimators */
         if (constants()->extPotentialType().find("tube") != string::npos) {
             double maxR = params["estimator_radius"].as<double>();
-            estimator.push_back(new CylinderEnergyEstimator(path,actionPtr,maxR));
-            estimator.push_back(new CylinderNumberParticlesEstimator(path,maxR));
-            estimator.push_back(new CylinderSuperfluidFractionEstimator(path,maxR));
-            estimator.push_back(new CylinderRadialPotentialEstimator(path,actionPtr,random,maxR));
-            estimator.push_back(new CylinderNumberDistributionEstimator(path,maxR));
-            estimator.push_back(new CylinderPairCorrelationEstimator(path,actionPtr,maxR));
-            estimator.push_back(new CylinderOneBodyDensityMatrixEstimator(path,actionPtr,random,maxR));
+            estimatorPtr->push_back(new CylinderEnergyEstimator(path,actionPtr,maxR));
+            estimatorPtr->push_back(new CylinderNumberParticlesEstimator(path,maxR));
+            estimatorPtr->push_back(new CylinderSuperfluidFractionEstimator(path,maxR));
+            estimatorPtr->push_back(new CylinderRadialPotentialEstimator(path,actionPtr,random,maxR));
+            estimatorPtr->push_back(new CylinderNumberDistributionEstimator(path,maxR));
+            estimatorPtr->push_back(new CylinderPairCorrelationEstimator(path,actionPtr,maxR));
+            estimatorPtr->push_back(new CylinderOneBodyDensityMatrixEstimator(path,actionPtr,random,maxR));
 
             /* Radially averaged estimators */
-            estimator.push_back(new RadialWindingSuperfluidDensityEstimator(path));
-            estimator.push_back(new RadialAreaSuperfluidDensityEstimator(path));
-            estimator.push_back(new RadialDensityEstimator(path));
+            estimatorPtr->push_back(new RadialWindingSuperfluidDensityEstimator(path));
+            estimatorPtr->push_back(new RadialAreaSuperfluidDensityEstimator(path));
+            estimatorPtr->push_back(new RadialDensityEstimator(path));
         }
     } // pimc
 
-    return estimator.release();
+    return estimatorPtr;
 }
 
 
@@ -982,16 +982,17 @@ auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::estimators(Path &path,
 * @param actionPtr The action in use
 * @return a list of double path estimators
 ******************************************************************************/
-auto_ptr< boost::ptr_vector<EstimatorBase> > Setup::multiPathEstimators(
-        vector<Path *> &pathPtrVec,vector<ActionBase *> &actionPtrVec) {
+boost::ptr_vector<EstimatorBase> * Setup::multiPathEstimators(
+        boost::ptr_vector<Path> &pathPtrVec,
+        boost::ptr_vector<ActionBase> &actionPtrVec) {
     
-    boost::ptr_vector<EstimatorBase> multiEstimators;
+    boost::ptr_vector<EstimatorBase>* multiEstimatorsPtr = new boost::ptr_vector<EstimatorBase>();
     
-    multiEstimators.push_back(new SwapEstimator(*pathPtrVec[0],*pathPtrVec[1],
-                                                  actionPtrVec[0],actionPtrVec[1]));
-    //doubledEstimators.push_back(new EntPartEstimator(path,path2,actionPtr,actionPtr2));
+    multiEstimatorsPtr->push_back(new SwapEstimator(pathPtrVec[0],pathPtrVec[1],
+                                                  &actionPtrVec[0],&actionPtrVec[1]));
+    //doubledEstimatorsPtr->push_back(new EntPartEstimator(path,path2,actionPtr,actionPtr2));
 
-    return multiEstimators.release();
+    return multiEstimatorsPtr;
 }
 
 

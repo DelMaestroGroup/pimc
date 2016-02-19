@@ -32,6 +32,8 @@ class Path {
 		Path (const Container *, LookupTable &, int, const Array<dVec,1>&, int numberBroken = 0);
 		~Path();
 
+        /* Path* clone() const{ return new Path(*this); } */
+
 		const int numTimeSlices;		///< A local constant copy of the number of time slices
         int breakSlice;                 ///< The location of the break in the path (0=>no break)
         vector<int> brokenWorldlinesL;   ///< A list of particles with broken worldlines on left of break
@@ -160,6 +162,10 @@ class Path {
 
 		beadLocator lastBeadIndex;					// Holds the index of the last bead on a slice
 };
+
+/* inline Path* new_clone(Path const& other){ */
+/*     return other.clone(); */
+/* } */
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 // INLINE FUNCTION DEFINITIONS
