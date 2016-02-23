@@ -31,8 +31,6 @@ class EstimatorBase {
 		EstimatorBase (const Path &, int _frequency=1, string _label="");
 		virtual ~EstimatorBase() = 0;
 
-        virtual EstimatorBase* clone() const = 0;
-    
 		/* Sample the estimator */
 		virtual void sample();		
 		
@@ -99,9 +97,6 @@ class EstimatorBase {
 		void initialize(int);
 };
 
-inline EstimatorBase* new_clone(EstimatorBase const& other){
-    return other.clone();
-}
 
 // ========================================================================  
 // Energy Estimator Class 
@@ -122,8 +117,6 @@ class EnergyEstimator: public EstimatorBase {
                 int _frequency=1, string _label="estimator");
 		~EnergyEstimator();
     
-    EnergyEstimator* clone() const{ return new EnergyEstimator(*this); }
-
 	private:
 		ActionBase *actionPtr;
 		void accumulate();		// Accumulate values
@@ -159,8 +152,6 @@ class VirialEnergyEstimator: public EstimatorBase {
                 int _frequency=1, string _label="estimator");
 		~VirialEnergyEstimator();
 
-        VirialEnergyEstimator* clone() const{ return new VirialEnergyEstimator(*this); }
-
 	private:
 		ActionBase *actionPtr;
 		void accumulate();		// Accumulate values
@@ -180,8 +171,6 @@ class NumberParticlesEstimator: public EstimatorBase {
                 int _frequency=1, string _label="estimator");
 		~NumberParticlesEstimator();
     
-        NumberParticlesEstimator* clone() const{ return new NumberParticlesEstimator(*this); }
-
 	private:
 		void accumulate();			// Accumulate values
 };
@@ -199,8 +188,6 @@ class ParticlePositionEstimator: public EstimatorBase {
 		ParticlePositionEstimator(const Path &, 
                 int _frequency=1, string _label="position");
 		~ParticlePositionEstimator();
-    
-        ParticlePositionEstimator* clone() const{ return new ParticlePositionEstimator(*this); }
     
         void output();              // overload the output
 
@@ -222,8 +209,6 @@ class BipartitionDensityEstimator: public EstimatorBase {
                 int _frequency=1, string _label="bipart_dens");
 		~BipartitionDensityEstimator();
 
-        BipartitionDensityEstimator* clone() const{ return new BipartitionDensityEstimator(*this); }
-
 	private:
 		ActionBase *actionPtr;
 		void accumulate();		// Accumulate values
@@ -243,8 +228,6 @@ class PlaneParticlePositionEstimator: public EstimatorBase {
                 int _frequency=1, string _label="planedensity");
 		~PlaneParticlePositionEstimator();
 
-        PlaneParticlePositionEstimator* clone() const{ return new PlaneParticlePositionEstimator(*this); }
-    
     private:
         int numGrid;                // The number of grid points
         dVec dl;                    // The linear size of each spatial bin
@@ -266,8 +249,6 @@ class NumberDistributionEstimator: public EstimatorBase {
                 int _frequency=1, string _label="number");
 		~NumberDistributionEstimator();
     
-        NumberDistributionEstimator* clone() const{ return new NumberDistributionEstimator(*this); }
-
 	private:
 		int startParticleNumber;	// The smallest number of particles
 		int endParticleNumber;		// The largest  number of particles
@@ -291,8 +272,6 @@ class SuperfluidFractionEstimator: public EstimatorBase {
                 int _frequency=1, string _label="super");
 		~SuperfluidFractionEstimator();
 
-        SuperfluidFractionEstimator* clone() const{ return new SuperfluidFractionEstimator(*this); }
-    
 	private:
 		int windMax;			// The maximum winding number considered
 
@@ -313,8 +292,6 @@ class LocalSuperfluidDensityEstimator: public EstimatorBase {
                 int _frequency=1, string _label="locsuper");
 		~LocalSuperfluidDensityEstimator();
 
-        LocalSuperfluidDensityEstimator* clone() const{ return new LocalSuperfluidDensityEstimator(*this); }
-    
         void output();           ///< overload the output
 
 	private:
@@ -341,8 +318,6 @@ class PlaneWindingSuperfluidDensityEstimator: public EstimatorBase {
                 int _frequency=1, string _label="planewind");
 		~PlaneWindingSuperfluidDensityEstimator();
     
-        PlaneWindingSuperfluidDensityEstimator* clone() const{ return new PlaneWindingSuperfluidDensityEstimator(*this); }
-
 	private:
         dVec side;              // A local copy of the dimensions
         double dx;              // The linear x-size of the spatial bin
@@ -366,8 +341,6 @@ class PlaneAreaSuperfluidDensityEstimator: public EstimatorBase {
                 int _frequency=1, string _label="planearea");
 		~PlaneAreaSuperfluidDensityEstimator();
 
-        PlaneAreaSuperfluidDensityEstimator* clone() const{ return new PlaneAreaSuperfluidDensityEstimator(*this); }
-    
 	private:
         dVec side;              // A local copy of the dimensions
         double dx;              // The linear x-size of the spatial bin
@@ -391,8 +364,6 @@ class RadialWindingSuperfluidDensityEstimator: public EstimatorBase {
                 int _frequency=1, string _label="radwind");
 		~RadialWindingSuperfluidDensityEstimator();
 
-        RadialWindingSuperfluidDensityEstimator* clone() const{ return new RadialWindingSuperfluidDensityEstimator(*this); }
-    
 	private:
         double dR;              // The size of the radial bin
         int numGrid;            // The number of grid points
@@ -414,8 +385,6 @@ class RadialAreaSuperfluidDensityEstimator: public EstimatorBase {
                 int _frequency=1, string _label="radarea");
 		~RadialAreaSuperfluidDensityEstimator();
     
-        RadialAreaSuperfluidDensityEstimator* clone() const{ return new RadialAreaSuperfluidDensityEstimator(*this); }
-
 	private:
         double dR;              // The size of the radial bin
         int numGrid;            // The number of grid points
@@ -437,8 +406,6 @@ class DiagonalFractionEstimator: public EstimatorBase {
                 int _frequency=1, string _label="estimator");
 		~DiagonalFractionEstimator();
     
-        DiagonalFractionEstimator* clone() const{ return new DiagonalFractionEstimator(*this); }
-
         void sample();          // Overload to always-on sampling
 
 	private:
@@ -458,8 +425,6 @@ class PermutationCycleEstimator: public EstimatorBase {
                 int _frequency=1, string _label="pcycle");
 		~PermutationCycleEstimator();
     
-        PermutationCycleEstimator* clone() const{ return new PermutationCycleEstimator(*this); }
-
 	private:
 		Array <bool,1> doBead;		// Used for ensuring we don't double count beads
 		int maxNumCycles;			// The maximum number of cycles to consider
@@ -479,8 +444,6 @@ class LocalPermutationEstimator: public EstimatorBase {
 		LocalPermutationEstimator(const Path &,
                 int _frequency=1, string _label="locperm");
 		~LocalPermutationEstimator();
-
-        LocalPermutationEstimator* clone() const{ return new LocalPermutationEstimator(*this); }
 
         void output();
 
@@ -510,8 +473,6 @@ class OneBodyDensityMatrixEstimator: public EstimatorBase {
                 int _frequency=20, string _label="obdm");
 		~OneBodyDensityMatrixEstimator();
     
-        OneBodyDensityMatrixEstimator* clone() const{ return new OneBodyDensityMatrixEstimator(*this); }
-
 		void sample();				// Sample the estimator
 		void outputFooter();		// Output the acceptance footer to disk
 
@@ -557,8 +518,6 @@ class PairCorrelationEstimator: public EstimatorBase {
                 int _frequency=1, string _label="pair");
 		~PairCorrelationEstimator();
     
-        PairCorrelationEstimator* clone() const{ return new PairCorrelationEstimator(*this); }
-
 	private:
 		ActionBase *actionPtr;			// A pointer that will be used to get the potential
 		void accumulate();				// Accumulate values
@@ -578,8 +537,6 @@ class RadialDensityEstimator: public EstimatorBase {
                 int _frequency=1, string _label="radial");
 		~RadialDensityEstimator();
     
-        RadialDensityEstimator* clone() const{ return new RadialDensityEstimator(*this); }
-
 	private:
 		void accumulate();				// Accumulate values
 		double dR;						// The discretization
@@ -598,8 +555,6 @@ class WormPropertiesEstimator: public EstimatorBase {
                 int _frequency=100, string _label="worm");
 		~WormPropertiesEstimator();
     
-        WormPropertiesEstimator* clone() const{ return new WormPropertiesEstimator(*this); }
-
 	private:
 		dVec sep;						// head-tail separation
 		void accumulate();				// Accumulate values
@@ -630,8 +585,6 @@ class CylinderEnergyEstimator: public EstimatorBase {
                 int _frequency=1, string _label="cyl_estimator");
 		~CylinderEnergyEstimator();
     
-        CylinderEnergyEstimator* clone() const{ return new CylinderEnergyEstimator(*this); }
-
 	private:
 		ActionBase *actionPtr;
 		double maxR;			// The estimator cutoff radius
@@ -653,8 +606,6 @@ class CylinderNumberParticlesEstimator: public EstimatorBase {
                 int _frequency=1, string _label="cyl_estimator");
 		~CylinderNumberParticlesEstimator();
     
-        CylinderNumberParticlesEstimator* clone() const{ return new CylinderNumberParticlesEstimator(*this); }
-
 	private:
 		double maxR;			// The estimator cutoff radius
 
@@ -674,8 +625,6 @@ class CylinderNumberDistributionEstimator: public EstimatorBase {
                 int _frequency=1, string _label="cyl_number");
 		~CylinderNumberDistributionEstimator();
     
-        CylinderNumberDistributionEstimator* clone() const{ return new CylinderNumberDistributionEstimator(*this); }
-
 	private:
 		double maxR;				// The estimator cutoff radius
 		int maxNumParticles;		// The maximum number considered
@@ -697,8 +646,6 @@ class CylinderSuperfluidFractionEstimator: public EstimatorBase {
                 int _frequency=1, string _label="cyl_super");
 		~CylinderSuperfluidFractionEstimator();
     
-        CylinderSuperfluidFractionEstimator* clone() const{ return new CylinderSuperfluidFractionEstimator(*this); }
-
 	private:
 		Array <bool,1> doBead;	// Used for ensuring we don't double count beads
 		int windMax;			// The maximum winding number considered
@@ -726,8 +673,6 @@ class CylinderOneBodyDensityMatrixEstimator: public EstimatorBase {
                 int _frequency=20, string _label="cyl_obdm");
 		~CylinderOneBodyDensityMatrixEstimator();
 
-        CylinderOneBodyDensityMatrixEstimator* clone() const{ return new CylinderOneBodyDensityMatrixEstimator(*this); }
-    
 		void sample();				// Sample the estimator
 
 	private:
@@ -774,8 +719,6 @@ class CylinderPairCorrelationEstimator: public EstimatorBase {
                 int _frequency=1, string _label="cyl_pair");
 		~CylinderPairCorrelationEstimator();
     
-        CylinderPairCorrelationEstimator* clone() const{ return new CylinderPairCorrelationEstimator(*this); }
-
 		void sample();				// Sample the estimator
 
 	private:
@@ -799,8 +742,6 @@ class CylinderRadialPotentialEstimator: public EstimatorBase {
                 int _frequency=1, string _label="cyl_potential");
 		~CylinderRadialPotentialEstimator();
     
-        CylinderRadialPotentialEstimator* clone() const{ return new CylinderRadialPotentialEstimator(*this); }
-
 	private:
 		ActionBase *actionPtr;			// A pointer that will be used to get the potential
 		MTRand &random;					// A local reference to the random number generator
@@ -830,8 +771,6 @@ class PotentialEnergyEstimator: public EstimatorBase {
 		PotentialEnergyEstimator(const Path &, ActionBase *, 
                 int _frequency=1, string _label="potential");
 		~PotentialEnergyEstimator();
-        PotentialEnergyEstimator* clone() const{ return new PotentialEnergyEstimator(*this); }
-    
 	private:
 		ActionBase *actionPtr;
 		void accumulate();		// Accumulate values
@@ -850,8 +789,6 @@ public:
     KineticEnergyEstimator(const Path &, ActionBase *,
                            int _frequency=1, string _label="kinetic");
     ~KineticEnergyEstimator();
-    
-    KineticEnergyEstimator* clone() const{ return new KineticEnergyEstimator(*this); }
     
 private:
     ActionBase *actionPtr;
@@ -878,8 +815,6 @@ public:
                     int _frequency=1, string _label="estimator");
     ~PigsEnergyEstimator();
     
-    PigsEnergyEstimator* clone() const{ return new PigsEnergyEstimator(*this); }
-    
 private:
     ActionBase *actionPtr;
     void accumulate();		// Accumulate values
@@ -900,8 +835,6 @@ public:
                            int _frequency=1, string _label="energy");
     ~TotalEnergyEstimator();
 
-    TotalEnergyEstimator* clone() const{ return new TotalEnergyEstimator(*this); }
-    
 private:
     ActionBase *actionPtr;
     void accumulate();		// Accumulate values
@@ -920,8 +853,6 @@ public:
     ThermoPotentialEnergyEstimator(const Path &, ActionBase *,
                          int _frequency=1, string _label="thpotenial");
     ~ThermoPotentialEnergyEstimator();
-    
-    ThermoPotentialEnergyEstimator* clone() const{ return new ThermoPotentialEnergyEstimator(*this); }
     
 private:
     ActionBase *actionPtr;
@@ -984,8 +915,6 @@ class PositionEstimator: public EstimatorBase {
                 string _label="position");
 		~PositionEstimator();
 
-    PositionEstimator* clone() const{ return new PositionEstimator(*this); }
-
 	private:
 		void accumulate();		// Accumulate values
 
@@ -1000,15 +929,13 @@ class PositionEstimator: public EstimatorBase {
  */
 class ParticleResolvedPositionEstimator: public EstimatorBase {
     
-public:
-    ParticleResolvedPositionEstimator(const Path &, int _frequency=1,
-                      string _label="prposition");
-    ~ParticleResolvedPositionEstimator();
+    public:
+        ParticleResolvedPositionEstimator(const Path &, int _frequency=1,
+                string _label="prposition");
+        ~ParticleResolvedPositionEstimator();
 
-    ParticleResolvedPositionEstimator* clone() const{ return new ParticleResolvedPositionEstimator(*this); }
-    
-private:
-    void accumulate();		// Accumulate values
+    private:
+        void accumulate();		// Accumulate values
     
 };
 
@@ -1021,17 +948,15 @@ private:
  * slice
  */
 class ParticleCorrelationEstimator: public EstimatorBase {
-    
-public:
-    ParticleCorrelationEstimator(const Path &, int _frequency=1,
-                                      string _label="prcorrelation");
-    ~ParticleCorrelationEstimator();
-    
-    ParticleCorrelationEstimator* clone() const{ return new ParticleCorrelationEstimator(*this); }
 
-private:
-    void accumulate();		// Accumulate values
-    
+    public:
+        ParticleCorrelationEstimator(const Path &, int _frequency=1,
+                string _label="prcorrelation");
+        ~ParticleCorrelationEstimator();
+
+    private:
+        void accumulate();		// Accumulate values
+
 };
 
 
@@ -1044,16 +969,14 @@ private:
  */
 class VelocityEstimator: public EstimatorBase {
     
-public:
-    VelocityEstimator(const Path &, int _frequency=1,
-                      string _label="velocity");
-    ~VelocityEstimator();
+    public:
+        VelocityEstimator(const Path &, int _frequency=1,
+                string _label="velocity");
+        ~VelocityEstimator();
 
-    VelocityEstimator* clone() const{ return new VelocityEstimator(*this); }
-    
-private:
-    void accumulate();		// Accumulate values
-    
+    private:
+        void accumulate();		// Accumulate values
+
 };
 
 // ========================================================================
@@ -1065,18 +988,16 @@ private:
  */
 class SubregionOccupationEstimator: public EstimatorBase {
     
-public:
-    SubregionOccupationEstimator(const Path &,ActionBase *_actionPtr,
-                                 int _frequency=1,
-                      string _label="subregionocc");
-    ~SubregionOccupationEstimator();
-    
-    SubregionOccupationEstimator* clone() const{ return new SubregionOccupationEstimator(*this); }
-    
-private:
-    ActionBase *actionPtr;
-    void accumulate();		// Accumulate values
-    
+    public:
+        SubregionOccupationEstimator(const Path &,ActionBase *_actionPtr,
+                int _frequency=1,
+                string _label="subregionocc");
+        ~SubregionOccupationEstimator();
+
+    private:
+        ActionBase *actionPtr;
+        void accumulate();		// Accumulate values
+
 };
 // ========================================================================
 // One Body Density Matrix Estimator Class
@@ -1090,40 +1011,37 @@ private:
  * local reference to the Path which is used for temporary updates.
  */
 class PIGSOneBodyDensityMatrixEstimator: public EstimatorBase {
-    
-public:
-    PIGSOneBodyDensityMatrixEstimator(Path &, ActionBase *, const MTRand &,
-                                  int _frequency=1, string _label="obdm");
-    ~PIGSOneBodyDensityMatrixEstimator();
-    
-    PIGSOneBodyDensityMatrixEstimator* clone() const{ return new PIGSOneBodyDensityMatrixEstimator(*this); }
-    
-    void sample();				// Sample the estimator
-    void outputFooter();		// Output the acceptance footer to disk
-    
-private:
-    Path &lpath;					// A non-constant local reference to the path
-    ActionBase *actionPtr;			// The action pointer
-    MTRand random;					// A local copy of the random number generator
-    
-    double dR;						// The discretization
-    int numReps;					// The number of measurments reps
-    uint32 numAccepted;				// The number of moves accepted
-    uint32 numAttempted;			// The number of moves attempted
-    
-    
-    dVec newTailPos,oldTailPos;		// The new and old tail position
-    dVec newRanPos,neighborPos;		// The random shift
-    
-    double sqrt2LambdaTau;			// sqrt(2 * lambda * tau)
-    double rho0Norm;				// Free density matrix
-    double oldAction,newAction;		// The old and new action
-    
-    /* Get a random vector */
-    dVec getRandomVector(const double);
-    
-    /* Accumulate values */
-    void accumulate();	
+
+    public:
+        PIGSOneBodyDensityMatrixEstimator(Path &, ActionBase *, const MTRand &,
+                int _frequency=1, string _label="obdm");
+        ~PIGSOneBodyDensityMatrixEstimator();
+
+        void sample();				// Sample the estimator
+        void outputFooter();		// Output the acceptance footer to disk
+
+    private:
+        Path &lpath;					// A non-constant local reference to the path
+        ActionBase *actionPtr;			// The action pointer
+        MTRand random;					// A local copy of the random number generator
+
+        double dR;						// The discretization
+        int numReps;					// The number of measurments reps
+        uint32 numAccepted;				// The number of moves accepted
+        uint32 numAttempted;			// The number of moves attempted
+
+
+        dVec newTailPos,oldTailPos;		// The new and old tail position
+        dVec newRanPos,neighborPos;		// The random shift
+
+        double sqrt2LambdaTau;			// sqrt(2 * lambda * tau)
+        double oldAction,newAction;		// The old and new action
+
+        /* Get a random vector */
+        dVec getRandomVector(const double);
+
+        /* Accumulate values */
+        void accumulate();	
 };
 
 
@@ -1134,15 +1052,15 @@ private:
  * Base class for estimators that use two paths
  */
 class DoubledEstimator: public EstimatorBase {
-    
-public:
-    DoubledEstimator(const Path &, const Path &,
-                    int _frequency=1, string _label="");
-    ~DoubledEstimator();
-   
-protected:
-    const Path &path2;				///< A constant reference to the paths
-    
+
+    public:
+        DoubledEstimator(const Path &, const Path &,
+                int _frequency=1, string _label="");
+        ~DoubledEstimator();
+
+    protected:
+        const Path &path2;				///< A constant reference to the paths
+
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
@@ -1157,23 +1075,21 @@ protected:
  * Computes the Swap Estimator between two paths.
  */
 class SwapEstimator: public DoubledEstimator {
-    
-public:
-    SwapEstimator(Path &, Path &,ActionBase *,ActionBase *,
-                             int _frequency=1, string _label="swap");
-    ~SwapEstimator();
-    
-    SwapEstimator* clone() const{ return new SwapEstimator(*this); }
-    
-private:
-    Path &lpath;					// A non-constant local reference to path 1
-    Path &lpath2;					// A non-constant local reference to path 2
-    ActionBase *actionPtr;			// The action pointer for path 1
-    ActionBase *actionPtr2;			// The action pointer for path 2
-    
-    void accumulate();			// Accumulate values
-    void accumulateOpen();			// Accumulate values for open paths
-    void accumulateClosed();			// Accumulate values for open paths
+
+    public:
+        SwapEstimator(Path &, Path &,ActionBase *,ActionBase *,
+                int _frequency=1, string _label="swap");
+        ~SwapEstimator();
+
+    private:
+        Path &lpath;					// A non-constant local reference to path 1
+        Path &lpath2;					// A non-constant local reference to path 2
+        ActionBase *actionPtr;			// The action pointer for path 1
+        ActionBase *actionPtr2;			// The action pointer for path 2
+
+        void accumulate();			// Accumulate values
+        void accumulateOpen();			// Accumulate values for open paths
+        void accumulateClosed();			// Accumulate values for open paths
 };
 
 
@@ -1185,20 +1101,18 @@ private:
  */
 class EntPartEstimator: public DoubledEstimator {
     
-public:
-    EntPartEstimator(Path &, Path &,ActionBase *,ActionBase *,
-                  int _frequency=1, string _label="entpart");
-    ~EntPartEstimator();
-    
-    EntPartEstimator* clone() const{ return new EntPartEstimator(*this); }
-    
-private:
-    Path &lpath;					// A non-constant local reference to path 1
-    Path &lpath2;					// A non-constant local reference to path 2
-    ActionBase *actionPtr;			// The action pointer for path 1
-    ActionBase *actionPtr2;			// The action pointer for path 2
-    
-    void accumulate();			// Accumulate values
+    public:
+        EntPartEstimator(Path &, Path &,ActionBase *,ActionBase *,
+                int _frequency=1, string _label="entpart");
+        ~EntPartEstimator();
+
+    private:
+        Path &lpath;					// A non-constant local reference to path 1
+        Path &lpath2;					// A non-constant local reference to path 2
+        ActionBase *actionPtr;			// The action pointer for path 1
+        ActionBase *actionPtr2;			// The action pointer for path 2
+
+        void accumulate();			// Accumulate values
 };
 
 

@@ -40,21 +40,6 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
 {
 	/* Are we starting from a saved state? */
 	startWithState = _startWithState;
-
-    /* cout << &path << endl; */
-    /* cout << &_pathPtrVec.front() << endl; */
-
-    /* cout << path.numTimeSlices  << endl; */
-    /* cout << pathPtrVec.front().numTimeSlices << endl; */
-    /* cout << Npaths << endl; */
-
-    /* beadLocator test; */
-    /* test = 0; */
-    /* for (int i = 0; i < path.numTimeSlices; ++i){ */
-    /*     test = path.next(test); */
-    /*     cout << test[0] << " " << test[1] << endl; */
-    /* } */
-    /* exit(0); */
     
     /* Initialize stateStrings */
     stateStrings.resize(Npaths);
@@ -140,28 +125,6 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     for (estimator_vector::iterator estimatorPtr = estimator.begin();
             estimatorPtr != estimator.end(); ++estimatorPtr) 
         estimatorIndex[estimatorPtr->getName()] = std::distance(estimator.begin(), estimatorPtr);
-
-    /* printWormState(); */
-    /* int index = moveIndex["open"]; */
-    /* success = false; */
-    /* while (!success) */
-    /*     success = movePtrVec[0]->at(index).attemptMove(); */
-    /* printWormState(); */
-
-    /* index = moveIndex["advance head"]; */
-    /* success = false; */
-    /* while (!success) */
-    /*     success = movePtrVec[0]->at(index).attemptMove(); */
-    /* printWormState(); */
-
-    /* success = false; */
-    /* index = moveIndex["recede head"]; */
-    /* while (!success) */
-    /*     success = movePtrVec[0]->at(index).attemptMove(); */
-    /* printWormState(); */
-
-
-    /* exit(0); */
 }
 
 /**************************************************************************//**
@@ -643,15 +606,14 @@ void PathIntegralMonteCarlo::saveStateString() {
          * first for the diagonal, then off-diagonal*/
         for (move_vector::iterator movePtr = movePtrVec[pIdx].begin(); movePtr != movePtrVec[pIdx].end(); ++movePtr) {
             stateStrStrm << format("%16d\t%16d\n")
-            % movePtr->numAccepted % movePtr->numAttempted;
+                % movePtr->numAccepted % movePtr->numAttempted;
         }
         
         /* Output the estimator sampling information */
         for (estimator_vector::iterator estimatorPtr = estimatorPtrVec[pIdx].begin();
-             estimatorPtr != estimatorPtrVec[pIdx].end(); ++estimatorPtr) {
-            stateStrStrm << format("%16d\t%16d\n")
-            % estimatorPtr->getTotNumAccumulated()
-            % estimatorPtr->getNumSampled();
+                estimatorPtr != estimatorPtrVec[pIdx].end(); ++estimatorPtr) {
+            stateStrStrm << format("%16d\t%16d\n") % estimatorPtr->getTotNumAccumulated()
+                % estimatorPtr->getNumSampled();
         }
         
         /* Now we output the actual path and worldline data */
