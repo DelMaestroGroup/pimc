@@ -132,7 +132,7 @@ void Setup::getOptions(int argc, char *argv[])
 		("Lz", po::value<double>(), "system size in z-direction [angstroms]")
 		("radius,r", po::value<double>(), "tube radius [angstroms]")
 		("delta_radius", po::value<double>(), "differential radius for hourglass potential [angstroms]")
-		("estimator_radius,w", po::value<double>()->default_value(2.0),
+		("estimator_radius,w", po::value<double>()->default_value(0.0),
 		 "maximum radius for cylinder estimators") 
         ("empty_width_y,y", po::value<double>(), "how much space (in y-) around barrier [Gasparini]")
         ("empty_width_z,z", po::value<double>(), "how much space (in z-) around barrier [Gasparini]")
@@ -840,50 +840,54 @@ ActionBase * Setup::action(const Path &path, LookupTable &lookup,
 boost::ptr_vector<MoveBase> * Setup::moves(Path &path, ActionBase *actionPtr, 
         MTRand &random) {
 
+    /* Instantiate the Move Factory */
+    MoveFactory moveFactory;
+
+    /* Create a new list of moves that will be returned */
     boost::ptr_vector<MoveBase>* movePtr = new boost::ptr_vector<MoveBase>();
 
     /* All simulations include the Center of Mass move */
-    movePtr->push_back(new CenterOfMassMove(path,actionPtr,random));
+    movePtr->push_back(moveFactory.getMove(CenterOfMassMove::name,path,actionPtr,random));
 
     /* PIGS simulations use staging and displace moves */
     if (params.count("pigs")) {
-        movePtr->push_back(new StagingMove(path,actionPtr,random));
-        movePtr->push_back(new EndStagingMove(path,actionPtr,random));
+        movePtr->push_back(moveFactory.getMove(StagingMove::name,path,actionPtr,random));
+        movePtr->push_back(moveFactory.getMove(EndStagingMove::name,path,actionPtr,random));
 
         if (constants()->numBroken() > 0) {
-            movePtr->push_back(new SwapBreakMove(path,actionPtr,random));
+            movePtr->push_back(moveFactory.getMove(SwapBreakMove::name,path,actionPtr,random));
             constants()->setAttemptProb("diagonal",0.5);
-	    constants()->setAttemptProb("swap break",0.1);
-	    
-        } else if (constants()->spatialSubregionOn() ){
-            movePtr->push_back(new MidStagingMove(path,actionPtr,random));
+            constants()->setAttemptProb("swap break",0.1);
+        } 
+        else if (constants()->spatialSubregionOn() ){
+            movePtr->push_back(moveFactory.getMove(MidStagingMove::name,path,actionPtr,random));
             constants()->setAttemptProb("diagonal",0.5);
-	    constants()->setAttemptProb("mid-staging",0.1);
+            constants()->setAttemptProb("mid-staging",0.1);
         }
 
-        movePtr->push_back(new DisplaceMove(path,actionPtr,random));
+        movePtr->push_back(moveFactory.getMove(DisplaceMove::name,path,actionPtr,random));
     }
     else {
         /* We determine which type of diagonal path update we will use */
         if ( (params.count("full_updates")) || params.count("staging") || 
                 (params["action"].as<string>() == "pair_product")  ||
                 (params["max_wind"].as<int>() > 1)  ) {
-            movePtr->push_back(new StagingMove(path,actionPtr,random));
+            movePtr->push_back(moveFactory.getMove(StagingMove::name,path,actionPtr,random));
         }
         else 
-            movePtr->push_back(new BisectionMove(path,actionPtr,random));
+            movePtr->push_back(moveFactory.getMove(BisectionMove::name,path,actionPtr,random));
 
         /* Include all other moves */
-        movePtr->push_back(new OpenMove(path,actionPtr,random));
-        movePtr->push_back(new CloseMove(path,actionPtr,random));
-        movePtr->push_back(new InsertMove(path,actionPtr,random));
-        movePtr->push_back(new RemoveMove(path,actionPtr,random));
-        movePtr->push_back(new AdvanceHeadMove(path,actionPtr,random));
-        movePtr->push_back(new RecedeHeadMove(path,actionPtr,random));
-        movePtr->push_back(new AdvanceTailMove(path,actionPtr,random));
-        movePtr->push_back(new RecedeTailMove(path,actionPtr,random));
-        movePtr->push_back(new SwapHeadMove(path,actionPtr,random));
-        movePtr->push_back(new SwapTailMove(path,actionPtr,random));
+        movePtr->push_back(moveFactory.getMove(OpenMove::name,path,actionPtr,random));
+        movePtr->push_back(moveFactory.getMove(CloseMove::name,path,actionPtr,random));
+        movePtr->push_back(moveFactory.getMove(InsertMove::name,path,actionPtr,random));
+        movePtr->push_back(moveFactory.getMove(RemoveMove::name,path,actionPtr,random));
+        movePtr->push_back(moveFactory.getMove(AdvanceHeadMove::name,path,actionPtr,random));
+        movePtr->push_back(moveFactory.getMove(RecedeHeadMove::name,path,actionPtr,random));
+        movePtr->push_back(moveFactory.getMove(AdvanceTailMove::name,path,actionPtr,random));
+        movePtr->push_back(moveFactory.getMove(RecedeTailMove::name,path,actionPtr,random));
+        movePtr->push_back(moveFactory.getMove(SwapHeadMove::name,path,actionPtr,random));
+        movePtr->push_back(moveFactory.getMove(SwapTailMove::name,path,actionPtr,random));
     }
 
     return movePtr;
@@ -900,74 +904,77 @@ boost::ptr_vector<MoveBase> * Setup::moves(Path &path, ActionBase *actionPtr,
 boost::ptr_vector<EstimatorBase> * Setup::estimators(Path &path, 
         ActionBase *actionPtr, MTRand &random) {
 
+    /* Instantiate the Estimator Factory */
+    EstimatorFactory estimatorFactory;
+
+    double maxR = params["estimator_radius"].as<double>();
     boost::ptr_vector<EstimatorBase>* estimatorPtr = new boost::ptr_vector<EstimatorBase>();
     
     if (params.count("pigs")) {
-        estimatorPtr->push_back(new PigsEnergyEstimator(path,actionPtr));
-        //estimatorPtr->push_back(new ParticleResolvedPositionEstimator(path));
-        //estimatorPtr->push_back(new ParticleCorrelationEstimator(path));
+        estimatorPtr->push_back(estimatorFactory.getEstimator(PigsEnergyEstimator::name,path,actionPtr,random,maxR));
+        //estimatorPtr->push_back(estimatorFactory.getEstimator(ParticleResolvedPositionEstimator::name,path,actionPtr,random,maxR));
+        //estimatorPtr->push_back(estimatorFactory.getEstimator(ParticleCorrelationEstimator::name,path,actionPtr,random,maxR));
         if (params.count("time_resolved")){
-            estimatorPtr->push_back(new PotentialEnergyEstimator(path,actionPtr));
-            estimatorPtr->push_back(new KineticEnergyEstimator(path,actionPtr));
+            estimatorPtr->push_back(estimatorFactory.getEstimator(PotentialEnergyEstimator::name,path,actionPtr,random,maxR));
+            estimatorPtr->push_back(estimatorFactory.getEstimator(KineticEnergyEstimator::name,path,actionPtr,random,maxR));
         }
-        //estimatorPtr->push_back(new SubregionOccupationEstimator(path,actionPtr));
-        //estimatorPtr->push_back(new TotalEnergyEstimator(path,actionPtr));
-        //estimatorPtr->push_back(new ThermoPotentialEnergyEstimator(path,actionPtr));
-        //estimatorPtr->push_back(new VelocityEstimator(path));
-        //estimatorPtr->push_back(new PIGSOneBodyDensityMatrixEstimator(path,actionPtr,random));
+        //estimatorPtr->push_back(estimatorFactory.getEstimator(SubregionOccupationEstimator::name,path,actionPtr,random,maxR));
+        //estimatorPtr->push_back(estimatorFactory.getEstimator(TotalEnergyEstimator::name,path,actionPtr,random,maxR));
+        //estimatorPtr->push_back(estimatorFactory.getEstimator(ThermoPotentialEnergyEstimator::name,path,actionPtr,random,maxR));
+        //estimatorPtr->push_back(estimatorFactory.getEstimator(VelocityEstimator::name,path,actionPtr,random,maxR));
+        //estimatorPtr->push_back(estimatorFactory.getEstimator(PIGSOneBodyDensityMatrixEstimator::name,path,actionPtr,random,maxR));
     }
     /* The finite temperature measurments */
     else {
 
         /* !!NB!! Scalar estimators, the order here is important! */
-        /* estimator.push_back(new VirialEnergyEstimator(path,actionPtr)); */
-        estimatorPtr->push_back(new EnergyEstimator(path,actionPtr));
-        estimatorPtr->push_back(new NumberParticlesEstimator(path));
-        estimatorPtr->push_back(new DiagonalFractionEstimator(path));
-        estimatorPtr->push_back(new SuperfluidFractionEstimator(path));
-        estimatorPtr->push_back(new WormPropertiesEstimator(path));
+        /* estimator.push_back(new VirialEnergyEstimator(path,actionPtr,random,maxR)); */
+        estimatorPtr->push_back(estimatorFactory.getEstimator(EnergyEstimator::name,path,actionPtr,random,maxR));
+        estimatorPtr->push_back(estimatorFactory.getEstimator(NumberParticlesEstimator::name,path,actionPtr,random,maxR));
+        estimatorPtr->push_back(estimatorFactory.getEstimator(DiagonalFractionEstimator::name,path,actionPtr,random,maxR));
+        estimatorPtr->push_back(estimatorFactory.getEstimator(SuperfluidFractionEstimator::name,path,actionPtr,random,maxR));
+        estimatorPtr->push_back(estimatorFactory.getEstimator(WormPropertiesEstimator::name,path,actionPtr,random,maxR));
 
         /* Vector estimators */
-        //estimatorPtr->push_back(new PermutationCycleEstimator(path));
+        //estimatorPtr->push_back(estimatorFactory.getEstimator(PermutationCycleEstimator::name,path,actionPtr,random,maxR));
         
         /* We only measure the number distribution function if we are grand
          * canonical */
         // if (!constants()->canonical())
-        //     estimatorPtr->push_back(new NumberDistributionEstimator(path));
+        //     estimatorPtr->push_back(estimatorFactory.getEstimator(NumberDistributionEstimator::name,path,actionPtr,random,maxR));
 
-        // estimatorPtr->push_back(new PairCorrelationEstimator(path,actionPtr));
+        // estimatorPtr->push_back(estimatorFactory.getEstimator(PairCorrelationEstimator::name,path,actionPtr,random,maxR));
 
-        //estimatorPtr->push_back(new OneBodyDensityMatrixEstimator(path,actionPtr,random));
+        //estimatorPtr->push_back(estimatorFactory.getEstimator(OneBodyDensityMatrixEstimator::name,path,actionPtr,random,maxR));
 
         /* Time Consuming local estimators */
     //    /* z-averaged estimators */
-    //    estimatorPtr->push_back(new ParticlePositionEstimator(path));
-        /* estimatorPtr->push_back(new PlaneParticlePositionEstimator(path)); */
-    //    estimatorPtr->push_back(new LocalSuperfluidDensityEstimator(path));
-    //    estimatorPtr->push_back(new PlaneWindingSuperfluidDensityEstimator(path));
-    //    estimatorPtr->push_back(new PlaneAreaSuperfluidDensityEstimator(path));
-    //    estimatorPtr->push_back(new LocalPermutationEstimator(path));
+    //    estimatorPtr->push_back(estimatorFactory.getEstimator(ParticlePositionEstimator::name,path,actionPtr,random,maxR));
+    //    estimatorPtr->push_back(estimatorFactory.getEstimator(PlaneParticlePositionEstimator::name,path,actionPtr,random,maxR));
+    //    estimatorPtr->push_back(estimatorFactory.getEstimator(LocalSuperfluidDensityEstimator::name,path,actionPtr,random,maxR));
+    //    estimatorPtr->push_back(estimatorFactory.getEstimator(PlaneWindingSuperfluidDensityEstimator::name,path,actionPtr,random,maxR));
+    //    estimatorPtr->push_back(estimatorFactory.getEstimator(PlaneAreaSuperfluidDensityEstimator::name,path,actionPtr,random,maxR));
+    //    estimatorPtr->push_back(estimatorFactory.getEstimator(LocalPermutationEstimator::name,path,actionPtr,random,maxR));
     
         /* Excluded volume estimators */
         if (constants()->extPotentialType().find("gasp_prim") != string::npos){
-            estimatorPtr->push_back(new BipartitionDensityEstimator(path,actionPtr));
+            estimatorPtr->push_back(estimatorFactory.getEstimator(BipartitionDensityEstimator::name,path,actionPtr,random,maxR));
         }
 
         /* Cylinder estimators */
         if (constants()->extPotentialType().find("tube") != string::npos) {
-            double maxR = params["estimator_radius"].as<double>();
-            estimatorPtr->push_back(new CylinderEnergyEstimator(path,actionPtr,maxR));
-            estimatorPtr->push_back(new CylinderNumberParticlesEstimator(path,maxR));
-            estimatorPtr->push_back(new CylinderSuperfluidFractionEstimator(path,maxR));
-            estimatorPtr->push_back(new CylinderRadialPotentialEstimator(path,actionPtr,random,maxR));
-            estimatorPtr->push_back(new CylinderNumberDistributionEstimator(path,maxR));
-            estimatorPtr->push_back(new CylinderPairCorrelationEstimator(path,actionPtr,maxR));
-            estimatorPtr->push_back(new CylinderOneBodyDensityMatrixEstimator(path,actionPtr,random,maxR));
+            estimatorPtr->push_back(estimatorFactory.getEstimator(CylinderEnergyEstimator::name,path,actionPtr,random,maxR));
+            estimatorPtr->push_back(estimatorFactory.getEstimator(CylinderNumberParticlesEstimator::name,path,actionPtr,random,maxR));
+            estimatorPtr->push_back(estimatorFactory.getEstimator(CylinderSuperfluidFractionEstimator::name,path,actionPtr,random,maxR));
+            estimatorPtr->push_back(estimatorFactory.getEstimator(CylinderRadialPotentialEstimator::name,path,actionPtr,random,maxR));
+            estimatorPtr->push_back(estimatorFactory.getEstimator(CylinderNumberDistributionEstimator::name,path,actionPtr,random,maxR));
+            estimatorPtr->push_back(estimatorFactory.getEstimator(CylinderPairCorrelationEstimator::name,path,actionPtr,random,maxR));
+            estimatorPtr->push_back(estimatorFactory.getEstimator(CylinderOneBodyDensityMatrixEstimator::name,path,actionPtr,random,maxR));
 
             /* Radially averaged estimators */
-            estimatorPtr->push_back(new RadialWindingSuperfluidDensityEstimator(path));
-            estimatorPtr->push_back(new RadialAreaSuperfluidDensityEstimator(path));
-            estimatorPtr->push_back(new RadialDensityEstimator(path));
+            estimatorPtr->push_back(estimatorFactory.getEstimator(RadialWindingSuperfluidDensityEstimator::name,path,actionPtr,random,maxR));
+            estimatorPtr->push_back(estimatorFactory.getEstimator(RadialAreaSuperfluidDensityEstimator::name,path,actionPtr,random,maxR));
+            estimatorPtr->push_back(estimatorFactory.getEstimator(RadialDensityEstimator::name,path,actionPtr,random,maxR));
         }
     } // pimc
 
@@ -984,13 +991,14 @@ boost::ptr_vector<EstimatorBase> * Setup::estimators(Path &path,
 ******************************************************************************/
 boost::ptr_vector<EstimatorBase> * Setup::multiPathEstimators(
         boost::ptr_vector<Path> &pathPtrVec,
-        boost::ptr_vector<ActionBase> &actionPtrVec) {
+        boost::ptr_vector<ActionBase> &actionPtrVec, MTRand &random) {
     
-    boost::ptr_vector<EstimatorBase>* multiEstimatorsPtr = new boost::ptr_vector<EstimatorBase>();
+    double maxR = params["estimator_radius"].as<double>();
+    boost::ptr_vector<EstimatorBase>* multiEstimatorsPtr = 
+        new boost::ptr_vector<EstimatorBase>();
     
-    multiEstimatorsPtr->push_back(new SwapEstimator(pathPtrVec[0],pathPtrVec[1],
-                                                  &actionPtrVec[0],&actionPtrVec[1]));
-    //doubledEstimatorsPtr->push_back(new EntPartEstimator(path,path2,actionPtr,actionPtr2));
+    multiEstimatorsPtr->push_back(new SwapEstimator(pathPtrVec[0],pathPtrVec[1], &actionPtrVec[0], &actionPtrVec[1],random,maxR));
+    //doubledEstimatorsPtr->push_back(new EntPartEstimator(path,path2,actionPtr,actionPtr2,random,maxR));
 
     return multiEstimatorsPtr;
 }

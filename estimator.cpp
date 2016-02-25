@@ -11,6 +11,109 @@
 #include "potential.h"
 #include "communicator.h"
 
+/**************************************************************************//**
+ * Estimator naming conventions:
+ *
+ * 1) be as descriptive as possible
+ * 2) prepend the keyword "cylinder" for cylinder estimators
+ * 3) prepend the keyword "pigs" for PIGS estimators
+ * 4) include the word "multi" for multi-path estimators 
+******************************************************************************/
+const string EnergyEstimator::name = "energy";
+const string VirialEnergyEstimator::name = "virial";
+const string NumberParticlesEstimator::name = "number particles";
+const string NumberDistributionEstimator::name = "number distribution";
+const string ParticlePositionEstimator::name = "particle position";
+const string BipartitionDensityEstimator::name = "bipartition density";
+const string PlaneParticlePositionEstimator::name = "planar density rho";
+const string SuperfluidFractionEstimator::name = "superfluid fraction";
+const string PlaneWindingSuperfluidDensityEstimator::name = "planar winding rhos/rho";
+const string PlaneAreaSuperfluidDensityEstimator::name = "planar area rhos/rho";
+const string RadialWindingSuperfluidDensityEstimator::name = "radial winding rhos/rho";
+const string RadialAreaSuperfluidDensityEstimator::name = "radial area rhos/rho";
+const string LocalSuperfluidDensityEstimator::name = "local superfluid";
+const string DiagonalFractionEstimator::name = "diagonal fraction";
+const string WormPropertiesEstimator::name = "worm properties";
+const string PermutationCycleEstimator::name = "permutation cycle";
+const string LocalPermutationEstimator::name = "local permutation";
+const string OneBodyDensityMatrixEstimator::name = "one body density matrix";
+const string PairCorrelationEstimator::name = "pair correlation function";
+const string RadialDensityEstimator::name = "radial density";
+const string CylinderEnergyEstimator::name = "cylinder energy";
+const string CylinderNumberParticlesEstimator::name = "cylinder number particles";
+const string CylinderNumberDistributionEstimator::name = "cylinder number distribution";
+const string CylinderLinearDensityEstimator::name = "cylinder linear density";
+const string CylinderSuperfluidFractionEstimator::name = "cylinder superfluid fraction";
+const string CylinderOneBodyDensityMatrixEstimator::name = "cylinder one body density matrix";
+const string CylinderPairCorrelationEstimator::name = "cylinder pair correlation function";
+const string CylinderRadialPotentialEstimator::name = "cylinder radial potential";
+const string CylinderLinearPotentialEstimator::name = "cylinder linear potential";
+const string PotentialEnergyEstimator::name = "cylinder potential energy";
+const string KineticEnergyEstimator::name = "pigs kinetic energy";
+const string PigsEnergyEstimator::name = "pigs energy";
+const string TotalEnergyEstimator::name = "pigs total energy";
+const string ThermoPotentialEnergyEstimator::name = "pigs thermodynamic potential energy";
+const string PositionEstimator::name = "pigs spatial position";
+const string ParticleResolvedPositionEstimator::name = "pigs particle resolved positions";
+const string ParticleCorrelationEstimator::name = "pigs particle correlations";
+const string VelocityEstimator::name = "pigs velocity";
+const string SubregionOccupationEstimator::name = "pigs subregion occupation";
+const string PIGSOneBodyDensityMatrixEstimator::name = "pigs one body density matrix";
+const string DoubledEstimator::name = "doubled estimator";
+const string SwapEstimator::name = "pigs multi swap";
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ESTIMATOR FACTORY CLASS ---------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+/*************************************************************************//**
+ *  Constructor.
+ *  We populate the register with all possible estimators.
+******************************************************************************/
+EstimatorFactory::EstimatorFactory() {
+    registerEstimator<EnergyEstimator>(EnergyEstimator::name);
+    registerEstimator<VirialEnergyEstimator>(VirialEnergyEstimator::name);
+    registerEstimator<NumberParticlesEstimator>(NumberParticlesEstimator::name);
+    registerEstimator<NumberDistributionEstimator>(NumberDistributionEstimator::name);
+    registerEstimator<ParticlePositionEstimator>(ParticlePositionEstimator::name);
+    registerEstimator<BipartitionDensityEstimator>(BipartitionDensityEstimator::name);
+    registerEstimator<PlaneParticlePositionEstimator>(PlaneParticlePositionEstimator::name);
+    registerEstimator<SuperfluidFractionEstimator>(SuperfluidFractionEstimator::name);
+    registerEstimator<PlaneWindingSuperfluidDensityEstimator>(PlaneWindingSuperfluidDensityEstimator::name);
+    registerEstimator<PlaneAreaSuperfluidDensityEstimator>(PlaneAreaSuperfluidDensityEstimator::name);
+    registerEstimator<RadialWindingSuperfluidDensityEstimator>(RadialWindingSuperfluidDensityEstimator::name);
+    registerEstimator<RadialAreaSuperfluidDensityEstimator>(RadialAreaSuperfluidDensityEstimator::name);
+    registerEstimator<LocalSuperfluidDensityEstimator>(LocalSuperfluidDensityEstimator::name);
+    registerEstimator<DiagonalFractionEstimator>(DiagonalFractionEstimator::name);
+    registerEstimator<WormPropertiesEstimator>(WormPropertiesEstimator::name);
+    registerEstimator<PermutationCycleEstimator>(PermutationCycleEstimator::name);
+    registerEstimator<LocalPermutationEstimator>(LocalPermutationEstimator::name);
+    registerEstimator<OneBodyDensityMatrixEstimator>(OneBodyDensityMatrixEstimator::name);
+    registerEstimator<PairCorrelationEstimator>(PairCorrelationEstimator::name);
+    registerEstimator<RadialDensityEstimator>(RadialDensityEstimator::name);
+    registerEstimator<CylinderEnergyEstimator>(CylinderEnergyEstimator::name);
+    registerEstimator<CylinderNumberParticlesEstimator>(CylinderNumberParticlesEstimator::name);
+    registerEstimator<CylinderNumberDistributionEstimator>(CylinderNumberDistributionEstimator::name);
+    registerEstimator<CylinderLinearDensityEstimator>(CylinderLinearDensityEstimator::name);
+    registerEstimator<CylinderSuperfluidFractionEstimator>(CylinderSuperfluidFractionEstimator::name);
+    registerEstimator<CylinderOneBodyDensityMatrixEstimator>(CylinderOneBodyDensityMatrixEstimator::name);
+    registerEstimator<CylinderPairCorrelationEstimator>(CylinderPairCorrelationEstimator::name);
+    registerEstimator<CylinderRadialPotentialEstimator>(CylinderRadialPotentialEstimator::name);
+    registerEstimator<CylinderLinearPotentialEstimator>(CylinderLinearPotentialEstimator::name);
+    registerEstimator<PotentialEnergyEstimator>(PotentialEnergyEstimator::name);
+    registerEstimator<KineticEnergyEstimator>(KineticEnergyEstimator::name);
+    registerEstimator<PigsEnergyEstimator>(PigsEnergyEstimator::name);
+    registerEstimator<TotalEnergyEstimator>(TotalEnergyEstimator::name);
+    registerEstimator<ThermoPotentialEnergyEstimator>(ThermoPotentialEnergyEstimator::name);
+    registerEstimator<PositionEstimator>(PositionEstimator::name);
+    registerEstimator<ParticleResolvedPositionEstimator>(ParticleResolvedPositionEstimator::name);
+    registerEstimator<ParticleCorrelationEstimator>(ParticleCorrelationEstimator::name);
+    registerEstimator<VelocityEstimator>(VelocityEstimator::name);
+    registerEstimator<SubregionOccupationEstimator>(SubregionOccupationEstimator::name);
+    registerEstimator<PIGSOneBodyDensityMatrixEstimator>(PIGSOneBodyDensityMatrixEstimator::name);
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // ESTIMATOR BASE CLASS ------------------------------------------------------
@@ -21,15 +124,22 @@
  *  Constructor.
  * 
  * Initialize and specify the output file.
+ *
+ * We take in some options that might only be needed by derived classes
+ * (_actionPtr, _random, _maxR) in order to facilitate instantiation via a
+ * factory.
 ******************************************************************************/
-EstimatorBase::EstimatorBase (const Path &_path, int _frequency, string _label) : 
+EstimatorBase::EstimatorBase(const Path &_path, ActionBase *_actionPtr, 
+        const MTRand &_random, double _maxR, int _frequency, string _label) :
     path(_path),
-    name(),
+    actionPtr(_actionPtr),
+	random(_random),
+    maxR(_maxR),
+    frequency(_frequency),
     label(_label),
     numSampled(0),
 	numAccumulated(0),
 	totNumAccumulated(0),
-    frequency(_frequency),
     diagonal(true),
     endLine(true)
 {
@@ -193,12 +303,11 @@ void EstimatorBase::appendLabel(string append) {
  * estimators.
 ******************************************************************************/
 EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
-		int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label), actionPtr(_actionPtr) {
+		const MTRand &_random, double _maxR, int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
 	/* Set estimator name and header, we will always report the energy
 	 * first, hence the comment symbol*/
-	name = "Energy";
 	header = str(format("#%15s%16s%16s%16s%16s%16s%16s") 
 			% "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
     endLine = false;
@@ -312,12 +421,11 @@ void EnergyEstimator::accumulate() {
  *
 ******************************************************************************/
 VirialEnergyEstimator::VirialEnergyEstimator (const Path &_path, ActionBase *_actionPtr,
-		int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label), actionPtr(_actionPtr) {
+		const MTRand &_random, double _maxR, int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
 	/* Set estimator name and header, we will always report the energy
 	 * first, hence the comment symbol*/
-	name = "Energy";
 	header = str(format("#%15s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s") 
             % "K_op" % "K_cv" % "V_op" % "V_cv" % "E" % "E_mu" % "K_op/N" % "K_cv/N" % "V_op/N"
             % " V_cv/N" % "E/N" % "EEcv*Beta^2"% "Ecv*Beta" % "dEdB" % "CvCov1"
@@ -513,11 +621,11 @@ void VirialEnergyEstimator::accumulate() {
  *  density of particles.
 ******************************************************************************/
 NumberParticlesEstimator::NumberParticlesEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
         int _frequency, string _label) :
-	EstimatorBase(_path,_frequency,_label) {
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
 	/* Set estimator name and header */
-	name = "Number Particles";
 	header = str(format("%16s%16s%16s") % "N" % "N^2" % "density");
     endLine = false;
     initialize(3);
@@ -553,8 +661,9 @@ void NumberParticlesEstimator::accumulate() {
  *  specified.
 ******************************************************************************/
 NumberDistributionEstimator::NumberDistributionEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
         int _frequency, string _label) :
-	EstimatorBase(_path,_frequency,_label) {
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
 	/* For now, we assume 50 particles on each side of the mean */
 	particleShift = 50;
@@ -572,7 +681,6 @@ NumberDistributionEstimator::NumberDistributionEstimator (const Path &_path,
     initialize(maxNumParticles);
 
 	/* Set estimator name and header */
-	name = "Number Distribution";
 	header = str(format("#%15d") % startParticleNumber);
 	for (int n = startParticleNumber+1; n <= endParticleNumber; n++) 
 		header.append(str(format("%16d") % n));
@@ -609,14 +717,14 @@ void NumberDistributionEstimator::accumulate() {
  *
  *  @note Only tested for cubic boxes
 ******************************************************************************/
-ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path,
-        int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
+ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label)  : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     initialize(path.boxPtr->numGrid);
 
     /* Set estimator name and header. */
-    name = "Particle Position";
     header = str(format("#%15d\n#%15s") % NGRIDSEP % "density");
 
     /* The normalization: 1/(dV*M) */
@@ -684,11 +792,11 @@ void ParticlePositionEstimator::accumulate() {
  *  (Gasparini) geometry.
 ******************************************************************************/
 BipartitionDensityEstimator::BipartitionDensityEstimator (const Path &_path, 
-        ActionBase *_actionPtr, int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label), actionPtr(_actionPtr) {
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
 	/* Set estimator name and header*/
-	name = "Bipartition Density";
 	header = str(format("#%15s%16s") % "film dens" % "bulk dens");
     endLine = true;
     initialize(2);
@@ -759,9 +867,10 @@ void BipartitionDensityEstimator::accumulate() {
  *
  *  @note Only tested for cubic boxes
 ******************************************************************************/
-PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_path,
+PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
         int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     numGrid = (2*NGRIDSEP)*(2*NGRIDSEP);
 
@@ -771,9 +880,6 @@ PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_pat
 
 	/* This is a diagonal estimator that gets its own file */
 	initialize(numGrid);
-
-	/* Set estimator name */
-	name = "Planar Density rho";
 
 	/* The header is the first line which contains the spatial separations */
 	header = str(format("#%15.3E") % 0.0);
@@ -840,8 +946,9 @@ void PlaneParticlePositionEstimator::accumulate() {
  *  distribution.
 ******************************************************************************/
 SuperfluidFractionEstimator::SuperfluidFractionEstimator (const Path &_path, 
-		int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
 	windMax = 10;
 	/* We compute a bunch of estimators here, the superfluid fraction, the winding
@@ -850,8 +957,6 @@ SuperfluidFractionEstimator::SuperfluidFractionEstimator (const Path &_path,
 	 * output file.*/
     initialize(4 + 2*windMax + 1 + 1);
 
-	/* Set estimator name */
-	name = "Superfluid Fraction";
 	header = str(format("#%15s%16s%16s%16s") % "rho_s/rho" % "W^2(x)" % "W^2(y)" % "W^2(z)");
 	for (int w = -windMax; w <= windMax; w++)
 		header += str(format("%11sP(%+1d)") % " " % w);
@@ -954,8 +1059,9 @@ void SuperfluidFractionEstimator::accumulate() {
  *
 ******************************************************************************/
 PlaneWindingSuperfluidDensityEstimator::PlaneWindingSuperfluidDensityEstimator
-(const Path &_path, int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
+(const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     numGrid = (2*NGRIDSEP)*(2*NGRIDSEP);
 
@@ -965,9 +1071,6 @@ PlaneWindingSuperfluidDensityEstimator::PlaneWindingSuperfluidDensityEstimator
 
 	/* This is a diagonal estimator that gets its own file */
 	initialize(numGrid);
-
-	/* Set estimator name */
-	name = "Planar Winding rhos/rho";
 
 	/* The header is the first line which contains the spatial separations */
 	header = str(format("#%15.3E") % 0.0);
@@ -1045,8 +1148,9 @@ void PlaneWindingSuperfluidDensityEstimator::accumulate() {
  *
 ******************************************************************************/
 PlaneAreaSuperfluidDensityEstimator::PlaneAreaSuperfluidDensityEstimator
-(const Path &_path, int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
+(const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     numGrid = (2*NGRIDSEP)*(2*NGRIDSEP);
 
@@ -1056,9 +1160,6 @@ PlaneAreaSuperfluidDensityEstimator::PlaneAreaSuperfluidDensityEstimator
 
 	/* This is a diagonal estimator that gets its own file */
 	initialize(numGrid);
-
-	/* Set estimator name */
-	name = "Planar Area rhos/rho";
 
 	/* The header is the first line which contains the spatial separations */
 	header = str(format("#%15.3E") % 0.0);
@@ -1142,8 +1243,9 @@ void PlaneAreaSuperfluidDensityEstimator::accumulate() {
  *
 ******************************************************************************/
 RadialWindingSuperfluidDensityEstimator::RadialWindingSuperfluidDensityEstimator
-(const Path &_path, int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
+(const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     numGrid = NGRIDSEP;
 
@@ -1152,9 +1254,6 @@ RadialWindingSuperfluidDensityEstimator::RadialWindingSuperfluidDensityEstimator
 
 	/* This is a diagonal estimator that gets its own file */
 	initialize(numGrid);
-
-	/* Set estimator name */
-	name = "Radial Winding rhos/rho";
 
 	/* The header is the first line which contains the spatial separations */
 	header = str(format("#%15.3E") % 0.0);
@@ -1230,8 +1329,9 @@ void RadialWindingSuperfluidDensityEstimator::accumulate() {
  *
 ******************************************************************************/
 RadialAreaSuperfluidDensityEstimator::RadialAreaSuperfluidDensityEstimator
-(const Path &_path, int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
+(const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     numGrid = NGRIDSEP;
 
@@ -1240,9 +1340,6 @@ RadialAreaSuperfluidDensityEstimator::RadialAreaSuperfluidDensityEstimator
 
 	/* This is a diagonal estimator that gets its own file */
 	initialize(numGrid);
-
-	/* Set estimator name */
-	name = "Radial Area rhos/rho";
 
 	/* The header is the first line which contains the spatial separations */
 	header = str(format("#%15.3E") % 0.0);
@@ -1320,8 +1417,9 @@ void RadialAreaSuperfluidDensityEstimator::accumulate() {
  *
 ******************************************************************************/
 LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
-(const Path &_path, int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
+(const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label):
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* This is a 'local' histogram estimator so we use the defined grid */
     numGrid = path.boxPtr->numGrid;
@@ -1330,8 +1428,6 @@ LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
     /* The smallest allowed radius */
     dR = 0.5*path.boxPtr->side[0]/numGrid;
 
-    /* Set estimator name and header. */
-    name = "Local Superfluid";
     header = str(format("#%15d\n") % NGRIDSEP);
     header += str(format("#%15s%16s%16s") % "W:rho_s" % "A:rho_s" % "A^2");
 
@@ -1468,13 +1564,12 @@ void LocalSuperfluidDensityEstimator::accumulate() {
  *  diagonal ensemble (no worms).
 ******************************************************************************/
 DiagonalFractionEstimator::DiagonalFractionEstimator (const Path &_path, 
-		int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     initialize(1);
 
-	/* Set estimator name */
-	name = "Diagonal Fraction";
 	header = str(format("%16s") % "diagonal");
 
 }
@@ -1522,16 +1617,15 @@ void DiagonalFractionEstimator::sample() {
  *  the number of beads / number of time slices.
 ******************************************************************************/
 WormPropertiesEstimator::WormPropertiesEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
         int _frequency, string _label) : 
-	EstimatorBase(_path,_frequency,_label) {
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
 	/* We measure the average worm length, gap and cost.  It is an off-diagonal
 	 * estimator that is output to its own file */
     initialize(5);
     diagonal = false;
 
-	/* Set estimator name */
-	name = "Worm Properties";
 	header = str(format("#%15s%16s%16s%16s%16s") % "rel-worm-len" % 
 			"rel-worm-gap" % "worm-cost" % "head-tail-sep" % "particles");
 }
@@ -1569,9 +1663,10 @@ void WormPropertiesEstimator::accumulate() {
  * We setup the permutation cycle estimator to measure cycles which can 
  * contain up to 40 particles.
 ******************************************************************************/
-PermutationCycleEstimator::PermutationCycleEstimator(const Path &_path, 
-		int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
+PermutationCycleEstimator::PermutationCycleEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label)  : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
 	/* We just choose arbitrarily to only count cycles including up to 40 particles */
 	maxNumCycles = 40;
@@ -1582,7 +1677,6 @@ PermutationCycleEstimator::PermutationCycleEstimator(const Path &_path,
 
 	/* Set estimator name and header, which contains the permutation cycle
 	 * numbers */
-	name = "Permutation Cycle";
 	header = str(format("#%15d") % 1);
 	for (int n = 2; n <= maxNumCycles; n++) 
 		header.append(str(format("%16d") % n));
@@ -1671,9 +1765,10 @@ void PermutationCycleEstimator::accumulate() {
  * We setup the permuatation cycle estimator to measure cycles which can 
  * contain up to 40 particles.
 ******************************************************************************/
-LocalPermutationEstimator::LocalPermutationEstimator(const Path &_path, 
-		int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
+LocalPermutationEstimator::LocalPermutationEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label)  : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
 	/* We just choose arbitrarily to only count cycles including up to 40 particles */
 	maxNumCycles = 40;
@@ -1685,8 +1780,7 @@ LocalPermutationEstimator::LocalPermutationEstimator(const Path &_path,
     /* vector to hold number of worldlines put into a grid space */
     numBeadInGrid.resize(estimator.size());
 
-	/* Set estimator name and header */
-	name = "Local Permutation";
+	/* Set estimator header */
     header = str(format("#%15d") % NGRIDSEP);
 
 }
@@ -1810,12 +1904,11 @@ void LocalPermutationEstimator::accumulate() {
  *  positions, out to the maximum separation in the sample (which may depend
  *  on the type of simulation cell).
 ******************************************************************************/
-OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path,
-		ActionBase *_actionPtr, const MTRand &_random, int _frequency, string _label) : 
-	EstimatorBase(_path,_frequency,_label), 
-	lpath(_path),
-	actionPtr(_actionPtr),
-	random(_random)
+OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
+	lpath(_path)
 {
 
 	sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
@@ -1826,9 +1919,6 @@ OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path,
 	/* This is an off-diagonal estimator*/
     initialize(NOBDMSEP);
     diagonal = false;
-
-	/* Set estimator name */
-	name = "One Body Density Matrix";
 
 	/* The header is the first line which contains the spatial separations */
 	header = str(format("#%15.3E") % 0.0);
@@ -2056,18 +2146,15 @@ void OneBodyDensityMatrixEstimator::outputFooter() {
  *  depends on dimension.
 ******************************************************************************/
 PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path, 
-		ActionBase *_actionPtr, int _frequency, string _label) : 
-	EstimatorBase(_path,_frequency,_label),
-	actionPtr(_actionPtr)
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 	/* The spatial discretization */
 	dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
 
 	/* This is a diagonal estimator that gets its own file */
 	initialize(NPCFSEP);
-
-	/* Set estimator name */
-	name = "Pair Correlation Function";
 
 	/* The header is the first line which contains the spatial separations */
 	header = str(format("#%15.3E") % 0.0);
@@ -2138,17 +2225,15 @@ void PairCorrelationEstimator::accumulate() {
  *  The radial density is binned into NRADSEP boxes.
 ******************************************************************************/
 RadialDensityEstimator::RadialDensityEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
         int _frequency, string _label) : 
-	EstimatorBase(_path,_frequency,_label)
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 	/* The spatial discretization */
 	dR  = 0.5*path.boxPtr->side[0] / (1.0*NRADSEP);
 
 	/* This is a diagonal estimator that gets its own file */
 	initialize(NRADSEP);
-
-	/* Set estimator name */
-	name = "Radial Density";
 
 	/* The header is the first line which contains the spatial separations */
 	header = str(format("#%15.3E") % 0.0);
@@ -2229,21 +2314,19 @@ int num1DParticles(const Path &path, double maxR) {
  * We measure the total Kinetic, Potential and E-mu*N as well as the kinetic,
  * potential and total energy per particle.
 ******************************************************************************/
-CylinderEnergyEstimator::CylinderEnergyEstimator (const Path &_path, ActionBase *_actionPtr,
-		double _maxR, int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label), actionPtr(_actionPtr) {
-
-	/* Assign the cut-off radius */
-	maxR = _maxR;
+CylinderEnergyEstimator::CylinderEnergyEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
 
 	/* We compute three diagonal estimators, kinetic, potential and total energy
 	 * per particle */
 	initialize(7);
     endLine = false;
 
-	/* Set estimator name and header, we will always report the energy
+	/* Set estimator header, we will always report the energy
 	 * first, hence the comment symbol*/
-	name = "Cyl Energy";
 	header = str(format("#%15s%16s%16s%16s%16s%16s%16s") 
 			% "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
 }
@@ -2345,18 +2428,15 @@ void CylinderEnergyEstimator::accumulate() {
  *  density of particles.
 ******************************************************************************/
 CylinderNumberParticlesEstimator::CylinderNumberParticlesEstimator (const Path &_path, 
-		double _maxR, int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
-
-	/* Assign the cut-off radius */
-	maxR = _maxR;
-
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
 	/* We compute three diagonal estimators, the total number of particles,
 	 * total number of particles squared and density. */
 	initialize(3);
 
-	/* Set estimator name and header */
-	name = "Cyl Number Particles";
+	/* Set estimator header */
 	header = str(format("%16s%16s%16s") % "N" % "N^2" % "density");
 }
 
@@ -2390,18 +2470,16 @@ void CylinderNumberParticlesEstimator::accumulate() {
  *  specified.
 ******************************************************************************/
 CylinderNumberDistributionEstimator::CylinderNumberDistributionEstimator 
-	(const Path &_path, double _maxR, int _frequency, string _label) : 
-        EstimatorBase(_path,_frequency,_label) {
-
-	/* Assign the cut-off radius */
-	maxR = _maxR;
+	(const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
 
 	/* For now, we assume a maximum of 200 total particles. */
 	maxNumParticles = 200;
 	initialize(maxNumParticles);
 
-	/* Set estimator name and header */
-	name = "Cyl Number Distribution";
+	/* Set estimator header */
 	header = str(format("#%15d") % 0);
 	for (int n = 1; n < maxNumParticles; n++) 
 		header.append(str(format("%16d") % n));
@@ -2426,6 +2504,71 @@ void CylinderNumberDistributionEstimator::accumulate() {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
+// CYLINDER LINEAR DENSITY ESTIMATOR CLASS -----------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  Setup a vector estimator which measures the linear density along the 
+ *  pore axis.
+******************************************************************************/
+CylinderLinearDensityEstimator::CylinderLinearDensityEstimator
+	(const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
+    /* The length of the cylinder */
+    Lz = path.boxPtr->side[NDIM-1];
+
+	/* The spatial discretization */
+	dz = Lz / (1.0*NRADSEP);
+
+	/* This is a diagonal estimator that gets its own file */
+	initialize(NRADSEP);
+
+	/* The header is the first line which contains the spatial positions */
+	header = str(format("#%15.3E") % 0.0);
+	for (int n = 1; n < NRADSEP; n++) 
+		header.append(str(format("%16.3E") % (n*dz)));
+
+	/* The normalization factor for the linear density*/
+	norm = 1.0/(dz * constants()->numTimeSlices());
+}
+
+/*************************************************************************//**
+ * Destructor.
+******************************************************************************/
+CylinderLinearDensityEstimator::~CylinderLinearDensityEstimator() { 
+}
+
+/*************************************************************************//**
+ * Accumulate the linear density.
+******************************************************************************/
+void CylinderLinearDensityEstimator::accumulate() {
+
+	dVec pos;
+	beadLocator beadIndex;
+    /* visit each bead */
+	for (int slice = 0; slice < path.numTimeSlices; slice++) {
+		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+			beadIndex = slice,ptcl;
+            pos = path(beadIndex);
+
+            /* If we are inside the cutoff cylinder, accumulate the density 
+             * histogram */
+			if (include(pos,maxR)) {
+                int k = int((0.5*Lz + pos[NDIM-1])/dz);
+                if (k < NRADSEP)
+                    estimator(k) += 1.0;
+            }
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // CYLINDER SUPERFLUID FRACTION ESTIMATOR CLASS ------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -2439,11 +2582,10 @@ void CylinderNumberDistributionEstimator::accumulate() {
  *  distribution.
 ******************************************************************************/
 CylinderSuperfluidFractionEstimator::CylinderSuperfluidFractionEstimator (const Path &_path, 
-		double _maxR, int _frequency, string _label) : 
-    EstimatorBase(_path,_frequency,_label) {
-
-	/* Assign the cut-off radius */
-	maxR = _maxR;
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
 
 	windMax = 10;
 	/* We compute a bunch of estimators here, the superfluid fraction, the winding
@@ -2452,8 +2594,7 @@ CylinderSuperfluidFractionEstimator::CylinderSuperfluidFractionEstimator (const 
 	 * output file.*/
 	initialize(4+2*windMax+1);
 
-	/* Set estimator name */
-	name = "Cyl Superfluid Fraction";
+	/* Set estimator header */
 	header = str(format("#%15s%16s%16s%16s") % "rho_s/rho" % "W^2(x)" % "W^2(y)" % "W^2(z)");
 	for (int w = -windMax; w <= windMax; w++)
 		header += str(format("%11sP(%+1d)") % " " % w);
@@ -2583,17 +2724,12 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
  *  positions, out to the maximum separation in the sample (which may depend
  *  on the type of simulation cell).
 ******************************************************************************/
-CylinderOneBodyDensityMatrixEstimator::CylinderOneBodyDensityMatrixEstimator (Path &_path,
-		ActionBase *_actionPtr, const MTRand &_random, double _maxR, int _frequency, 
-        string _label) : 
-	EstimatorBase(_path,_frequency,_label), 
-	lpath(_path),
-	actionPtr(_actionPtr),
-	random(_random)
+CylinderOneBodyDensityMatrixEstimator::CylinderOneBodyDensityMatrixEstimator 
+  (Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+   int _frequency, string _label) : 
+      EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
+      lpath(_path)
 {
-	/* Assign the cut-off radius */
-	maxR = _maxR;
-
 	sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
 
 	/* We chooose the maximum separation to be sqrt(NDIM)*L/2 */
@@ -2602,9 +2738,6 @@ CylinderOneBodyDensityMatrixEstimator::CylinderOneBodyDensityMatrixEstimator (Pa
 	/* This is an off-diagonal estimator that gets its own file */
 	initialize(NOBDMSEP);
     diagonal = false;
-
-	/* Set estimator name */
-	name = "Cyl One Body Density Matrix";
 
 	/* The header is the first line which contains the spatial separations */
 	header = str(format("#%15.3E") % 0.0);
@@ -2799,21 +2932,15 @@ void CylinderOneBodyDensityMatrixEstimator::accumulate() {
  *  depends on dimension.
 ******************************************************************************/
 CylinderPairCorrelationEstimator::CylinderPairCorrelationEstimator (const Path &_path, 
-		ActionBase *_actionPtr, double _maxR, int _frequency, string _label) : 
-	EstimatorBase(_path,_frequency,_label),
-	actionPtr(_actionPtr)
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
-	/* Assign the cut-off radius */
-	maxR = _maxR;
-
 	/* The spatial discretization */
 	dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
 
 	/* This is a diagonal estimator that gets its own file */
 	initialize(NPCFSEP);
-
-	/* Set estimator name */
-	name = "Cyl Pair Correlation Function";
 
 	/* The header is the first line which contains the spatial separations */
 	header = str(format("#%15.3E") % 0.0);
@@ -2863,6 +2990,91 @@ void CylinderPairCorrelationEstimator::sample() {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
+// CYLINDER LINEAR POTENTIAL ESTIMATOR CLASS ---------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  We compute the effective potential V(z) felt by a fictitious particle
+ *  located along the axis of the cylinder (r=0).
+******************************************************************************/
+CylinderLinearPotentialEstimator::CylinderLinearPotentialEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
+    /* The length of the cylinder */
+    Lz = path.boxPtr->side[NDIM-1];
+
+	/* The spatial discretization */
+	dz = Lz / (1.0*NRADSEP);
+
+	/* This is a diagonal estimator that gets its own file */
+	initialize(NRADSEP);
+
+	/* The header is the first line which contains the spatial separations */
+	header = str(format("#%15.3E") % 0.0);
+	for (int n = 1; n < NRADSEP; n++) 
+		header.append(str(format("%16.3E") % ((n)*dz)));
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+CylinderLinearPotentialEstimator::~CylinderLinearPotentialEstimator() { 
+}
+
+/*************************************************************************//**
+ *  We determine what the effective potential along the axis of the pore.
+******************************************************************************/
+void CylinderLinearPotentialEstimator::accumulate() {
+
+	double totV = 0.0;
+	dVec r1,r2; 		// The two bead positions
+    r1 = 0.0;
+
+	dVec sep;			// The bead separation
+	beadLocator bead2;	// The bead locator
+
+	/* sample all positions along the pore */
+	for (int n = 0; n < NRADSEP; n++) {
+
+        r1[2] = -0.5*Lz + n*dz;
+		totV = 0.0;
+
+		/* We sum up the interaction energy over all slices*/
+        int numBeads = 0;
+		for (int slice = 0; slice < path.numTimeSlices; slice++) {
+			bead2[0] = slice;
+
+			/* Sum over particles */
+			for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(slice); bead2[1]++) {
+
+				r2 = path(bead2);
+				if (!include(r2,maxR)) {
+					sep = r2 - r1;
+					path.boxPtr->putInBC(sep);
+					totV += actionPtr->interactionPtr->V(sep);
+                    numBeads++;
+
+				} // bead2 is outside maxR
+			} // bead2
+		} // slice
+
+		totV /= 1.0*numBeads;
+
+        /* Add the constant piece from the external potential */
+		/* totV += actionPtr->externalPtr->V(r1); */
+
+		estimator(n) += totV;
+	} // n
+}
+
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // CYLINDER RADIAL POTENTIAL ESTIMATOR CLASS ---------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -2874,23 +3086,15 @@ void CylinderPairCorrelationEstimator::sample() {
  *  external potential felt by the central chain of particles.
 ******************************************************************************/
 CylinderRadialPotentialEstimator::CylinderRadialPotentialEstimator (const Path &_path, 
-		ActionBase *_actionPtr, MTRand &_random, double _maxR, int _frequency, string _label) : 
-	EstimatorBase(_path,_frequency,_label),
-	actionPtr(_actionPtr),
-	random(_random)
+		ActionBase *_actionPtr, const MTRand &_random, double _maxR, int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
-	/* Assign the cut-off radius */
-	maxR = _maxR;
-
 	/* The spatial discretization */
 	dR  = 0.5*path.boxPtr->side[0] / (1.0*NRADSEP);
 
 	/* This is a diagonal estimator that gets its own file */
 	initialize(NRADSEP);
 	radPot.resize(NRADSEP);
-
-	/* Set estimator name */
-	name = "Cyl Radial Potential";
 
 	/* The header is the first line which contains the spatial separations */
 	header = str(format("#%15.3E") % 0.0);
@@ -3034,16 +3238,14 @@ void CylinderRadialPotentialEstimator::accumulate1() {
  *  Setup the potential energy estimator.  We measure it on every other time slice.
 ******************************************************************************/
 PotentialEnergyEstimator::PotentialEnergyEstimator (const Path &_path, 
-        ActionBase *_actionPtr, int _frequency, string _label) :
-    EstimatorBase(_path,_frequency,_label), 
-    actionPtr(_actionPtr) {
-
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
     /* We measure on every other time slice */
     initialize( (constants()->numTimeSlices()-1)/2 +1);
 
-
-	/* Set estimator name and header */
-	name = "Potential Energy";
+	/* Set estimator header */
 	header = str(format("#%15f") % 0.0 );
 	for (int n = 2; n < constants()->numTimeSlices(); n+=2)
         header.append(str(format("%16f") % (n*constants()->tau()) ));
@@ -3081,17 +3283,16 @@ void PotentialEnergyEstimator::accumulate() {
  *
  *  Setup the kinetic energy estimator.  We measure it on every other time slice.
  ******************************************************************************/
-KineticEnergyEstimator::KineticEnergyEstimator (const Path &_path,
-                ActionBase *_actionPtr, int _frequency,
-                string _label) :
-    EstimatorBase(_path,_frequency,_label),
-    actionPtr(_actionPtr){
+KineticEnergyEstimator::KineticEnergyEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
     
     /* We measure on every other time slice */
     initialize( (constants()->numTimeSlices()-1)/2 );
     
-	/* Set estimator name and header */
-	name = "Kinetic Energy";
+	/* Set estimator header */
 	header = str(format("#%15f") % constants()->tau());
 	for (int n = 2; n < (constants()->numTimeSlices()-1); n+=2)
 		header.append(str(format("%16f") % ((n+1)*constants()->tau()) ));
@@ -3162,13 +3363,14 @@ void KineticEnergyEstimator::accumulate() {
 * We measure the total Kinetic, Potential and E-mu*N as well as the kinetic,
 * potential and total energy per particle.
 ******************************************************************************/
-PigsEnergyEstimator::PigsEnergyEstimator (const Path &_path, ActionBase *_actionPtr,
-                                  int _frequency, string _label) :
-EstimatorBase(_path,_frequency,_label), actionPtr(_actionPtr) {
+PigsEnergyEstimator::PigsEnergyEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
     
-	/* Set estimator name and header, we will always report the energy
+	/* Set estimator header, we will always report the energy
 	 * first, hence the comment symbol*/
-	name = "Energy";
 	header = str(format("#%15s%16s%16s%16s%16s%16s%16s")
                  % "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
     endLine = true;
@@ -3274,17 +3476,16 @@ void PigsEnergyEstimator::accumulate() {
 *
 *  Setup the total energy estimator.  We measure it on every time slice.
 ******************************************************************************/
-TotalEnergyEstimator::TotalEnergyEstimator (const Path &_path,
-                                                ActionBase *_actionPtr, int _frequency,
-                                                string _label) :
-EstimatorBase(_path,_frequency,_label),
-actionPtr(_actionPtr){
+TotalEnergyEstimator::TotalEnergyEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
     
     /* We measure on every other time slice */
     initialize( (constants()->numTimeSlices()-1) );
     
-	/* Set estimator name and header */
-	name = "Total Energy";
+	/* Set estimator header */
 	header = str(format("#%15f") % constants()->tau());
 	for (int n = 1; n < (constants()->numTimeSlices()-1); n++)
 		header.append(str(format("%16f") % (n*constants()->tau()) ));
@@ -3348,17 +3549,16 @@ void TotalEnergyEstimator::accumulate() {
 *
 *  Setup the total energy estimator.  We measure it on every time slice.
 ******************************************************************************/
-ThermoPotentialEnergyEstimator::ThermoPotentialEnergyEstimator (const Path &_path,
-                                            ActionBase *_actionPtr, int _frequency,
-                                            string _label) :
-EstimatorBase(_path,_frequency,_label),
-actionPtr(_actionPtr){
+ThermoPotentialEnergyEstimator::ThermoPotentialEnergyEstimator  (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label):
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
     
     /* We measure on every other time slice */
     initialize( (constants()->numTimeSlices()-1) );
     
-	/* Set estimator name and header */
-	name = "Thermodynamic Potential Energy";
+	/* Set estimator header */
 	header = str(format("#%15f") % constants()->tau());
 	for (int n = 1; n < (constants()->numTimeSlices()-1); n++)
 		header.append(str(format("%16f") % (n*constants()->tau()) ));
@@ -3398,14 +3598,15 @@ void ThermoPotentialEnergyEstimator::accumulate() {
  *  Setup the potential energy estimator.  We measure it on each time slice.
 ******************************************************************************/
 PositionEstimator::PositionEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
         int _frequency, string _label) :
-    EstimatorBase(_path,_frequency,_label) { 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
 
     /* We measure on each time slice */
     initialize(constants()->numTimeSlices());
 
-	/* Set estimator name and header */
-	name = "Spatial Position";
+	/* Set estimator header */
 	header = str(format("#%15d") % 0);
 	for (int n = 1; n < constants()->numTimeSlices(); n++) 
 		header.append(str(format("%16d") % n));
@@ -3446,15 +3647,16 @@ void PositionEstimator::accumulate() {
 *
 *  Setup the potential energy estimator.  We measure it on each time slice.
 ******************************************************************************/
-ParticleResolvedPositionEstimator::ParticleResolvedPositionEstimator (const Path &_path,
-                                      int _frequency, string _label) :
-EstimatorBase(_path,_frequency,_label) {
+ParticleResolvedPositionEstimator::ParticleResolvedPositionEstimator(const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label)  :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
     
     /* We measure on each time slice */
     initialize(constants()->initialNumParticles()*2);
     
-	/* Set estimator name and header */
-	name = "Particle Resolved Positions";
+	/* Set estimator header */
 	header = str(format("#%15d") % 0);
     header.append(str(format("%16d") % 0));
 	for (int n = 1; n < constants()->initialNumParticles(); n++){
@@ -3502,15 +3704,16 @@ void ParticleResolvedPositionEstimator::accumulate() {
 *
 *  Setup the potential energy estimator.  We measure it on each time slice.
 ******************************************************************************/
-ParticleCorrelationEstimator::ParticleCorrelationEstimator (const Path &_path,
-                                            int _frequency, string _label) :
-EstimatorBase(_path,_frequency,_label) {
+ParticleCorrelationEstimator::ParticleCorrelationEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
     
     /* We measure on each time slice */
     initialize(constants()->initialNumParticles()-1);
     
-	/* Set estimator name and header */
-	name = "Particle Resolved Positions";
+	/* Set estimator header */
 	header = str(format("#%15d") % 1);
 	for (int n = 2; n < constants()->initialNumParticles(); n++)
 		header.append(str(format("%16d") % n));
@@ -3557,15 +3760,16 @@ void ParticleCorrelationEstimator::accumulate() {
 *
 *  Setup the velocity estimator.  We measure it on each time slice.
 ******************************************************************************/
-VelocityEstimator::VelocityEstimator (const Path &_path,
-                                      int _frequency, string _label) :
-EstimatorBase(_path,_frequency,_label) {
+VelocityEstimator::VelocityEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
     
     /* We measure on each time slice */
     initialize(constants()->numTimeSlices()-1);
     
-	/* Set estimator name and header */
-	name = "Velocity";
+	/* Set estimator header */
 	header = str(format("#%15d") % 0);
 	for (int n = 1; n < constants()->numTimeSlices()-1; n++)
 		header.append(str(format("%16d") % n));
@@ -3611,17 +3815,16 @@ void VelocityEstimator::accumulate() {
 *
 *  Setup the velocity estimator.  We measure it on each time slice.
 ******************************************************************************/
-SubregionOccupationEstimator::SubregionOccupationEstimator (const Path &_path,
-                                ActionBase *_actionPtr,int _frequency, string _label) :
-EstimatorBase(_path,_frequency,_label),
-actionPtr(_actionPtr)
+SubregionOccupationEstimator::SubregionOccupationEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
     /* We measure on each time slice */
     initialize(3);
     
-	/* Set estimator name and header */
-	name = "SubregionOccupation";
+	/* Set estimator header */
 	header = str(format("#%15s") % "Z");
 	header.append(str(format("%16s") % "pA"));
     header.append(str(format("%16s") % "pB"));
@@ -3685,11 +3888,10 @@ void SubregionOccupationEstimator::accumulate() {
  *  on the type of simulation cell).
 ******************************************************************************/
 PIGSOneBodyDensityMatrixEstimator::PIGSOneBodyDensityMatrixEstimator (Path &_path,
-		ActionBase *_actionPtr, const MTRand &_random, int _frequency, string _label) :
-	EstimatorBase(_path,_frequency,_label),
-	lpath(_path),
-	actionPtr(_actionPtr),
-	random(_random)
+		ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
+	lpath(_path)
 {
 
 	sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
@@ -3700,9 +3902,6 @@ PIGSOneBodyDensityMatrixEstimator::PIGSOneBodyDensityMatrixEstimator (Path &_pat
 	/* This is an off-diagonal estimator*/
     initialize(NOBDMSEP);
     diagonal = false;
-
-	/* Set estimator name */
-	name = "One Body Density Matrix";
 
 	/* The header is the first line which contains the spatial separations */
 	header = str(format("#%15.3E") % 0.0);
@@ -3877,8 +4076,10 @@ void PIGSOneBodyDensityMatrixEstimator::outputFooter() {
 *  Constructor.
 ******************************************************************************/
 DoubledEstimator::DoubledEstimator (const Path &_path, const Path &_path2,
-                                  int _frequency, string _label) :
-EstimatorBase(_path,_frequency,_label), path2(_path2) {
+        ActionBase *_actionPtr, ActionBase* _acitonPtr2, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label), path2(_path2) 
+{
 }
 
 /*************************************************************************//**
@@ -3897,14 +4098,16 @@ DoubledEstimator::~DoubledEstimator() {
 /*************************************************************************//**
 *  Constructor.
 ******************************************************************************/
-SwapEstimator::SwapEstimator (Path &_path, Path &_path2,
-                              ActionBase *_actionPtr,ActionBase *_actionPtr2,
-                                    int _frequency, string _label) :
-DoubledEstimator(_path,_path2,_frequency,_label), lpath(_path),lpath2(_path2),
-                actionPtr(_actionPtr), actionPtr2(_actionPtr2) {
+SwapEstimator::SwapEstimator (Path &_path, Path &_path2, ActionBase *_actionPtr, 
+        ActionBase *_actionPtr2, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+DoubledEstimator(_path,_path2,_actionPtr,_actionPtr2,_random,_maxR,frequency,_label), 
+    lpath(_path),lpath2(_path2),
+    actionPtr(_actionPtr), 
+    actionPtr2(_actionPtr2) 
+{
     
-    /* Set estimator name and header */
-	name = "Swap";
+    /* Set estimator header */
 	header = str(format("#%15s%16s%16s") % "Z" % "S" % "ZS");
     initialize(3);
 }

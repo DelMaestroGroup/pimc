@@ -81,7 +81,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
 
         /* Get the namne of the move and check if it is the generic diagonal
          * move */
-        moveName = movePtr->name;
+        moveName = movePtr->getName();
         if ((moveName == "bisection") || (moveName == "staging"))
             moveName = "diagonal";
 
@@ -148,7 +148,7 @@ string PathIntegralMonteCarlo::update(const double x, const int sweep, const int
     if (path.worm.getNumBeadsOn() == 0) {
         index = moveIndex["insert"];
         success = move.at(index).attemptMove();
-        moveName = move.at(index).name;
+        moveName = move.at(index).getName();
         return moveName;
     }
 
@@ -161,7 +161,7 @@ string PathIntegralMonteCarlo::update(const double x, const int sweep, const int
             - attemptOffDiagProb.begin();
 
     /* Perform the move */
-    moveName = movePtrVec[pathIdx].at(index).name;
+    moveName = movePtrVec[pathIdx].at(index).getName();
 
     if (moveName == "center of mass"){
         if ( (numParticles > 0) && ((sweep % numParticles)== 0) )
@@ -488,7 +488,7 @@ void PathIntegralMonteCarlo::finalOutput() {
 	/* Ouptut all the move acceptance information to disk */
 	string moveName;
 	for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
-		moveName = movePtr->name;
+		moveName = movePtr->getName();
 
 		/* We only output levels for those moves which have a variable size */
         if (movePtr->variableLength) {

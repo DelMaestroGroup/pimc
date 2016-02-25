@@ -147,7 +147,7 @@ int main (int argc, char *argv[]) {
     
     /* Setup the multi-path estimators */
     if(Npaths>1){
-        estimatorsPtrVec.push_back(setup.multiPathEstimators(pathPtrVec,actionPtrVec));
+        estimatorsPtrVec.push_back(setup.multiPathEstimators(pathPtrVec,actionPtrVec,random));
     }
 
 

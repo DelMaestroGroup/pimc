@@ -14,6 +14,59 @@
 uint32 MoveBase::totAttempted = 0;
 uint32 MoveBase::totAccepted = 0;
 
+/**************************************************************************//**
+ * Move naming conventions:
+ *
+ * 1) be as descriptive as possible
+ * 2) spaces are fine
+******************************************************************************/
+const string DisplaceMove::name     = "displace";
+const string EndStagingMove::name   = "end staging";
+const string MidStagingMove::name   = "mid staging";
+const string SwapBreakMove::name    = "swap break";
+const string CenterOfMassMove::name = "center of mass";
+const string StagingMove::name      = "staging";
+const string BisectionMove::name    = "bisection";
+const string OpenMove::name         = "open";
+const string CloseMove::name        = "close";
+const string InsertMove::name       = "insert";
+const string RemoveMove::name       = "remove";
+const string AdvanceHeadMove::name  = "advance head";
+const string RecedeHeadMove::name   = "recede head";
+const string AdvanceTailMove::name  = "advance tail";
+const string RecedeTailMove::name   = "recede tail";
+const string SwapHeadMove::name     = "swap head";
+const string SwapTailMove::name     = "swap tail";
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// MOVE FACTORY CLASS --------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+/*************************************************************************//**
+ *  Constructor.
+ *  We populate the register with all possible moves.
+******************************************************************************/
+MoveFactory::MoveFactory() {
+    registerMove<DisplaceMove>(DisplaceMove::name);
+    registerMove<EndStagingMove>(EndStagingMove::name);
+    registerMove<MidStagingMove>(MidStagingMove::name);
+    registerMove<SwapBreakMove>(SwapBreakMove::name);
+    registerMove<CenterOfMassMove>(CenterOfMassMove::name);
+    registerMove<StagingMove>(StagingMove::name);
+    registerMove<BisectionMove>(BisectionMove::name);
+    registerMove<OpenMove>(OpenMove::name);
+    registerMove<CloseMove>(CloseMove::name);
+    registerMove<InsertMove>(InsertMove::name);
+    registerMove<RemoveMove>(RemoveMove::name);
+    registerMove<AdvanceHeadMove>(AdvanceHeadMove::name);
+    registerMove<RecedeHeadMove>(RecedeHeadMove::name);
+    registerMove<AdvanceTailMove>(AdvanceTailMove::name);
+    registerMove<RecedeTailMove>(RecedeTailMove::name);
+    registerMove<SwapHeadMove>(SwapHeadMove::name);
+    registerMove<SwapTailMove>(SwapTailMove::name);
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // MOVE BASE CLASS -----------------------------------------------------------
@@ -24,8 +77,7 @@ uint32 MoveBase::totAccepted = 0;
  *  Constructor.
 ******************************************************************************/
 MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random, 
-        string _name, ensemble _operateOnConfig, bool _varLength) :
-    name(_name),
+        ensemble _operateOnConfig, bool _varLength) :
     operateOnConfig(_operateOnConfig),
     variableLength(_varLength),
 	path(_path), 
@@ -177,7 +229,7 @@ inline void MoveBase::checkMove(int callNum, double diffA) {
 		newK = actionPtr->kineticAction();
 		double diffV = newV - oldV;
 		if (abs(diffV-diffA) > EPS) {
-			communicate()->file("debug")->stream() << format("%-16s%16.6e\t%16.6e\t%16.6e\n") % name 
+			communicate()->file("debug")->stream() << format("%-16s%16.6e\t%16.6e\t%16.6e\n") % name
 				% diffV % diffA % (diffV - diffA);
             // communicate()->file("debug")->stream() << path.worm.beads << endl;
             // communicate()->file("debug")->stream() << path.prevLink << endl;
@@ -211,7 +263,7 @@ inline void MoveBase::checkMove(int callNum, double diffA) {
 		newV = actionPtr->potentialAction();
 		newK = actionPtr->kineticAction();
 		double diffV = newV - oldV;
-		communicate()->file("debug")->stream() << format("%-16s%16.6e\t%16.6e\n") % name 
+		communicate()->file("debug")->stream() << format("%-16s%16.6e\t%16.6e\n") % name
 			% ((newK-oldK)/diffA) % ((diffV)/diffA);
 	}
 #endif
@@ -491,8 +543,8 @@ dVec MoveBase::newBisectionPosition(const beadLocator &beadIndex,
  * A constructor which sets up the path data and random members.
 ******************************************************************************/
 DisplaceMove::DisplaceMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name,  ensemble _operateOnConfig) :
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+		MTRand &_random, ensemble _operateOnConfig) :
+    MoveBase(_path,_actionPtr,_random,_operateOnConfig) {
 
 	/* Initialize private data to zera */
 	numAccepted = numAttempted = numToMove = 0;
@@ -514,6 +566,10 @@ bool DisplaceMove::attemptMove() {
 
 	success = false;
     bool start = false;
+
+    /* Only perform a move if we have beads */
+    if (path.worm.getNumBeadsOn() == 0) 
+        return success;
     
 	/* Randomly select the bead to be moved, either the head or tail */
     if (random.rand() < 0.5) {
@@ -640,8 +696,8 @@ void DisplaceMove::undoMove() {
 * A constructor which sets up the path data and random members.
 ******************************************************************************/
 EndStagingMove::EndStagingMove (Path &_path, ActionBase *_actionPtr,
-                            MTRand &_random, string _name,  ensemble _operateOnConfig) :
-MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+                            MTRand &_random,  ensemble _operateOnConfig) :
+MoveBase(_path,_actionPtr,_random,_operateOnConfig) {
     
 	/* Initialize private data to zera */
 	numAccepted = numAttempted = numToMove = 0;
@@ -664,7 +720,7 @@ bool EndStagingMove::attemptMove() {
     beadLocator neighborIndex;
 	success = false;
     bool movedIntoSubregionB;
-    
+
 	/* Randomly select the bead to be moved, either the head or tail */
     if (random.rand() < 0.5) {
         beadIndex[0] = 0;
@@ -818,8 +874,8 @@ void EndStagingMove::undoMove() {
 * A constructor which sets up the path data and random members.
 ******************************************************************************/
 MidStagingMove::MidStagingMove (Path &_path, ActionBase *_actionPtr,
-                                MTRand &_random, string _name,  ensemble _operateOnConfig) :
-MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+                                MTRand &_random, ensemble _operateOnConfig) :
+MoveBase(_path,_actionPtr,_random,_operateOnConfig) {
     
 	/* Initialize private data to zera */
 	numAccepted = numAttempted = numToMove = 0;
@@ -988,8 +1044,8 @@ void MidStagingMove::undoMove() {
 * A constructor which sets up the path data and random members.
 ******************************************************************************/
 SwapBreakMove::SwapBreakMove (Path &_path, ActionBase *_actionPtr,
-                            MTRand &_random, string _name,  ensemble _operateOnConfig) :
-MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+                            MTRand &_random, ensemble _operateOnConfig) :
+MoveBase(_path,_actionPtr,_random,_operateOnConfig) {
     
 	/* Initialize private data to zera */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1083,8 +1139,8 @@ bool SwapBreakMove::attemptMove() {
  *  Constructor.
 ******************************************************************************/
 CenterOfMassMove::CenterOfMassMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name, ensemble _operateOnConfig) :
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+		MTRand &_random, ensemble _operateOnConfig) :
+    MoveBase(_path,_actionPtr,_random,_operateOnConfig) {
 
 	/* Initialize private data to zera */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1109,6 +1165,10 @@ CenterOfMassMove::~CenterOfMassMove() {
 bool CenterOfMassMove::attemptMove() {
 
 	success = false;
+
+    /* Only perform a move if we have beads */
+    if (path.worm.getNumBeadsOn() == 0) 
+        return success;
     
     int startSlice =0;
     /* If there are broken wordlines, choose between starting and ending bead*/
@@ -1266,8 +1326,8 @@ void CenterOfMassMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 StagingMove::StagingMove (Path &_path, ActionBase *_actionPtr, 
-        MTRand &_random, string _name, ensemble _operateOnConfig) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+        MTRand &_random, ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_operateOnConfig) {
 
 	/* Initialize private data to zera */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1292,6 +1352,10 @@ StagingMove::~StagingMove() {
 bool StagingMove::attemptMove() {
 
 	success = false;
+
+    /* Only perform a move if we have beads */
+    if (path.worm.getNumBeadsOn() == 0) 
+        return success;
 
     checkMove(0,0.0);
 
@@ -1405,8 +1469,8 @@ void StagingMove::undoMove() {
  * Initialize the number of levels and all local data structures.
 ******************************************************************************/
 BisectionMove::BisectionMove(Path &_path, ActionBase *_actionPtr, 
-        MTRand &_random, string _name, ensemble _operateOnConfig) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+        MTRand &_random, ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_operateOnConfig) {
 
 	/* Initialize private data to zera */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1453,6 +1517,10 @@ BisectionMove::~BisectionMove() {
 bool BisectionMove::attemptMove() {
 
 	success = false;
+
+    /* Only perform a move if we have beads */
+    if (path.worm.getNumBeadsOn() == 0) 
+        return success;
 
     /* We cannot perform this move at present when using a pair product action */
     if (constants()->actionType() == "pair_product")
@@ -1613,8 +1681,8 @@ void BisectionMove::undoMove() {
  * Constructor.
 ******************************************************************************/
 OpenMove::OpenMove (Path &_path, ActionBase *_actionPtr, MTRand &_random, 
-        string _name, ensemble _operateOnConfig, bool _varLength) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
+        ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1637,6 +1705,10 @@ OpenMove::~OpenMove() {
 bool OpenMove::attemptMove() {
 
 	success = false;
+
+    /* Only perform a move if we have beads */
+    if (path.worm.getNumBeadsOn() == 0) 
+        return success;
 
     /* Only do an open move when we have at least one particle */
 	if (path.getTrueNumParticles()==0)
@@ -1809,8 +1881,8 @@ void OpenMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 CloseMove::CloseMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name, ensemble _operateOnConfig, bool _varLength) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
+		MTRand &_random, ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -1829,11 +1901,16 @@ CloseMove::~CloseMove() {
  * We attempt to close up the world line configuration if a worm 
  * is already present. This consists of both filling in the beadOn 
  * array as well as generating new positions for the particle beads. 
- * After a sucessful close, we update the number of particles. 
+ * After a successful close, we update the number of particles. 
 ******************************************************************************/
 bool CloseMove::attemptMove() {
 
 	success = false;
+
+    /* Only perform a move if we have beads */
+    if (path.worm.getNumBeadsOn() == 0) 
+        return success;
+
 	/* We first make sure we are in an off-diagonal configuration, and that that
 	 * gap is neither too large or too small and that the worm cost is reasonable.
 	 * Otherwise, we simply exit the move */
@@ -2004,8 +2081,8 @@ void CloseMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 InsertMove::InsertMove (Path &_path, ActionBase *_actionPtr, MTRand &_random, 
-        string _name, ensemble _operateOnConfig, bool _varLength) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
+        ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -2184,8 +2261,8 @@ void InsertMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 RemoveMove::RemoveMove (Path &_path, ActionBase *_actionPtr, MTRand &_random, 
-        string _name, ensemble _operateOnConfig, bool _varLength) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
+        ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -2344,8 +2421,8 @@ void RemoveMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 AdvanceHeadMove::AdvanceHeadMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name, ensemble _operateOnConfig, bool _varLength) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
+		MTRand &_random, ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -2368,6 +2445,10 @@ AdvanceHeadMove::~AdvanceHeadMove() {
 bool AdvanceHeadMove::attemptMove() {
 
 	success = false;
+
+    /* Only perform a move if we have beads */
+    if (path.worm.getNumBeadsOn() == 0) 
+        return success;
 
     /* Get the length of the proposed advancement by computing
      * a random number of levels to be used in the bisection algorithm. */
@@ -2519,8 +2600,8 @@ void AdvanceHeadMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 AdvanceTailMove::AdvanceTailMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name, ensemble _operateOnConfig, bool _varLength) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
+		MTRand &_random, ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -2543,6 +2624,10 @@ AdvanceTailMove::~AdvanceTailMove() {
 bool AdvanceTailMove::attemptMove() {
 
 	success = false;
+
+    /* Only perform a move if we have beads */
+    if (path.worm.getNumBeadsOn() == 0) 
+        return success;
 
     /* Get the number of time slices we will try to shrink the worm by */
     advanceLength = 2*(1 + random.randInt(constants()->Mbar()/2-1));
@@ -2687,8 +2772,8 @@ void AdvanceTailMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 RecedeHeadMove::RecedeHeadMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name, ensemble _operateOnConfig, bool _varLength) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
+		MTRand &_random, ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -2710,6 +2795,10 @@ RecedeHeadMove::~RecedeHeadMove() {
 bool RecedeHeadMove::attemptMove() {
 
 	success = false;
+
+    /* Only perform a move if we have beads */
+    if (path.worm.getNumBeadsOn() == 0) 
+        return success;
 
     /* Get the number of time slices we will try to shrink the worm by */
     recedeLength = 2*(1 + random.randInt(constants()->Mbar()/2-1));
@@ -2850,8 +2939,8 @@ void RecedeHeadMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 RecedeTailMove::RecedeTailMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name, ensemble _operateOnConfig, bool _varLength) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig,_varLength) {
+		MTRand &_random, ensemble _operateOnConfig, bool _varLength) : 
+    MoveBase(_path,_actionPtr,_random,_operateOnConfig,_varLength) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -2873,6 +2962,10 @@ RecedeTailMove::~RecedeTailMove() {
 bool RecedeTailMove::attemptMove() {
 
 	success = false;
+
+    /* Only perform a move if we have beads */
+    if (path.worm.getNumBeadsOn() == 0) 
+        return success;
 
     /* Get the length of the proposed advancement by computing
      * a random number of levels to be used in the bisection algorithm. */
@@ -3025,8 +3118,8 @@ void RecedeTailMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 SwapMoveBase::SwapMoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
-        string _name, ensemble _operateOnConfig) : 
-    MoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+        ensemble _operateOnConfig) : 
+    MoveBase(_path,_actionPtr,_random,_operateOnConfig) {
 }
 
 /*************************************************************************//**
@@ -3195,8 +3288,8 @@ beadLocator SwapMoveBase::selectPivotBead() {
  *  Constructor.
 ******************************************************************************/
 SwapHeadMove::SwapHeadMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name, ensemble _operateOnConfig) : 
-    SwapMoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+		MTRand &_random, ensemble _operateOnConfig) : 
+    SwapMoveBase(_path,_actionPtr,_random,_operateOnConfig) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -3222,6 +3315,10 @@ SwapHeadMove::~SwapHeadMove() {
 bool SwapHeadMove::attemptMove() {
 
 	success = false;
+
+    /* Only perform a move if we have beads */
+    if (path.worm.getNumBeadsOn() == 0) 
+        return success;
 
 	/* We first make sure we are in an off-diagonal configuration */
 	if (!path.worm.isConfigDiagonal) {
@@ -3429,8 +3526,8 @@ void SwapHeadMove::undoMove() {
  *  Constructor.
 ******************************************************************************/
 SwapTailMove::SwapTailMove (Path &_path, ActionBase *_actionPtr, 
-		MTRand &_random, string _name, ensemble _operateOnConfig) : 
-    SwapMoveBase(_path,_actionPtr,_random,_name,_operateOnConfig) {
+		MTRand &_random, ensemble _operateOnConfig) : 
+    SwapMoveBase(_path,_actionPtr,_random,_operateOnConfig) {
 
 	/* Initialize private data to zero */
 	numAccepted = numAttempted = numToMove = 0;
@@ -3455,6 +3552,10 @@ SwapTailMove::~SwapTailMove() {
 bool SwapTailMove::attemptMove() {
 
 	success = false;
+
+    /* Only perform a move if we have beads */
+    if (path.worm.getNumBeadsOn() == 0) 
+        return success;
 
 	/* We first make sure we are in an off-diagonal configuration */
 	if (!path.worm.isConfigDiagonal) {

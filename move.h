@@ -30,13 +30,15 @@ class ActionBase;
 class MoveBase {
 
 	public:
-		MoveBase (Path &, ActionBase *, MTRand &, string _name="", 
+		MoveBase (Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=ANY, bool _varLength=false);
 		virtual ~MoveBase();
     
-		string name;	                ///< The name of the estimator
         ensemble operateOnConfig;       ///< What configurations do we operate on?
         bool variableLength;            ///< Does the move have a variable length?
+
+        /** return the move name */
+        virtual string getName() {return "base";}
 
 		/** Get the acceptance ratio. */
 		double getAcceptanceRatio() {
@@ -143,7 +145,7 @@ class MoveBase {
 		/* Return a new bead position which samples the free particle density matrix */
 		dVec newFreeParticlePosition(const beadLocator &);
 
-		// Returns a new bead position based on the bisection algorithm */
+		/* Returns a new bead position based on the bisection algorithm */
 		dVec newBisectionPosition(const beadLocator&, const int); 	
 
 		double newK,oldK;				///< The old and new kinetic action
@@ -155,6 +157,48 @@ class MoveBase {
 };
 
 // ========================================================================  
+// Move Factory
+// ========================================================================  
+/** 
+ * A factory class which creates new move instances.
+ *
+ * We use the factory method design pattern 
+ * (http://en.wikipedia.org/wiki/Factory_(object-oriented_programming)) to
+ * create a new instance of an estimator object.
+ */
+class MoveFactory {
+
+    public:
+        MoveFactory();
+		virtual ~MoveFactory() = default;
+
+        /** Return an instantiated estimator with a given name */
+        MoveBase * getMove(string name, Path &_path, ActionBase* _actionPtr, MTRand &_random) {
+            typename map<string,PCreateMove>::const_iterator moveItr = _createMove.find(name);
+            if (moveItr != _createMove.end()) 
+                return (moveItr->second)(_path,_actionPtr,_random);
+            return nullptr;
+        }
+
+    private:
+        /** Instantiate a new derived class */
+        template <typename TDerived>
+            static MoveBase * createMove(Path &_path, ActionBase* _actionPtr, MTRand &_random) 
+            { return new TDerived(_path,_actionPtr,_random); }
+
+        /* Short name for the function pointer */
+        /* typedef MoveBase* (*PCreateMove)(Path &, ActionBase *, MTRand &); */
+        using PCreateMove = MoveBase* (*)(Path &, ActionBase*, MTRand &);
+
+        map<string,PCreateMove> _createMove;        // The name->constructor map
+
+        /* Register names to constructors */
+        template <typename TDerived>
+            void registerMove(string name) {_createMove[name] = &createMove<TDerived>;}
+};
+
+
+// ========================================================================  
 // Displace Move Class 
 // ========================================================================  
 /**
@@ -164,10 +208,12 @@ class DisplaceMove: public MoveBase {
 
 	public:
 		DisplaceMove(Path &, ActionBase *, MTRand &, 
-                string _name="displace", ensemble _operateOnConfig=ANY);
+                ensemble _operateOnConfig=ANY);
 		~DisplaceMove();
     
 		bool attemptMove();
+        static const string name;
+        string getName() {return name;}
 
 	private:
 		beadLocator beadIndex;	// The index of the bead being moved
@@ -182,18 +228,20 @@ class DisplaceMove: public MoveBase {
  */
 class EndStagingMove: public MoveBase {
     
-public:
-    EndStagingMove(Path &, ActionBase *, MTRand &,
-                 string _name="end staging", ensemble _operateOnConfig=ANY);
-    ~EndStagingMove();
-    
-    bool attemptMove();
-    
-private:
-    bool leftMoving;        // True if update moves left to right
-    beadLocator leftBead;	// The left most bead being moved
-    beadLocator rightBead;	// The left most bead being moved
-    void undoMove();		// revert everything back
+    public:
+        EndStagingMove(Path &, ActionBase *, MTRand &, 
+                ensemble _operateOnConfig=ANY);
+        ~EndStagingMove();
+
+        bool attemptMove();
+        static const string name;
+        string getName() {return name;}
+
+    private:
+        bool leftMoving;        // True if update moves left to right
+        beadLocator leftBead;	// The left most bead being moved
+        beadLocator rightBead;	// The left most bead being moved
+        void undoMove();		// revert everything back
 };
 
 
@@ -204,19 +252,21 @@ private:
  */
 class MidStagingMove: public MoveBase {
     
-public:
-    MidStagingMove(Path &, ActionBase *, MTRand &,
-                   string _name="mid-staging", ensemble _operateOnConfig=ANY);
-    ~MidStagingMove();
+    public:
+        MidStagingMove(Path &, ActionBase *, MTRand &,
+                ensemble _operateOnConfig=ANY);
+        ~MidStagingMove();
+
+        bool attemptMove();
+        static const string name;
+        string getName() {return name;}
     
-    bool attemptMove();
-    
-private:
-    beadLocator leftBead;	// The left most bead being moved
-    beadLocator rightBead;	// The left most bead being moved
-    beadLocator midBeadL;   // Bead on left of break to be updated
-    beadLocator midBeadR;   // Bead on right of break to be updated
-    void undoMove();		// revert everything back
+    private:
+        beadLocator leftBead;	// The left most bead being moved
+        beadLocator rightBead;	// The left most bead being moved
+        beadLocator midBeadL;   // Bead on left of break to be updated
+        beadLocator midBeadR;   // Bead on right of break to be updated
+        void undoMove();		// revert everything back
 };
 
 
@@ -227,13 +277,17 @@ private:
 */
 class SwapBreakMove: public MoveBase {
     
-public:
-    SwapBreakMove(Path &, ActionBase *, MTRand &,
-                 string _name="swap break", ensemble _operateOnConfig=ANY);
-    ~SwapBreakMove();
-    
-    bool attemptMove();
-    void undoMove(){};
+    public:
+        SwapBreakMove(Path &, ActionBase *, MTRand &,
+                ensemble _operateOnConfig=ANY);
+        ~SwapBreakMove();
+
+        bool attemptMove();
+        static const string name;
+        string getName() {return name;}
+
+    private:
+        void undoMove(){};
     
 };
 
@@ -247,12 +301,13 @@ public:
 class CenterOfMassMove: public MoveBase {
 
 	public:
-		CenterOfMassMove(Path &, ActionBase *, MTRand &, 
-                string _name="center of mass", ensemble _operateOnConfig=ANY);
+        CenterOfMassMove(Path &, ActionBase *, MTRand &, 
+                ensemble _operateOnConfig=ANY);
 		~CenterOfMassMove();
 
 		bool attemptMove();
-		bool attemptMove1();
+        static const string name;
+        string getName() {return name;}
 
 	private:
 		beadLocator startBead,endBead;	// The start and end beads
@@ -270,11 +325,13 @@ class CenterOfMassMove: public MoveBase {
 class StagingMove: public MoveBase {
 
 	public:
-		StagingMove(Path &, ActionBase *, MTRand &, string _name="staging", 
+		StagingMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=ANY);
 		~StagingMove();
 
 		bool attemptMove();
+        static const string name;
+        string getName() {return name;}
 
 	private:
 		beadLocator startBead,endBead;		// The start and end of the stage
@@ -291,11 +348,13 @@ class StagingMove: public MoveBase {
 class BisectionMove: public MoveBase {
 
 	public:
-		BisectionMove(Path &, ActionBase *, MTRand &, string _name="bisection",
+		BisectionMove(Path &, ActionBase *, MTRand &,
                 ensemble _operateOnConfig=ANY);
 		~BisectionMove();
     
 		bool attemptMove();
+        static const string name;
+        string getName() {return name;}
 
 	private:
         Array <bool,1> include;             // Which beads have been included?
@@ -322,11 +381,13 @@ class BisectionMove: public MoveBase {
 class OpenMove: public MoveBase {
 
 	public:
-		OpenMove(Path &, ActionBase *, MTRand &, string _name="open",
+		OpenMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=DIAGONAL, bool _varLength=true);
 		~OpenMove();
 
 		bool attemptMove();
+        static const string name;
+        string getName() {return name;}
 
 	private:
 		beadLocator headBead, tailBead;	// The temporary head and tail locatores
@@ -348,11 +409,13 @@ class OpenMove: public MoveBase {
 class CloseMove: public MoveBase {
 
 	public:
-		CloseMove(Path &, ActionBase *, MTRand &, string _name="close",
+		CloseMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~CloseMove();
 
 		bool attemptMove();
+        static const string name;
+        string getName() {return name;}
 
 	private:
 		beadLocator headBead,tailBead;	// The temporary head and tail slices
@@ -374,11 +437,13 @@ class CloseMove: public MoveBase {
 class InsertMove: public MoveBase {
 
 	public:
-		InsertMove(Path &, ActionBase *, MTRand &, string _name="insert",
+		InsertMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=DIAGONAL, bool _varLength=true);
 		~InsertMove();
     
 		bool attemptMove();
+        static const string name;
+        string getName() {return name;}
 
 	private:
 		beadLocator headBead,tailBead;	// The temporary head and tail beads
@@ -400,11 +465,13 @@ class InsertMove: public MoveBase {
 class RemoveMove: public MoveBase {
 
 	public:
-		RemoveMove(Path &, ActionBase *, MTRand &, string _name="remove",
+		RemoveMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~RemoveMove();
 
 		bool attemptMove();
+        static const string name;
+        string getName() {return name;}
 
 	private:
 		int numLevels;					// The 2^numLevels = num slices moved
@@ -424,11 +491,12 @@ class AdvanceHeadMove: public MoveBase {
 
 	public:
 		AdvanceHeadMove(Path &, ActionBase *, MTRand &, 
-                string _name="advance head", 
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~AdvanceHeadMove();
 		
 		bool attemptMove();
+        static const string name;
+        string getName() {return name;}
 
 	private:
 		beadLocator headBead;			// The temporary new head
@@ -457,11 +525,12 @@ class AdvanceTailMove: public MoveBase {
 
 	public:
         AdvanceTailMove(Path &, ActionBase *, MTRand &, 
-                string _name="advance tail",
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~AdvanceTailMove();
     
 		bool attemptMove();
+        static const string name;
+        string getName() {return name;}
 
 	private:
 		beadLocator tailBead;			// The temporary new tail
@@ -484,11 +553,12 @@ class RecedeHeadMove: public MoveBase {
 
 	public:
 		RecedeHeadMove(Path &, ActionBase *, MTRand &,
-                string _name="recede head",
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~RecedeHeadMove();
     
 		bool attemptMove();
+        static const string name;
+        string getName() {return name;}
 
 	private:
 		beadLocator headBead;			// The proposed new head position
@@ -510,11 +580,12 @@ class RecedeTailMove: public MoveBase {
 
 	public:
 		RecedeTailMove(Path &, ActionBase *, MTRand &,
-                string _name="recede tail",
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
 		~RecedeTailMove();
 		
 		bool attemptMove();
+        static const string name;
+        string getName() {return name;}
 
 	private:
 		beadLocator tailBead;			// The proposed new head position
@@ -535,7 +606,7 @@ class RecedeTailMove: public MoveBase {
 class SwapMoveBase: public MoveBase {
 
 	public:
-		SwapMoveBase(Path &, ActionBase *, MTRand &, string _name="swap",
+		SwapMoveBase(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=OFFDIAGONAL);
 		~SwapMoveBase();
 
@@ -573,16 +644,16 @@ class SwapHeadMove: public SwapMoveBase {
 
 	public:
 		SwapHeadMove(Path &, ActionBase *, MTRand &,
-                string _name="swap head",
                 ensemble _operateOnConfig=OFFDIAGONAL);
 		~SwapHeadMove();
 
 		bool attemptMove();
+        static const string name;
+        string getName() {return name;}
 
 	private:
 
 		double SigmaHead;		// The probability normalization factor
-
 		beadLocator nextSwap;	// Used for re-linking
 
 		void undoMove();		// Undo a move
@@ -601,17 +672,16 @@ class SwapTailMove: public SwapMoveBase {
 
 	public:
 		SwapTailMove(Path &, ActionBase *, MTRand &,
-                string _name="swap tail",
                 ensemble _operateOnConfig=OFFDIAGONAL);
 		~SwapTailMove();
 		
-    
 		bool attemptMove();
+        static const string name;
+        string getName() {return name;}
 
 	private:
 
 		double SigmaTail;				// The probability normalization factor
-
 		beadLocator prevSwap;			// Used for re-linking
 
 		void undoMove();				// Undo a move
