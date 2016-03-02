@@ -155,7 +155,8 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
     /* Now we determine the indices of the different winding sectors.  These
      * are used for optimization purposes during tower sampling */
     for (int n = 0; n < numWind-1; n++) {
-        if (abs(dot(winding(n),winding(n)) - dot(winding(n+1),winding(n+1))) > EPS)
+        /* if (abs(dot(winding(n),winding(n)) - dot(winding(n+1),winding(n+1))) > EPS) */
+        if ( abs( max(abs(winding(n+1))) - max(abs(winding(n))) ) > EPS)
             windingSector.push_back(n);
     }
     /* Add the last index */
