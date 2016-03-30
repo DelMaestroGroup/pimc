@@ -98,6 +98,7 @@ class MoveBase {
         
         Array <iVec,1> winding;         ///< The winding vectors         
         vector <int> windingSector;     ///< Used to index different winding sectors
+        vector <double> cumrho0;		///< Used for tower-sampling winding sectors
 
         int maxWind;                    ///< The largest winding number
         int numWind;                    ///< The total number of winding vectors

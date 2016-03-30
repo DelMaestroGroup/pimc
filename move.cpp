@@ -401,8 +401,8 @@ iVec MoveBase::sampleWindingSector(const beadLocator &startBead, const beadLocat
     dVec vel,velW;
     vel = path(endBead) - path(startBead);
 
-    /* Define and initialize the probability and cumulative probabilities */
-    vector <double> cumrho0;		
+    /* Initialize the probability and cumulative probabilities */
+    cumrho0.clear();
     cumrho0.push_back(actionPtr->rho0(vel,stageLength));
     totalrho0 = cumrho0[0];
     double maxrho0 = totalrho0;

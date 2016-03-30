@@ -201,7 +201,7 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
     }
 
     double totProb = attemptProb_["close"] + attemptProb_["advance head"] + attemptProb_["recede head"]
-        + attemptProb_["advance tail"] + attemptProb_["recede head"] + attemptProb_["remove"]
+        + attemptProb_["advance tail"] + attemptProb_["recede tail"] + attemptProb_["remove"]
         + attemptProb_["swap head"] + attemptProb_["swap tail"] + attemptProb_["diagonal"] 
         + attemptProb_["center of mass"] + attemptProb_["displace"]+attemptProb_["end staging"]+attemptProb_["mid-staging"]+attemptProb_["swap break"];
 
