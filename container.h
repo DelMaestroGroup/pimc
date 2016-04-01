@@ -48,6 +48,17 @@ class Container {
 			}
 		}
 
+		/** Place a vector in boundary conditions. */
+        /* Not sure if I need this, more testing is needed */
+		void putInBC1(dVec & r) const {
+			for (int i = 0; i < NDIM; ++i) {
+                while (r[i] >= 0.5*side[i])
+                    r[i] -= pSide[i];
+                while (r[i] < -0.5*side[i])
+                    r[i] += pSide[i];
+			}
+		}
+
 		/** Place a vector inside the simulation cell */
 		virtual void putInside(dVec &) const = 0;	
 		
