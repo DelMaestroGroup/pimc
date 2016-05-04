@@ -101,8 +101,10 @@ LDEBUG = -lblitz
 ifeq ($(opts), basic)
 OPTS = -std=c++11 -stdlib=libc++ -Wall -O3 -mtune=native -Wno-deprecated-register
 else ifeq ($(opts), strict)
-OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
+OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
 endif #basic, elseif strict
+#-fsanitize=address -fno-omit-frame-pointer
+#-Wconversion
 
 LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
 #PROG = pimc_clang.e

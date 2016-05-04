@@ -1867,10 +1867,10 @@ void LocalPermutationEstimator::accumulate() {
             /* Loop through worldline again, this time binning the appropriate
              * permutation number (- 1) corresponding to its spatial coordinates.*/
             do {
-                int n = path.boxPtr->gridIndex(path(beadIndex));
+                int nn = path.boxPtr->gridIndex(path(beadIndex));
                 if ((cycleNum > 0) && (cycleNum <= maxNumCycles)){
-                    estimator(n) += (1.0*cycleNum - 1.0);
-                    numBeadInGrid(n) += 1;
+                    estimator(nn) += (1.0*cycleNum - 1.0);
+                    numBeadInGrid(nn) += 1;
                 }
 
 				beadIndex = path.next(beadIndex);

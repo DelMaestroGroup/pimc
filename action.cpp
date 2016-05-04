@@ -1077,7 +1077,7 @@ dMat LocalAction::tMatrix(const int slice) {
 ******************************************************************************/
 double LocalAction::rDOTgradUterm1(const int slice) {
 
-    int eo = slice % 2;
+    eo = slice % 2;
 	int numParticles = path.numBeadsAtSlice(slice);
 
 	/* The two interacting particles */
@@ -1124,7 +1124,7 @@ double LocalAction::rDOTgradUterm1(const int slice) {
 ******************************************************************************/
 double LocalAction::rDOTgradUterm2(const int slice) {
 
-    int eo = slice % 2;
+    eo = slice % 2;
     int numParticles = path.numBeadsAtSlice(slice);
 
     /* The two interacting particles */
@@ -1226,7 +1226,7 @@ double LocalAction::rDOTgradUterm2(const int slice) {
 ******************************************************************************/
 double LocalAction::deltadotgradUterm1(const int slice) {
 
-    int eo = slice % 2;
+    eo = slice % 2;
 	int numParticles = path.numBeadsAtSlice(slice);
     int virialWindow = constants()->virialWindow();
 
@@ -1305,7 +1305,7 @@ double LocalAction::deltadotgradUterm1(const int slice) {
 ******************************************************************************/
 double LocalAction::deltadotgradUterm2(const int slice) {
 
-    int eo = slice % 2;
+    eo = slice % 2;
     int numParticles = path.numBeadsAtSlice(slice);
     int virialWindow = constants()->virialWindow();
 
