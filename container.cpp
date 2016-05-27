@@ -239,10 +239,6 @@ Cylinder::Cylinder(const double _rho, const double radius, const int numParticle
 		name = "Cylinder";
 
         /* The grid size for the lookup table */
-        // gridSize[0] = 0.5*side[0]/NGRIDSEP;
-        // gridSize[1] = 2.0*M_PI/NGRIDSEP;
-        // gridSize[2] = side[2]/NGRIDSEP;
-
         gridSize = side/NGRIDSEP;
 
 	} // end else
@@ -293,9 +289,6 @@ Cylinder::Cylinder(const double radius, const double L) {
 		name = "Cylinder";
 
         /* The grid size for the lookup table */
-        // gridSize[0] = 0.5*side[0]/NGRIDSEP;
-        // gridSize[1] = 2.0*M_PI/NGRIDSEP;
-        // gridSize[2] = side[2]/NGRIDSEP;
         gridSize = side/NGRIDSEP;
 
 	} // end else
@@ -441,8 +434,6 @@ int Cylinder::gridIndex(const dVec &pos) const {
 double Cylinder::gridBoxVolume(const int n) const {
 
     /* Get the first grid box index */
-    // int nr = (n/(NGRIDSEP*NGRIDSEP)) % NGRIDSEP;
-//	return (nr+1)*gridSize[0]*blitz::product(gridSize);
 	return blitz::product(gridSize);
 }
 

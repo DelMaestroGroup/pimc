@@ -120,7 +120,8 @@ class EstimatorFactory {
 		virtual ~EstimatorFactory() = default;
 
         /** Return an instantiated estimator with a given name */
-        EstimatorBase * getEstimator(string name, Path &_path, ActionBase* _actionPtr, MTRand &_random, double _maxR) {
+        EstimatorBase * getEstimator(string name, Path &_path, 
+                ActionBase* _actionPtr, MTRand &_random, double _maxR) {
             typename map<string,PCreateEstimator>::const_iterator estimatorItr = _createEstimator.find(name);
             if (estimatorItr != _createEstimator.end()) 
                 return (estimatorItr->second)(_path,_actionPtr,_random,_maxR);
@@ -130,7 +131,8 @@ class EstimatorFactory {
     private:
         /** Instantiate a new derived class */
         template <typename TDerived>
-            static EstimatorBase * createEstimator(Path &_path, ActionBase* _actionPtr, MTRand &_random, double _maxR) 
+            static EstimatorBase * createEstimator(Path &_path, 
+                    ActionBase* _actionPtr, MTRand &_random, double _maxR) 
             { return new TDerived(_path,_actionPtr,_random,_maxR); }
 
         /* Short name for the function pointer */

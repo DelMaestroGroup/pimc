@@ -90,7 +90,7 @@ href="http://www.boost.org/doc/libs/1_55_0/more/getting_started/unix-variants.ht
 of the official Boost documentation.
 
 1. Download and decompress boost into `$HOME/local/src/`
-2. Change to the directory `tools/build/v2/` inside the boost source directory
+2. Change to the directory `tools/build/` inside the boost source directory
 3. Execute
 ~~~
 ./bootstrap.sh --with-toolset=gcc
@@ -98,9 +98,9 @@ of the official Boost documentation.
 4. Move up to the top level of the boost source directory
 5. Execute
 ~~~
-tools/build/v2/b2 install --prefix=PREFIX --toolset=gcc --with-program_options --with-filesystem
+tools/build/v2/b2 install --prefix=PREFIX --toolset=gcc --with-program_options --with-filesystem --with-iostreams
 ~~~
-The `b2` executable may also be in `tools/build/v2/bin/` depending on your
+The `b2` executable may also be in `tools/build/bin/` depending on your
 machine's configuration.  If you would like to compile boost with different
 compilers on your machine and would like to enforce a detailed labelling scheme
 for the libraries include `--layout=versioned` when calling `b2` above. See 
