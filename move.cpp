@@ -215,8 +215,9 @@ inline void MoveBase::printMoveState(string state) {
  *  We perform a check to make sure that there are no problems with a move,
  *  this is only performed if DEBUG_MOVE is defined.
  *
- *  !!NB!! To use checkMove you *MUST* turn off the potential lookup table,
- *  i.e. make sure -l (--potential_cutoff) is not defined at the command line.
+ *  !!NB!! To use checkMove you *MUST* turn off the potential lookup table, and
+ *  use full updates, i.e.: make sure -l (--potential_cutoff) is not defined 
+ *  at the command line as well as using the --full_updates flag.
 ******************************************************************************/
 inline void MoveBase::checkMove(int callNum, double diffA) {
 #ifdef DEBUG_MOVE
