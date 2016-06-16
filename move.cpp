@@ -214,6 +214,9 @@ inline void MoveBase::printMoveState(string state) {
 /*************************************************************************//**
  *  We perform a check to make sure that there are no problems with a move,
  *  this is only performed if DEBUG_MOVE is defined.
+ *
+ *  !!NB!! To use checkMove you *MUST* turn off the potential lookup table,
+ *  i.e. make sure -l (--potential_cutoff) is not defined at the command line.
 ******************************************************************************/
 inline void MoveBase::checkMove(int callNum, double diffA) {
 #ifdef DEBUG_MOVE
@@ -230,12 +233,12 @@ inline void MoveBase::checkMove(int callNum, double diffA) {
 		newK = actionPtr->kineticAction();
 		double diffV = newV - oldV;
 		if (abs(diffV-diffA) > EPS) {
-			communicate()->file("debug")->stream() << format("%-16s%16.6e\t%16.6e\t%16.6e\n") % name
+			communicate()->file("debug")->stream() << format("%-16s%16.6e\t%16.6e\t%16.6e\n") % getName()
 				% diffV % diffA % (diffV - diffA);
             // communicate()->file("debug")->stream() << path.worm.beads << endl;
             // communicate()->file("debug")->stream() << path.prevLink << endl;
             // communicate()->file("debug")->stream() << path.nextLink << endl;
-            cout << name << " PROBLEM WITH KEEP " << diffV << " " << diffA << endl;
+            cout << getName() << " PROBLEM WITH KEEP " << diffV << " " << diffA << endl;
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -247,12 +250,12 @@ inline void MoveBase::checkMove(int callNum, double diffA) {
 		double diffV = newV - oldV;
 		double diffK = newK - oldK;
 		if ( (abs(diffV) > EPS) || abs(diffK) > EPS) {
-			communicate()->file("debug")->stream() << format("%-16s%16.6e\t%16.6e\n") % name
+			communicate()->file("debug")->stream() << format("%-16s%16.6e\t%16.6e\n") % getName()
 				% diffV % diffK;
             // communicate()->file("debug")->stream() << path.worm.beads << endl;
             // communicate()->file("debug")->stream() << path.prevLink << endl;
             // communicate()->file("debug")->stream() << path.nextLink << endl;
-			cout << name << " PROBLEM WITH UNDO " << diffV << " " << diffK << endl;
+			cout << getName() << " PROBLEM WITH UNDO " << diffV << " " << diffK << endl;
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -264,7 +267,7 @@ inline void MoveBase::checkMove(int callNum, double diffA) {
 		newV = actionPtr->potentialAction();
 		newK = actionPtr->kineticAction();
 		double diffV = newV - oldV;
-		communicate()->file("debug")->stream() << format("%-16s%16.6e\t%16.6e\n") % name
+		communicate()->file("debug")->stream() << format("%-16s%16.6e\t%16.6e\n") % getName()
 			% ((newK-oldK)/diffA) % ((diffV)/diffA);
 	}
 #endif
