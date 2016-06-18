@@ -22,7 +22,7 @@ uint32 MoveBase::totAccepted = 0;
 ******************************************************************************/
 const string DisplaceMove::name     = "displace";
 const string EndStagingMove::name   = "end staging";
-const string MidStagingMove::name   = "mid staging";
+const string MidStagingMove::name   = "mid-staging";
 const string SwapBreakMove::name    = "swap break";
 const string CenterOfMassMove::name = "center of mass";
 const string StagingMove::name      = "staging";
