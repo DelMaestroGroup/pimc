@@ -4076,7 +4076,7 @@ void PIGSOneBodyDensityMatrixEstimator::outputFooter() {
 *  Constructor.
 ******************************************************************************/
 DoubledEstimator::DoubledEstimator (const Path &_path, const Path &_path2,
-        ActionBase *_actionPtr, ActionBase* _acitonPtr2, const MTRand &_random, double _maxR, 
+        ActionBase *_actionPtr, ActionBase* _actionPtr2, const MTRand &_random, double _maxR, 
         int _frequency, string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label), path2(_path2) 
 {
@@ -4101,7 +4101,7 @@ DoubledEstimator::~DoubledEstimator() {
 SwapEstimator::SwapEstimator (Path &_path, Path &_path2, ActionBase *_actionPtr, 
         ActionBase *_actionPtr2, const MTRand &_random, double _maxR, 
         int _frequency, string _label) :
-DoubledEstimator(_path,_path2,_actionPtr,_actionPtr2,_random,_maxR,frequency,_label), 
+DoubledEstimator(_path,_path2,_actionPtr,_actionPtr2,_random,_maxR,_frequency,_label), 
     lpath(_path),lpath2(_path2),
     actionPtr(_actionPtr), 
     actionPtr2(_actionPtr2) 

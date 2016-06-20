@@ -997,7 +997,8 @@ boost::ptr_vector<EstimatorBase> * Setup::multiPathEstimators(
     boost::ptr_vector<EstimatorBase>* multiEstimatorsPtr = 
         new boost::ptr_vector<EstimatorBase>();
     
-    multiEstimatorsPtr->push_back(new SwapEstimator(pathPtrVec[0],pathPtrVec[1], &actionPtrVec[0], &actionPtrVec[1],random,maxR));
+    /* multiEstimatorsPtr->push_back(new SwapEstimator(pathPtrVec[0],pathPtrVec[1], &actionPtrVec[0], &actionPtrVec[1],random,maxR)); */
+    multiEstimatorsPtr->push_back(new EntPartEstimator(pathPtrVec[0],pathPtrVec[1], &actionPtrVec[0], &actionPtrVec[1],random,maxR));
     //doubledEstimatorsPtr->push_back(new EntPartEstimator(path,path2,actionPtr,actionPtr2,random,maxR));
 
     return multiEstimatorsPtr;
