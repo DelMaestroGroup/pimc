@@ -47,8 +47,6 @@ ActionBase::ActionBase (const Path &_path, LookupTable &_lookup,
     /* Needed for canonical ensemble weighting */
     canonical = constants()->canonical();
     numBeads0  = constants()->initialNumParticles()*constants()->numTimeSlices();
-    deltaNumBeads2 = 1.0*constants()->deltaNumParticles()*constants()->numTimeSlices();
-    deltaNumBeads2 *= deltaNumBeads2;
     window = constants()->window();
     windowWidth = constants()->windowWidth();
     gaussianEnsemble = constants()->gaussianEnsemble();
@@ -334,13 +332,13 @@ double LocalAction::potentialAction (const beadLocator &beadIndex) {
  	 	corU = gradVFactor[eo] * tau() * tau() * tau() * constants()->lambda() 
  	 		* gradVnnSquared(beadIndex);
      
+#if PIGS
      /* We tack on a trial wave function and boundary piece if necessary */  
-    if ( constants()->pigs() ){
-        if ( (beadIndex[0] == 0) || (beadIndex[0] == (constants()->numTimeSlices()-1)) ) {
-             bareU *= 0.5*endFactor;
-             bareU -= log(waveFunctionPtr->PsiTrial(beadIndex[0]));
-        }
-    }
+     if ( (beadIndex[0] == 0) || (beadIndex[0] == (constants()->numTimeSlices()-1)) ) {
+         bareU *= 0.5*endFactor;
+         bareU -= log(waveFunctionPtr->PsiTrial(beadIndex[0]));
+     }
+#endif
 
      return (bareU + corU);
 }
@@ -355,12 +353,13 @@ double LocalAction::barePotentialAction (const beadLocator &beadIndex) {
 
     double bareU = VFactor[beadIndex[0]%2]*tau()*Vnn(beadIndex);
 
+#if PIGS
      /* We tack on a trial wave function and boundary piece if necessary */  
-     if ((constants()->pigs()) && 
-             ((beadIndex[0] == 0) || (beadIndex[0]== (constants()->numTimeSlices()-1))) ) {
+     if ( (beadIndex[0] == 0) || (beadIndex[0]== (constants()->numTimeSlices()-1)) ) {
          bareU *= 0.5;
          bareU -= log(waveFunctionPtr->PsiTrial(beadIndex[0]));
      }
+#endif
 
     return bareU;
 }

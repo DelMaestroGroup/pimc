@@ -10,6 +10,15 @@
 #include "action.h"
 #include "potential.h"
 #include "communicator.h"
+#include "factory.h"
+
+/**************************************************************************//**
+ * Setup the estimator factory.
+******************************************************************************/
+Factory<EstimatorBase* (Path &, ActionBase *, MTRand &, double)> EstimatorFactory;
+#define REGISTER_ESTIMATOR(NAME,TYPE) \
+    const string TYPE::name = NAME;\
+    bool reg ## TYPE = EstimatorFactory()->Register<TYPE>(TYPE::name);
 
 /**************************************************************************//**
  * Estimator naming conventions:
@@ -19,100 +28,57 @@
  * 3) prepend the keyword "pigs" for PIGS estimators
  * 4) include the word "multi" for multi-path estimators 
 ******************************************************************************/
-const string EnergyEstimator::name = "energy";
-const string VirialEnergyEstimator::name = "virial";
-const string NumberParticlesEstimator::name = "number particles";
-const string NumberDistributionEstimator::name = "number distribution";
-const string ParticlePositionEstimator::name = "particle position";
-const string BipartitionDensityEstimator::name = "bipartition density";
-const string PlaneParticlePositionEstimator::name = "planar density rho";
-const string SuperfluidFractionEstimator::name = "superfluid fraction";
-const string PlaneWindingSuperfluidDensityEstimator::name = "planar winding rhos/rho";
-const string PlaneAreaSuperfluidDensityEstimator::name = "planar area rhos/rho";
-const string RadialWindingSuperfluidDensityEstimator::name = "radial winding rhos/rho";
-const string RadialAreaSuperfluidDensityEstimator::name = "radial area rhos/rho";
-const string LocalSuperfluidDensityEstimator::name = "local superfluid";
-const string DiagonalFractionEstimator::name = "diagonal fraction";
-const string WormPropertiesEstimator::name = "worm properties";
-const string PermutationCycleEstimator::name = "permutation cycle";
-const string LocalPermutationEstimator::name = "local permutation";
-const string OneBodyDensityMatrixEstimator::name = "one body density matrix";
-const string PairCorrelationEstimator::name = "pair correlation function";
-const string RadialDensityEstimator::name = "radial density";
-const string CylinderEnergyEstimator::name = "cylinder energy";
-const string CylinderNumberParticlesEstimator::name = "cylinder number particles";
-const string CylinderNumberDistributionEstimator::name = "cylinder number distribution";
-const string CylinderLinearDensityEstimator::name = "cylinder linear density";
-const string CylinderSuperfluidFractionEstimator::name = "cylinder superfluid fraction";
-const string CylinderOneBodyDensityMatrixEstimator::name = "cylinder one body density matrix";
-const string CylinderPairCorrelationEstimator::name = "cylinder pair correlation function";
-const string CylinderRadialPotentialEstimator::name = "cylinder radial potential";
-const string CylinderLinearPotentialEstimator::name = "cylinder linear potential";
-const string PotentialEnergyEstimator::name = "cylinder potential energy";
-const string KineticEnergyEstimator::name = "pigs kinetic energy";
-const string PigsEnergyEstimator::name = "pigs energy";
-const string TotalEnergyEstimator::name = "pigs total energy";
-const string ThermoPotentialEnergyEstimator::name = "pigs thermodynamic potential energy";
-const string PositionEstimator::name = "pigs spatial position";
-const string ParticleResolvedPositionEstimator::name = "pigs particle resolved positions";
-const string ParticleCorrelationEstimator::name = "pigs particle correlations";
-const string VelocityEstimator::name = "pigs velocity";
-const string SubregionOccupationEstimator::name = "pigs subregion occupation";
-const string PIGSOneBodyDensityMatrixEstimator::name = "pigs one body density matrix";
-const string DoubledEstimator::name = "doubled estimator";
-const string SwapEstimator::name = "pigs multi swap";
+REGISTER_ESTIMATOR("energy",EnergyEstimator);
+REGISTER_ESTIMATOR("virial",VirialEnergyEstimator);
+REGISTER_ESTIMATOR("number particles",NumberParticlesEstimator);
+REGISTER_ESTIMATOR("number distribution",NumberDistributionEstimator);
+REGISTER_ESTIMATOR("null",NullEstimator);
+REGISTER_ESTIMATOR("particle position",ParticlePositionEstimator);
+REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
+REGISTER_ESTIMATOR("planar density rho",PlaneParticlePositionEstimator);
+REGISTER_ESTIMATOR("superfluid fraction",SuperfluidFractionEstimator);
+REGISTER_ESTIMATOR("planar winding rhos/rho",PlaneWindingSuperfluidDensityEstimator);
+REGISTER_ESTIMATOR("planar area rhos/rho",PlaneAreaSuperfluidDensityEstimator);
+REGISTER_ESTIMATOR("radial winding rhos/rho",RadialWindingSuperfluidDensityEstimator);
+REGISTER_ESTIMATOR("radial area rhos/rho",RadialAreaSuperfluidDensityEstimator);
+REGISTER_ESTIMATOR("local superfluid",LocalSuperfluidDensityEstimator);
+REGISTER_ESTIMATOR("diagonal fraction",DiagonalFractionEstimator);
+REGISTER_ESTIMATOR("worm properties",WormPropertiesEstimator);
+REGISTER_ESTIMATOR("permutation cycle",PermutationCycleEstimator);
+REGISTER_ESTIMATOR("local permutation",LocalPermutationEstimator);
+REGISTER_ESTIMATOR("one body density matrix",OneBodyDensityMatrixEstimator);
+REGISTER_ESTIMATOR("pair correlation function",PairCorrelationEstimator);
+REGISTER_ESTIMATOR("radial density",RadialDensityEstimator);
+REGISTER_ESTIMATOR("cylinder energy",CylinderEnergyEstimator);
+REGISTER_ESTIMATOR("cylinder number particles",CylinderNumberParticlesEstimator);
+REGISTER_ESTIMATOR("cylinder number distribution",CylinderNumberDistributionEstimator);
+REGISTER_ESTIMATOR("cylinder linear density",CylinderLinearDensityEstimator);
+REGISTER_ESTIMATOR("cylinder superfluid fraction",CylinderSuperfluidFractionEstimator);
+REGISTER_ESTIMATOR("cylinder one body density matrix",CylinderOneBodyDensityMatrixEstimator);
+REGISTER_ESTIMATOR("cylinder pair correlation function",CylinderPairCorrelationEstimator);
+REGISTER_ESTIMATOR("cylinder radial potential",CylinderRadialPotentialEstimator);
+REGISTER_ESTIMATOR("cylinder linear potential",CylinderLinearPotentialEstimator);
+REGISTER_ESTIMATOR("cylinder potential energy",PotentialEnergyEstimator);
+REGISTER_ESTIMATOR("pigs kinetic energy",KineticEnergyEstimator);
+REGISTER_ESTIMATOR("pigs energy",PigsEnergyEstimator);
+REGISTER_ESTIMATOR("pigs total energy",TotalEnergyEstimator);
+REGISTER_ESTIMATOR("pigs thermodynamic potential energy",ThermoPotentialEnergyEstimator);
+REGISTER_ESTIMATOR("pigs positions",PositionEstimator);
+REGISTER_ESTIMATOR("pigs particle resolved positions",ParticleResolvedPositionEstimator);
+REGISTER_ESTIMATOR("pigs particle correlations",ParticleCorrelationEstimator);
+REGISTER_ESTIMATOR("pigs velocity",VelocityEstimator);
+REGISTER_ESTIMATOR("pigs subregion occupation",SubregionOccupationEstimator);
+REGISTER_ESTIMATOR("pigs one body density matrix",PIGSOneBodyDensityMatrixEstimator);
 
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// ESTIMATOR FACTORY CLASS ---------------------------------------------------
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-/*************************************************************************//**
- *  Constructor.
- *  We populate the register with all possible estimators.
+/**************************************************************************//**
+ * Setup the estimator factory for multi path estimators.
 ******************************************************************************/
-EstimatorFactory::EstimatorFactory() {
-    registerEstimator<EnergyEstimator>(EnergyEstimator::name);
-    registerEstimator<VirialEnergyEstimator>(VirialEnergyEstimator::name);
-    registerEstimator<NumberParticlesEstimator>(NumberParticlesEstimator::name);
-    registerEstimator<NumberDistributionEstimator>(NumberDistributionEstimator::name);
-    registerEstimator<ParticlePositionEstimator>(ParticlePositionEstimator::name);
-    registerEstimator<BipartitionDensityEstimator>(BipartitionDensityEstimator::name);
-    registerEstimator<PlaneParticlePositionEstimator>(PlaneParticlePositionEstimator::name);
-    registerEstimator<SuperfluidFractionEstimator>(SuperfluidFractionEstimator::name);
-    registerEstimator<PlaneWindingSuperfluidDensityEstimator>(PlaneWindingSuperfluidDensityEstimator::name);
-    registerEstimator<PlaneAreaSuperfluidDensityEstimator>(PlaneAreaSuperfluidDensityEstimator::name);
-    registerEstimator<RadialWindingSuperfluidDensityEstimator>(RadialWindingSuperfluidDensityEstimator::name);
-    registerEstimator<RadialAreaSuperfluidDensityEstimator>(RadialAreaSuperfluidDensityEstimator::name);
-    registerEstimator<LocalSuperfluidDensityEstimator>(LocalSuperfluidDensityEstimator::name);
-    registerEstimator<DiagonalFractionEstimator>(DiagonalFractionEstimator::name);
-    registerEstimator<WormPropertiesEstimator>(WormPropertiesEstimator::name);
-    registerEstimator<PermutationCycleEstimator>(PermutationCycleEstimator::name);
-    registerEstimator<LocalPermutationEstimator>(LocalPermutationEstimator::name);
-    registerEstimator<OneBodyDensityMatrixEstimator>(OneBodyDensityMatrixEstimator::name);
-    registerEstimator<PairCorrelationEstimator>(PairCorrelationEstimator::name);
-    registerEstimator<RadialDensityEstimator>(RadialDensityEstimator::name);
-    registerEstimator<CylinderEnergyEstimator>(CylinderEnergyEstimator::name);
-    registerEstimator<CylinderNumberParticlesEstimator>(CylinderNumberParticlesEstimator::name);
-    registerEstimator<CylinderNumberDistributionEstimator>(CylinderNumberDistributionEstimator::name);
-    registerEstimator<CylinderLinearDensityEstimator>(CylinderLinearDensityEstimator::name);
-    registerEstimator<CylinderSuperfluidFractionEstimator>(CylinderSuperfluidFractionEstimator::name);
-    registerEstimator<CylinderOneBodyDensityMatrixEstimator>(CylinderOneBodyDensityMatrixEstimator::name);
-    registerEstimator<CylinderPairCorrelationEstimator>(CylinderPairCorrelationEstimator::name);
-    registerEstimator<CylinderRadialPotentialEstimator>(CylinderRadialPotentialEstimator::name);
-    registerEstimator<CylinderLinearPotentialEstimator>(CylinderLinearPotentialEstimator::name);
-    registerEstimator<PotentialEnergyEstimator>(PotentialEnergyEstimator::name);
-    registerEstimator<KineticEnergyEstimator>(KineticEnergyEstimator::name);
-    registerEstimator<PigsEnergyEstimator>(PigsEnergyEstimator::name);
-    registerEstimator<TotalEnergyEstimator>(TotalEnergyEstimator::name);
-    registerEstimator<ThermoPotentialEnergyEstimator>(ThermoPotentialEnergyEstimator::name);
-    registerEstimator<PositionEstimator>(PositionEstimator::name);
-    registerEstimator<ParticleResolvedPositionEstimator>(ParticleResolvedPositionEstimator::name);
-    registerEstimator<ParticleCorrelationEstimator>(ParticleCorrelationEstimator::name);
-    registerEstimator<VelocityEstimator>(VelocityEstimator::name);
-    registerEstimator<SubregionOccupationEstimator>(SubregionOccupationEstimator::name);
-    registerEstimator<PIGSOneBodyDensityMatrixEstimator>(PIGSOneBodyDensityMatrixEstimator::name);
-}
+Factory<EstimatorBase* (Path &, Path&, ActionBase *, ActionBase*, MTRand &, double)> MultiEstimatorFactory;
+const string SwapEstimator::name = "pigs multi swap";
+bool regSwap = MultiEstimatorFactory()->Register<SwapEstimator>(SwapEstimator::name);
+
+const string EntPartEstimator::name = "pigs multi entanglement of particles";
+bool regEntPart = MultiEstimatorFactory()->Register<EntPartEstimator>(EntPartEstimator::name);
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -236,7 +202,6 @@ void EstimatorBase::prepare() {
                 (*outFilePtr) << endl;
         }
     }
-
 }
 
 /*************************************************************************//**
@@ -280,7 +245,6 @@ void EstimatorBase::output() {
 	reset();
 }
 
-
 /*************************************************************************//**
 *  AppendLabel
 ******************************************************************************/
@@ -288,6 +252,41 @@ void EstimatorBase::appendLabel(string append) {
 	label = label + append;
 }
 
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// NULL ESTIMATOR CLASS ------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ * Used to add a newline character.
+******************************************************************************/
+NullEstimator::NullEstimator (const Path &_path, ActionBase *_actionPtr,
+		const MTRand &_random, double _maxR, int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
+
+	/* Set estimator name and header, we will always report the energy
+	 * first, hence the comment symbol*/
+	header = "";
+    endLine = true;
+    initialize(1);
+}
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ * Used to add a newline character.
+******************************************************************************/
+void NullEstimator::output() {
+
+    /* add the new line */
+    (*outFilePtr) << endl;
+
+	/* Reset all values */
+	reset();
+}
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -575,9 +574,6 @@ void VirialEnergyEstimator::accumulate() {
         dEdB += actionPtr->secondderivPotentialActionTau(slice)/(1.0*numTimeSlices);
     }
     dEdB *= beta*beta/(1.0*numTimeSlices);
-
-    if (numParticles < 1)
-        cout << numParticles << endl;
 
     /* accumulate all energy estimators. */
 	estimator(0) += totEcv - totVop; // operator kinetic energy
@@ -3526,13 +3522,10 @@ void TotalEnergyEstimator::accumulate() {
         /* Normalize the accumulated link-action part */
         K *= kinNorm;
         
-        //cout << classicalKinetic << '\t' << K << '\t';
-        
         /* Perform all the normalizations and compute the individual energy terms */
         K  += (classicalKinetic);
         
         double dUdtau = actionPtr->derivPotentialActionTau(slice);
-        //cout << dUdtau << endl;
         estimator(slice) += K+dUdtau;
  	}
 }
@@ -3581,7 +3574,6 @@ void ThermoPotentialEnergyEstimator::accumulate() {
  	for (int slice = 0; slice < (numTimeSlices-1); slice++) {        
         double dUdtau = actionPtr->derivPotentialActionTau(slice);
         double dUdlam = actionPtr->derivPotentialActionLambda(slice);
-        //cout << dUdtau << '\t'<< dUdlam << endl;
         estimator(slice) += dUdtau - (constants()->lambda()/constants()->tau())*dUdlam;
  	}
 }
@@ -4215,7 +4207,6 @@ void SwapEstimator::accumulateOpen() {
             for( uint32 i=0; i<permutation.size(); i++){
                 beadIndexL2[1] = lpath2.brokenWorldlinesL[i];
                 beadIndexR2[1] = lpath2.brokenWorldlinesR[permutation[i]];
-                //cout << beadIndexL2[1] << '\t' << beadIndexR2[1] << '\t' << permutation[i] << endl;
                 rho0perm *= actionPtr2->rho0(beadIndexL2,beadIndexR2,1);
             }
             rho0Dir2 += rho0perm;
@@ -4317,8 +4308,6 @@ void SwapEstimator::accumulateOpen() {
     //Z = rho0Dir*rho0Dir2*exp(-(oldPotAction+oldPotAction2));
     //S = rho0Swap*rho0Swap2*exp(-(newPotAction+newPotAction2));
     
-    //cout << rho0Dir << '\t' << rho0Dir2 << '\t' << Z << '\t' << S << endl;
-    
     estimator(0) += Z;
 	estimator(1) += S;
     estimator(2) += S*Z;
@@ -4390,6 +4379,249 @@ void SwapEstimator::accumulateClosed() {
     
     estimator(0) += Z;
 	estimator(1) += S;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ----------- Entanglement of Particles Estimator Class ---------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+*  Constructor.
+******************************************************************************/
+EntPartEstimator::EntPartEstimator (Path &_path, Path &_path2,
+                              ActionBase *_actionPtr,ActionBase *_actionPtr2,
+                              const MTRand &_random, double _maxR,
+                              int _frequency, string _label) :
+DoubledEstimator(_path,_path2,_actionPtr, _actionPtr2,_random,_maxR,_frequency,_label), 
+    lpath(_path),lpath2(_path2),
+    actionPtr(_actionPtr), 
+    actionPtr2(_actionPtr2) 
+{
+    stringstream headerSS;
+    
+    /* Set estimator name and header */
+	header = str(format("#%15s") % "Z" );
+    for (int n = 1; n < constants()->initialNumParticles(); n++){
+        headerSS.str("");
+        headerSS << 'Z' << n;
+		header.append(str(format("%16s") % headerSS.str().c_str()));
+        headerSS.str("");
+        headerSS << 'S' << n;
+        header.append(str(format("%16s") % headerSS.str().c_str()));
+    }
+    initialize(1+2*(constants()->initialNumParticles()-1));
+}
+
+/*************************************************************************//**
+*  Destructor.
+******************************************************************************/
+EntPartEstimator::~EntPartEstimator() {
+}
+
+/*************************************************************************//**
+* Accumulate the swap estimator for open paths.
+******************************************************************************/
+void EntPartEstimator::accumulate() {
+    double S,Z; // Swap and normalization
+    
+    bool nMatch = false; //True if both paths have the same number of broken paths>0
+    int nBin;   // number of broken paths if nMatch=True;
+    
+    beadLocator beadIndexL,beadIndexR,beadIndexL2,beadIndexR2;
+    beadIndexL[0] = lpath.breakSlice;
+    beadIndexR[0] = lpath.breakSlice+1;
+    beadIndexL2[0] = lpath2.breakSlice;
+    beadIndexR2[0] = lpath2.breakSlice+1;
+    
+    /* Old tail positions & potential actions */
+    vector<dVec> oldTailPos(lpath.brokenWorldlinesR.size());
+    vector<dVec> oldTailPos2(lpath2.brokenWorldlinesR.size());
+    
+    for( int i=0; i<lpath.brokenWorldlinesR.size();i++){
+        beadIndexR[1] = lpath.brokenWorldlinesR[i];
+        oldTailPos[i] = lpath(beadIndexR);
+    }
+    for( int i=0; i<lpath2.brokenWorldlinesR.size();i++){
+        beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
+        oldTailPos2[i] = lpath2(beadIndexR2);
+    }
+    
+    /* Compute direct propagator for Z */
+    double oldPotAction,oldPotAction2;
+    double rho0Dir, rho0Dir2;
+    
+    /* Compute direct potential actions for both paths */
+    /* loop over broken beads */
+    oldPotAction = 0.0;
+    for( int i=0; i<lpath.brokenWorldlinesR.size();i++){
+        beadIndexR[1] = lpath.brokenWorldlinesR[i];
+        oldPotAction += actionPtr->potentialAction(beadIndexR);
+    }
+    oldPotAction2 = 0.0;
+    for( int i=0; i<lpath2.brokenWorldlinesR.size();i++){
+        beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
+        oldPotAction2 += actionPtr2->potentialAction(beadIndexR2);
+    }
+    
+    
+    /* Initialize permuation vector */
+    vector<int> permutation(lpath.brokenWorldlinesR.size());
+    int Nperm = 0;
+    double rho0perm;
+    for( int i=0; i<permutation.size(); i++)
+        permutation[i] = i;
+    
+    /* Compute direct free particle density matricies for both paths */
+    if ( lpath.brokenWorldlinesL.size() == 0){
+        rho0Dir = 1.0;
+    }else{
+        rho0Dir = 0.0;
+        /* sum over permutations */
+        do {
+            /* sum over broken worldlines */
+            rho0perm = 1.0;
+            for( int i=0; i<permutation.size(); i++){
+                beadIndexL[1] = lpath.brokenWorldlinesL[i];
+                beadIndexR[1] = lpath.brokenWorldlinesR[permutation[i]];
+                rho0perm *= actionPtr->rho0(beadIndexL,beadIndexR,1);
+            }
+            rho0Dir += rho0perm;
+            Nperm++;
+        } while (next_permutation(permutation.begin(),permutation.end()));
+        rho0Dir *= 1.0/((double)Nperm);
+    }
+    
+    /* Re-initialize permuation vector */
+    permutation.resize(lpath2.brokenWorldlinesR.size());
+    for( int i=0; i<permutation.size(); i++)
+        permutation[i] = i;
+    Nperm = 0;
+    if ( lpath2.brokenWorldlinesL.size() == 0){
+        rho0Dir2 = 1.0;
+    }else{
+        rho0Dir2 = 0.0;
+        /* sum over permutations */
+        do {
+            /* sum over broken worldlines */
+            rho0perm = 1.0;
+            for( int i=0; i<permutation.size(); i++){
+                beadIndexL2[1] = lpath2.brokenWorldlinesL[i];
+                beadIndexR2[1] = lpath2.brokenWorldlinesR[permutation[i]];
+                //cout << beadIndexL2[1] << '\t' << beadIndexR2[1] << '\t' << permutation[i] << endl;
+                rho0perm *= actionPtr2->rho0(beadIndexL2,beadIndexR2,1);
+            }
+            rho0Dir2 += rho0perm;
+            Nperm++;
+        } while (next_permutation(permutation.begin(),permutation.end()));
+        rho0Dir2 *= 1.0/((double)Nperm);
+    }
+    
+    /* Compute the swapped propagator for S */
+    
+    if( (lpath.brokenWorldlinesR.size() == lpath2.brokenWorldlinesR.size()) ){
+        
+        if ( lpath.brokenWorldlinesR.size() == 0){
+            S = 1.0;
+            Z = 1.0;
+        }else{
+            /* Swap the tail positions */
+            for( int i=0; i<oldTailPos2.size(); i++){
+                beadIndexR[1] = lpath.brokenWorldlinesR[i];
+                lpath.updateBead(beadIndexR,oldTailPos2[i]);
+            }
+            for( int i=0; i<oldTailPos.size(); i++){
+                beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
+                lpath2.updateBead(beadIndexR2,oldTailPos[i]);
+            }
+            
+            /* Compute the swapped free particle density matrix */
+            /* Re-initialize permuation vector */
+            for( int i=0; i<permutation.size(); i++)
+                permutation[i] = i;
+            Nperm = 0;
+            double rho0Swap = 0.0;
+            /* sum over permutations */
+            do {
+                /* sum over broken worldlines */
+                rho0perm = 1.0;
+                for( int i=0; i<permutation.size(); i++){
+                    beadIndexL[1] = lpath.brokenWorldlinesL[i];
+                    beadIndexR[1] = lpath.brokenWorldlinesR[permutation[i]];
+                    rho0perm *= actionPtr->rho0(beadIndexL,beadIndexR,1);
+                }
+                rho0Swap += rho0perm;
+                Nperm++;
+            } while (next_permutation(permutation.begin(),permutation.end()));
+            rho0Swap*= 1.0/((double)Nperm);
+            
+            /* Re-initialize permuation vector */
+            for( int i=0; i<permutation.size(); i++)
+                permutation[i] = i;
+            Nperm = 0;
+            double rho0Swap2 = 0.0;
+            /* sum over permutations */
+            do {
+                /* sum over broken worldlines */
+                rho0perm = 1.0;
+                for( int i=0; i<permutation.size(); i++){
+                    beadIndexL2[1] = lpath2.brokenWorldlinesL[i];
+                    beadIndexR2[1] = lpath2.brokenWorldlinesR[permutation[i]];
+                    rho0perm *= actionPtr2->rho0(beadIndexL2,beadIndexR2,1);
+                }
+                rho0Swap2 += rho0perm;
+                Nperm++;
+            } while (next_permutation(permutation.begin(),permutation.end()));
+            rho0Swap2*= 1.0/((double)Nperm);
+            
+            /* Compute the potential the potential action */
+            /* Compute direct potential actions for both paths */
+            /* loop over broken beads */
+            double newPotAction = 0.0;
+            for( int i=0; i<lpath.brokenWorldlinesR.size();i++){
+                beadIndexR[1] = lpath.brokenWorldlinesR[i];
+                newPotAction += actionPtr->potentialAction(beadIndexR);
+            }
+            double newPotAction2 = 0.0;
+            for( int i=0; i<lpath2.brokenWorldlinesR.size();i++){
+                beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
+                newPotAction2 += actionPtr2->potentialAction(beadIndexR2);
+            }
+            
+            /* Now we must undo any damge we have caused by reverting the tail to its previous position*/
+            for( int i=0; i<oldTailPos.size(); i++){
+                beadIndexR[1] = lpath.brokenWorldlinesR[i];
+                lpath.updateBead(beadIndexR,oldTailPos[i]);
+            }
+            for( int i=0; i<oldTailPos2.size(); i++){
+                beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
+                lpath2.updateBead(beadIndexR2,oldTailPos2[i]);
+            }
+            S = rho0Swap*rho0Swap2*exp(-(0.5)*(newPotAction+newPotAction2)+(0.5)*(oldPotAction+oldPotAction2));
+            Z = rho0Dir*rho0Dir2;
+            
+            nBin = lpath.brokenWorldlinesR.size();
+            if( nBin < constants()->initialNumParticles() )
+                nMatch = true;
+        }
+    }else{
+        S = 0.0;
+        Z = rho0Dir*rho0Dir2;
+    }
+    
+    /* In the normalization factor we must account for the factor of 1/2 in the
+     open path weight */
+    //Z = rho0Dir*rho0Dir2*exp(-(oldPotAction+oldPotAction2));
+    //S = rho0Swap*rho0Swap2*exp(-(newPotAction+newPotAction2));
+    
+    //cout << rho0Dir << '\t' << rho0Dir2 << '\t' << Z << '\t' << S << endl;
+    
+    estimator(0) += Z;
+    if( nMatch ){
+        estimator(nBin*2-1) += Z;
+        estimator(nBin*2) += S;
+    }
 }
 
 

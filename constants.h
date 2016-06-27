@@ -10,6 +10,9 @@
 #define CONSTANTS_H
 
 #include "common.h"
+#include <boost/program_options.hpp>
+
+namespace po = boost::program_options;
 
 // ========================================================================  
 // ConstantParameters Class
@@ -26,9 +29,8 @@ class ConstantParameters
 {
 	public:
 		static ConstantParameters* getInstance();
-		void initConstants(bool,bool,double,double,double,double,double,double,double,double,
-				           int,int,int,uint32,uint32,double,uint32,string,string,string,string,
-                           int,double, int,int,int,double,double,int,bool);
+
+		void initConstants(po::variables_map &);
 
 		/* All the get methods */
 		double T() const {return T_;}					///< Get temperature.
@@ -59,7 +61,7 @@ class ConstantParameters
             if (attemptProb_.count(type))
                 return attemptProb_[type];
             else {
-                cerr << "Attempt probability for " << type << " does not exist!" << endl;
+                cerr << "Get: Attempt probability for " << type << " does not exist!" << endl;
                 exit(EXIT_FAILURE);
                 return 0.0;
             }
@@ -67,20 +69,21 @@ class ConstantParameters
 
         /* Set the move attempt probability */
         void setAttemptProb(string type,double prob) {
-            if (attemptProb_.count(type))
-                attemptProb_[type] = prob;
-            else {
-                cerr << "Attempt probability for " << type << " does not exist!" << endl;
-                exit(EXIT_FAILURE);
-            }
+            attemptProb_[type] = prob;
+            /* if (attemptProb_.count(type)) */
+            /*     attemptProb_[type] = prob; */
+            /* else { */
+            /*     cerr << "Set: Attempt probability for " << type << " does not exist!" << endl; */
+            /*     exit(EXIT_FAILURE); */
+            /* } */
         }
 
 		bool restart() const {return restart_;}			                    ///< Get restart state
         bool wallClockOn() const {return wallClockOn_;}                     ///< Get wallclockOn
         uint32 wallClock() const {return wallClock_;}                       ///< Get wallclock limit
 		bool canonical() const { return canonical_;}                        ///< Get ensemble
-        bool pigs() const { return pigs_;}                                  ///< Are we at T=0?
         bool window() const { return window_;}                              ///< Get window on/off
+        bool startWithState() const { return startWithState_;}               ///< Are we starting from a state?
         int windowWidth() const { return windowWidth_;}                     ///< Get window 1/2 width
         bool gaussianEnsemble() const { return gaussianEnsemble_;}          ///< Get enesemble weight on/off
         double gaussianEnsembleSD() const { return gaussianEnsembleSD_;}    ///< Get enesemble weight standard dev.
@@ -89,7 +92,6 @@ class ConstantParameters
 		int b() {return b_;}							///< Get bisection level
 		int numTimeSlices() {return numTimeSlices_;}	///< Get number of time slices
 		int initialNumParticles() { return initialNumParticles_;}	///< Get initial number of particles
-		int deltaNumParticles() { return deltaNumParticles_;}	///< Get the canonical fluctuation weight
         int maxWind() { return maxWind_;}               ///< Get the maximum winding number sampled
 		uint32 id() {return id_;}						///< Get simulation ID
 		uint32 numEqSteps() {return numEqSteps_;}	///< Get the number of equilibration steps
@@ -146,7 +148,6 @@ class ConstantParameters
 		int b_;					  // The maximum number of levels
 		int numTimeSlices_;		  // Number of imaginary time slices
 		int initialNumParticles_; // The initial number of particles
-		int deltaNumParticles_;   // The particle number fluctuation weight (for canonical sims)
         int numBroken_;           // The number of broken paths
         double spatialSubregion_;      // The limits of the spatial sub region for EE
         bool spatialSubregionOn_;     // True if using a spatial subregion for EE
@@ -159,10 +160,10 @@ class ConstantParameters
         uint32 wallClock_;          // The wall clock limit in seconds
         bool wallClockOn_;          // Is the wall clock on?
         bool canonical_;            // Are we in the canonical ensemble?
-        bool pigs_;                 // Used to determine the mode T>0 or T=0.
         bool window_;               // Are we using a particle number window?
+        bool startWithState_;       // Are we starting from a supplied state?
         int windowWidth_;           // Half width of particle number window
-        bool gaussianEnsemble_;     // Are we using guassian ensemble weight?
+        bool gaussianEnsemble_;     // Are we using gaussian ensemble weight?
         double gaussianEnsembleSD_; // Standard deviation of ensemble weight
 
 		string intPotentialType_;   // The type of interaction potential

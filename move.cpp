@@ -10,9 +10,18 @@
 #include "action.h"
 #include "lookuptable.h"
 #include "communicator.h"
+#include "factory.h"
 
 uint32 MoveBase::totAttempted = 0;
 uint32 MoveBase::totAccepted = 0;
+
+/**************************************************************************//**
+ * Setup the move factory.
+******************************************************************************/
+Factory<MoveBase* (Path &, ActionBase*, MTRand&)> MoveFactory;
+#define REGISTER_MOVE(NAME,TYPE) \
+    const string TYPE::name = NAME;\
+    bool reg ## TYPE = MoveFactory()->Register<TYPE>(TYPE::name);
 
 /**************************************************************************//**
  * Move naming conventions:
@@ -20,52 +29,23 @@ uint32 MoveBase::totAccepted = 0;
  * 1) be as descriptive as possible
  * 2) spaces are fine
 ******************************************************************************/
-const string DisplaceMove::name     = "displace";
-const string EndStagingMove::name   = "end staging";
-const string MidStagingMove::name   = "mid-staging";
-const string SwapBreakMove::name    = "swap break";
-const string CenterOfMassMove::name = "center of mass";
-const string StagingMove::name      = "staging";
-const string BisectionMove::name    = "bisection";
-const string OpenMove::name         = "open";
-const string CloseMove::name        = "close";
-const string InsertMove::name       = "insert";
-const string RemoveMove::name       = "remove";
-const string AdvanceHeadMove::name  = "advance head";
-const string RecedeHeadMove::name   = "recede head";
-const string AdvanceTailMove::name  = "advance tail";
-const string RecedeTailMove::name   = "recede tail";
-const string SwapHeadMove::name     = "swap head";
-const string SwapTailMove::name     = "swap tail";
-
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// MOVE FACTORY CLASS --------------------------------------------------------
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-/*************************************************************************//**
- *  Constructor.
- *  We populate the register with all possible moves.
-******************************************************************************/
-MoveFactory::MoveFactory() {
-    registerMove<DisplaceMove>(DisplaceMove::name);
-    registerMove<EndStagingMove>(EndStagingMove::name);
-    registerMove<MidStagingMove>(MidStagingMove::name);
-    registerMove<SwapBreakMove>(SwapBreakMove::name);
-    registerMove<CenterOfMassMove>(CenterOfMassMove::name);
-    registerMove<StagingMove>(StagingMove::name);
-    registerMove<BisectionMove>(BisectionMove::name);
-    registerMove<OpenMove>(OpenMove::name);
-    registerMove<CloseMove>(CloseMove::name);
-    registerMove<InsertMove>(InsertMove::name);
-    registerMove<RemoveMove>(RemoveMove::name);
-    registerMove<AdvanceHeadMove>(AdvanceHeadMove::name);
-    registerMove<RecedeHeadMove>(RecedeHeadMove::name);
-    registerMove<AdvanceTailMove>(AdvanceTailMove::name);
-    registerMove<RecedeTailMove>(RecedeTailMove::name);
-    registerMove<SwapHeadMove>(SwapHeadMove::name);
-    registerMove<SwapTailMove>(SwapTailMove::name);
-}
+REGISTER_MOVE("displace",DisplaceMove);
+REGISTER_MOVE("end staging",EndStagingMove);
+REGISTER_MOVE("mid staging",MidStagingMove);
+REGISTER_MOVE("swap break",SwapBreakMove);
+REGISTER_MOVE("center of mass",CenterOfMassMove);
+REGISTER_MOVE("staging",StagingMove);
+REGISTER_MOVE("bisection",BisectionMove);
+REGISTER_MOVE("open",OpenMove);
+REGISTER_MOVE("close",CloseMove);
+REGISTER_MOVE("insert",InsertMove);
+REGISTER_MOVE("remove",RemoveMove);
+REGISTER_MOVE("advance head",AdvanceHeadMove);
+REGISTER_MOVE("recede head",RecedeHeadMove);
+REGISTER_MOVE("advance tail",AdvanceTailMove);
+REGISTER_MOVE("recede tail",RecedeTailMove);
+REGISTER_MOVE("swap head",SwapHeadMove);
+REGISTER_MOVE("swap tail",SwapTailMove);
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -1371,11 +1351,11 @@ bool StagingMove::attemptMove() {
 		return false;
 
 	/* Randomly select the start bead of the stage */
-    if (constants()->pigs())
+    if (PIGS)
         startBead[0] = random.randInt((path.numTimeSlices-1)-constants()->Mbar());
     else
         startBead[0] = random.randInt(path.numTimeSlices-1);
-    
+
     /* We need to worry about the possibility of an empty slice for small
      * numbers of particles. */
     if (path.numBeadsAtSlice(startBead[0]) == 0)
@@ -1783,7 +1763,7 @@ bool OpenMove::attemptMove() {
             beadLocator beadIndex;
             beadIndex = headBead;
             do {
-                deltaAction =-(actionPtr->barePotentialAction(beadIndex) - factor*actionShift);
+                deltaAction = -(actionPtr->barePotentialAction(beadIndex) - factor*actionShift);
 
                 /* We do a single slice Metropolis test and exit the move if we
                  * wouldn't remove the single bead */

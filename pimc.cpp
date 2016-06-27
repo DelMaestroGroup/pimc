@@ -170,6 +170,7 @@ string PathIntegralMonteCarlo::update(const double x, const int sweep, const int
     else
         success = movePtrVec[pathIdx].at(index).attemptMove();
 
+    /* communicate()->file("debug")->stream() << success << " " << moveName << endl; */
 	return moveName;
 }
 
@@ -411,20 +412,19 @@ void PathIntegralMonteCarlo::step() {
 
         numParticles = pathPtrVec[pIdx].getTrueNumParticles();
         if (numParticles > 0) {
-        /* Perform all measurements */
-        for (estimator_vector::iterator estimatorPtr = estimatorPtrVec[pIdx].begin();
-             estimatorPtr != estimatorPtrVec[pIdx].end(); ++estimatorPtr)
-            estimatorPtr->sample();
+            /* Perform all measurements */
+            for (auto& estimator : estimatorPtrVec[pIdx])
+                estimator.sample();
         }
         
         /* Every binSize measurements, we output averages to disk and record the
          * state of the simulation on disk.  */
         if (estimatorPtrVec[pIdx].size() > 0){
             if (estimatorPtrVec[pIdx].front().getNumAccumulated() >= binSize) {
-                for (estimator_vector::iterator estimatorPtr = estimatorPtrVec[pIdx].begin();
-                     estimatorPtr != estimatorPtrVec[pIdx].end(); ++estimatorPtr) {
-                    if (estimatorPtr->getNumAccumulated() >= binSize)
-                        estimatorPtr->output();
+
+                for (auto& estimator : estimatorPtrVec[pIdx]) {
+                    if (estimator.getNumAccumulated() >= binSize)
+                        estimator.output();
                 }
                 if(Npaths==1){
                     if (constants()->saveStateFiles())
@@ -440,19 +440,19 @@ void PathIntegralMonteCarlo::step() {
     }
         
     //////Multi-path Estimators////////////
-    if(estimatorPtrVec.size() > Npaths){
-        for (estimator_vector::iterator estimatorPtr = estimatorPtrVec.back().begin();
-                estimatorPtr != estimatorPtrVec.back().end(); ++estimatorPtr)
-            estimatorPtr->sample();
+    if(estimatorPtrVec.size() > Npaths) {
+
+        /* Multi-Path estimators are at the end of the estimator vectors */
+        for (auto& estimator : estimatorPtrVec.back()) 
+            estimator.sample();
 
         /* Every binSize measurements, we output averages to disk and record the
          * state of the simulation on disk.  */
         if (estimatorPtrVec.back().front().getNumAccumulated() >= binSize) {
-            for (estimator_vector::iterator estimatorPtr = estimatorPtrVec.back().begin();
-                    estimatorPtr != estimatorPtrVec.back().end(); ++estimatorPtr) {
-                if (estimatorPtr->getNumAccumulated() >= binSize)
-                    estimatorPtr->output();
-            }
+
+            for (auto & estimator : estimatorPtrVec.back()) 
+                if (estimator.getNumAccumulated() >= binSize) 
+                    estimator.output();
 
             /* Save to disk or store a state file */
             if (constants()->saveStateFiles())
@@ -460,9 +460,8 @@ void PathIntegralMonteCarlo::step() {
             else
                 saveStateString();
 
-            if (estimator.size() == 0){
+            if (estimator.size() == 0)
                 ++numStoredBins;
-            }
         }
     }
 }

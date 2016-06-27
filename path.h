@@ -40,7 +40,6 @@ class Path {
         vector<int> brokenWorldlinesR;   ///< A list of particles with broken worldlines on right of break
         vector<int> closedWorldlines;   ///< A list of particles with closed worldlines on left of break
 
-
 		const Container *boxPtr;		///< A constant reference to the container class
 		Worm worm;						///< Details on the worm
 
@@ -82,7 +81,6 @@ class Path {
 
 		/** Output the world-line configurations in a generic format */
 		void outputConfig(int) const;
-		void outputPIGSConfig(int) const;
 
 		/** Move one link forward in imaginary time */
 		beadLocator& next(int slice, int ptcl) {return nextLink(slice,ptcl);}

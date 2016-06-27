@@ -19,16 +19,17 @@
 #include "cmc.h"
 #include "move.h"
 
+
 /**
  * Main driver.
  * Read in all program options from the user using boost::program_options and setup the simulation
  * cell, initial conditions and both the interaction and external potential. Either equilibrate or
  * restart a simulation, then start measuring. We output all the simulation parameters to disk as a
  * log file so that it can be restart again assigning it a unique PIMCID.
- * @see boost::program_options -- http://www.boost.org/doc/libs/1_43_0/doc/html/program_options.html
+ * @see http://www.boost.org/doc/libs/release/doc/html/program_options.html
  */
 int main (int argc, char *argv[]) {
-   
+
     /* Get initial time */
     time_t start_time = time(NULL);
     time_t current_time; //current time
@@ -60,8 +61,7 @@ int main (int argc, char *argv[]) {
 	MTRand random(seed);
 
 	/* Get the simulation box */
-	Container *boxPtr = NULL;
-	boxPtr = setup.cell(); 
+	Container *boxPtr = setup.cell();
 
 	/* Create the worldlines */
 	if (setup.worldlines())
@@ -85,12 +85,8 @@ int main (int argc, char *argv[]) {
     }
     
 	/* Create and initialize the potential pointers */
-	PotentialBase *interactionPotentialPtr = NULL;
-	interactionPotentialPtr = setup.interactionPotential();
-
-
-	PotentialBase *externalPotentialPtr = NULL;
-	externalPotentialPtr = setup.externalPotential(boxPtr);
+	PotentialBase *interactionPotentialPtr = setup.interactionPotential();
+	PotentialBase *externalPotentialPtr = setup.externalPotential(boxPtr);
 
 	/* Get the initial conditions associated with the external potential */
 	/* Must use the copy constructor as we return a copy */
@@ -114,8 +110,7 @@ int main (int argc, char *argv[]) {
     }
     
     /* The Trial Wave Function (constant for pimc) */
-    WaveFunctionBase *waveFunctionPtr = NULL;
-	waveFunctionPtr = setup.waveFunction(pathPtrVec.front());
+    WaveFunctionBase *waveFunctionPtr = setup.waveFunction(pathPtrVec.front());
 
 	/* Setup the action */
     boost::ptr_vector<ActionBase> actionPtrVec;
@@ -147,9 +142,8 @@ int main (int argc, char *argv[]) {
     
     /* Setup the multi-path estimators */
     if(Npaths>1){
-        estimatorsPtrVec.push_back(setup.multiPathEstimators(pathPtrVec,actionPtrVec,random));
+        estimatorsPtrVec.push_back(setup.estimators(pathPtrVec,actionPtrVec,random));
     }
-
 
 	/* Setup the pimc object */
     PathIntegralMonteCarlo pimc(pathPtrVec,random,movesPtrVec,estimatorsPtrVec,
@@ -162,7 +156,7 @@ int main (int argc, char *argv[]) {
 		/* Equilibrate */
 		cout << format("[PIMCID: %09d] - Equilibration Stage.") % constants()->id() << endl;
 		for (uint32 n = 0; n < constants()->numEqSteps(); n++) 
-			pimc.equilStep(n,setup.params.count("relax"),setup.params.count("relaxmu"));
+			pimc.equilStep(n,setup.params("relax"),setup.params("relaxmu"));
 
 		/* Output simulation details/parameters */
 		setup.outputOptions(argc,argv,seed,boxPtr,lookupPtrVec.front().getNumNNGrid());
@@ -186,11 +180,7 @@ int main (int argc, char *argv[]) {
 
 		/* Output configurations to disk */
 		if ((numOutput > 0) && ((n % numOutput) == 0)) {
-            if (constants()->pigs())
-                pathPtrVec.front().outputPIGSConfig(outNum);
-            else
-                pathPtrVec.front().outputConfig(outNum);
-
+            pathPtrVec.front().outputConfig(outNum);
 			outNum++;
 		}
         

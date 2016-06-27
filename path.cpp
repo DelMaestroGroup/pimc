@@ -56,7 +56,7 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
 	nextLink[0] = i1+1;
 	nextLink[1] = i2;
 	
-    if (constants()->pigs()) {
+    if (PIGS) {
 	/* Here we implement the fixed boundary conditions in imaginary time. */
         prevLink(0,Range::all()) = XXX;
         nextLink(numTimeSlices-1,Range::all()) = XXX;
@@ -458,7 +458,7 @@ void Path::addCenterLink(const beadLocator &beadIndexL,const beadLocator &beadIn
 
 void Path::resetBrokenClosedVecs(){
 
-    if ( (constants()->pigs())&&(breakSlice > 0) ){
+    if ( PIGS && (breakSlice > 0) ){
         
         beadLocator beadIndex;
         
@@ -502,7 +502,8 @@ bool Path::isBroken(const beadLocator &beadIndex) const{
 double Path::breakFactor(const beadLocator &beadIndex1,
                          const beadLocator &beadIndex2) const{
     double factor = 1.0;
-    /*if ( constants()->pigs() ){
+
+    /*if ( PIGS ){
         if ( (breakSlice > 0) && (beadIndex1[0] == (breakSlice+1)) ){
             if ( isBroken(beadIndex1) || isBroken(beadIndex2) )
                 factor = 0.5;
@@ -569,13 +570,54 @@ bool Path::checkSubregionLinks() const{
  *  Output the world-line configurations in a generic format.
  * 
  *  Output the worldline configuration to disk using a format suitable for 
- *  plotting using vpython. 
+ *  plotting. 
 ******************************************************************************/
 #include "communicator.h"
 void Path::outputConfig(int configNumber) const {
 
 	int numParticles = getNumParticles();
+    /* Output format for PIGS and PIMC are different */
+#if PIGS
+	/* We go through each particle/worldline */
+	beadLocator beadIndex;
 
+	/* Output the header */
+	communicate()->file("wl")->stream() << format("# START_CONFIG %06d\n") % configNumber;
+
+	/* Output the unit cell information.  It is always cubic.  Everything is scaled by
+	 * an overall factor for better visualization. */
+
+	/* We output the bead block */
+	for (int n = 0; n < numParticles;  n++) {
+        for (int m = 0; m < numTimeSlices; m++) {
+            beadIndex = m,n;
+		
+            communicate()->file("wl")->stream() << format("%8d %8d %8d") % beadIndex[0] 
+            % beadIndex[1] % 1;
+
+			/* Output the coordinates in 3D */
+			int i;
+			for (i = 0; i < NDIM; i++) {
+				communicate()->file("wl")->stream() << format("%16.3E") % (beads(beadIndex)[i]);
+			}
+			while (i < 3) {
+				communicate()->file("wl")->stream() << format("%16.3E") % 0.0;
+				i++;
+			}
+
+			/* Output the bead indices of the connecting beads */
+            communicate()->file("wl")->stream() << format("%8d %8d %8d %8d\n") % prev(beadIndex)[0] 
+                % prev(beadIndex)[1] % next(beadIndex)[0] % next(beadIndex)[1];
+
+            /* Advance the bead index */
+            beadIndex = next(beadIndex);
+		} 
+    }
+	communicate()->file("wl")->stream() << format("# END_CONFIG %06d\n") % configNumber;
+
+    /* Flush the file stream */
+    communicate()->file("wl")->stream().flush();
+#else
 	/* We go through all beads, and find the start and end bead for each
 	 * worldline, adding them to an array */
 	Array <beadLocator,1> startBead,endBead;
@@ -690,58 +732,7 @@ void Path::outputConfig(int configNumber) const {
 	endBead.free();
 	wlLength.free();
 	doBead.free();
-}
-
-/**************************************************************************//**
- *  Output the world-line configurations in a generic format.
- * 
- *  Output the worldline configuration to disk using a format suitable for 
- *  plotting using vpython. 
-******************************************************************************/
-#include "communicator.h"
-void Path::outputPIGSConfig(int configNumber) const {
-
-	int numParticles = getNumParticles();
-
-	/* We go through each particle/worldline */
-	beadLocator beadIndex;
-
-	/* Output the header */
-	communicate()->file("wl")->stream() << format("# START_CONFIG %06d\n") % configNumber;
-
-	/* Output the unit cell information.  It is always cubic.  Everything is scaled by
-	 * an overall factor for better visualization. */
-
-	/* We output the bead block */
-	for (int n = 0; n < numParticles;  n++) {
-        for (int m = 0; m < numTimeSlices; m++) {
-            beadIndex = m,n;
-		
-            communicate()->file("wl")->stream() << format("%8d %8d %8d") % beadIndex[0] 
-            % beadIndex[1] % 1;
-
-			/* Output the coordinates in 3D */
-			int i;
-			for (i = 0; i < NDIM; i++) {
-				communicate()->file("wl")->stream() << format("%16.3E") % (beads(beadIndex)[i]);
-			}
-			while (i < 3) {
-				communicate()->file("wl")->stream() << format("%16.3E") % 0.0;
-				i++;
-			}
-
-			/* Output the bead indices of the connecting beads */
-            communicate()->file("wl")->stream() << format("%8d %8d %8d %8d\n") % prev(beadIndex)[0] 
-                % prev(beadIndex)[1] % next(beadIndex)[0] % next(beadIndex)[1];
-
-            /* Advance the bead index */
-            beadIndex = next(beadIndex);
-		} 
-    }
-	communicate()->file("wl")->stream() << format("# END_CONFIG %06d\n") % configNumber;
-
-    /* Flush the file stream */
-    communicate()->file("wl")->stream().flush();
+#endif
 }
 
 /**************************************************************************//**

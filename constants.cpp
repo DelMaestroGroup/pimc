@@ -1,5 +1,5 @@
 /** 
- c @file constants.cpp
+ * @file constants.cpp
  * @author Adrian Del Maestro
  *
  * @brief ConstantParameters class implementation.
@@ -17,142 +17,114 @@
 /**************************************************************************//**
  *  An empty constructor which simply sets all constants to null.
 ******************************************************************************/
-ConstantParameters::ConstantParameters() : T_(), imagTimeLength_(), mu_(), tau_(), lambda_(), m_(),
-	dBWavelength_(), rc_(), C0_(), C_(), V_(), L_(), Mbar_(), b_(), numTimeSlices_(), 
-    initialNumParticles_(), deltaNumParticles_(), id_(), restart_(),
-    wallClock_(),  canonical_(), pigs_(), window_(), intPotentialType_(),
-    extPotentialType_(), waveFunctionType_(), actionType_(), virialWindow_(), maxWind_(), 
-    saveStateFiles_()
+ConstantParameters::ConstantParameters() 
 { 
-    /* set all data members to null values */
+    /* empty constructor */
 }
 
 /**************************************************************************//**
- *  Initialize all constants from passed values.
+ *  Initialize all constants from command line, XMl and defaults. 
  *
  *  We initialize all constant parameters used in the simulation.  The ID is
  *  computed as the number of seconds since January 01, 2009.  The value of
  *	lambda = hbar^2/2 m k_B is computed in units where lenghts are measured in 
  *	angstroms and energies in kelvin.
 ******************************************************************************/
-void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, double _imagTimeLength, 
-        double _mu, double _m, double _rc, double _C0, double _V, double _L, int _initialNumParticles, 
-		int _Mbar, int _numTimeSlices, uint32 _id, uint32 _process, double _wallClock,
-		uint32 _numEqSteps, string _intPotentialType, string _extPotentialType, 
-        string _waveFunctionType, string _actionType, int _window, double _gaussianEnsembleSD, 
-        int _maxWind, int _virialWindow, int _numBroken, double _spatialSubregion,double _endFactor,
-        int _Npaths, bool _saveStateFiles) {
+void ConstantParameters::initConstants(po::variables_map &params) {
 
 	/* The simulation ID is the number of seconds since January 1 2009 */
-	if (_id == 0) {
+	if (params["restart"].empty()) {
 		time_t seconds = (time(NULL) - 39*365*24*60*60);
-		id_ = uint32(seconds + _process);
+		id_ = uint32(seconds + params["process"].as<uint32>());
 		restart_ = false;
 	}
 	else {
-		id_ = _id;
+		id_ = params["restart"].as<uint32>();
 		restart_ = true;
 	}
+
+    /* Are we starting from a supplied state file? */
+    startWithState_ = !params["start_with_state"].as<string>().empty();
     
     /* Set the wall clock state */
-    if (_wallClock < 0.0001){
+    if (params["wall_clock"].empty()) {
         wallClockOn_ = false;
         wallClock_ = 0;
-    }else{
+    } 
+    else {
         wallClockOn_ = true;
         /* Set wallClock_ in seconds*/
-        wallClock_ = uint32( floor(_wallClock*3600) );
+        wallClock_ = uint32( floor(params["wall_clock"].as<double>()*3600));
     }
 
-    /* Are we at T = 0 (pigs) or T>0 (pimc) */
-    pigs_ = _pigs;
-
 	/* Are we working in the grand canonical ensemble? */
-	canonical_ = _canonical;
+    canonical_ = !params["canonical"].empty();
 
     /* Are we saving a state file every bin? */
-    saveStateFiles_ = _saveStateFiles;
+    saveStateFiles_ = params["no_save_state"].empty();
     
     /* Set the particle number window */
-    if ( _window < 0 ){
+    if (params["window"].empty()) {
         window_ = false;
         windowWidth_ = 0;
-    }else{
+    }
+    else {
         window_ = true;
-        windowWidth_ = _window;
+        windowWidth_ = params["window"].as<int>();
     }
     
     /* Set the ensemble weight */
-    if ( _gaussianEnsembleSD < 0.0 ){
-        gaussianEnsemble_ = false;
+    gaussianEnsemble_ = !params["gaussian_window_width"].empty();
+    if (gaussianEnsemble_)
+        gaussianEnsembleSD_ = params["gaussian_window_width"].as<double>();
+    else
         gaussianEnsembleSD_ = 0.0;
-    }else{
-        gaussianEnsemble_ = true;
-        gaussianEnsembleSD_ = _gaussianEnsembleSD;
-    }
 
     /* The maximum winding number sampled */
-    maxWind_ = _maxWind;
+    maxWind_ = params["max_winding"].as<int>();
 
 	/* Assigned values */
-	b_  = int (ceil(log(1.0*_Mbar) / log(2.0)-EPS));
+	b_  = int (ceil(log(1.0*params["update_length"].as<int>()) / log(2.0)-EPS));
 
     /* We need to make sure b_ < numTimeSlices */
-    while (ipow(2,b_) >= _numTimeSlices)
+    while (ipow(2,b_) >= params["number_time_slices"].as<int>())
         b_--;
 
 	/* Assigned values */
-	Mbar_          = _Mbar;
-	T_             = _T;
-    imagTimeLength_ = _imagTimeLength;
-	mu_            = _mu;
-	m_             = _m;
-	lambda_        = 24.24 / m_;
-	rc_            = _rc;
-	rc2_           = rc_*rc_;
-	C0_            = _C0;
-	numTimeSlices_ = _numTimeSlices;
-    if (pigs_)
+	Mbar_           = params["update_length"].as<int>();
+	T_              = params["temperature"].as<double>();
+    imagTimeLength_ = params["imaginary_time_length"].as<double>();
+	mu_             = params["chemical_potential"].as<double>();
+	m_              = params["mass"].as<double>();
+	lambda_         = 24.24 / m_;
+	rc_             = params["potential_cutoff"].as<double>();
+	rc2_            = rc_*rc_;
+	C0_             = params["worm_constant"].as<double>();
+	numTimeSlices_  = params["number_time_slices"].as<int>();
+    if (PIGS)
         tau_       = 1.0/((numTimeSlices_-1)*T_);
     else
         tau_       = 1.0/(numTimeSlices_*T_);
-	V_	           = _V;
-	L_             = _L;
-	numEqSteps_    = _numEqSteps;
+	V_	           = params["volume"].as<double>();
+	L_             = params["side"].as<dVec>()[NDIM-1];
+	numEqSteps_    = params["number_eq_steps"].as<uint32>();
 
-    virialWindow_  = _virialWindow;
+    virialWindow_  = params["virial_window"].as<int>();
     
-	initialNumParticles_ = _initialNumParticles;
-    numBroken_ = _numBroken;
-    if( _spatialSubregion < BIG/2.0){
-        spatialSubregionOn_ = true;
-        spatialSubregion_ = _spatialSubregion;
-    }else{
-        spatialSubregionOn_= false;
-    }
-    endFactor_ = _endFactor;
-    Npaths_ = _Npaths;
+	initialNumParticles_ = params["number_particles"].as<int>();
+    numBroken_ = params["number_broken"].as<int>();
 
-	/* We arbitrarily set the particle weighting number (for now) */
-	deltaNumParticles_ = 10;
+    spatialSubregionOn_ = !params["spatial_subregion"].empty();
+    if (spatialSubregionOn_)
+        spatialSubregion_ = params["spatial_subregion"].as<double>();
 
-	intPotentialType_ = _intPotentialType;
-	extPotentialType_ = _extPotentialType;
-    waveFunctionType_ = _waveFunctionType;
-    actionType_ = _actionType;
+    endFactor_ = params["end_factor"].as<double>();
+    Npaths_ = params["number_paths"].as<int>();
 
-	PIMC_ASSERT(Mbar_ < numTimeSlices_);
-	PIMC_ASSERT(Mbar_ > 1);
-
-	if (Mbar_ >= numTimeSlices_) {
-		cout << "Update length is too long" << endl;
-		exit(EXIT_FAILURE);
-	}
-
-	if (Mbar_ <= 1) {
-		cout << "Update length is too short" << endl;
-		exit(EXIT_FAILURE);
-	}
+	intPotentialType_ = params["interaction"].as<string>();
+	extPotentialType_ = params["external"].as<string>();
+    waveFunctionType_ = params["wavefunction"].as<string>();
+    actionType_       = params["action"].as<string>();
 
 	/* Computed values */
 	dBWavelength_ = 2.0*sqrt(M_PI * lambda_ / T_);
@@ -163,7 +135,7 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
     /* Set the move probabilities */
 
     /* At present, the pigs code has only diagonal moves */
-    if (pigs_) {
+    if (PIGS) {
         attemptProb_["open"] = 0.0;
         attemptProb_["insert"] = 0.0;
         attemptProb_["close"] = 0.0;
@@ -177,8 +149,8 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
         attemptProb_["diagonal"] = 0.6;
         attemptProb_["center of mass"] = 0.1;
         attemptProb_["displace"] = 0.0;
-	attemptProb_["end staging"] = 0.3;
-        attemptProb_["mid-staging"] = 0.0;
+        attemptProb_["end staging"] = 0.3;
+        attemptProb_["mid staging"] = 0.0;
         attemptProb_["swap break"] = 0.0;
     }
     else {
@@ -197,13 +169,14 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
         attemptProb_["displace"] = 0.0;
         attemptProb_["end staging"] = 0.0;
         attemptProb_["swap break"] = 0.0;
-        attemptProb_["mid-staging"] = 0.0;
+        attemptProb_["mid staging"] = 0.0;
     }
 
     double totProb = attemptProb_["close"] + attemptProb_["advance head"] + attemptProb_["recede head"]
         + attemptProb_["advance tail"] + attemptProb_["recede tail"] + attemptProb_["remove"]
         + attemptProb_["swap head"] + attemptProb_["swap tail"] + attemptProb_["diagonal"] 
-        + attemptProb_["center of mass"] + attemptProb_["displace"]+attemptProb_["end staging"]+attemptProb_["mid-staging"]+attemptProb_["swap break"];
+        + attemptProb_["center of mass"] + attemptProb_["displace"] + attemptProb_["end staging"] 
+        + attemptProb_["mid staging"]+attemptProb_["swap break"];
 
 	if (abs(totProb - 1.0) > EPS) {
 		cout << "Close + AdvanceHead + RecedeHead + AdvanceTail + RecedeTail + Remove + SwapHead " 
@@ -213,10 +186,8 @@ void ConstantParameters::initConstants(bool _pigs, bool _canonical, double _T, d
 	PIMC_ASSERT(totProb-1.0 < EPS);
 
     totProb = attemptProb_["open"] + attemptProb_["insert"] + attemptProb_["diagonal"]
-       + attemptProb_["center of mass"] + attemptProb_["displace"]
-    + 
-       attemptProb_["swap break"]+attemptProb_["end staging"]+
-            attemptProb_["mid-staging"];
+       + attemptProb_["center of mass"] + attemptProb_["displace"] + attemptProb_["swap break"] 
+       + attemptProb_["end staging"] + attemptProb_["mid staging"];
 	
 	if (abs(totProb - 1.0) > EPS) {
 		cout << "Open + Insert + Diagonal + CoM Probability != 1" << endl;

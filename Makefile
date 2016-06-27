@@ -4,10 +4,6 @@ CXX     ?= g++
 LD      = $(CXX)
 UNAME   = $(shell uname -s)
 
-# Uncomment and add make print-VAR to output the value of $VAR
-print-%:         
-	@echo '$*=$($*)'
-
 # Determine the comiler toolset, gcc or intel
 ifeq ($(findstring g++,$(CXX)), g++)
 TOOLSET = gcc
@@ -17,13 +13,12 @@ else ifeq ($(findstring c++,$(CXX)), c++)
 TOOLSET = clang
 endif
 
-
 #Number of dimensions to compile for
 ndim = 3
 DIM  = -D NDIM=$(ndim)
 
 #Optimizations used: debug, basic and strict are valid
-opts = basic
+opts ?= basic
 
 #If a user wants to override variables often, they can create
 #there own section and declare a preset
@@ -76,7 +71,7 @@ DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
 
 ifeq ($(opts), basic)
-OPTS = -Wall -O3 -mtune=native  #-DNDEBUG
+OPTS = -std=c++11 -stdlib=libc++ -Wall -O3 -mtune=native  #-DNDEBUG
 else ifeq ($(opts), strict)
 OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
 endif #basic, elseif strict
@@ -102,6 +97,8 @@ ifeq ($(opts), basic)
 OPTS = -std=c++11 -stdlib=libc++ -Wall -O3 -mtune=native -Wno-deprecated-register
 else ifeq ($(opts), strict)
 OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
+else ifeq ($(opts),debug)
+OPTS = -std=c++11 -stdlib=libc++ -Wall -mtune=native -Wno-deprecated-register
 endif #basic, elseif strict
 #-fsanitize=address -fno-omit-frame-pointer
 #-Wconversion
@@ -175,6 +172,7 @@ endif # sharcnet, elseif westgrid, elseif macbook
 ####################################################################
 ##Linking and Compiling Variables
 RM     = /bin/rm -f
+
 PROG  ?= pimc.e
 SOURCE = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp wavefunction.cpp cmc.cpp
 OBJS   = $(SOURCE:.cpp=.o)
@@ -195,6 +193,10 @@ debug: COMPILE_WPCH += $(DEBUG)
 debug: LINK += $(LDEBUG)
 debug: $(PROG)
 
+pigs: COMPILE_PCH += -DPIGS
+pigs: PROG = pigs.e
+pigs: $(PROG)
+
 # Link Objects
 $(PROG): $(OBJS)
 	$(LINK) -o $(PROG)
@@ -212,7 +214,7 @@ constants.o: constants.cpp common.h.gch
 container.o: container.cpp common.h.gch constants.h
 	$(COMPILE_WPCH) -c container.cpp
 
-estimator.o: estimator.cpp common.h.gch path.h action.h potential.h communicator.h
+estimator.o: estimator.cpp common.h.gch path.h action.h potential.h communicator.h factory.h
 	$(COMPILE_WPCH) -c estimator.cpp
 
 potential.o: potential.cpp common.h.gch constants.h communicator.h path.h lookuptable.h
@@ -227,10 +229,10 @@ wavefunction.o: wavefunction.cpp common.h.gch path.h
 action.o: action.cpp common.h.gch constants.h path.h potential.h lookuptable.h wavefunction.h
 	$(COMPILE_WPCH) -c action.cpp
 
-setup.o: setup.cpp common.h.gch constants.h communicator.h container.h potential.h action.h move.h estimator.h
+setup.o: setup.cpp common.h.gch constants.h communicator.h container.h potential.h action.h move.h estimator.h factory.h
 	$(COMPILE_WPCH) -c setup.cpp
 
-move.o: move.cpp common.h.gch path.h action.h lookuptable.h communicator.h
+move.o: move.cpp common.h.gch path.h action.h lookuptable.h communicator.h factory.h
 	$(COMPILE_WPCH) -c move.cpp
 
 path.o: path.cpp common.h.gch constants.h container.h worm.h lookuptable.h communicator.h
@@ -246,17 +248,13 @@ cmc.o: cmc.cpp common.h.gch constants.h communicator.h potential.h container.h
 	$(COMPILE_WPCH) -c cmc.cpp
 
 # Precompile headers
-#common.h.gch: common.h
-#	$(COMPILE_PCH) -c common.cpp
-
-# Precompile headers
 common.h.gch: common.h
 	$(COMPILE_PCH) -c common.h
 
 # -------------------------------------------------------------------------------
 
 clean:
-	$(RM) $(PROG) $(OBJS) common.h.gch
+	$(RM) pimc.e pigs.e $(OBJS) common.h.gch
 
 print-%:
 	@echo '$*=$($*)'

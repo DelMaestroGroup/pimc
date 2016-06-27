@@ -30,7 +30,7 @@ class EstimatorBase {
 	public:
         EstimatorBase(const Path & _path, ActionBase *_actionPtr, const MTRand &_random, 
                 double _maxR, int _frequency=1, string _label="");
-		virtual ~EstimatorBase() = 0;
+		virtual ~EstimatorBase();
 
 		/* Sample the estimator */
 		virtual void sample();		
@@ -94,57 +94,37 @@ class EstimatorBase {
 
 		string header;					///< The data file header
 
-
-
 		/** Accumulate the estimator */
-		virtual void accumulate() = 0;	
+		virtual void accumulate() {}
 
 		/* Initialize the estimator */
 		void initialize(int);
 };
 
 // ========================================================================  
-// Estimator Factory
+// Null Estimator Class
 // ========================================================================  
 /** 
- * A factory class which creates new estimator instances.
+ * A dummy estimator that inserts a new line character at the end of 
+ * a line in a file of scalar estimators.
  *
- * We use the factory method design pattern 
- * (http://en.wikipedia.org/wiki/Factory_(object-oriented_programming)) to
- * create a new instance of an estimator object.
  */
-class EstimatorFactory {
+class NullEstimator : public EstimatorBase {
 
-    public:
-        EstimatorFactory();
-		virtual ~EstimatorFactory() = default;
+	public:
+        NullEstimator(const Path &, ActionBase *, const MTRand &, double,
+                int _frequency=1, string _label="estimator");
+		~NullEstimator() {};
 
-        /** Return an instantiated estimator with a given name */
-        EstimatorBase * getEstimator(string name, Path &_path, 
-                ActionBase* _actionPtr, MTRand &_random, double _maxR) {
-            typename map<string,PCreateEstimator>::const_iterator estimatorItr = _createEstimator.find(name);
-            if (estimatorItr != _createEstimator.end()) 
-                return (estimatorItr->second)(_path,_actionPtr,_random,_maxR);
-            return nullptr;
-        }
+        static const string name;
+        string getName() {return name;}
 
-    private:
-        /** Instantiate a new derived class */
-        template <typename TDerived>
-            static EstimatorBase * createEstimator(Path &_path, 
-                    ActionBase* _actionPtr, MTRand &_random, double _maxR) 
-            { return new TDerived(_path,_actionPtr,_random,_maxR); }
+        void output();		        // overload the output
+    
+	private:
+		void accumulate() {};		// Accumulate null value 
 
-        /* Short name for the function pointer */
-        typedef EstimatorBase* (*PCreateEstimator)(Path &, ActionBase *, MTRand &, double);
-
-        map<string,PCreateEstimator> _createEstimator;        // The name->constructor map
-
-        /* Register names to constructors */
-        template <typename TDerived>
-            void registerEstimator(string name) {_createEstimator[name] = &createEstimator<TDerived>;}
 };
-
 
 // ========================================================================  
 // Energy Estimator Class 
@@ -1196,8 +1176,7 @@ class DoubledEstimator: public EstimatorBase {
                 const MTRand &, double, int _frequency=1, string _label="");
         ~DoubledEstimator();
 
-        static const string name;
-        string getName() {return name;}
+        string getName() {return "doubled base";}
 
     protected:
         const Path &path2;				///< A constant reference to the paths

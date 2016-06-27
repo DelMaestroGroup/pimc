@@ -121,7 +121,6 @@ class ActionBase {
 		/* These definitions are needed for weighting in the canonical ensemble */
 		bool canonical;					///< Are we in the canonical ensemble?
 		int numBeads0;					///< The target number of beads
-		double deltaNumBeads2;			///< The fluctuating weight
         bool window;                    // Whether or not to force particle numberin to window
         int windowWidth;                // Half width of particle number window
         bool gaussianEnsemble;          // Whether or not to use gaussian ensemble weight

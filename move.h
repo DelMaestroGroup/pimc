@@ -36,6 +36,7 @@ class MoveBase {
     
         ensemble operateOnConfig;       ///< What configurations do we operate on?
         bool variableLength;            ///< Does the move have a variable length?
+        string name1;
 
         /** return the move name */
         virtual string getName() {return "base";}
@@ -156,48 +157,6 @@ class MoveBase {
 		void printMoveState(string);
 		void checkMove(int,double);
 };
-
-// ========================================================================  
-// Move Factory
-// ========================================================================  
-/** 
- * A factory class which creates new move instances.
- *
- * We use the factory method design pattern 
- * (http://en.wikipedia.org/wiki/Factory_(object-oriented_programming)) to
- * create a new instance of an estimator object.
- */
-class MoveFactory {
-
-    public:
-        MoveFactory();
-		virtual ~MoveFactory() = default;
-
-        /** Return an instantiated estimator with a given name */
-        MoveBase * getMove(string name, Path &_path, ActionBase* _actionPtr, MTRand &_random) {
-            typename map<string,PCreateMove>::const_iterator moveItr = _createMove.find(name);
-            if (moveItr != _createMove.end()) 
-                return (moveItr->second)(_path,_actionPtr,_random);
-            return nullptr;
-        }
-
-    private:
-        /** Instantiate a new derived class */
-        template <typename TDerived>
-            static MoveBase * createMove(Path &_path, ActionBase* _actionPtr, MTRand &_random) 
-            { return new TDerived(_path,_actionPtr,_random); }
-
-        /* Short name for the function pointer */
-        /* typedef MoveBase* (*PCreateMove)(Path &, ActionBase *, MTRand &); */
-        using PCreateMove = MoveBase* (*)(Path &, ActionBase*, MTRand &);
-
-        map<string,PCreateMove> _createMove;        // The name->constructor map
-
-        /* Register names to constructors */
-        template <typename TDerived>
-            void registerMove(string name) {_createMove[name] = &createMove<TDerived>;}
-};
-
 
 // ========================================================================  
 // Displace Move Class 

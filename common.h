@@ -6,7 +6,7 @@
  * @details We use blitz++ for all arrays and used boost::format to simplify
  * input and output.
  * @see http://sourceforge.net/projects/blitz/
- * @see http://www.boost.org/doc/libs/1_34_1/libs/format/index.html 
+ * @see http://www.boost.org/doc/libs/release/libs/format/index.html 
  */
 
 #ifndef COMMON_H 
@@ -26,6 +26,9 @@
 #include <boost/format.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
+
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
 /* Debugging librarys and definitions. There is only an effect if
  * the code is compiled with PIMC_DEBUG on.*/
@@ -55,6 +58,11 @@
  * or it defaults to 1D. */
 #ifndef NDIM
 #define NDIM 1 ///< Number of spatial dimnsions
+#endif
+
+/* Determine if we are performing a PIGS (T=0) or PIMC (T>0) simulation */
+#ifndef PIGS
+#define PIGS false
 #endif
 
 /* Used for getting the repo version number into the code */
