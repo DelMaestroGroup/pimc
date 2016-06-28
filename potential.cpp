@@ -1782,3 +1782,181 @@ double HardRodPotential::dVdtau(const dVec &sep1, const dVec &sep2,
 
     return ((0.5*t1/(exp(t2)-1.0))/(lambda*tau*tau));
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// GraphenePotential Class----------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+ * Constructor.
+******************************************************************************/
+#include <boost/math/special_functions/bessel.hpp>
+GraphenePotential::GraphenePotential (double _strain, double _poisson, double _a0, 
+        double _sigma, double _epsilon) : PotentialBase() {
+	double strain = _strain;
+	double poisson = _poisson;
+	double a0 = _a0;
+
+	sigma = _sigma;
+	epsilon = _epsilon;
+
+	/* Lattice vectors */
+	a1x = (sqrt(3.)*a0/8.)*(4.+strain-(3.*strain*poisson));
+	a1y = (3.*a0/8.)*(4.+(3.*strain)-(strain*poisson));
+	a2x = -a1x;
+	a2y = a1y;
+
+	/* reciprocal lattice vectors */
+	g1x = 8.*M_PI*sqrt(3.)*(4. + (3.*strain) - (strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
+	g1y = 8.*M_PI*(4. + strain - (3.*strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
+	g2x = -g1x;
+	g2y = g1y;
+
+	/* basis vectors */
+	b1x = a2x;
+	b1y = -0.5 * (1. + strain) * a0;
+	b2x = 0.;
+	b2y = -.5*(1. + strain) * a0-(a1x/sqrt(3.));
+
+	/* area of unit cell */
+	A = fabs((a1x*a2y) - (a1y*a2x));
+
+}
+
+
+/**************************************************************************//**
+ * Destructor.
+******************************************************************************/
+GraphenePotential::~GraphenePotential() {
+
+}
+
+/**************************************************************************//**
+ *  Return the value of the van der Waals' interaction between a graphene sheet
+ *  and a helium adatom at a position, r, above the sheet. 
+
+ *  @param r the position of a helium particle
+ *  @return the van der Waals' potential for graphene-helium
+******************************************************************************/
+double GraphenePotential::V(const dVec &r) {
+
+	double x = r[0];
+	double y = r[1];
+	double z = r[2]+EPS;
+	double g = 0.;
+	double gdotb1 = 0.;
+	double gdotb2 = 0.;
+	double k5term = 0.;
+	double k2term = 0.;
+	double prefactor = 0.;
+	double v_g = 0.;
+	double v = (4.*M_PI/A)*epsilon*sigma*sigma*( ((2./5.)*pow((sigma/z),10)) - pow((sigma/z),4) );
+	if (z < 1.5) {
+		return 10000.;
+	}
+	
+	else {
+		for (double m = -1; m < 1+1; m++) {
+			for (double n = -1; n < 1+1; n++) {
+			    if ((m != 0) || (n != 0)){
+				g = sqrt(pow((m*g1x + n*g2x),2.) + pow((m*g1y + n*g2y),2.));
+				gdotb1 = ((m*g1x + n*g2x)*(b1x+x)) + ((m*g1y + n*g2y)*(b1y+y));
+				gdotb2 = ((m*g1x + n*g2x)*(b2x+x)) + ((m*g1y + n*g2y)*(b2y+y));
+				k5term = pow((g*sigma*sigma/2./z),5.)*boost::math::cyl_bessel_k(5., g*z)/30.;
+				k2term = 2.*pow((g*sigma*sigma/2./z),2.)*boost::math::cyl_bessel_k(2., g*z);
+				prefactor = epsilon*sigma*sigma*2.*M_PI/A;
+
+				v_g = prefactor*(k5term-k2term);
+				v += (cos(gdotb1)+cos(gdotb2))*v_g;
+			    }
+			}
+		}
+		
+
+		return v;
+
+	}
+}
+/**************************************************************************//**
+ * Return an initial particle configuration.
+ *
+ * We create particles at random locations above the graphene sheet.
+******************************************************************************/
+Array<dVec,1> GraphenePotential::initialConfig(const Container *boxPtr, MTRand &random,
+		const int numParticles) {
+
+	/* The particle configuration */
+	Array<dVec,1> initialPos(numParticles);
+	initialPos = 0.0;
+	double initSideCube = 1.0*numParticles;
+	
+	for (int i = 0; i < NDIM - 1; i++) {
+		initSideCube /= boxPtr->side[i];
+	}
+
+	initSideCube /= ((boxPtr->side[NDIM-1] / 2.0) - 6.0);
+
+	/* Get the linear size per particle, and the number of particles */
+	double initSide = pow((initSideCube),-1.0/(1.0*NDIM));
+
+	/* We determine the number of initial grid boxes there are in 
+	 * in each dimension and compute their size */
+	int totNumGridBoxes = 1;
+	iVec numNNGrid;
+	dVec sizeNNGrid;
+
+	for (int i = 0; i < NDIM - 1; i++) {
+		numNNGrid[i] = static_cast<int>(ceil((boxPtr->side[i] / initSide) - EPS));
+
+		/* Make sure we have at least one grid box */
+		if (numNNGrid[i] < 1)
+			numNNGrid[i] = 1;
+
+		/* Compute the actual size of the grid */
+		sizeNNGrid[i] = boxPtr->side[i] / (1.0 * numNNGrid[i]);
+
+		/* Determine the total number of grid boxes */
+		totNumGridBoxes *= numNNGrid[i];
+	}
+
+	numNNGrid[NDIM-1] = static_cast<int>(ceil(((boxPtr->side[NDIM-1] - 12.0) / (2.0 * initSide)) - EPS));
+
+	/* Make sure we have at least one grid box */
+	if (numNNGrid[NDIM-1] < 1)
+		numNNGrid[NDIM-1] = 1;
+
+	/* Compute the actual size of the grid */
+	sizeNNGrid[NDIM-1] = (boxPtr->side[NDIM-1] - 12.0) / (2.0 * numNNGrid[NDIM-1]);
+
+	/* Determine the total number of grid boxes */
+	totNumGridBoxes *= numNNGrid[NDIM-1];
+
+	/* Now, we place the particles at the middle of each box */
+	PIMC_ASSERT(totNumGridBoxes>=numParticles);
+	dVec pos;
+	for (int n = 0; n < totNumGridBoxes; n++) {
+
+		iVec gridIndex;
+		for (int i = 0; i < NDIM; i++) {
+			int scale = 1;
+			for (int j = i+1; j < NDIM; j++) 
+				scale *= numNNGrid[j];
+			gridIndex[i] = (n/scale) % numNNGrid[i];
+		}
+
+		for (int i = 0; i < NDIM - 1; i++) 
+			pos[i] = (gridIndex[i]+0.5)*sizeNNGrid[i] - 0.5*boxPtr->side[i];
+		
+		pos[NDIM - 1] = (gridIndex[NDIM - 1]+0.5)*sizeNNGrid[NDIM - 1] + 3.0;
+
+		boxPtr->putInside(pos);
+
+		if (n < numParticles)
+			initialPos(n) = pos;
+		else 
+			break;
+	}
+	return initialPos;
+}

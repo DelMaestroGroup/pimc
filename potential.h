@@ -879,4 +879,50 @@ class HardRodPotential : public PotentialBase  {
 //		double valueV (const double);				
 //		double valuedVdr (const double);					
 //};
+
+// ========================================================================  
+// GraphenePotential Class
+// ========================================================================  
+/** 
+ * \brief Returns van der Waals' potential between a helium adatom and a graphene sheet using summation in reciprocal space.
+ *
+ * Author: Nathan Nichols
+ * Returns the potential energy resulting from a van der Waals' interaction
+ * between a helium adatom and a fixed infinite graphene lattice
+ */
+class GraphenePotential: public PotentialBase  {
+
+	public:
+		GraphenePotential(const double, const double, const double, const double, const double);
+		~GraphenePotential();
+
+		/* Return the sum of the van der Waals' interaction energy between the supplied
+		 * particle and the fixed graphene lattice. */
+		double V(const dVec &r);
+
+		/** Initial configuration corresponding to graphene-helium vdW potential */
+		Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+
+	private:
+		double sigma;
+		double epsilon;
+
+		double a1x;
+		double a1y;
+		double a2x;
+		double a2y;
+
+		double g1x;
+		double g1y;
+		double g2x;
+		double g2y;
+
+		double b1x;
+		double b1y;
+		double b2x;
+		double b2y;
+
+		double A;
+
+};
 #endif

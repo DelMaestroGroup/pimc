@@ -269,7 +269,8 @@ Setup::Setup() :
     cmdLineOptions("Command Line Options")
 {
     /* Initialize the option class names */
-    optionClassNames = {"simulation","physical","cell","algorithm","potential","measurement"};
+    optionClassNames = {"simulation","physical","cell","algorithm","potential",
+        "measurement"};
 
 	/* Define the allowed interaction potential names */
     interactionPotentialName = {"aziz", "delta", "lorentzian", "sutherland", 
@@ -278,7 +279,7 @@ Setup::Setup() :
 
 	/* Define the allowed external  potential names */
 	externalPotentialName = {"free", "harmonic", "osc_tube", "lj_tube", 
-        "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim"};
+        "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "graphene"};
     externalNames = getList(externalPotentialName);
 
 	/* Define the allowed action names */
@@ -355,6 +356,11 @@ void Setup::initParameters() {
     params.add<double>("empty_width_y,y","how much space (in y-) around Gasparini barrier",oClass);
     params.add<double>("empty_width_z,z","how much space (in z-) around Gasparini barrier",oClass);
 
+    /* These are graphene potential options */
+    params.add<double>("strain","strain of graphene lattice in y-direction",oClass,0.00);
+	params.add<double>("poisson","Poisson's ratio for graphene",oClass,0.165);
+	params.add<double>("carbon_carbon_dist,A","Carbon-Carbon distance for graphene",oClass,1.42);
+
     /* Initialize the physical options */
     oClass = "physical";
 	params.add<bool>("canonical","perform a canonical simulation",oClass);
@@ -395,7 +401,6 @@ void Setup::initParameters() {
     params.add<int>("virial_window,V", "centroid virial energy estimator window",oClass,5);
     params.add<int>("number_broken", "number of broken world-lines",oClass,0);
     params.add<double>("spatial_subregion", "define a spatial subregion",oClass);
-
 
     /* The updates and measurement defaults depend on PIGS vs PIMC */
     vector<string> estimatorsToMeasure;
@@ -1048,6 +1053,13 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
     else if (constants()->extPotentialType() == "gasp_prim")
         externalPotentialPtr = new Gasparini_1_Potential(params["empty_width_z"].as<double>(),
                 params["empty_width_y"].as<double>(),boxPtr);
+	else if (constants()->extPotentialType() == "graphene") 
+        externalPotentialPtr = new GraphenePotential(params["strain"].as<double>(),
+                params["poisson"].as<double>(),
+                params["carbon_carbon_dist"].as<double>(),
+                params["lj_sigma"].as<double>(),
+                params["lj_epsilon"].as<double>()
+								);
 
 	return externalPotentialPtr;
 }
@@ -1399,6 +1411,21 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
             % "HourGlass Radius" % params["hourglass_radius"].as<double>();
         communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
             % "HourGlass Width" % params["hourglass_width"].as<double>();
+    }
+
+    /* output a possible carbon-carbon distance, strain value and LJ
+     * parameters for the graphene potential */
+	if (params["external"].as<string>().find("graphene") != string::npos) {
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
+            % "Carbon Carbon Distance" % params["carbon_carbon_dist"].as<double>();
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
+            % "Graphene Strain %" % params["strain"].as<double>();
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
+            % "Graphene Poission Ratio %" % params["poisson"].as<double>();
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
+            % "Graphene-Carbon LJ Sigma" % params["lj_sigma"].as<double>();
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
+            % "Graphene-Carbon LJ Epsilon" % params["lj_epsilon"].as<double>();
     }
 
 	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") 
