@@ -1730,6 +1730,9 @@ double HardRodPotential::V(const dVec &sep1, const dVec &sep2,
 
     double t1 = -(r1-a)*(r2-a)/(2.0*lambdaTau);
 
+    /* communicate()->file("debug")->stream() << sep1[0] << "\t" << sep2[0] << "\t" */ 
+    /*     << -log(1.0-exp(t1)) << endl; */
+
     return (-log(1.0 - exp(t1)));
 }
 

@@ -61,6 +61,7 @@ REGISTER_ESTIMATOR("cylinder linear potential",CylinderLinearPotentialEstimator)
 REGISTER_ESTIMATOR("cylinder potential energy",PotentialEnergyEstimator);
 REGISTER_ESTIMATOR("pigs kinetic energy",KineticEnergyEstimator);
 REGISTER_ESTIMATOR("pigs energy",PigsEnergyEstimator);
+REGISTER_ESTIMATOR("pigs thermodynamic energy",PigsThermoEnergyEstimator);
 REGISTER_ESTIMATOR("pigs total energy",TotalEnergyEstimator);
 REGISTER_ESTIMATOR("pigs thermodynamic potential energy",ThermoPotentialEnergyEstimator);
 REGISTER_ESTIMATOR("pigs positions",PositionEstimator);
@@ -3459,7 +3460,119 @@ void PigsEnergyEstimator::accumulate() {
 	estimator(6) += (totK + totV)/(1.0*numParticles);
 }
 
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// PIGS NON-LOCAL ENERGY ESTIMATOR CLASS -------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
+/*************************************************************************//**
+*  Constructor.
+*
+* We measure the total, Kinetic and Potential energy.
+******************************************************************************/
+PigsThermoEnergyEstimator::PigsThermoEnergyEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
+	/* Set estimator name and header, we will always report the energy
+	 * first, hence the comment symbol*/
+    header = str(format("#%15s%16s%16s") % "K" % "V" % "E");
+    endLine = true;
+    initialize(3);
+}
+
+/*************************************************************************//**
+*  Destructor.
+******************************************************************************/
+PigsThermoEnergyEstimator::~PigsThermoEnergyEstimator() {
+}
+
+/*************************************************************************//**
+*  Accumluate the energy.
+*
+*  We use the thermodynamic estimator for both the kinetic energy and the
+*  potential energy. A possible shift is
+*  made due to a tail correction.
+******************************************************************************/
+
+void PigsThermoEnergyEstimator::accumulate() {
+    
+    /* Set the period of the action */
+    int actionPeriod = 1;
+    if( (actionPtr->getActionName() == "gsf")||(actionPtr->getActionName() == "li_broughton") )
+        actionPeriod = 2;
+    
+	double totK = 0.0;
+	double totV = 0.0;
+    
+	int numParticles  = path.getTrueNumParticles();
+	int numTimeSlices = path.numTimeSlices;
+    
+	/* The total tail correction */
+	double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
+                        * actionPtr->interactionPtr->tailV;
+    
+	/* The kinetic normalization factor */
+	double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * (2.0*actionPeriod));
+    
+	/* The classical contribution to the kinetic energy per particle
+	 * including the chemical potential */
+	double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
+    
+	/* We first calculate the kinetic energy.  Even though there
+	 * may be multiple mixing and swaps, it doesn't matter as we always
+	 * just advance one time step at a time, as taken care of through the
+	 * linking arrays.  This has been checked! */
+	beadLocator beadIndex;
+	dVec vel;
+    int midSlice = (numTimeSlices-1)/2;
+	for (int slice = midSlice-actionPeriod; slice < midSlice+actionPeriod; slice++) {
+		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+			beadIndex = slice,ptcl;
+			vel = path.getVelocity(beadIndex);
+			totK -= dot(vel,vel);
+		}
+	}
+    
+	/* Normalize the accumulated link-action part */
+	totK *= kinNorm;
+    
+	/* Now we compute the potential and kinetic energy.  We use an operator estimator
+	 * for V and the thermodynamic estimator for K */
+    double t1 = 0.0;
+    double t2 = 0.0;
+    if(actionPtr->local){
+        t1 += (0.5)*actionPtr->derivPotentialActionLambda(midSlice-actionPeriod);
+        t2 += (0.5)*actionPtr->derivPotentialActionTau(midSlice-actionPeriod);
+        for (int slice = midSlice-actionPeriod+1; slice < midSlice+actionPeriod; slice++) {
+            t1 += actionPtr->derivPotentialActionLambda(slice);
+            t2 += actionPtr->derivPotentialActionTau(slice);
+        }
+        t1 += (0.5)*actionPtr->derivPotentialActionLambda(midSlice+actionPeriod);
+        t2 += (0.5)*actionPtr->derivPotentialActionTau(midSlice+actionPeriod);
+    }else{
+        for (int slice = midSlice-actionPeriod; slice < midSlice+actionPeriod; slice++) {
+            t1 += actionPtr->derivPotentialActionLambda(slice);
+            t2 += actionPtr->derivPotentialActionTau(slice);
+        }
+    }
+    
+    t1 *= constants()->lambda()/(constants()->tau()*(2.0*actionPeriod));
+    t2 /= (2.0*actionPeriod);
+    
+	/* Perform all the normalizations and compute the individual energy terms */
+	totK += (classicalKinetic + t1);
+    totV = t2 - t1 + tailV;
+    
+	/* Now we accumulate the average total, kinetic and potential energy, 
+	 * as well as their values per particles. */
+	estimator(0) += totK;
+	estimator(1) += totV;
+	estimator(2) += totK + totV;
+    
+}
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

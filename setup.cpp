@@ -292,6 +292,8 @@ Setup::Setup() :
 
     /* Get the allowed estimator names */
     estimatorName = EstimatorFactory::names;
+    estimatorName.insert(estimatorName.end(), MultiEstimatorFactory::names.begin(), 
+            MultiEstimatorFactory::names.end());
     estimatorNames = getList(estimatorName);
 
     /* Get the allowed move names */

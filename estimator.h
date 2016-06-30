@@ -963,6 +963,35 @@ class PigsEnergyEstimator: public EstimatorBase {
 };
 
 // ========================================================================
+// PIGS Thermodynamics Energy Estimator Class
+// ========================================================================
+/**
+ * Computes the total energy via the thermodynamic estimator.
+ *
+ * Measures the total potential and kinetic energy, as well as the
+ * per-particle values using the thermodynamic estimator.
+ *
+ * @see S. Jang, S. Jang and G.A. Voth, J. Chem. Phys. 115, 7832 (2001).
+ * @see W. Janke and T. Sauer, J. Chem. Phys. 107, 15 (1997).
+ */
+class PigsThermoEnergyEstimator: public EstimatorBase {
+    
+public:
+    PigsThermoEnergyEstimator(const Path &, ActionBase *, const MTRand &, 
+            double, int _frequency=1, string _label="estimator");
+    ~PigsThermoEnergyEstimator();
+
+    static const string name;
+    string getName() {return name;}
+    
+private:
+    void accumulate();		// Accumulate values
+    
+};
+
+
+
+// ========================================================================
 // Total Energy Estimator Class
 // ========================================================================
 /**
