@@ -1493,7 +1493,7 @@ NonLocalAction::NonLocalAction (const Path &_path, LookupTable &_lookup,
     ActionBase(_path,_lookup,_externalPtr,_interactionPtr,_waveFunctionPtr,
             _local,_name) 
 {
-//
+    NNbead.resize(constants()->initialNumParticles(),false);
 }
 
 /**************************************************************************//**
@@ -1535,41 +1535,78 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
     beadLocator nextBead1,nextBead2;
     nextBead1 = path.next(bead1);
 
-    /* Make sure nextBead1 is a real bead and that it is active */
-    if ( (all(nextBead1==XXX)) || (!path.worm.beadOn(nextBead1)) )
-        return 0.0;
-
-    bead2[0] = bead1[0];
-
-    /* Needed to compute the effective action */
-    double lambdaTau = constants()->lambda() * constants()->tau();
-
-    /* Now calculate the total effective interaction potential, neglecting self-interactions */
     double totU = 0.0;
 
-    for (bead2[1]= 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
+#if PIGS
+    /* We tack on a trial wave function and boundary piece if necessary */
+    if ( (bead1[0] == 0) || (bead1[0] == (constants()->numTimeSlices()-1)) ) 
+            totU -= log(waveFunctionPtr->PsiTrial(bead1));
+#endif
 
-        /* Skip self interactions */
-        if ( bead2[1] != bead1[1] ) {
+    /* Make sure nextBead1 is a real bead and that it is active */
+    if ( (all(nextBead1==XXX)) || (!path.worm.beadOn(nextBead1)) )
+        return totU;
 
-            /* get the separation between the two particles at the first time
-             * slice */
-            sep = path.getSeparation(bead1,bead2);
+    /* Evaluate the external potential */
+    double totVext = externalPtr->V(path(bead1))+externalPtr->V(path(nextBead1));
 
-            /* Now we find the separation at the advanced time step */
+    /* Get the interaction list */
+    lookup.updateInteractionList(path,bead1);
+    for (int n = 0; n < lookup.numBeads; n++) {
+        bead2 = lookup.beadList(n);
+        if(!all(path.next(bead2)==XXX))
+            NNbead[bead2[1]] = true;
+    }
+    
+    /* Get the next interaction list */
+    lookup.updateInteractionList(path,nextBead1);
+    for (int n = 0; n < lookup.numBeads; n++) {
+        bead2 = path.prev(lookup.beadList(n));
+        if(!all(bead2==XXX))
+           NNbead[bead2[1]] = true;
+    }
+    
+    bead2[0] = bead1[0];
+    dVec sep1,sep2;
+    for (bead2[1]= 0; bead2[1] < path.numBeadsAtSlice(bead1[0]); bead2[1]++) {
+        if(NNbead[bead2[1]]){
             nextBead2 = path.next(bead2);
+            sep1 = path.getSeparation(bead1,bead2);
+            sep2 = path.getSeparation(nextBead1,nextBead2);
+            totU += interactionPtr->V(sep1,sep2);
+            NNbead[bead2[1]] = false;
+        }
+    }
+    
+    double totUext = tau()*totVext/(2.0);
 
-            /* If the imaginary time neighbor exists, compute the effective
-             * potential */
-            if ( (!all(nextBead2==XXX)) && (path.worm.beadOn(nextBead2)) ) {
-                sep2 = path.getSeparation(nextBead1,nextBead2);
-                totU += interactionPtr->V(sep,sep2,lambdaTau);
-            }
-        } // bead2 != bead1 
-
-    } // for bead2
-
-	return ( totU );
+    /* bead2[0] = bead1[0]; */ 
+    
+    /* /1* Now calculate the total effective interation potential, neglecting self-interactions *1/ */
+    /* for (bead2[1]= 0; bead2[1] < path.numBeadsAtSlice(bead1[0]); bead2[1]++) { */
+        
+    /*     /1* Skip self interactions *1/ */
+    /*     if ( bead2[1] != bead1[1] ) { */
+            
+    /*         /1* get the separation between the two particles at the first time */
+    /*          * slice *1/ */
+    /*         sep = path.getSeparation(bead1,bead2); */
+            
+    /*         /1* Now we find the separation at the advanced time step *1/ */
+    /*         nextBead2 = path.next(bead2); */
+            
+    /*         /1* If the imaginary time neighbor exists, compute the effective */
+    /*          * potential *1/ */
+    /*         if ( (!all(nextBead2==XXX)) && (path.worm.beadOn(nextBead2)) ) { */
+    /*             sep2 = path.getSeparation(nextBead1,nextBead2); */
+    /*             totU += interactionPtr->V(sep,sep2,constants()->lambda(),constants()->tau()); */
+    /*         } */
+    /*     } // bead2 != bead1 */
+        
+        
+    /* } // for bead2 */
+    
+	return (totU + totUext);
 }
 
 /**************************************************************************//**
@@ -1606,7 +1643,7 @@ double NonLocalAction::U(int slice) {
             nextBead2 = path.next(bead2);
 
             sep2 = path.getSeparation(nextBead1,nextBead2);
-            totU += interactionPtr->V(sep,sep2,constants()->lambda()*constants()->tau());
+            totU += interactionPtr->V(sep,sep2);
         } // bead2
 
 	} // bead1
@@ -1651,7 +1688,7 @@ double NonLocalAction::derivPotentialActionTau (int slice) {
             nextBead2 = path.next(bead2);
 
             sep2 = path.getSeparation(nextBead1,nextBead2);
-            totU += interactionPtr->dVdtau(sep,sep2,constants()->lambda(),constants()->tau());
+            totU += interactionPtr->dVdtau(sep,sep2);
         } // bead2
 
 	} // bead1
@@ -1692,54 +1729,9 @@ double NonLocalAction::derivPotentialActionLambda (int slice) {
             nextBead2 = path.next(bead2);
 
             sep2 = path.getSeparation(nextBead1,nextBead2);
-            totU += interactionPtr->dVdlambda(sep,sep2,constants()->lambda(),constants()->tau());
+            totU += interactionPtr->dVdlambda(sep,sep2);
         } // bead2
 
 	} // bead1
 	return ( totU );
 }
-
-/**************************************************************************//**
- *  The derivative of the potential action wrt lambda on all links starting on
- *  slice.
- *
- *  It is essential to have these slice overloaded values as we need to be
- *  careful of the factor of 1/2 or i<j in the full potential action.
- *
- *  @param slice the imaginary timeslice of the first link
-******************************************************************************/
-//double NonLocalAction::derivPotentialActionLambda (int slice) {
-//
-//    double totU = 0.0;
-//
-//	beadLocator bead1;
-//	bead1[0] = bead2[0] = slice;
-//
-//    beadLocator nextBead1,nextBead2;
-//
-//	int numParticles = path.numBeadsAtSlice(slice);
-//
-//	/* Calculate the total potential, including external and interaction
-//	 * effects*/
-//	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
-//
-//        /* Get the advanced neightbor of bead1 */
-//        nextBead1 = path.next(bead1);
-//
-//        for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
-//
-//            /* Avoid self interactions */
-//            if (bead1[1] != bead2[1]) {
-//                sep = path.getSeparation(bead1,bead2);
-//
-//                /* Get the advanced neighbor of the second bead */
-//                nextBead2 = path.next(bead2);
-//
-//                sep2 = path.getSeparation(nextBead1,nextBead2);
-//                totU += interactionPtr->dVdlambda(sep,sep2,constants()->lambda(),constants()->tau());
-//            }
-//        } // bead2
-//
-//	} // bead1
-//	return ( 0.5*totU );
-//}

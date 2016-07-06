@@ -263,8 +263,14 @@ class NonLocalAction : public ActionBase {
         /* Derivatives of the potential action */
 		double derivPotentialActionTau (int);
 		double derivPotentialActionLambda (int);
+    
+        /* The bare local potential at a single time slice */
+        virtual double potential(int slice) { return U(slice); }
 
     protected:
 		double U(int);
+    
+    private:
+        vector<bool> NNbead; //Records which beads where already visited for NN operation
 };
 #endif

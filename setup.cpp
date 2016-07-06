@@ -287,7 +287,7 @@ Setup::Setup() :
     actionNames = getList(actionName);
 
     /* Define the allowed trial wave function names */
-	waveFunctionName = {"constant", "sech", "jastrow"};
+	waveFunctionName = {"constant", "sech", "jastrow","lieb"};
     waveFunctionNames = getList(waveFunctionName);
 
     /* Get the allowed estimator names */
@@ -372,6 +372,8 @@ void Setup::initParameters() {
 	params.add<double>("temperature,T","temperature [kelvin]",oClass);
     params.add<string>("wavefunction",str(format("trial wave function type:\n%s") 
                 % waveFunctionNames).c_str(),oClass,"constant");
+    params.add<double>("R_LL_wfn","length scale of the lieb liniger wave function",oClass,0.0);
+    params.add<double>("k_LL_wfn","wave number of the lieb liniger wave function",oClass,0.0);
     params.add<double>("end_factor","end bead potential action multiplicatave factor",oClass,1.0);
 	params.add<double>("chemical_potential,u","chemical potential [kelvin]",oClass,0.0);
     params.add<int>("number_paths","number of paths",oClass,1);
@@ -1066,23 +1068,24 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
 	return externalPotentialPtr;
 }
 
-
 /*************************************************************************//**
 * Setup the trial wave function.
 *
 * Based on the user's choice we create a new trial wave function  pointer
 * which is returned to the main program.
 ******************************************************************************/
-WaveFunctionBase * Setup::waveFunction(const Path &path) {
+WaveFunctionBase * Setup::waveFunction(const Path &path, LookupTable &lookup) {
     
 	WaveFunctionBase *waveFunctionPtr = NULL;
-    
+
 	if (constants()->waveFunctionType() == "constant")
-		waveFunctionPtr = new WaveFunctionBase(path);
+		waveFunctionPtr = new WaveFunctionBase(path,lookup);
 	else if (constants()->waveFunctionType() == "sech")
-		waveFunctionPtr = new SechWaveFunction(path);
+		waveFunctionPtr = new SechWaveFunction(path,lookup);
 	else if (constants()->waveFunctionType() == "jastrow")
-		waveFunctionPtr = new JastrowWaveFunction(path);
+		waveFunctionPtr = new JastrowWaveFunction(path,lookup);
+    else if (constants()->waveFunctionType() == "lieb")
+		waveFunctionPtr = new LiebLinigerWaveFunction(path,lookup);
     
 	return waveFunctionPtr;
 }
@@ -1430,8 +1433,19 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
             % "Graphene-Carbon LJ Epsilon" % params["lj_epsilon"].as<double>();
     }
 
-	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") 
-		% "Wavefunction Type" % params["wavefunction"].as<string>();
+    if (PIGS) {
+        communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") 
+            % "Wavefunction Type" % params["wavefunction"].as<string>();
+        communicate()->file("log")->stream() <<
+            format("%-24s\t:\t%7.5f\n") % "End Factor" % params["end_factor"].as<double>();
+        /* Output possible wave function parameters */
+        if ( (params["wavefunction"].as<string>().find("lieb") != string::npos) ) {
+            communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") % "Wavefunction length scale"
+                % params["R_LL_wfn"].as<double>();
+            communicate()->file("log")->stream() << format("%-24s\t:\t%-7.4f\n") % "Wavefunction wave number"
+                % params["k_LL_wfn"].as<double>();
+        }
+    }
 	communicate()->file("log")->stream() << 
 		format("%-24s\t:\t%7.5f\n") % "Temperature" % params["temperature"].as<double>();
 	communicate()->file("log")->stream() << 

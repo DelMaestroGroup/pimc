@@ -18,10 +18,12 @@
 /**************************************************************************//**
  *  Setup the path data members for the constant trial wavefunction.
 ******************************************************************************/
-WaveFunctionBase::WaveFunctionBase (const Path &_path, string _name) :
+WaveFunctionBase::WaveFunctionBase (const Path &_path, LookupTable &_lookup,
+        string _name) :
     name(_name),
-	path(_path) {
-
+	path(_path),
+    lookup(_lookup)
+{
     // empty constructor
 }
 
@@ -41,8 +43,8 @@ WaveFunctionBase::~WaveFunctionBase() {
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-SechWaveFunction::SechWaveFunction(const Path &_path, string _name) :
-	WaveFunctionBase(_path,_name)
+SechWaveFunction::SechWaveFunction(const Path &_path,LookupTable &_lookup, string _name) :
+	WaveFunctionBase(_path,_lookup,_name)
 {
 	/* Set the parameter to its optimized value */
 	a = sqrt(0.5*M_PI);
@@ -86,8 +88,8 @@ double SechWaveFunction::PsiTrial(const int slice) {
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-JastrowWaveFunction::JastrowWaveFunction(const Path &_path, string _name) :
-WaveFunctionBase(_path,_name)
+JastrowWaveFunction::JastrowWaveFunction(const Path &_path,LookupTable &_lookup, string _name) :
+WaveFunctionBase(_path,_lookup,_name)
 {
 	/* Set the parameter to its optimized value */
 	alpha = 19.0;
@@ -105,7 +107,7 @@ JastrowWaveFunction::~JastrowWaveFunction() {
 /**************************************************************************//**
 * The value of the 2-body trial wave function.
 ******************************************************************************/
-double JastrowWaveFunction::twoBodyPsiTrial(const double r) {
+double JastrowWaveFunction::PsiTrial(const double r) {
     
     double psiT = exp( -0.5*alpha/(1.0+beta*pow(r,5.0)));
     return psiT;
@@ -150,7 +152,7 @@ double JastrowWaveFunction::PsiTrial(const int slice) {
         for (bead2[1] = bead1[1]+1; bead2[1] < numParticles; bead2[1]++) {
             sep = path.getSeparation(bead2,bead1);
             r = sqrt(dot(sep,sep));
-            psiT *= twoBodyPsiTrial(r);
+            psiT *= PsiTrial(r);
         } // bead2
         
 	} // bead1
@@ -191,6 +193,159 @@ double JastrowWaveFunction::gradSqPsiTrial(const int slice) {
     
     return gradSqPsiT;
 }
+
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// LiebLiniger WAVEFUNCTION CLASS ---------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+ * Constructor.
+ ******************************************************************************/
+LiebLinigerWaveFunction::LiebLinigerWaveFunction(const Path &_path,LookupTable &_lookup, string _name) :
+WaveFunctionBase(_path,_lookup,_name)
+{
+	/* Set the parameter to its optimized value */
+    R = constants()->R_LL_wfn();
+    k = constants()->k_LL_wfn();
+}
+
+/**************************************************************************//**
+ * Destructor.
+ ******************************************************************************/
+LiebLinigerWaveFunction::~LiebLinigerWaveFunction() {
+    // empty destructor
+}
+
+/**************************************************************************//**
+ * The value of the 2-body trial wave function.
+ ******************************************************************************/
+double LiebLinigerWaveFunction::PsiTrial(const double r) {
+    
+    double psiT = 1.0;
+    if(r<R)
+        psiT = cos(k*(abs(r)-R));
+    return psiT;
+}
+
+/**************************************************************************//**
+ * The derivative of psi over psi
+ ******************************************************************************/
+double LiebLinigerWaveFunction::delPsiTrial(const double r) {
+    
+    return 0.0;
+}
+
+/**************************************************************************//**
+ * The derivative of psi over psi
+ ******************************************************************************/
+double LiebLinigerWaveFunction::delSqPsiTrial(const double r) {
+    
+    return 0.0;
+}
+
+/**************************************************************************//**
+* The value of the trial wave function.
+******************************************************************************/
+double LiebLinigerWaveFunction::PsiTrial(const int slice) {
+    
+    /* The cumulative value */
+    double psiT = 1.0;
+    Array <bool,1> doParticles(path.numBeadsAtSlice(slice));
+    doParticles = true;
+
+    dVec sep;						// The spatial separation between beads.
+    double r;                       // Distance between beads
+    beadLocator bead1,bead2;
+	bead1[0] = bead2[0] = slice;
+    
+    /* No cutoff */
+//    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+//        /* The loop over all other particles, to find the total interaction
+//         * potential */
+//        for (bead2[1] = bead1[1]+1; bead2[1] < numParticles; bead2[1]++) {
+//            sep = path.getSeparation(bead2,bead1);
+//            r = sqrt(dot(sep,sep));
+//            psiT *= PsiTrial(r);
+//        } // bead2
+//        
+//	} // bead1
+    
+    /* Using cutoff */
+	for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(slice); bead1[1]++) {
+        
+		doParticles(bead1[1]) = false;
+        
+		/* Get the interaction list */
+		lookup.updateInteractionList(path,bead1);
+        
+		/* Sum the interaction potential over all NN beads */
+		for (int n = 0; n < lookup.numBeads; n++) {
+			bead2 = lookup.beadList(n);
+			if (doParticles(bead2[1])) {
+				sep = path.getSeparation(bead2,bead1);
+                r = sqrt(dot(sep,sep));
+                psiT *= PsiTrial(r);
+			}
+		} // n
+        
+	} // bead1
+    
+    return psiT;
+}
+
+/**************************************************************************//**
+* The weight of the trial wave function for a bead.
+******************************************************************************/
+double LiebLinigerWaveFunction::PsiTrial(const beadLocator &bead1) {
+    
+    /* The cumulative value */
+    double psiT = 1.0;
+    
+    dVec sep;						// The spatial separation between beads.
+    double r;                       // Distance between beads
+    
+    /* No cutoff */
+    //    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+    //        /* The loop over all other particles, to find the total interaction
+    //         * potential */
+    //        for (bead2[1] = bead1[1]+1; bead2[1] < numParticles; bead2[1]++) {
+    //            sep = path.getSeparation(bead2,bead1);
+    //            r = sqrt(dot(sep,sep));
+    //            psiT *= PsiTrial(r);
+    //        } // bead2
+    //
+    //	} // bead1
+    
+	/* We only continue if bead1 is turned on */
+	if (path.worm.beadOn(bead1)) {
+        
+		/* Fill up th nearest neighbor list */
+		lookup.updateInteractionList(path,bead1);
+        
+		/* Sum the interaction potential over all NN beads */
+		for (int n = 0; n < lookup.numBeads; n++) {
+            
+            sep = path.getSeparation(bead1,lookup.beadList(n));
+            r = sqrt(dot(sep,sep));
+            psiT *= PsiTrial(r);
+		}
+	}
+    
+    return psiT;
+}
+
+
+/**************************************************************************//**
+ * The value of the N-body trial wave function.
+ ******************************************************************************/
+double LiebLinigerWaveFunction::gradSqPsiTrial(const int slice) {
+    
+    return 0.0;
+}
+
 
 
 

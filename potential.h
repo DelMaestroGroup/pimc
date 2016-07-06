@@ -39,8 +39,7 @@ class PotentialBase {
 		virtual double V(const dVec &) { return 0.0; }
 
 		/** The effective potential for the pair product approximation */
-		virtual double V(const dVec &, const dVec &, double) { return 0.0; }
-		virtual double V(const dVec &, const dVec &, double, double) { return 0.0; }
+		virtual double V(const dVec &, const dVec &) { return 0.0; }
 
 		/** The gradient of the potential*/
 		virtual dVec gradV(const dVec &) { return 0.0; }
@@ -50,8 +49,8 @@ class PotentialBase {
 
         /** The derivative of the effective potential with respect to lambda
          *  and tau */
-        virtual double dVdlambda(const dVec &, const dVec &, double , double) {return 0.0;}
-        virtual double dVdtau(const dVec &, const dVec &, double , double) {return 0.0;}
+        virtual double dVdlambda(const dVec &, const dVec &) {return 0.0;}
+        virtual double dVdtau(const dVec &, const dVec &) {return 0.0;}
 		
 		/** Default Initial configuration of particles*/
 		virtual Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
@@ -64,6 +63,8 @@ class PotentialBase {
         /** Array to hold data elements*/
 		virtual Array<double,1> getExcLen();
 
+    protected:
+        double deltaSeparation(double sep1,double sep2) const;
 };
 
 // ========================================================================  
@@ -771,9 +772,9 @@ class HardSpherePotential : public PotentialBase  {
         }
 
 		/** The effective potential */
-		double V(const dVec &, const dVec &, double);
-        double dVdlambda(const dVec &, const dVec &, double, double);
-        double dVdtau(const dVec &, const dVec &, double, double);
+		double V(const dVec &, const dVec &);
+        double dVdlambda(const dVec &, const dVec &);
+        double dVdtau(const dVec &, const dVec &);
 
 	private:
 		double a;				// The strength of the delta function
@@ -786,9 +787,7 @@ class HardSpherePotential : public PotentialBase  {
 /**
  * Computes the effective potential from the exact two-body density matrix
  * for delta interactions in 1D
- *
- * @see: S. Pilati, K. Sakkos, J. Boronat, J. Casulleras, and
- *       S. Giorgini, Phys Rev A 74, 043621 (2006).
+ *       
  */
 class Delta1DPotential : public PotentialBase  {
 public:
@@ -801,12 +800,26 @@ public:
     }
     
     /** The effective potential */
-    double V(const dVec &, const dVec &, double,double);
-    double dVdlambda(const dVec &, const dVec &, double, double);
-    double dVdtau(const dVec &, const dVec &, double, double);
+    double V(const dVec &, const dVec &);
+    double dVdlambda(const dVec &, const dVec &);
+    double dVdtau(const dVec &, const dVec &);
     
 private:
-    double g;				// The strength of the delta function
+
+    double erfCO;   //cutoff of erfc for asymptotic form
+    double g;		// The strength of the delta function
+    double l0;      // The COM kinetic length scale: 2\sqrt{\lambda\tau}
+    double xi;      // The ratio l0/li
+    double li;      // The COM interaction length scale: 2\lambda/g
+    
+    double xiSqOver2; // (xi^2)/2.0
+    double xiSqrtPIOver2; // xi*\sqrt{\pi/2.0}
+    
+    /** Interaction weight and derivatives **/
+    double Wint(double yt, double dxt);
+    double dWdyt(double yt, double dxt);
+    double dWdxi(double yt, double dxt);
+    double dWddxt(double yt, double dxt);
 };
 
 
@@ -829,9 +842,9 @@ class HardRodPotential : public PotentialBase  {
         }
 
 		/** The effective potential */
-		double V(const dVec &, const dVec &, double);
-        double dVdlambda(const dVec &, const dVec &, double, double);
-        double dVdtau(const dVec &, const dVec &, double, double);
+		double V(const dVec &, const dVec &);
+        double dVdlambda(const dVec &, const dVec &);
+        double dVdtau(const dVec &, const dVec &);
 
 	private:
 		double a;				// The strength of the delta function

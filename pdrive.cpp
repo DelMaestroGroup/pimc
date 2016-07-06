@@ -81,7 +81,7 @@ int main (int argc, char *argv[]) {
     for(int i=0; i<Npaths; i++){
         lookupPtrVec.push_back(
                 new LookupTable(boxPtr,constants()->numTimeSlices(),
-                                constants()->initialNumParticles()));
+                    constants()->initialNumParticles()));
     }
     
 	/* Create and initialize the potential pointers */
@@ -110,7 +110,7 @@ int main (int argc, char *argv[]) {
     }
     
     /* The Trial Wave Function (constant for pimc) */
-    WaveFunctionBase *waveFunctionPtr = setup.waveFunction(pathPtrVec.front());
+    WaveFunctionBase *waveFunctionPtr = setup.waveFunction(pathPtrVec.front(),lookupPtrVec.front());
 
 	/* Setup the action */
     boost::ptr_vector<ActionBase> actionPtrVec;

@@ -285,7 +285,7 @@ class Setup {
 		PotentialBase * externalPotential(const Container*);
     
         /* Setup the trial wave function */
-        WaveFunctionBase * waveFunction(const Path &);
+        WaveFunctionBase * waveFunction(const Path &, LookupTable &);
 
         /* Setup the action */
         ActionBase * action(const Path &, LookupTable &, PotentialBase*, PotentialBase *, WaveFunctionBase *);

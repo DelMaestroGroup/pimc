@@ -106,6 +106,10 @@ class ConstantParameters
         double endFactor() const {return endFactor_;}        ///< Get end factor
         string actionType() const {return actionType_;}	            ///< Get wave action type
 
+        /* Trial wave funciton parameters */
+        double R_LL_wfn() const {return R_LL_wfn_;}        ///< Get Lieb-Liniger length scale
+        double k_LL_wfn() const {return k_LL_wfn_;}        ///< Get Lieb-Liniger wave number
+    
 		/* Set methods */
 		void setmu(double _mu) {mu_ = _mu;}				///< Set the value of the chemical potential
 		void setCoMDelta(double _comDelta) {comDelta_ = _comDelta;}	///< Set the CoM move size
@@ -169,6 +173,8 @@ class ConstantParameters
 		string intPotentialType_;   // The type of interaction potential
 		string extPotentialType_;   // The type of external potential
         string waveFunctionType_;   // The type of trial wave function
+        double R_LL_wfn_;           // The length scale of the Lieb-Liniger wave function
+        double k_LL_wfn_;           // The wave number of the Lieb-Liniger wave function
         double endFactor_;          // The multiplicative factor of the potential on end beads
         string actionType_;         // The type of action
 

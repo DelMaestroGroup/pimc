@@ -978,7 +978,7 @@ class PigsThermoEnergyEstimator: public EstimatorBase {
     
 public:
     PigsThermoEnergyEstimator(const Path &, ActionBase *, const MTRand &, 
-            double, int _frequency=1, string _label="estimator");
+            double, int _frequency=1, string _label="energy");
     ~PigsThermoEnergyEstimator();
 
     static const string name;
@@ -986,7 +986,6 @@ public:
     
 private:
     void accumulate();		// Accumulate values
-    
 };
 
 
