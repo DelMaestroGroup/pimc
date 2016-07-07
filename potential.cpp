@@ -1798,7 +1798,10 @@ double HardRodPotential::V(const dVec &sep1, const dVec &sep2)
 
     /* We need to enforce the distinguishable particle constraint at short
      * imaginary times */
-    if ( (sep1[0]*sep2[0] < 0.0) || (r1 <= a ) || (r2 <= a) ) 
+    /* if ( (sep1[0]*sep2[0] < 0.0) || (r1 <= a ) || (r2 <= a) ) */ 
+    /*     return LBIG; */
+
+    if ( (r1 <= a ) || (r2 <= a) ) 
         return LBIG;
 
     double d1 = deltaSeparation(r1,a);
