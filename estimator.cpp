@@ -3842,6 +3842,7 @@ void ParticleCorrelationEstimator::accumulate() {
     beadIndex0[0] = (path.numTimeSlices-1)/2;
     beadIndex[0] = beadIndex0[0];
     dVec r;
+    r = 0.0;
     
     beadIndex0[1]=0;
     for (beadIndex[1] = 1; beadIndex[1] <path.numBeadsAtSlice(beadIndex[0]);
