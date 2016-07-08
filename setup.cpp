@@ -290,14 +290,47 @@ Setup::Setup() :
 	waveFunctionName = {"constant", "sech", "jastrow","lieb"};
     waveFunctionNames = getList(waveFunctionName);
 
-    /* Get the allowed estimator names */
-    estimatorName = EstimatorFactory::names;
-    estimatorName.insert(estimatorName.end(), MultiEstimatorFactory::names.begin(), 
-            MultiEstimatorFactory::names.end());
+    /* /1* Get the allowed estimator names *1/ */
+    /* estimatorName = EstimatorFactory::names; */
+    /* estimatorName.insert(estimatorName.end(), MultiEstimatorFactory::names.begin(), */ 
+    /*         MultiEstimatorFactory::names.end()); */
+    /* estimatorNames = getList(estimatorName); */
+
+    /* /1* Get the allowed move names *1/ */
+    /* moveName = MoveFactory::names; */
+    /* moveNames = getList(moveName); */
+
+    estimatorName = { EnergyEstimator::name,
+        VirialEnergyEstimator::name, NumberParticlesEstimator::name,
+        NumberDistributionEstimator::name, NullEstimator::name,
+        ParticlePositionEstimator::name, BipartitionDensityEstimator::name,
+        PlaneParticlePositionEstimator::name, SuperfluidFractionEstimator::name,
+        PlaneWindingSuperfluidDensityEstimator::name, PlaneAreaSuperfluidDensityEstimator::name,
+        RadialWindingSuperfluidDensityEstimator::name, RadialAreaSuperfluidDensityEstimator::name,
+        LocalSuperfluidDensityEstimator::name, DiagonalFractionEstimator::name,
+        WormPropertiesEstimator::name, PermutationCycleEstimator::name,
+        LocalPermutationEstimator::name, OneBodyDensityMatrixEstimator::name,
+        PairCorrelationEstimator::name, RadialDensityEstimator::name,
+        CylinderEnergyEstimator::name, CylinderNumberParticlesEstimator::name,
+        CylinderNumberDistributionEstimator::name, CylinderLinearDensityEstimator::name,
+        CylinderSuperfluidFractionEstimator::name, CylinderOneBodyDensityMatrixEstimator::name,
+        CylinderPairCorrelationEstimator::name, CylinderRadialPotentialEstimator::name,
+        CylinderLinearPotentialEstimator::name, PotentialEnergyEstimator::name,
+        KineticEnergyEstimator::name, PigsEnergyEstimator::name,
+        PigsThermoEnergyEstimator::name, TotalEnergyEstimator::name,
+        ThermoPotentialEnergyEstimator::name, PositionEstimator::name,
+        ParticleResolvedPositionEstimator::name, ParticleCorrelationEstimator::name,
+        VelocityEstimator::name, SubregionOccupationEstimator::name,
+        PIGSOneBodyDensityMatrixEstimator::name, SwapEstimator::name,
+        EntPartEstimator::name};
     estimatorNames = getList(estimatorName);
 
-    /* Get the allowed move names */
-    moveName = MoveFactory::names;
+    moveName = {DisplaceMove::name, EndStagingMove::name,
+        MidStagingMove::name, SwapBreakMove::name, CenterOfMassMove::name,
+        StagingMove::name, BisectionMove::name, OpenMove::name,
+        CloseMove::name, InsertMove::name, RemoveMove::name,
+        AdvanceHeadMove::name, RecedeHeadMove::name, AdvanceTailMove::name,
+        RecedeTailMove::name, SwapHeadMove::name, SwapTailMove::name};
     moveNames = getList(moveName);
 }
 
