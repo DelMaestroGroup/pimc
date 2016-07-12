@@ -317,7 +317,8 @@ class Setup {
         string estimatorNames;                      ///< The estimator list
         string moveNames;                           ///< The move list
 
-        MoveFactory moveFactory;
+        /* The factories needed to instantiate objects */
+        MoveFactory moveFactory;                    
         EstimatorFactory estimatorFactory;
         MultiEstimatorFactory multiEstimatorFactory;
 
