@@ -17,9 +17,9 @@
 #include "estimator.h"
 #include "factory.h"
 
-typedef Factory<EstimatorBase* (Path &, ActionBase *, MTRand &, double)> EstimatorFactory;
-typedef Factory<EstimatorBase* (Path &, Path &, ActionBase *, ActionBase *, MTRand &, double)> MultiEstimatorFactory;
-typedef Factory<MoveBase* (Path &, ActionBase *, MTRand &)> MoveFactory;
+/* typedef Factory<EstimatorBase* (Path &, ActionBase *, MTRand &, double)> EstimatorFactory; */
+/* typedef Factory<EstimatorBase* (Path &, Path &, ActionBase *, ActionBase *, MTRand &, double)> MultiEstimatorFactory; */
+/* typedef Factory<MoveBase* (Path &, ActionBase *, MTRand &)> MoveFactory; */
 
 /**************************************************************************//**
  * Create a comma separated list from a vector of strings
@@ -290,48 +290,48 @@ Setup::Setup() :
 	waveFunctionName = {"constant", "sech", "jastrow","lieb"};
     waveFunctionNames = getList(waveFunctionName);
 
-    /* /1* Get the allowed estimator names *1/ */
-    /* estimatorName = EstimatorFactory::names; */
-    /* estimatorName.insert(estimatorName.end(), MultiEstimatorFactory::names.begin(), */ 
-    /*         MultiEstimatorFactory::names.end()); */
-    /* estimatorNames = getList(estimatorName); */
-
-    /* /1* Get the allowed move names *1/ */
-    /* moveName = MoveFactory::names; */
-    /* moveNames = getList(moveName); */
-
-    estimatorName = { EnergyEstimator::name,
-        VirialEnergyEstimator::name, NumberParticlesEstimator::name,
-        NumberDistributionEstimator::name, NullEstimator::name,
-        ParticlePositionEstimator::name, BipartitionDensityEstimator::name,
-        PlaneParticlePositionEstimator::name, SuperfluidFractionEstimator::name,
-        PlaneWindingSuperfluidDensityEstimator::name, PlaneAreaSuperfluidDensityEstimator::name,
-        RadialWindingSuperfluidDensityEstimator::name, RadialAreaSuperfluidDensityEstimator::name,
-        LocalSuperfluidDensityEstimator::name, DiagonalFractionEstimator::name,
-        WormPropertiesEstimator::name, PermutationCycleEstimator::name,
-        LocalPermutationEstimator::name, OneBodyDensityMatrixEstimator::name,
-        PairCorrelationEstimator::name, RadialDensityEstimator::name,
-        CylinderEnergyEstimator::name, CylinderNumberParticlesEstimator::name,
-        CylinderNumberDistributionEstimator::name, CylinderLinearDensityEstimator::name,
-        CylinderSuperfluidFractionEstimator::name, CylinderOneBodyDensityMatrixEstimator::name,
-        CylinderPairCorrelationEstimator::name, CylinderRadialPotentialEstimator::name,
-        CylinderLinearPotentialEstimator::name, PotentialEnergyEstimator::name,
-        KineticEnergyEstimator::name, PigsEnergyEstimator::name,
-        PigsThermoEnergyEstimator::name, TotalEnergyEstimator::name,
-        ThermoPotentialEnergyEstimator::name, PositionEstimator::name,
-        ParticleResolvedPositionEstimator::name, ParticleCorrelationEstimator::name,
-        VelocityEstimator::name, SubregionOccupationEstimator::name,
-        PIGSOneBodyDensityMatrixEstimator::name, SwapEstimator::name,
-        EntPartEstimator::name};
+    /* Get the allowed estimator names */
+    estimatorName = EstimatorFactory::names;
+    estimatorName.insert(estimatorName.end(), MultiEstimatorFactory::names.begin(), 
+            MultiEstimatorFactory::names.end());
     estimatorNames = getList(estimatorName);
 
-    moveName = {DisplaceMove::name, EndStagingMove::name,
-        MidStagingMove::name, SwapBreakMove::name, CenterOfMassMove::name,
-        StagingMove::name, BisectionMove::name, OpenMove::name,
-        CloseMove::name, InsertMove::name, RemoveMove::name,
-        AdvanceHeadMove::name, RecedeHeadMove::name, AdvanceTailMove::name,
-        RecedeTailMove::name, SwapHeadMove::name, SwapTailMove::name};
+    /* Get the allowed move names */
+    moveName = MoveFactory::names;
     moveNames = getList(moveName);
+
+    /* estimatorName = { EnergyEstimator::name, */
+    /*     VirialEnergyEstimator::name, NumberParticlesEstimator::name, */
+    /*     NumberDistributionEstimator::name, NullEstimator::name, */
+    /*     ParticlePositionEstimator::name, BipartitionDensityEstimator::name, */
+    /*     PlaneParticlePositionEstimator::name, SuperfluidFractionEstimator::name, */
+    /*     PlaneWindingSuperfluidDensityEstimator::name, PlaneAreaSuperfluidDensityEstimator::name, */
+    /*     RadialWindingSuperfluidDensityEstimator::name, RadialAreaSuperfluidDensityEstimator::name, */
+    /*     LocalSuperfluidDensityEstimator::name, DiagonalFractionEstimator::name, */
+    /*     WormPropertiesEstimator::name, PermutationCycleEstimator::name, */
+    /*     LocalPermutationEstimator::name, OneBodyDensityMatrixEstimator::name, */
+    /*     PairCorrelationEstimator::name, RadialDensityEstimator::name, */
+    /*     CylinderEnergyEstimator::name, CylinderNumberParticlesEstimator::name, */
+    /*     CylinderNumberDistributionEstimator::name, CylinderLinearDensityEstimator::name, */
+    /*     CylinderSuperfluidFractionEstimator::name, CylinderOneBodyDensityMatrixEstimator::name, */
+    /*     CylinderPairCorrelationEstimator::name, CylinderRadialPotentialEstimator::name, */
+    /*     CylinderLinearPotentialEstimator::name, PotentialEnergyEstimator::name, */
+    /*     KineticEnergyEstimator::name, PigsEnergyEstimator::name, */
+    /*     PigsThermoEnergyEstimator::name, TotalEnergyEstimator::name, */
+    /*     ThermoPotentialEnergyEstimator::name, PositionEstimator::name, */
+    /*     ParticleResolvedPositionEstimator::name, ParticleCorrelationEstimator::name, */
+    /*     VelocityEstimator::name, SubregionOccupationEstimator::name, */
+    /*     PIGSOneBodyDensityMatrixEstimator::name, SwapEstimator::name, */
+    /*     EntPartEstimator::name}; */
+    /* estimatorNames = getList(estimatorName); */
+
+    /* moveName = {DisplaceMove::name, EndStagingMove::name, */
+    /*     MidStagingMove::name, SwapBreakMove::name, CenterOfMassMove::name, */
+    /*     StagingMove::name, BisectionMove::name, OpenMove::name, */
+    /*     CloseMove::name, InsertMove::name, RemoveMove::name, */
+    /*     AdvanceHeadMove::name, RecedeHeadMove::name, AdvanceTailMove::name, */
+    /*     RecedeTailMove::name, SwapHeadMove::name, SwapTailMove::name}; */
+    /* moveNames = getList(moveName); */
 }
 
 /**************************************************************************//**
@@ -1263,6 +1263,8 @@ boost::ptr_vector<EstimatorBase> * Setup::estimators(Path &path,
 
     /* Instantiate the Estimator Factory */
     EstimatorFactory estimatorFactory;
+
+    cout << EstimatorFactory::names << endl;
  
     /* Instatiate the single path estimators */
     for (auto& estimatorName : params["estimator"].as<vector<string>>()) {

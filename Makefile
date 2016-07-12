@@ -43,7 +43,7 @@ CODEDIR = $(codedir)
 ifeq ($(TOOLSET), gcc)
 DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
-OPTS   = -Wall -fno-math-errno -O3
+OPTS   = -Wall -fno-math-errno -O3 -std=c++11
 
 LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_system
 
@@ -71,12 +71,12 @@ DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
 
 ifeq ($(opts), basic)
-OPTS = -std=c++11 -stdlib=libc++ -Wall -O3 -mtune=native  #-DNDEBUG
+OPTS = -std=c++11 -Wall -O3 -mtune=native  #-DNDEBUG
 else ifeq ($(opts), strict)
 OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
 endif #basic, elseif strict
 
-BOOSTVER ?= -gcc42-mt-1_49
+BOOSTVER ?= -gcc54-mt-1_61
 LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
 
 #intel
@@ -92,19 +92,19 @@ LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem
 else ifeq ($(TOOLSET), clang)
 DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
+BOOSTVER ?= -clang-darwin42-mt-1_61
 
 ifeq ($(opts), basic)
-OPTS = -std=c++11 -stdlib=libc++ -Wall -O3 -mtune=native -Wno-deprecated-register
+OPTS = -std=c++11 -stdlib=libc++ -Wall -O3 -Wno-deprecated-register
 else ifeq ($(opts), strict)
 OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
 else ifeq ($(opts),debug)
-OPTS = -std=c++11 -stdlib=libc++ -Wall -mtune=native -Wno-deprecated-register
+OPTS = -std=c++11 -stdlib=libc++ -Wall -Wno-deprecated-register
 endif #basic, elseif strict
 #-fsanitize=address -fno-omit-frame-pointer
 #-Wconversion
 
 LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
-#PROG = pimc_clang.e
 endif #gcc, elseif intel elseif clang
 #OS X end##########################################################
 
@@ -189,13 +189,18 @@ all: release
 
 release: $(PROG)
 
-debug: COMPILE_WPCH += $(DEBUG)
+debug: COMPILE_PCH += $(DEBUG)
 debug: LINK += $(LDEBUG)
 debug: $(PROG)
 
 pigs: COMPILE_PCH += -DPIGS
 pigs: PROG = pigs.e
 pigs: $(PROG)
+
+pigsdebug: COMPILE_PCH += -DPIGS $(DEBUG)
+pigsdebug: LINK += $(LDEBUG)
+pigsdebug: PROG = pigs.e
+pigsdebug: $(PROG)
 
 # Link Objects
 $(PROG): $(OBJS)

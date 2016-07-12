@@ -18,10 +18,11 @@ uint32 MoveBase::totAccepted = 0;
 /**************************************************************************//**
  * Setup the move factory.
 ******************************************************************************/
-Factory<MoveBase* (Path &, ActionBase*, MTRand&)> MoveFactory;
+/* Factory<MoveBase* (Path &, ActionBase*, MTRand&)> MoveFactory; */
+MoveFactory moveFactory;
 #define REGISTER_MOVE(NAME,TYPE) \
     const string TYPE::name = NAME;\
-    bool reg ## TYPE = MoveFactory()->Register<TYPE>(TYPE::name);
+    bool reg ## TYPE = moveFactory()->Register<TYPE>(TYPE::name);
 
 /**************************************************************************//**
  * Move naming conventions:

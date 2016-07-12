@@ -15,10 +15,11 @@
 /**************************************************************************//**
  * Setup the estimator factory.
 ******************************************************************************/
-Factory<EstimatorBase* (Path &, ActionBase *, MTRand &, double)> EstimatorFactory;
+/* Factory<EstimatorBase* (Path &, ActionBase *, MTRand &, double)> EstimatorFactory; */
+EstimatorFactory estimatorFactory;
 #define REGISTER_ESTIMATOR(NAME,TYPE) \
     const string TYPE::name = NAME;\
-    bool reg ## TYPE = EstimatorFactory()->Register<TYPE>(TYPE::name);
+    bool reg ## TYPE = estimatorFactory()->Register<TYPE>(TYPE::name);
 
 /**************************************************************************//**
  * Estimator naming conventions:
@@ -74,12 +75,13 @@ REGISTER_ESTIMATOR("pigs one body density matrix",PIGSOneBodyDensityMatrixEstima
 /**************************************************************************//**
  * Setup the estimator factory for multi path estimators.
 ******************************************************************************/
-Factory<EstimatorBase* (Path &, Path&, ActionBase *, ActionBase*, MTRand &, double)> MultiEstimatorFactory;
+/* Factory<EstimatorBase* (Path &, Path&, ActionBase *, ActionBase*, MTRand &, double)> MultiEstimatorFactory; */
+MultiEstimatorFactory multiEstimatorFactory;
 const string SwapEstimator::name = "pigs multi swap";
-bool regSwap = MultiEstimatorFactory()->Register<SwapEstimator>(SwapEstimator::name);
+bool regSwap = multiEstimatorFactory()->Register<SwapEstimator>(SwapEstimator::name);
 
 const string EntPartEstimator::name = "pigs multi entanglement of particles";
-bool regEntPart = MultiEstimatorFactory()->Register<EntPartEstimator>(EntPartEstimator::name);
+bool regEntPart = multiEstimatorFactory()->Register<EntPartEstimator>(EntPartEstimator::name);
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

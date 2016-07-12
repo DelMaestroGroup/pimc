@@ -83,6 +83,16 @@ class Factory<BaseType (ParamType...)>
 template<class BaseType, class ...ParamType>
 vector<string> Factory<BaseType (ParamType...)>::names;
 
+class EstimatorBase;
+class MoveBase;
+class ActionBase;
+class Path;
+class MTRand;
+
+/* Typedefs used for actually creating factories */
+typedef Factory<EstimatorBase* (Path &, ActionBase *, MTRand &, double)> EstimatorFactory;
+typedef Factory<EstimatorBase* (Path &, Path &, ActionBase *, ActionBase *, MTRand &, double)> MultiEstimatorFactory;
+typedef Factory<MoveBase* (Path &, ActionBase *, MTRand &)> MoveFactory;
 
 /* template<typename BaseType, class DerivedType, class ...ParamType> */
 /* BaseType CreateObject(ParamType ...param) */
