@@ -12,14 +12,19 @@
 #include "communicator.h"
 #include "factory.h"
 
+bool init(vector<string>& names, string name) {
+    names.push_back(name);
+    return true;
+}
+
 /**************************************************************************//**
  * Setup the estimator factory.
 ******************************************************************************/
-/* Factory<EstimatorBase* (Path &, ActionBase *, MTRand &, double)> EstimatorFactory; */
 EstimatorFactory estimatorFactory;
 #define REGISTER_ESTIMATOR(NAME,TYPE) \
     const string TYPE::name = NAME;\
-    bool reg ## TYPE = estimatorFactory()->Register<TYPE>(TYPE::name);
+    bool reg ## TYPE = estimatorFactory()->Register<TYPE>(TYPE::name);\
+    bool init ## TYPE = init(EstimatorFactory::names,TYPE::name);
 
 /**************************************************************************//**
  * Estimator naming conventions:
@@ -79,9 +84,11 @@ REGISTER_ESTIMATOR("pigs one body density matrix",PIGSOneBodyDensityMatrixEstima
 MultiEstimatorFactory multiEstimatorFactory;
 const string SwapEstimator::name = "pigs multi swap";
 bool regSwap = multiEstimatorFactory()->Register<SwapEstimator>(SwapEstimator::name);
+bool initSwap = init(MultiEstimatorFactory::names,SwapEstimator::name);
 
 const string EntPartEstimator::name = "pigs multi entanglement of particles";
 bool regEntPart = multiEstimatorFactory()->Register<EntPartEstimator>(EntPartEstimator::name);
+bool initEntPart = init(MultiEstimatorFactory::names,EntPartEstimator::name);
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -4555,11 +4562,11 @@ void EntPartEstimator::accumulate() {
     vector<dVec> oldTailPos(lpath.brokenWorldlinesR.size());
     vector<dVec> oldTailPos2(lpath2.brokenWorldlinesR.size());
     
-    for( int i=0; i<lpath.brokenWorldlinesR.size();i++){
+    for( uint32 i=0; i<lpath.brokenWorldlinesR.size();i++){
         beadIndexR[1] = lpath.brokenWorldlinesR[i];
         oldTailPos[i] = lpath(beadIndexR);
     }
-    for( int i=0; i<lpath2.brokenWorldlinesR.size();i++){
+    for( uint32 i=0; i<lpath2.brokenWorldlinesR.size();i++){
         beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
         oldTailPos2[i] = lpath2(beadIndexR2);
     }
@@ -4571,12 +4578,12 @@ void EntPartEstimator::accumulate() {
     /* Compute direct potential actions for both paths */
     /* loop over broken beads */
     oldPotAction = 0.0;
-    for( int i=0; i<lpath.brokenWorldlinesR.size();i++){
+    for( uint32 i=0; i<lpath.brokenWorldlinesR.size();i++){
         beadIndexR[1] = lpath.brokenWorldlinesR[i];
         oldPotAction += actionPtr->potentialAction(beadIndexR);
     }
     oldPotAction2 = 0.0;
-    for( int i=0; i<lpath2.brokenWorldlinesR.size();i++){
+    for( uint32 i=0; i<lpath2.brokenWorldlinesR.size();i++){
         beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
         oldPotAction2 += actionPtr2->potentialAction(beadIndexR2);
     }
@@ -4586,7 +4593,7 @@ void EntPartEstimator::accumulate() {
     vector<int> permutation(lpath.brokenWorldlinesR.size());
     int Nperm = 0;
     double rho0perm;
-    for( int i=0; i<permutation.size(); i++)
+    for( uint32 i=0; i<permutation.size(); i++)
         permutation[i] = i;
     
     /* Compute direct free particle density matricies for both paths */
@@ -4598,7 +4605,7 @@ void EntPartEstimator::accumulate() {
         do {
             /* sum over broken worldlines */
             rho0perm = 1.0;
-            for( int i=0; i<permutation.size(); i++){
+            for( uint32 i=0; i<permutation.size(); i++){
                 beadIndexL[1] = lpath.brokenWorldlinesL[i];
                 beadIndexR[1] = lpath.brokenWorldlinesR[permutation[i]];
                 rho0perm *= actionPtr->rho0(beadIndexL,beadIndexR,1);
@@ -4611,7 +4618,7 @@ void EntPartEstimator::accumulate() {
     
     /* Re-initialize permuation vector */
     permutation.resize(lpath2.brokenWorldlinesR.size());
-    for( int i=0; i<permutation.size(); i++)
+    for( uint32 i=0; i<permutation.size(); i++)
         permutation[i] = i;
     Nperm = 0;
     if ( lpath2.brokenWorldlinesL.size() == 0){
@@ -4622,7 +4629,7 @@ void EntPartEstimator::accumulate() {
         do {
             /* sum over broken worldlines */
             rho0perm = 1.0;
-            for( int i=0; i<permutation.size(); i++){
+            for( uint32 i=0; i<permutation.size(); i++){
                 beadIndexL2[1] = lpath2.brokenWorldlinesL[i];
                 beadIndexR2[1] = lpath2.brokenWorldlinesR[permutation[i]];
                 //cout << beadIndexL2[1] << '\t' << beadIndexR2[1] << '\t' << permutation[i] << endl;
@@ -4643,18 +4650,18 @@ void EntPartEstimator::accumulate() {
             Z = 1.0;
         }else{
             /* Swap the tail positions */
-            for( int i=0; i<oldTailPos2.size(); i++){
+            for( uint32 i=0; i<oldTailPos2.size(); i++){
                 beadIndexR[1] = lpath.brokenWorldlinesR[i];
                 lpath.updateBead(beadIndexR,oldTailPos2[i]);
             }
-            for( int i=0; i<oldTailPos.size(); i++){
+            for( uint32 i=0; i<oldTailPos.size(); i++){
                 beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
                 lpath2.updateBead(beadIndexR2,oldTailPos[i]);
             }
             
             /* Compute the swapped free particle density matrix */
             /* Re-initialize permuation vector */
-            for( int i=0; i<permutation.size(); i++)
+            for( uint32 i=0; i<permutation.size(); i++)
                 permutation[i] = i;
             Nperm = 0;
             double rho0Swap = 0.0;
@@ -4662,7 +4669,7 @@ void EntPartEstimator::accumulate() {
             do {
                 /* sum over broken worldlines */
                 rho0perm = 1.0;
-                for( int i=0; i<permutation.size(); i++){
+                for( uint32 i=0; i<permutation.size(); i++){
                     beadIndexL[1] = lpath.brokenWorldlinesL[i];
                     beadIndexR[1] = lpath.brokenWorldlinesR[permutation[i]];
                     rho0perm *= actionPtr->rho0(beadIndexL,beadIndexR,1);
@@ -4673,7 +4680,7 @@ void EntPartEstimator::accumulate() {
             rho0Swap*= 1.0/((double)Nperm);
             
             /* Re-initialize permuation vector */
-            for( int i=0; i<permutation.size(); i++)
+            for( uint32 i=0; i<permutation.size(); i++)
                 permutation[i] = i;
             Nperm = 0;
             double rho0Swap2 = 0.0;
@@ -4681,7 +4688,7 @@ void EntPartEstimator::accumulate() {
             do {
                 /* sum over broken worldlines */
                 rho0perm = 1.0;
-                for( int i=0; i<permutation.size(); i++){
+                for( uint32 i=0; i<permutation.size(); i++){
                     beadIndexL2[1] = lpath2.brokenWorldlinesL[i];
                     beadIndexR2[1] = lpath2.brokenWorldlinesR[permutation[i]];
                     rho0perm *= actionPtr2->rho0(beadIndexL2,beadIndexR2,1);
@@ -4695,22 +4702,22 @@ void EntPartEstimator::accumulate() {
             /* Compute direct potential actions for both paths */
             /* loop over broken beads */
             double newPotAction = 0.0;
-            for( int i=0; i<lpath.brokenWorldlinesR.size();i++){
+            for( uint32 i=0; i<lpath.brokenWorldlinesR.size();i++){
                 beadIndexR[1] = lpath.brokenWorldlinesR[i];
                 newPotAction += actionPtr->potentialAction(beadIndexR);
             }
             double newPotAction2 = 0.0;
-            for( int i=0; i<lpath2.brokenWorldlinesR.size();i++){
+            for( uint32 i=0; i<lpath2.brokenWorldlinesR.size();i++){
                 beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
                 newPotAction2 += actionPtr2->potentialAction(beadIndexR2);
             }
             
             /* Now we must undo any damge we have caused by reverting the tail to its previous position*/
-            for( int i=0; i<oldTailPos.size(); i++){
+            for( uint32 i=0; i<oldTailPos.size(); i++){
                 beadIndexR[1] = lpath.brokenWorldlinesR[i];
                 lpath.updateBead(beadIndexR,oldTailPos[i]);
             }
-            for( int i=0; i<oldTailPos2.size(); i++){
+            for( uint32 i=0; i<oldTailPos2.size(); i++){
                 beadIndexR2[1] = lpath2.brokenWorldlinesR[i];
                 lpath2.updateBead(beadIndexR2,oldTailPos2[i]);
             }

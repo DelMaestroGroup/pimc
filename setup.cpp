@@ -15,7 +15,7 @@
 #include "action.h"
 #include "move.h"
 #include "estimator.h"
-#include "factory.h"
+/* #include "factory.h" */
 
 /* typedef Factory<EstimatorBase* (Path &, ActionBase *, MTRand &, double)> EstimatorFactory; */
 /* typedef Factory<EstimatorBase* (Path &, Path &, ActionBase *, ActionBase *, MTRand &, double)> MultiEstimatorFactory; */
@@ -266,6 +266,9 @@ void Parameters::update(int argc, char *argv[], po::options_description &cmdLine
 ******************************************************************************/
 Setup::Setup() :
     params(),
+    /* moveFactory(), */
+    /* estimatorFactory(), */
+    /* multiEstimatorFactory(), */
     cmdLineOptions("Command Line Options")
 {
     /* Initialize the option class names */
@@ -291,47 +294,15 @@ Setup::Setup() :
     waveFunctionNames = getList(waveFunctionName);
 
     /* Get the allowed estimator names */
-    estimatorName = EstimatorFactory::names;
-    estimatorName.insert(estimatorName.end(), MultiEstimatorFactory::names.begin(), 
-            MultiEstimatorFactory::names.end());
+    estimatorName = estimatorFactory()->getNames();
+    vector<string> multiEstimatorName = multiEstimatorFactory()->getNames();
+    estimatorName.insert(estimatorName.end(), multiEstimatorName.begin(), 
+            multiEstimatorName.end());
     estimatorNames = getList(estimatorName);
 
     /* Get the allowed move names */
-    moveName = MoveFactory::names;
+    moveName = moveFactory()->getNames(); 
     moveNames = getList(moveName);
-
-    /* estimatorName = { EnergyEstimator::name, */
-    /*     VirialEnergyEstimator::name, NumberParticlesEstimator::name, */
-    /*     NumberDistributionEstimator::name, NullEstimator::name, */
-    /*     ParticlePositionEstimator::name, BipartitionDensityEstimator::name, */
-    /*     PlaneParticlePositionEstimator::name, SuperfluidFractionEstimator::name, */
-    /*     PlaneWindingSuperfluidDensityEstimator::name, PlaneAreaSuperfluidDensityEstimator::name, */
-    /*     RadialWindingSuperfluidDensityEstimator::name, RadialAreaSuperfluidDensityEstimator::name, */
-    /*     LocalSuperfluidDensityEstimator::name, DiagonalFractionEstimator::name, */
-    /*     WormPropertiesEstimator::name, PermutationCycleEstimator::name, */
-    /*     LocalPermutationEstimator::name, OneBodyDensityMatrixEstimator::name, */
-    /*     PairCorrelationEstimator::name, RadialDensityEstimator::name, */
-    /*     CylinderEnergyEstimator::name, CylinderNumberParticlesEstimator::name, */
-    /*     CylinderNumberDistributionEstimator::name, CylinderLinearDensityEstimator::name, */
-    /*     CylinderSuperfluidFractionEstimator::name, CylinderOneBodyDensityMatrixEstimator::name, */
-    /*     CylinderPairCorrelationEstimator::name, CylinderRadialPotentialEstimator::name, */
-    /*     CylinderLinearPotentialEstimator::name, PotentialEnergyEstimator::name, */
-    /*     KineticEnergyEstimator::name, PigsEnergyEstimator::name, */
-    /*     PigsThermoEnergyEstimator::name, TotalEnergyEstimator::name, */
-    /*     ThermoPotentialEnergyEstimator::name, PositionEstimator::name, */
-    /*     ParticleResolvedPositionEstimator::name, ParticleCorrelationEstimator::name, */
-    /*     VelocityEstimator::name, SubregionOccupationEstimator::name, */
-    /*     PIGSOneBodyDensityMatrixEstimator::name, SwapEstimator::name, */
-    /*     EntPartEstimator::name}; */
-    /* estimatorNames = getList(estimatorName); */
-
-    /* moveName = {DisplaceMove::name, EndStagingMove::name, */
-    /*     MidStagingMove::name, SwapBreakMove::name, CenterOfMassMove::name, */
-    /*     StagingMove::name, BisectionMove::name, OpenMove::name, */
-    /*     CloseMove::name, InsertMove::name, RemoveMove::name, */
-    /*     AdvanceHeadMove::name, RecedeHeadMove::name, AdvanceTailMove::name, */
-    /*     RecedeTailMove::name, SwapHeadMove::name, SwapTailMove::name}; */
-    /* moveNames = getList(moveName); */
 }
 
 /**************************************************************************//**
@@ -1238,7 +1209,7 @@ boost::ptr_vector<MoveBase>* Setup::moves(Path &path, ActionBase *actionPtr,
     boost::ptr_vector<MoveBase>* movePtr = new boost::ptr_vector<MoveBase>();
 
     /* Instantiate the Move Factory */
-    MoveFactory moveFactory;
+    /* MoveFactory moveFactory; */
 
     /* Instatiate the moves */
     for (auto& moveName : params["update"].as<vector<string>>())
@@ -1262,10 +1233,8 @@ boost::ptr_vector<EstimatorBase> * Setup::estimators(Path &path,
     boost::ptr_vector<EstimatorBase>* estimatorPtr = new boost::ptr_vector<EstimatorBase>();
 
     /* Instantiate the Estimator Factory */
-    EstimatorFactory estimatorFactory;
+    /* EstimatorFactory estimatorFactory; */
 
-    cout << EstimatorFactory::names << endl;
- 
     /* Instatiate the single path estimators */
     for (auto& estimatorName : params["estimator"].as<vector<string>>()) {
 
@@ -1292,7 +1261,7 @@ boost::ptr_vector<EstimatorBase> * Setup::estimators(
     boost::ptr_vector<EstimatorBase>* multiEstimatorPtr = new boost::ptr_vector<EstimatorBase>();
 
     /* Instantiate the Estimator Factory */
-    MultiEstimatorFactory multiEstimatorFactory;
+    /* MultiEstimatorFactory multiEstimatorFactory; */
 
     /* Instatiate the multi path estimators */
     for (auto& estimatorName : params["estimator"].as<vector<string>>()) {

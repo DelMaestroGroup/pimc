@@ -31,9 +31,10 @@ class Factory<BaseType (ParamType...)>
         using CreateObjectFunc = BaseType (*)(ParamType...);
 
     public:
-
         /** The names of all objects instatiated by the factory */
         static vector<string> names;
+
+        vector<string> getNames() const {return names;};
 
         /** Singleton access */
         Factory<BaseType (ParamType...)> *Instance()
@@ -66,7 +67,7 @@ class Factory<BaseType (ParamType...)>
                 _create[name] = &createObj<DerivedType>;
 
                 // Add the name to the list
-                names.push_back(name);
+                /* names.push_back(name); */
                 return true;
             }
 
@@ -82,6 +83,7 @@ class Factory<BaseType (ParamType...)>
 
 template<class BaseType, class ...ParamType>
 vector<string> Factory<BaseType (ParamType...)>::names;
+
 
 class EstimatorBase;
 class MoveBase;

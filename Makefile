@@ -160,7 +160,7 @@ else ifeq ($(opts), strict)
 OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
 endif #basic, elseif strict
 
-CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include # $(DEBUG)
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include #$(DEBUG)
 LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
 #macbook end
 ######################################################

@@ -15,6 +15,11 @@
 uint32 MoveBase::totAttempted = 0;
 uint32 MoveBase::totAccepted = 0;
 
+bool initMove(vector<string>& names, string name) {
+    names.push_back(name);
+    return true;
+}
+
 /**************************************************************************//**
  * Setup the move factory.
 ******************************************************************************/
@@ -22,7 +27,8 @@ uint32 MoveBase::totAccepted = 0;
 MoveFactory moveFactory;
 #define REGISTER_MOVE(NAME,TYPE) \
     const string TYPE::name = NAME;\
-    bool reg ## TYPE = moveFactory()->Register<TYPE>(TYPE::name);
+    bool reg ## TYPE = moveFactory()->Register<TYPE>(TYPE::name);\
+    bool init ## TYPE = initMove(MoveFactory::names,TYPE::name);
 
 /**************************************************************************//**
  * Move naming conventions:

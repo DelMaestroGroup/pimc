@@ -10,6 +10,7 @@
 #define SETUP_H
 
 #include "common.h"
+#include "factory.h"
 #include <boost/program_options.hpp>
 #include <boost/any.hpp>
 
@@ -315,6 +316,10 @@ class Setup {
         string actionNames;                         ///< The action output list
         string estimatorNames;                      ///< The estimator list
         string moveNames;                           ///< The move list
+
+        MoveFactory moveFactory;
+        EstimatorFactory estimatorFactory;
+        MultiEstimatorFactory multiEstimatorFactory;
 
 		bool definedCell;							///< The user has physically set the sim. cell
 
