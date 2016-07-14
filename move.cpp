@@ -36,23 +36,23 @@ MoveFactory moveFactory;
  * 1) be as descriptive as possible
  * 2) spaces are fine
 ******************************************************************************/
-REGISTER_MOVE("displace",DisplaceMove);
-REGISTER_MOVE("end staging",EndStagingMove);
-REGISTER_MOVE("mid staging",MidStagingMove);
-REGISTER_MOVE("swap break",SwapBreakMove);
-REGISTER_MOVE("center of mass",CenterOfMassMove);
-REGISTER_MOVE("staging",StagingMove);
-REGISTER_MOVE("bisection",BisectionMove);
-REGISTER_MOVE("open",OpenMove);
-REGISTER_MOVE("close",CloseMove);
-REGISTER_MOVE("insert",InsertMove);
-REGISTER_MOVE("remove",RemoveMove);
-REGISTER_MOVE("advance head",AdvanceHeadMove);
-REGISTER_MOVE("recede head",RecedeHeadMove);
-REGISTER_MOVE("advance tail",AdvanceTailMove);
-REGISTER_MOVE("recede tail",RecedeTailMove);
-REGISTER_MOVE("swap head",SwapHeadMove);
-REGISTER_MOVE("swap tail",SwapTailMove);
+REGISTER_MOVE("displace",DisplaceMove)
+REGISTER_MOVE("end staging",EndStagingMove)
+REGISTER_MOVE("mid staging",MidStagingMove)
+REGISTER_MOVE("swap break",SwapBreakMove)
+REGISTER_MOVE("center of mass",CenterOfMassMove)
+REGISTER_MOVE("staging",StagingMove)
+REGISTER_MOVE("bisection",BisectionMove)
+REGISTER_MOVE("open",OpenMove)
+REGISTER_MOVE("close",CloseMove)
+REGISTER_MOVE("insert",InsertMove)
+REGISTER_MOVE("remove",RemoveMove)
+REGISTER_MOVE("advance head",AdvanceHeadMove)
+REGISTER_MOVE("recede head",RecedeHeadMove)
+REGISTER_MOVE("advance tail",AdvanceTailMove)
+REGISTER_MOVE("recede tail",RecedeTailMove)
+REGISTER_MOVE("swap head",SwapHeadMove)
+REGISTER_MOVE("swap tail",SwapTailMove)
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -151,6 +151,9 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
         windingSector.push_back(numWind-1);
 
     tempWinding.free();
+
+    /* cout <<winding << endl; */
+    /* exit(-1); */
 }
 
 /*************************************************************************//**
@@ -3590,6 +3593,11 @@ bool SwapTailMove::attemptMove() {
 				beadIndex = path.next(beadIndex);
 			}
 			swap = beadIndex;
+
+            /* printMoveState("DEBUG SWAP MOVE."); */
+            /* communicate()->file("debug")->stream() << "SWAP: " << wind[0] << " " << */
+            /*     wind[1] << " " << wind[2] << " "  << SigmaTail << " " << swap[0] << " " << */ 
+            /*     swap[1] << " " << pivot[0] << " " << pivot[1] << endl; */
 
 			/* We only continue if we don't find the head, and the pivot and swap grid
 			 * boxes coincide, otherwise we reject the move. */

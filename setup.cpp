@@ -1208,12 +1208,9 @@ boost::ptr_vector<MoveBase>* Setup::moves(Path &path, ActionBase *actionPtr,
     /* Create a new list of moves that will be returned */
     boost::ptr_vector<MoveBase>* movePtr = new boost::ptr_vector<MoveBase>();
 
-    /* Instantiate the Move Factory */
-    /* MoveFactory moveFactory; */
-
     /* Instatiate the moves */
-    for (auto& moveName : params["update"].as<vector<string>>())
-        movePtr->push_back(moveFactory()->Create(moveName,path,actionPtr,random));
+    for (auto& name : params["update"].as<vector<string>>())
+        movePtr->push_back(moveFactory()->Create(name,path,actionPtr,random));
     
     return movePtr;
 }
@@ -1232,14 +1229,11 @@ boost::ptr_vector<EstimatorBase> * Setup::estimators(Path &path,
     /* Create the list of estimator pointers */
     boost::ptr_vector<EstimatorBase>* estimatorPtr = new boost::ptr_vector<EstimatorBase>();
 
-    /* Instantiate the Estimator Factory */
-    /* EstimatorFactory estimatorFactory; */
-
     /* Instatiate the single path estimators */
-    for (auto& estimatorName : params["estimator"].as<vector<string>>()) {
+    for (auto& name : params["estimator"].as<vector<string>>()) {
 
-        if (estimatorName.find("multi") == string::npos)
-            estimatorPtr->push_back(estimatorFactory()->Create(estimatorName,path,
+        if (name.find("multi") == string::npos)
+            estimatorPtr->push_back(estimatorFactory()->Create(name,path,
                         actionPtr,random,params["estimator_radius"].as<double>()));
     }
 
@@ -1264,10 +1258,10 @@ boost::ptr_vector<EstimatorBase> * Setup::estimators(
     /* MultiEstimatorFactory multiEstimatorFactory; */
 
     /* Instatiate the multi path estimators */
-    for (auto& estimatorName : params["estimator"].as<vector<string>>()) {
+    for (auto& name : params["estimator"].as<vector<string>>()) {
 
-        if (estimatorName.find("multi") != string::npos)
-            multiEstimatorPtr->push_back(multiEstimatorFactory()->Create(estimatorName,pathPtrVec[0],
+        if (name.find("multi") != string::npos)
+            multiEstimatorPtr->push_back(multiEstimatorFactory()->Create(name,pathPtrVec[0],
                         pathPtrVec[1],&actionPtrVec[0],&actionPtrVec[1],random,
                         params["estimator_radius"].as<double>()));
     }

@@ -1567,13 +1567,12 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
     }
     
     bead2[0] = bead1[0];
-    dVec sep1,sep2;
     for (bead2[1]= 0; bead2[1] < path.numBeadsAtSlice(bead1[0]); bead2[1]++) {
         if(NNbead[bead2[1]]){
             nextBead2 = path.next(bead2);
-            sep1 = path.getSeparation(bead1,bead2);
+            sep = path.getSeparation(bead1,bead2);
             sep2 = path.getSeparation(nextBead1,nextBead2);
-            totU += interactionPtr->V(sep1,sep2);
+            totU += interactionPtr->V(sep,sep2);
             NNbead[bead2[1]] = false;
         }
     }

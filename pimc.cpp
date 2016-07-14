@@ -413,8 +413,8 @@ void PathIntegralMonteCarlo::step() {
         numParticles = pathPtrVec[pIdx].getTrueNumParticles();
         if (numParticles > 0) {
             /* Perform all measurements */
-            for (auto& estimator : estimatorPtrVec[pIdx])
-                estimator.sample();
+            for (auto& est : estimatorPtrVec[pIdx])
+                est.sample();
         }
         
         /* Every binSize measurements, we output averages to disk and record the
@@ -422,9 +422,9 @@ void PathIntegralMonteCarlo::step() {
         if (estimatorPtrVec[pIdx].size() > 0){
             if (estimatorPtrVec[pIdx].front().getNumAccumulated() >= binSize) {
 
-                for (auto& estimator : estimatorPtrVec[pIdx]) {
-                    if (estimator.getNumAccumulated() >= binSize)
-                        estimator.output();
+                for (auto& est : estimatorPtrVec[pIdx]) {
+                    if (est.getNumAccumulated() >= binSize)
+                        est.output();
                 }
                 if(Npaths==1){
                     if (constants()->saveStateFiles())
@@ -443,16 +443,16 @@ void PathIntegralMonteCarlo::step() {
     if(estimatorPtrVec.size() > Npaths) {
 
         /* Multi-Path estimators are at the end of the estimator vectors */
-        for (auto& estimator : estimatorPtrVec.back()) 
-            estimator.sample();
+        for (auto& est : estimatorPtrVec.back()) 
+            est.sample();
 
         /* Every binSize measurements, we output averages to disk and record the
          * state of the simulation on disk.  */
         if (estimatorPtrVec.back().front().getNumAccumulated() >= binSize) {
 
-            for (auto & estimator : estimatorPtrVec.back()) 
-                if (estimator.getNumAccumulated() >= binSize) 
-                    estimator.output();
+            for (auto& est : estimatorPtrVec.back()) 
+                if (est.getNumAccumulated() >= binSize) 
+                    est.output();
 
             /* Save to disk or store a state file */
             if (constants()->saveStateFiles())

@@ -71,9 +71,10 @@ DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
 
 ifeq ($(opts), basic)
-OPTS = -std=c++11 -Wall -O3 -mtune=native  #-DNDEBUG
+OPTS = -std=c++11 -Wall -O3 -mtune=native -Wshadow  #-DNDEBUG
 else ifeq ($(opts), strict)
-OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
+# OPTS = -std=c++11 -Wall -g -W -Wextra -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template 
+OPTS = -std=c++11 -Wall -Wextra -g -pedantic
 endif #basic, elseif strict
 
 BOOSTVER ?= -gcc54-mt-1_61
@@ -95,9 +96,10 @@ LDEBUG = -lblitz
 BOOSTVER ?= -clang-darwin42-mt-1_61
 
 ifeq ($(opts), basic)
-OPTS = -std=c++11 -stdlib=libc++ -Wall -O3 -Wno-deprecated-register
+OPTS = -std=c++11 -stdlib=libc++ -Wall -O3 -Wno-deprecated-register -Wshadow
 else ifeq ($(opts), strict)
-OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
+# OPTS = -Wall -std=c++11 -stdlib=libc++ -O3 -W -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -ferror-limit=1000 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template
+OPTS = -std=c++11 -stdlib=libc++ -W -Wall -Wextra -g -pedantic
 else ifeq ($(opts),debug)
 OPTS = -std=c++11 -stdlib=libc++ -Wall -Wno-deprecated-register
 endif #basic, elseif strict
