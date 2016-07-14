@@ -170,7 +170,6 @@ string PathIntegralMonteCarlo::update(const double x, const int sweep, const int
     else
         success = movePtrVec[pathIdx].at(index).attemptMove();
 
-    /* communicate()->file("debug")->stream() << x << " " << success << " " << moveName << endl; */
 	return moveName;
 }
 

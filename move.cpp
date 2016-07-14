@@ -3566,11 +3566,6 @@ bool SwapTailMove::attemptMove() {
 			}
 			swap = beadIndex;
 
-            /* printMoveState("DEBUG SWAP MOVE."); */
-            /* communicate()->file("debug")->stream() << "SWAP: " << wind[0] << " " << */
-            /*     wind[1] << " " << wind[2] << " "  << SigmaTail << " " << swap[0] << " " << */ 
-            /*     swap[1] << " " << pivot[0] << " " << pivot[1] << endl; */
-
 			/* We only continue if we don't find the head, and the pivot and swap grid
 			 * boxes coincide, otherwise we reject the move. */
 			if ( !all(path.worm.head==swap) && path.lookup.gridNeighbors(pivot,swap) ) {
