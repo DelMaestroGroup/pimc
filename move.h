@@ -97,7 +97,7 @@ class MoveBase {
 		Array <dVec,1> originalPos;		///< The original particle positions
 		Array <dVec,1> newPos;		    ///< New particle positions
         
-        Array <iVec,1> winding;         ///< The winding vectors         
+        vector <iVec> winding;          ///< The winding vectors         
         vector <int> windingSector;     ///< Used to index different winding sectors
         vector <double> cumrho0;		///< Used for tower-sampling winding sectors
 
@@ -129,20 +129,6 @@ class MoveBase {
 
         /** Find the winding number for a path between two beads */
         iVec getWindingNumber(const beadLocator &, const beadLocator &);
-
-        /** A functor which allows us to compare two winding numbers in terms
-         * of the magnitude of their winding vectors */
-        struct doCompare
-        { 
-            doCompare( const MoveBase& move) : _move(move) { } 
-            const MoveBase & _move;
-
-            /** overload () to act as a comparison of magnitudes */
-            bool operator()( const int & i1, const int & i2  ) { 
-                return (dot(_move.winding(i1),_move.winding(i1))
-                        <  dot(_move.winding(i2),_move.winding(i2)));
-            }
-        };
 
 		/* Return a new bead position which samples the free particle density matrix */
 		dVec newFreeParticlePosition(const beadLocator &);

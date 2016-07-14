@@ -116,11 +116,11 @@ void PotentialBase::output(const double maxSep) {
 double PotentialBase::deltaSeparation(double sep1, double sep2) const {
 	
     double delta = sep2-sep1;
-    if( delta > (0.5*constants()->L()) )
+    while (delta >= 0.5*constants()->L())
         delta -= constants()->L();
-    else if( delta < ((-0.5)*constants()->L() ) )
+    while (delta < -0.5*constants()->L()) 
         delta += constants()->L();
-    
+
 	return delta;
 }
 

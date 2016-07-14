@@ -41,7 +41,7 @@ class Container {
         dVec gridSize;                      ///< The grid size in each dimension
 
 		/** Place a vector in boundary conditions. */
-		void putInBC(dVec & r) const {
+		void putInBC1(dVec & r) const {
 			for (int i = 0; i < NDIM; ++i) {
 				r[i] -= (r[i] >= 0.5*side[i])*pSide[i];
 				r[i] += (r[i] < -0.5*side[i])*pSide[i];
@@ -50,7 +50,7 @@ class Container {
 
 		/** Place a vector in boundary conditions. */
         /* Not sure if I need this, more testing is needed */
-		void putInBC1(dVec & r) const {
+		void putInBC(dVec & r) const {
 			for (int i = 0; i < NDIM; ++i) {
                 while (r[i] >= 0.5*side[i])
                     r[i] -= pSide[i];

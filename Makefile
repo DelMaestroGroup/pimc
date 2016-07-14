@@ -71,7 +71,7 @@ DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
 
 ifeq ($(opts), basic)
-OPTS = -std=c++11 -Wall -O3 -mtune=native -Wshadow  #-DNDEBUG
+OPTS = -std=c++11 -Wall -O3 -mtune=native -Wno-deprecated-declarations #-Wshadow  #-DNDEBUG
 else ifeq ($(opts), strict)
 # OPTS = -std=c++11 -Wall -g -W -Wextra -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template 
 OPTS = -std=c++11 -Wall -Wextra -g -pedantic

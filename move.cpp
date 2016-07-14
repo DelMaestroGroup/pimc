@@ -89,12 +89,7 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
     /* Setup the free density matrix arrays for sampling different
      * winding sectors.  We will sample w = -maxWind ... maxWind */
     maxWind = constants()->maxWind();
-
     numWind = ipow(2*maxWind + 1,NDIM);
-    winding = 0;
-
-    /* Now we construct the actual NDIM-vector winding numbers */
-    winding.resize(numWind);
 
     /* For each integer labelling a winding sector, we construct the winding
      * vector and append to a matrix */
@@ -117,43 +112,27 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
         }
 
         /* Store the winding number */
-        winding(n) = wind;
+        winding.push_back(wind);
     }
 
     /* Now we would like to sort the winding number array for the effecient
-     * calculation of maximal probabilities. We sort based on the magnitude of
-     * the winding vector. */
-    vector <int> sortWinding;
-    for (int n = 0; n < numWind; n++ )
-        sortWinding.push_back(n);
-    std::sort(sortWinding.begin(), sortWinding.end(), doCompare(*this));
-
-    /* Now, we apply the result of the sort to the winding array */
-
-    /* The temporary copy of the winding number array */
-    Array <iVec,1> tempWinding;
-    tempWinding.resize(numWind);
-    tempWinding = winding;
-
-    /* Perform the re-ordering */
-    for (int n = 0; n < numWind; n++)
-        winding(n) = tempWinding(sortWinding[n]);
+     * calculation of maximal probabilities. We sort based on the winding
+     * sector. */
+    std::stable_sort(winding.begin(), winding.end(), [](const iVec& w1, const iVec& w2) {
+        return blitz::max(abs(w1)) < blitz::max(abs(w2));
+        /* return (blitz::dot(w1,w1) < blitz::dot(w2,w2)); */
+    });
 
     /* Now we determine the indices of the different winding sectors.  These
      * are used for optimization purposes during tower sampling */
     for (int n = 0; n < numWind-1; n++) {
         /* if (abs(dot(winding(n),winding(n)) - dot(winding(n+1),winding(n+1))) > EPS) */
-        if ( abs( max(abs(winding(n+1))) - max(abs(winding(n))) ) > EPS)
+        if ( abs( max(abs(winding[n+1])) - max(abs(winding[n])) ) > EPS)
             windingSector.push_back(n);
     }
     /* Add the last index */
     if (windingSector.back() != numWind-1)
         windingSector.push_back(numWind-1);
-
-    tempWinding.free();
-
-    /* cout <<winding << endl; */
-    /* exit(-1); */
 }
 
 /*************************************************************************//**
@@ -348,27 +327,20 @@ dVec MoveBase::newStagingPosition(const beadLocator &neighborIndex, const beadLo
 		newRanPos[i] = random.randNorm(newRanPos[i],sqrtLambdaKTau);
     
     /* Make sure we choose the correct winding trajectory */
-	for (int i = 0; i < NDIM; i++) {
-        if (newRanPos[i] < -0.5*path.boxPtr->side[i])
+    for (int i = 0; i < NDIM; i++) {
+        while (newRanPos[i] < -0.5*path.boxPtr->side[i])
+        {
             wind[i]++;
-        else if (newRanPos[i] > 0.5*path.boxPtr->side[i])
+            newRanPos[i] += path.boxPtr->side[i];
+        }
+        while (newRanPos[i] >= 0.5*path.boxPtr->side[i])
+        {
             wind[i]--;
+            newRanPos[i] -= path.boxPtr->side[i];
+        }
     }
 
     path.boxPtr->putInside(newRanPos);
-    
-    /* Make sure we are inside the box */
-    // bool outside = false;
-    // do {
-    //     outside = false;
-    //     path.boxPtr->putInside(newRanPos);
-    //     for (int i = 0; i < NDIM; i++) {
-    //         if (newRanPos[i] > 0.5*path.boxPtr->side[i] || newRanPos[i] < -0.5*path.boxPtr->side[i]){
-    //             outside = true;
-    //             break;
-    //         }
-    //     }
-    // } while (outside);
     assert(newRanPos[0] < 0.5*path.boxPtr->side[0] || newRanPos[0] >= -0.5*path.boxPtr->side[0]);
     
     return newRanPos;
@@ -403,22 +375,22 @@ iVec MoveBase::sampleWindingSector(const beadLocator &startBead, const beadLocat
     
     /* Sample the free density matrix for different winding sectors */
     for (int n = 1; n < numWind; n++) {
-        velW = vel + winding(n)*path.boxPtr->side;
+        velW = vel + winding.at(n)*path.boxPtr->side;
         double crho0 = actionPtr->rho0(velW,stageLength);
         totalrho0 += crho0;
         cumrho0.push_back(cumrho0[n-1] + crho0);
 
         /* If we are still in the lowest winding sectors, find the maximum
          * probability */
-        if (n < windingSector[1])  {
-            if (crho0 > maxrho0)
-                maxrho0 = crho0;
-        }
-        /* Otherwise, test if we can exit */
-        else {
-            if (abs(crho0/maxrho0) < tolerance) 
-                break;
-        }
+        /* if (n < windingSector[1])  { */
+        /*     if (crho0 > maxrho0) */
+        /*         maxrho0 = crho0; */
+        /* } */
+        /* /1* Otherwise, test if we can exit *1/ */
+        /* else { */
+        /*     if (abs(crho0/maxrho0) < tolerance) */ 
+        /*         break; */
+        /* } */
     }
 
     /* Normalize the cumulative probability */
@@ -430,7 +402,7 @@ iVec MoveBase::sampleWindingSector(const beadLocator &startBead, const beadLocat
     index = std::lower_bound(cumrho0.begin(),cumrho0.end(),random.rand())
             - cumrho0.begin();
 
-    return winding(index);
+    return winding.at(index);
 }
 
 /*************************************************************************//**
@@ -3169,7 +3141,7 @@ double SwapMoveBase::getNorm(const beadLocator &beadIndex, const int sign) {
         /* Go through every particle in the lookup table. */
         for (int n = 0; n < path.lookup.fullNumBeads; n++) {
             sep = path(path.lookup.fullBeadList(n)) - path(beadIndex) 
-                + sign*winding(w)*path.boxPtr->side;
+                + sign*winding.at(w)*path.boxPtr->side;
             crho0 = actionPtr->rho0(sep,swapLength);
             Sigma += crho0;
             cumulant.at(index) = cumulant.at(index-1) + crho0;
@@ -3245,7 +3217,7 @@ beadLocator SwapMoveBase::selectPivotBead(iVec &wind) {
 	pivotBead = path.lookup.fullBeadList(p);
 
     /* Get the winding number */
-    wind = winding(w);
+    wind = winding.at(w);
 	
 	return pivotBead;
 }
