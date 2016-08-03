@@ -167,6 +167,23 @@ LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem
 #macbook end
 ######################################################
 
+###################################################################
+# System VACC
+else ifeq ($(OVERRIDE), vacc)
+
+CODEDIR = $$HOME/local
+
+OPTS = -std=c++11 -Wall -O3 -mtune=native -Wno-deprecated-declarations 
+
+BOOSTVER ?= -gcc54-mt-1_61
+DEBUG  = -D PIMC_DEBUG -g
+LDEBUG = -lblitz
+
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include #$(DEBUG)
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
+#VACC end
+######################################################
+
 endif # sharcnet, elseif westgrid, elseif macbook
 ##User Overrides end################################################
 

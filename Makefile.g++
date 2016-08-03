@@ -3,44 +3,22 @@
 CC      = g++
 LD      = g++
 
-#CC = /opt/local/bin/g++-mp-4.7
-#LD = /opt/local/bin/g++-mp-4.7
-
 ifdef debug
 DEBUG = -D PIMC_DEBUG -g
-LDEBUG = -lblitz
 endif
 
 ifdef ndim
 DIM = -D NDIM=$(ndim)
 endif
 
-ifdef double
-DOUBLE = -D DOUBLEPATH
-endif
-
 
 # Edit below to include details on your specific host
-
-#ifdef chrimac
-OPT = -w -O3 -fno-math-errno
-CODEDIR = $$HOME/local
-CFLAGS  = $(OPT) $(DIM) $(DOUBLE) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options -lboost_filesystem -lboost_system
-#endif
-
-#ifdef chracbook
-OPT = -Wall -O3 -fno-math-errno
-CODEDIR = $$HOME/local
-CFLAGS  = $(OPT) $(DIM) $(DEBUG) $(DOUBLE) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options -lboost_filesystem -lboost_system
-#endif
 
 ifdef meron
 OPT = -Wall -O3 -fno-math-errno
 CODEDIR = $$HOME/local
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options -lboost_filesystem -lboost_system
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system
 endif
 
 ifdef osx
@@ -52,10 +30,9 @@ endif
 ifdef debug
 OPT = -Wall
 endif
-BOOSTVER = -gcc42-mt-1_49
-CODEDIR = /usr/local
+CODEDIR = /opt/local
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system
 endif
 
 ifdef sask
@@ -64,22 +41,29 @@ LD      = g++
 BOOSTDIR = /Users/agdelma/Projects/boost
 BLITZDIR = /Users/agdelma/Projects/blitz
 CFLAGS  = -Wall -O2 $(DEBUG) $(DIM) -I$(BOOSTDIR) -I$(BLITZDIR)
-LDFLAGS = -L$(BLITZDIR)/lib -L$(BOOSTDIR)/stage/lib -lboost_program_options-gcc40-mt-1_38
+LDFLAGS = -L$(BLITZDIR)/lib -lblitz -L$(BOOSTDIR)/stage/lib -lboost_program_options-gcc40-mt-1_38
 endif
 
 ifdef sharcnet
 OPT = -Wall -TENV:simd_zmask=OFF -TENV:simd_imask=OFF -TENV:simd_omask=OFF -O3 -fno-math-errno
 CODEDIR = /work/agdelma/local
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_system
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system
 endif 
+
+ifdef vacc
+OPT = -std=c++11 -mtune=native -Wall -O3 -fno-math-errno -Wno-unused-local-typedefs
+CODEDIR = $$HOME/local
+CFLAGS  = $(OPT) $(TABLE) $(DIM) $(DEBUG) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system
+endif
 
 RM      = /bin/rm -f
 
 PROG    = pimc.e
-SOURCE  = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp cmc.cpp wavefunction.cpp
+SOURCE  = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp
 OBJS    = $(SOURCE:.cpp=.o)
-HEADERS = common.h pimc.h constants.h container.h path.h worm.h action.h potential.h move.h estimator.h lookuptable.h communicator.h setup.h cmc.h wavefunction.h
+HEADERS = common.h pimc.h constants.h container.h path.h worm.h action.h potential.h move.h estimator.h lookuptable.h communicator.h setup.h factory.h
 
 # -------------------------------------------------------------------------------
 all: $(PROG)
