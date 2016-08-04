@@ -394,7 +394,7 @@ void Setup::initParameters() {
 	params.add<double>("worm_constant,C", "worm acceptance constant",oClass,1.0);
 	params.add<double>("com_delta,D", "center of mass update radius[angstroms]",oClass);
 	params.add<double>("displace_delta,d", "displace update radius [angstroms]",oClass);
-	params.add<int>("update_length,M", "non-local update length, (Mbar)",oClass);
+	params.add<int>("update_length,M", "non-local update length, (Mbar), -1 sets maximal value",oClass);
 	params.add<string>("action", str(format("action type:\n%s") % actionNames).c_str(),oClass,"gsf");
 	params.add<bool>("full_updates", "perform full staging updates",oClass);
 	params.add<bool>("staging", "perform staging instead of bisection for the diagonal update",oClass);
@@ -926,7 +926,13 @@ bool Setup::worldlines() {
 		params.set<int>("update_length",Mbar);
 	}
 	else 
-		Mbar = params["update_length"].as<int>();
+    {
+        /* Any negative integer sets the maximum Mbar, useful for free particles */
+        if (params["update_length"].as<int>() < 0)
+            Mbar = numTimeSlices - 2;
+        else
+            Mbar = params["update_length"].as<int>();
+    }
 
 	/* Now we make sure it is even and not too large*/
 	if (Mbar % 2)
@@ -1312,6 +1318,8 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 	bool outputC0 = false;
 	bool outputD = false;
 	bool outputd = false;
+    bool outputEstimator = false;
+    bool outputUpdate = false;
 
 	for (int n = 0; n < argc; n++) {
 
@@ -1340,6 +1348,16 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 			outputd = true;
 			n++;
 		}
+		else if (checkOption(arg,"estimator")) {
+            outputEstimator = true;
+			/* communicate()->file("log")->stream() << format("--estimator='%s'") % arg << " "; */
+			n++;
+        }
+		else if (checkOption(arg,"update")) {
+            outputUpdate = false;
+			/* communicate()->file("log")->stream() << format("--update='%s'") % arg << " "; */
+			n++;
+        }
 		else {
 			communicate()->file("log")->stream() << arg << " ";
         }
@@ -1360,6 +1378,16 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 	/* If we haven't specified the displace delta, output it now */
     if (PIGS && !outputd)
         communicate()->file("log")->stream() << format("-d %21.15e ") % constants()->displaceDelta();
+
+    /* If we specified estimators, add them to the restart string */
+    if (outputEstimator)
+        for (string estName : params["estimator"].as<vector<string>>()) 
+            communicate()->file("log")->stream() << format("--estimator='%s' ") % estName;
+
+    /* If we specified updates, add them to the restart string */
+    if (outputUpdate)
+        for (string mvName : params["updates"].as<vector<string>>()) 
+            communicate()->file("log")->stream() << format("--update='%s' ") % mvName;
 
 	communicate()->file("log")->stream() << endl << endl;
 	communicate()->file("log")->stream() << "---------- Begin Simulation Parameters ----------" << endl;
@@ -1487,6 +1515,8 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 		else
 			communicate()->file("log")->stream() << endl;
 	}
+    communicate()->file("log")->stream() <<
+        format("%-24s\t:\t%d\n") % "Maximum Winding Sector" % params["max_winding"].as<int>();
 	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Initial Worm Constant" % 
 		params["worm_constant"].as<double>();
 	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Worm Constant" % constants()->C0();

@@ -77,6 +77,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     double cumDiagProb = 0.0;
     double cumOffDiagProb = 0.0;
     string moveName;
+
 	for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
 
         /* Get the namne of the move and check if it is the generic diagonal
@@ -142,15 +143,6 @@ string PathIntegralMonteCarlo::update(const double x, const int sweep, const int
     success = false;
 	string moveName = "NONE";
     int index;
-
-    /* If we have no beads, all we can do is insert */
-    /* N.B. This is not multi-path safe!!! */
-    if (path.worm.getNumBeadsOn() == 0) {
-        index = moveIndex["insert"];
-        success = move.at(index).attemptMove();
-        moveName = move.at(index).getName();
-        return moveName;
-    }
 
     /* Determine the index of the move to be performed */
 	if (pathPtrVec[pathIdx].worm.isConfigDiagonal)
@@ -401,20 +393,22 @@ void PathIntegralMonteCarlo::step() {
 
 	string moveName;
 
+    numUpdates = int(ceil(constants()->initialNumParticles()*constants()->numTimeSlices()/
+                (1.0*constants()->Mbar())));
+
     for (uint32 pIdx=0; pIdx<Npaths; pIdx++) {
-    
-        numUpdates = max(1,int(ceil(pathPtrVec[pIdx].worm.getNumBeadsOn()/(1.0*constants()->Mbar()))));
+
+        /* numUpdates = max(int(ceil(constants()->numTimeSlices()/(1.0*constants()->Mbar()))), */
+        /*         int(ceil(pathPtrVec[pIdx].worm.getNumBeadsOn()/(1.0*constants()->Mbar())))); */
+
 
         /* We run through all moves, making sure that we could have touched each bead at least once */
         for (int n = 0; n < numUpdates ; n++) 
             moveName = update(random.rand(),n,pIdx);
 
-        numParticles = pathPtrVec[pIdx].getTrueNumParticles();
-        if (numParticles > 0) {
-            /* Perform all measurements */
-            for (auto& est : estimatorPtrVec[pIdx])
-                est.sample();
-        }
+        /* Perform all measurements */
+        for (auto& est : estimatorPtrVec[pIdx])
+            est.sample();
         
         /* Every binSize measurements, we output averages to disk and record the
          * state of the simulation on disk.  */
