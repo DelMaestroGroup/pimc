@@ -98,14 +98,14 @@ of the official Boost documentation.
 4. Move up to the top level of the boost source directory
 5. Execute
 ~~~
-tools/build/v2/b2 install --prefix=PREFIX --toolset=gcc --with-program_options --with-filesystem --with-iostreams
+tools/build/v2/b2 install --prefix=PREFIX --toolset=gcc cxxflags=-std=c++11 linkflags=-std=c++11 --with-program_options --with-filesystem 
 ~~~
 The `b2` executable may also be in `tools/build/bin/` depending on your
 machine's configuration.  If you would like to compile boost with different
 compilers on your machine and would like to enforce a detailed labelling scheme
 for the libraries include `--layout=versioned` when calling `b2` above. See 
 [here](http://stackoverflow.com/questions/8940249/boost-how-bjam-constructs-a-library-name "Versioned Library Layout")
-for more detail.  
+for more detail.   You may also need to add `-stdlib=libc++`  to the linkflags when compiling for clang.
 6.  You should now have a `PREFIX/include` directory containing the header files
 for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will
 contain the following files (the `.dylib` files will only appear on Mac OS X)
