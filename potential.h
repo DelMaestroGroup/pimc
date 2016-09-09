@@ -319,10 +319,10 @@ class SutherlandPotential : public PotentialBase  {
 		 * Return the Sutherland potential g/r^2.
 		 */
 		double V(const dVec &r) {
-            double x = pioL*sqrt(dot(r,r));
-            if (x < EPS)
-                return LBIG;
-            return lambda * g * pioL * pioL / (sin(x)*sin(x));
+            double x = pioL*(sqrt(dot(r,r)) + EPS);
+            /* if (x < EPS) */
+            /*     return LBIG; */
+            return g * pioL * pioL / (sin(x)*sin(x));
 		}
 
 		/**
@@ -330,25 +330,24 @@ class SutherlandPotential : public PotentialBase  {
 		 */
 		dVec gradV(const dVec &r) {
             double rnorm = sqrt(dot(r,r));
-            double x = pioL*rnorm;
+            double x = pioL*(rnorm + EPS);
             double s = sin(x);
-            if (s < EPS)
-                return 0.0;
-			return (-2.0*lambda * g * pioL * pioL * pioL * cos(x) / (s*s*s*rnorm)) * r;
+            /* if (s < EPS) */
+            /*     return 0.0; */
+			return (-2.0* g * pioL * pioL * pioL * cos(x) / (s*s*s*rnorm)) * r;
 		}
 
 		/**
 		 * Return the Laplacian of the Sutherland potential.
 		 */
 		double grad2V(const dVec &r) {
-            double x = pioL*sqrt(dot(r,r));
+            double x = pioL*(sqrt(dot(r,r))+EPS);
             double s = sin(x);
-			return 2.0*lambda * g * pioL * pioL * pioL * pioL * (2.0+cos(2*x)) / 
+			return 2.0* g * pioL * pioL * pioL * pioL * (2.0+cos(2*x)) / 
                 (s*s*s*s);
 		}
 
 	private:
-		double lambda;		    // A local copy of \hbar^2/2m k_B
 		double g;			    // The interaction constant g
 		double pioL;		    // \pi/L
 };

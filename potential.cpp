@@ -423,8 +423,7 @@ LorentzianPotential::~LorentzianPotential() {
 ******************************************************************************/
 SutherlandPotential::SutherlandPotential(double _g) : PotentialBase() 
 {
-    g = _g;
-    lambda = constants()->lambda();
+    g = 2.0*constants()->lambda() * _g * (_g - 1.0);
     pioL = M_PI / constants()->L(); 
 }
 

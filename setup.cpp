@@ -390,7 +390,7 @@ void Setup::initParameters() {
     params.add<int>("window","set particle number window",oClass);
     params.add<double>("gaussian_window_width", "set gaussian ensemble weight",oClass);
 	params.add<double>("imaginary_time_step,t", "imaginary time step [kelvin^(-1)]",oClass);
-	params.add<double>("imaginary_time_length","total path length in imaginary time [kelvin^(-1)]",oClass);
+	params.add<double>("imaginary_time_length,p","total path length in imaginary time [kelvin^(-1)]",oClass);
 	params.add<double>("worm_constant,C", "worm acceptance constant",oClass,1.0);
 	params.add<double>("com_delta,D", "center of mass update radius[angstroms]",oClass);
 	params.add<double>("displace_delta,d", "displace update radius [angstroms]",oClass);
