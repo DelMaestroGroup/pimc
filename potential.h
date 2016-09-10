@@ -320,8 +320,6 @@ class SutherlandPotential : public PotentialBase  {
 		 */
 		double V(const dVec &r) {
             double x = pioL*(sqrt(dot(r,r)) + EPS);
-            /* if (x < EPS) */
-            /*     return LBIG; */
             return g * pioL * pioL / (sin(x)*sin(x));
 		}
 
@@ -329,11 +327,9 @@ class SutherlandPotential : public PotentialBase  {
 		 * Return the gradient of the Sutherland potential.
 		 */
 		dVec gradV(const dVec &r) {
-            double rnorm = sqrt(dot(r,r));
-            double x = pioL*(rnorm + EPS);
+            double rnorm = sqrt(dot(r,r)) + EPS;
+            double x = pioL*rnorm;
             double s = sin(x);
-            /* if (s < EPS) */
-            /*     return 0.0; */
 			return (-2.0* g * pioL * pioL * pioL * cos(x) / (s*s*s*rnorm)) * r;
 		}
 
