@@ -197,7 +197,7 @@ double JastrowWaveFunction::gradSqPsiTrial(const int slice) {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// LiebLiniger WAVEFUNCTION CLASS ---------------------------------------------------
+// LiebLiniger WAVEFUNCTION CLASS --------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
@@ -347,5 +347,64 @@ double LiebLinigerWaveFunction::gradSqPsiTrial(const int slice) {
 }
 
 
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// SUTHERLAND WAVEFUNCTION CLASS ---------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
+/**************************************************************************//**
+ * Constructor.
+ ******************************************************************************/
+SutherlandWaveFunction::SutherlandWaveFunction(const Path &_path, LookupTable &_lookup, 
+        double _lambda, string _name) :
+WaveFunctionBase(_path,_lookup,_name)
+{
+    // The Sutherland model value of the interaction paramter \lambda
+    lambda = _lambda;
 
+    // pi/L
+    pioL = M_PI/constants()->L();
+
+    // The wavefunction pre-factor
+    // N.B. This only works for canonical simulations 
+    int N = constants()->initialNumParticles();
+    CN = pow(tgamma(1.0+lambda)/constants()->L(),0.5*N) / sqrt(tgamma(1.0 + lambda*N));
+    CN *= pow(2.0,0.5*N*(N-1)*lambda);
+}
+
+/**************************************************************************//**
+ * Destructor.
+ ******************************************************************************/
+SutherlandWaveFunction::~SutherlandWaveFunction() {
+    // empty destructor
+}
+
+/**************************************************************************//**
+* The value of the trial wave function.
+******************************************************************************/
+double SutherlandWaveFunction::PsiTrial(const int slice) {
+    
+    /* The cumulative value */
+    double psiT = 1.0;
+
+    /* The number of particles */
+    int numParticles = path.numBeadsAtSlice(slice);    
+
+    dVec sep;						// The spatial separation between beads.
+    double r;                       // Distance between beads
+    beadLocator bead1,bead2;
+	bead1[0] = bead2[0] = slice;
+    
+    /* No cutoff */
+    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+        /* The loop over all other particles, to find the total wavefunction */
+        for (bead2[1] = bead1[1]+1; bead2[1] < numParticles; bead2[1]++) {
+            sep = path.getSeparation(bead2,bead1);
+            r = sqrt(dot(sep,sep));
+            psiT *= PsiTrial(r);
+        } // bead2
+    } // bead1
+
+    return CN*psiT;
+}

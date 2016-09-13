@@ -290,7 +290,7 @@ Setup::Setup() :
     actionNames = getList(actionName);
 
     /* Define the allowed trial wave function names */
-	waveFunctionName = {"constant", "sech", "jastrow","lieb"};
+	waveFunctionName = {"constant", "sech", "jastrow", "lieb", "sutherland"};
     waveFunctionNames = getList(waveFunctionName);
 
     /* Get the allowed estimator names */
@@ -1096,6 +1096,9 @@ WaveFunctionBase * Setup::waveFunction(const Path &path, LookupTable &lookup) {
 		waveFunctionPtr = new JastrowWaveFunction(path,lookup);
     else if (constants()->waveFunctionType() == "lieb")
 		waveFunctionPtr = new LiebLinigerWaveFunction(path,lookup);
+    else if (constants()->waveFunctionType() == "sutherland")
+		waveFunctionPtr = new SutherlandWaveFunction(path,lookup,
+                params["interaction_strength"].as<double>());
     
 	return waveFunctionPtr;
 }

@@ -69,7 +69,6 @@ class SechWaveFunction: public WaveFunctionBase {
 
 };
 
-
 // ========================================================================
 // JastrowWaveFunction Class
 // ========================================================================
@@ -98,6 +97,7 @@ private:
 };
 
 
+
 // ========================================================================
 // LiebLinigerWaveFunction Class
 // ========================================================================
@@ -124,6 +124,31 @@ private:
     double R;			// The parameter length scale of the wave function
     double k;			// The wavevector of the wave function
     
+};
+
+// ========================================================================
+// SutherlandWaveFunction Class
+// ========================================================================
+/**
+ * Implementation of the Sutherland model exact wavefunction.  
+ * @see Eq. (4) in Astrakharchik, G., Gangardt, D., Lozovik, Y. and Sorokin, I. 
+ * @see Off-diagonal correlations of the Calogero-Sutherland model. 
+ * @see Phys. Rev. E 74, 021105 (2006).
+ */
+class SutherlandWaveFunction: public WaveFunctionBase {
+    
+public:
+    SutherlandWaveFunction(const Path &, LookupTable &_lookup, double, string _name="Sutherland");
+    ~SutherlandWaveFunction();
+    
+    /** The 2-body trial wavefunction without pre-factors */
+    double PsiTrial(const double r) {return pow(sin(pioL*r),lambda);}
+    double PsiTrial (const int);
+    
+private:
+    double lambda;		    // Sutherland model \lambda
+    double pioL;            // pi / L
+    double CN;              // The wavefunction prefactor
 };
 
 
