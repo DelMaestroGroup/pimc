@@ -131,8 +131,7 @@ private:
 /**
  * Implementation of the Sutherland model exact wavefunction.  
  * @see Eq. (4) in Astrakharchik, G., Gangardt, D., Lozovik, Y. and Sorokin, I. 
- * @see Off-diagonal correlations of the Calogero-Sutherland model. 
- * @see Phys. Rev. E 74, 021105 (2006).
+ * Off-diagonal correlations of the Calogero-Sutherland model. Phys. Rev. E 74, 021105 (2006).
  */
 class SutherlandWaveFunction: public WaveFunctionBase {
     
