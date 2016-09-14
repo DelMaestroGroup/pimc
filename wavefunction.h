@@ -9,7 +9,6 @@
 #include "constants.h"
 #include "lookuptable.h"
 
-
 #ifndef WAVEFUNCTION_H 
 #define WAVEFUNCTION_H
 
