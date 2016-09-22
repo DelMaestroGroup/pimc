@@ -15,11 +15,7 @@
 #include "action.h"
 #include "move.h"
 #include "estimator.h"
-/* #include "factory.h" */
 
-/* typedef Factory<EstimatorBase* (Path &, ActionBase *, MTRand &, double)> EstimatorFactory; */
-/* typedef Factory<EstimatorBase* (Path &, Path &, ActionBase *, ActionBase *, MTRand &, double)> MultiEstimatorFactory; */
-/* typedef Factory<MoveBase* (Path &, ActionBase *, MTRand &)> MoveFactory; */
 
 /**************************************************************************//**
  * Create a comma separated list from a vector of strings
@@ -266,9 +262,6 @@ void Parameters::update(int argc, char *argv[], po::options_description &cmdLine
 ******************************************************************************/
 Setup::Setup() :
     params(),
-    /* moveFactory(), */
-    /* estimatorFactory(), */
-    /* multiEstimatorFactory(), */
     cmdLineOptions("Command Line Options")
 {
     /* Initialize the option class names */
@@ -1263,9 +1256,6 @@ boost::ptr_vector<EstimatorBase> * Setup::estimators(
     /* Create the list of estimator pointers */
     boost::ptr_vector<EstimatorBase>* multiEstimatorPtr = new boost::ptr_vector<EstimatorBase>();
 
-    /* Instantiate the Estimator Factory */
-    /* MultiEstimatorFactory multiEstimatorFactory; */
-
     /* Instatiate the multi path estimators */
     for (auto& name : params["estimator"].as<vector<string>>()) {
 
@@ -1333,7 +1323,7 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
             n++;
         }
 		else if ( checkOption(arg,"-C") || checkOption(arg,"worm_constant") ) {
-			communicate()->file("log")->stream() << format("-C %10.4e ") % constants()->C0();
+			communicate()->file("log")->stream() << format("-C %21.15e ") % constants()->C0();
 			n++;
 			outputC0 = true;
 		}
@@ -1342,23 +1332,21 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 			n++;
 		}
 		else if (checkOption(arg,"-D") || checkOption(arg,"com_delta")) {
-            communicate()->file("log")->stream() << format("-D %10.4e ") % constants()->comDelta();
+            communicate()->file("log")->stream() << format("-D %21.15e ") % constants()->comDelta();
 			outputD = true;
 			n++;
 		}
 		else if (checkOption(arg,"-d") || checkOption(arg,"displace_delta")) {
-            communicate()->file("log")->stream() << format("-d %10.4e ") % constants()->displaceDelta();
+            communicate()->file("log")->stream() << format("-d %21.15e ") % constants()->displaceDelta();
 			outputd = true;
 			n++;
 		}
 		else if (checkOption(arg,"estimator")) {
             outputEstimator = true;
-			/* communicate()->file("log")->stream() << format("--estimator='%s'") % arg << " "; */
 			n++;
         }
 		else if (checkOption(arg,"update")) {
             outputUpdate = false;
-			/* communicate()->file("log")->stream() << format("--update='%s'") % arg << " "; */
 			n++;
         }
 		else {

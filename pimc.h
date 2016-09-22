@@ -53,11 +53,7 @@ class PathIntegralMonteCarlo {
 		void finalOutput();
 
 		/* Save the PIMC state to disk */
-		void saveState();
-
-        /* NB new method of saving states AGD */
-        void saveStateFromStr();
-        void saveStateString();
+		void saveState(const int finalSave = 0);
 
 		/* Output the world-line configurations in the protein databank format */
 		void outputPDB();
@@ -86,8 +82,6 @@ class PathIntegralMonteCarlo {
         uint32 binSize;                // The maximum number measurements per bin.
         int numParticles;           // The number of particles
 
-		bool savedState;			// We have saved at least one state
-    
         uint32 Npaths;                 // Number of paths
     
         vector<string> stateStrings; // A vector of state strings from the last bin

@@ -55,6 +55,8 @@ class LookupTable {
 		void updateGrid(const Path &);
 		void updateGrid(const Array <dVec,1>&);
 
+		void printGrid();
+
 		/* Remove a bead from the grid */
 		void delBead(const beadLocator &);
 		void addBead(const beadLocator &, const dVec &);

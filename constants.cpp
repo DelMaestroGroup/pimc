@@ -164,8 +164,8 @@ void ConstantParameters::initConstants(po::variables_map &params) {
         attemptProb_["remove"] = 0.15;
         attemptProb_["swap head"] = 0.10;
         attemptProb_["swap tail"] = 0.10;
-        attemptProb_["diagonal"] = 0.15;
-        attemptProb_["center of mass"] = 0.05;
+        attemptProb_["diagonal"] = 0.19;
+        attemptProb_["center of mass"] = 0.01;
         attemptProb_["displace"] = 0.0;
         attemptProb_["end staging"] = 0.0;
         attemptProb_["swap break"] = 0.0;

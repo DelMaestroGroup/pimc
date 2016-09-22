@@ -66,9 +66,6 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     numNAttempted = 0;
     cN = 0;
     
-	/* Have we saved a state? */
-	savedState  = constants()->restart();
-    
 	/* Intialize the config number to zero */
 	configNumber = 0;
     
@@ -154,13 +151,7 @@ string PathIntegralMonteCarlo::update(const double x, const int sweep, const int
 
     /* Perform the move */
     moveName = movePtrVec[pathIdx].at(index).getName();
-
-    if (moveName == "center of mass"){
-        if ( (numParticles > 0) && ((sweep % numParticles)== 0) )
-            success = movePtrVec[pathIdx].at(index).attemptMove();
-    }
-    else
-        success = movePtrVec[pathIdx].at(index).attemptMove();
+    success = movePtrVec[pathIdx].at(index).attemptMove();
 
 	return moveName;
 }
@@ -376,8 +367,8 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
 
     } // 2/3 off-diagonal equilibration
 
-    /* Save a state to disk every 200 equilibrium steps */
-    if ((constants()->saveStateFiles()) && (iStep > 0) && (iStep % 200) == 0)
+    /* Save a state every binsize equilibrium steps */
+    if ((iStep > 0) && (iStep % binSize) == 0) 
         saveState();
 }
 
@@ -419,15 +410,10 @@ void PathIntegralMonteCarlo::step() {
                     if (est.getNumAccumulated() >= binSize)
                         est.output();
                 }
-                if(Npaths==1){
-                    if (constants()->saveStateFiles())
-                        saveState();
-                    else
-                        saveStateString();
-                }
-                if (pIdx == 0){
+                if(Npaths==1) 
+                    saveState();
+                if (pIdx == 0)
                     ++numStoredBins;
-                }
             }
         }
     }
@@ -448,10 +434,7 @@ void PathIntegralMonteCarlo::step() {
                     est.output();
 
             /* Save to disk or store a state file */
-            if (constants()->saveStateFiles())
-                saveState();
-            else
-                saveStateString();
+            saveState();
 
             if (estimator.size() == 0)
                 ++numStoredBins;
@@ -514,147 +497,86 @@ void PathIntegralMonteCarlo::finalOutput() {
 }
 
 /**************************************************************************//**
- *  Save the state of the simulation to disk, including all path, worm,
- *  move and estimator data.
-******************************************************************************/
-void PathIntegralMonteCarlo::saveState() {
-
-	savedState = true;
-    
-    string stateFileName;
-    
-    for(uint32 pIdx=0; pIdx<Npaths; pIdx++){
-        
-        stateFileName = "state";
-        if(pIdx > 0){
-            stateFileName += str(format("%d") % (pIdx+1));
-        }
-        
-        /* Prepare the state file for writing */
-        communicate()->file(stateFileName.c_str())->reset();
-
-        /* We First write the current total number of world lines */
-        communicate()->file(stateFileName.c_str())->stream() << path.getNumParticles() << endl;
-
-        /* Now write the total acceptance information for all moves */
-        communicate()->file(stateFileName.c_str())->stream() << format("%16d\t%16d\n")
-            % move.front().totAccepted % move.front().totAttempted;
-
-        /* Now record the individual move acceptance information,
-         * first for the diagonal, then off-diagonal*/
-        for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
-            communicate()->file(stateFileName.c_str())->stream() << format("%16d\t%16d\n")
-                % movePtr->numAccepted % movePtr->numAttempted;
-        }
-
-        /* Output the estimator sampling information */
-        for (estimator_vector::iterator estimatorPtr = estimator.begin();
-                estimatorPtr != estimator.end(); ++estimatorPtr) {
-            communicate()->file(stateFileName.c_str())->stream() << format("%16d\t%16d\n")
-                % estimatorPtr->getTotNumAccumulated()
-                % estimatorPtr->getNumSampled();
-        }
-
-        /* Now we output the actual path and worldline data */
-        communicate()->file(stateFileName.c_str())->stream() << setprecision(16)<< path.beads << endl;
-        communicate()->file(stateFileName.c_str())->stream() << path.nextLink << endl;
-        communicate()->file(stateFileName.c_str())->stream() << path.prevLink << endl;
-
-        /* Output the worm data */
-        communicate()->file(stateFileName.c_str())->stream() << path.worm.beads << endl;
-
-        /* Save the state of the random number generator */
-        uint32 randomState[random.SAVE];
-        random.save(randomState);
-        for (int i = 0; i < random.SAVE; i++)
-            communicate()->file(stateFileName.c_str())->stream() << randomState[i] << " ";
-        communicate()->file(stateFileName.c_str())->stream() << endl;
-
-        /* Rename and copy the file. */
-        communicate()->file(stateFileName.c_str())->rename();
-    }
-}
-
-/**************************************************************************//**
 *  Save the state of the simulation to disk, including all path, worm,
 *  move and estimator data.
 ******************************************************************************/
-void PathIntegralMonteCarlo::saveStateString() {
+void PathIntegralMonteCarlo::saveState(const int finalSave) {
 
     stringstream stateStrStrm;
     
-    for( uint32 pIdx=0; pIdx<Npaths; pIdx++){
-        
-        stateStrStrm.str("");
-        
-        /* We First write the current total number of world lines */
-        stateStrStrm << pathPtrVec[pIdx].getNumParticles() << endl;
-        
-        /* Now write the total acceptance information for all moves */
-        stateStrStrm << format("%16d\t%16d\n")
-            % movePtrVec[pIdx].front().totAccepted % movePtrVec[pIdx].front().totAttempted;
-        
-        /* Now record the individual move acceptance information,
-         * first for the diagonal, then off-diagonal*/
-        for (move_vector::iterator movePtr = movePtrVec[pIdx].begin(); movePtr != movePtrVec[pIdx].end(); ++movePtr) {
+    /* We only update the string during the simulation */
+    if (!finalSave) {
+
+        for(uint32 pIdx=0; pIdx<Npaths; pIdx++){
+
+            stateStrStrm.str("");
+
+            /* leftpack and update the lookup table arrays */
+            pathPtrVec[pIdx].leftPack();
+            pathPtrVec[pIdx].lookup.updateGrid(path);
+
+            /* We First write the current total number of world lines */
+            stateStrStrm << pathPtrVec[pIdx].getNumParticles() << endl;
+
+            /* Now write the total acceptance information for all moves */
             stateStrStrm << format("%16d\t%16d\n")
-                % movePtr->numAccepted % movePtr->numAttempted;
-        }
-        
-        /* Output the estimator sampling information */
-        for (estimator_vector::iterator estimatorPtr = estimatorPtrVec[pIdx].begin();
-                estimatorPtr != estimatorPtrVec[pIdx].end(); ++estimatorPtr) {
-            stateStrStrm << format("%16d\t%16d\n") % estimatorPtr->getTotNumAccumulated()
-                % estimatorPtr->getNumSampled();
-        }
-        
-        /* Now we output the actual path and worldline data */
-        stateStrStrm << setprecision(16) << pathPtrVec[pIdx].beads << endl;
-        stateStrStrm << pathPtrVec[pIdx].nextLink << endl;
-        stateStrStrm << pathPtrVec[pIdx].prevLink << endl;
-        
-        /* Output the worm data */
-        stateStrStrm << pathPtrVec[pIdx].worm.beads << endl;
-        
-        /* Save the state of the random number generator */
-        uint32 randomState[random.SAVE];
-        random.save(randomState);
-        for (int i = 0; i < random.SAVE; i++)
-            stateStrStrm << randomState[i] << " ";
-        stateStrStrm << endl;
-        
-        stateStrings[pIdx] = stateStrStrm.str();
+                % movePtrVec[pIdx].front().totAccepted % movePtrVec[pIdx].front().totAttempted;
+
+            /* Now record the individual move acceptance information,
+             * first for the diagonal, then off-diagonal*/
+            for (move_vector::iterator movePtr = movePtrVec[pIdx].begin(); movePtr != movePtrVec[pIdx].end(); ++movePtr) {
+                stateStrStrm << format("%16d\t%16d\n")
+                    % movePtr->numAccepted % movePtr->numAttempted;
+            }
+
+            /* Output the estimator sampling information */
+            for (estimator_vector::iterator estimatorPtr = estimatorPtrVec[pIdx].begin();
+                    estimatorPtr != estimatorPtrVec[pIdx].end(); ++estimatorPtr) {
+                stateStrStrm << format("%16d\t%16d\n") % estimatorPtr->getTotNumAccumulated()
+                    % estimatorPtr->getNumSampled();
+            }
+
+            /* Now we output the actual path and worldline data */
+            stateStrStrm << setprecision(16) << pathPtrVec[pIdx].beads << endl;
+            stateStrStrm << pathPtrVec[pIdx].nextLink << endl;
+            stateStrStrm << pathPtrVec[pIdx].prevLink << endl;
+
+            /* Output the worm data */
+            stateStrStrm << pathPtrVec[pIdx].worm.beads << endl;
+
+            /* Save the state of the random number generator */
+            uint32 randomState[random.SAVE];
+            random.save(randomState);
+            for (int i = 0; i < random.SAVE; i++)
+                stateStrStrm << randomState[i] << " ";
+            stateStrStrm << endl;
+
+            /* store the state string */
+            stateStrings[pIdx] = stateStrStrm.str();
+
+        } // for pidx
     }
 
-}
-
-/**************************************************************************//**
-*  Save the state of the simulation to disk, including all path, worm,
-*  move and estimator data.
-******************************************************************************/
-void PathIntegralMonteCarlo::saveStateFromStr() {
-    
-	savedState = true;
+    /* Save the state file to disk */
     string stateFileName;
-    
-    for(uint32 pIdx=0; pIdx<Npaths; pIdx++){
-        
-        stateFileName = "state";
-        if(pIdx > 0){
-            stateFileName += str(format("%d") % (pIdx+1));
+    if (constants()->saveStateFiles() || finalSave) {
+
+        for(uint32 pIdx=0; pIdx<Npaths; pIdx++) {
+
+            stateFileName = "state";
+            if(pIdx > 0)
+                stateFileName += str(format("%d") % (pIdx+1));
+
+            /* Prepare the state file for writing */
+            communicate()->file(stateFileName.c_str())->reset();
+
+            /* Write the stateString to disk */
+            communicate()->file(stateFileName.c_str())->stream() << stateStrings[pIdx];
+
+            /* Rename and copy the file. */
+            communicate()->file(stateFileName.c_str())->rename();
         }
-        
-        /* Prepare the state file for writing */
-        communicate()->file(stateFileName.c_str())->reset();
-        
-        /* Write the stateString to disk */
-        communicate()->file(stateFileName.c_str())->stream() << stateStrings[pIdx];
-        
-        /* Rename and copy the file. */
-        communicate()->file(stateFileName.c_str())->rename();
-        
     }
-    
 }
 
 /**************************************************************************//**
@@ -900,9 +822,6 @@ void PathIntegralMonteCarlo::loadState() {
 
         /* Reset the number of on beads */
         pathPtrVec[pIdx].worm.resetNumBeadsOn();
-
-        /* Left pack the input data array */
-        pathPtrVec[pIdx].leftPack();
 
         /* Go through all beads, and make sure they fit inside the simulation cell.
          * At the same time, determine how many active beads there are per slice */

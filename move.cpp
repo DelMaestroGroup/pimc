@@ -361,7 +361,7 @@ iVec MoveBase::sampleWindingSector(const beadLocator &startBead, const beadLocat
         const int stageLength, double &totalrho0) {
 
     /* For now, we hard-code the tolerance at 0.001% */
-    double tolerance = 1.0E-6;
+    /* double tolerance = 1.0E-6; */
 
     /* Get the w = 0 sector separation */ 
     dVec vel,velW;
@@ -371,7 +371,7 @@ iVec MoveBase::sampleWindingSector(const beadLocator &startBead, const beadLocat
     cumrho0.clear();
     cumrho0.push_back(actionPtr->rho0(vel,stageLength));
     totalrho0 = cumrho0[0];
-    double maxrho0 = totalrho0;
+    /* double maxrho0 = totalrho0; */
     
     /* Sample the free density matrix for different winding sectors */
     for (int n = 1; n < numWind; n++) {
@@ -1137,9 +1137,9 @@ bool CenterOfMassMove::attemptMove() {
     if (path.worm.getNumBeadsOn() == 0) 
         return success;
     
-    int startSlice =0;
+    int startSlice = 0;
     /* If there are broken wordlines, choose between starting and ending bead*/
-    if( (path.breakSlice > 0) &&(random.rand() < 0.5) )
+    if( (path.breakSlice > 0) && (random.rand() < 0.5) )
         startSlice = path.numTimeSlices-1;
 
 	/* We don't bother performing a center of mass move, unless we have at 
@@ -1152,7 +1152,7 @@ bool CenterOfMassMove::attemptMove() {
 	/* The initial bead */
     beadLocator firstBead;
 	firstBead = startSlice,random.randInt(path.numBeadsAtSlice(startSlice)-1);
-    
+
     bool startSubregionA,startSubregionB,endSubregionA,endSubregionB;
 
     /* Now we traverse the path backwards, until we find 1 of two
@@ -3095,6 +3095,97 @@ SwapMoveBase::SwapMoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random
 SwapMoveBase::~SwapMoveBase() {
 }
 
+#include<numeric>
+template <typename T>
+vector<size_t> sort_indexes(const vector<T> &v) {
+
+  // initialize original index locations
+  vector<size_t> idx(v.size());
+  std::iota(idx.begin(), idx.end(), 0);
+
+  // sort indexes based on comparing values in v
+  stable_sort(idx.begin(), idx.end(),
+       [&v](size_t i1, size_t i2) {return v[i1] < v[i2];});
+
+  return idx;
+}
+
+/*************************************************************************//**
+ * Get the normalization constant for a swap move.
+ * 
+ * We compute the normalization constant used in both the pivot selection
+ * probability as well as the overall acceptance probabilty.  
+ * @see Eq. (2.23) of PRE 74, 036701 (2006).
+ *
+ * This version uses a sorted weights list.
+ *
+ * @param sign corrects for always measuring distances forward in imaginary
+ *             time
+******************************************************************************/
+double SwapMoveBase::getNormSorted(const beadLocator &beadIndex, const int sign) {
+
+	double Sigma = 0.0;
+    dVec sep;
+    int index = 0;
+
+    sizeCDF = path.lookup.fullNumBeads*numWind;
+
+    /* Check if we need to resisize our cumulative distribution funciton */
+     if (cumulant.size() < sizeCDF)
+         cumulant.assign(sizeCDF,0.0);
+
+    /* Check if we need to resisize our cumulative distribution funciton */
+     if (indices.size() < sizeCDF)
+         indices.assign(sizeCDF,0);
+
+     vector <double> weights(sizeCDF,0.0);
+
+    /* For each particle, we find the free particle weight for all winding
+     * sectors.  We start with W = 0. */
+
+	/* We sum up the free particle density matrices for each bead
+	 * in the list */
+    sep = path(path.lookup.fullBeadList(0)) - path(beadIndex);
+    weights.at(0) = actionPtr->rho0(sep,swapLength);
+    ++index;
+	for (int n = 1; n < path.lookup.fullNumBeads; n++) {
+        sep = path(path.lookup.fullBeadList(n)) - path(beadIndex);
+		weights.at(index) = actionPtr->rho0(sep,swapLength);
+        ++index;
+	}
+
+    /* Now we repeat for all winding sectors */
+    for (int w = 1; w < numWind; w++) {
+
+        /* Go through every particle in the lookup table. */
+        for (int n = 0; n < path.lookup.fullNumBeads; n++) {
+            sep = path(path.lookup.fullBeadList(n)) - path(beadIndex) 
+                + sign*winding.at(w)*path.boxPtr->side;
+            weights.at(index) = actionPtr->rho0(sep,swapLength);
+            ++index;
+        }
+    }
+
+    /* Sort the array */
+    indices = sort_indexes(weights);
+    std::stable_sort(weights.begin(), weights.end());
+
+    /* Compute the total normalization */
+    for (auto w: weights)
+        Sigma += w;
+
+    /* Generate the cumulative distribution function */
+    cumulant.at(0) = weights.at(0);
+    for (unsigned int n = 1; n < sizeCDF; n++)
+        cumulant.at(n) = cumulant.at(n-1) + weights.at(n);
+
+	/* Normalize the cumulant */
+	for (unsigned int n = 0; n < sizeCDF; n++) 
+        cumulant.at(n) /= Sigma;
+
+	return Sigma;
+}
+
 /*************************************************************************//**
  * Get the normalization constant for a swap move.
  * 
@@ -3150,7 +3241,7 @@ double SwapMoveBase::getNorm(const beadLocator &beadIndex, const int sign) {
     }
 
 	/* Normalize the cumulant */
-	for (unsigned int n = 0; n < sizeCDF; n++)
+	for (unsigned int n = 0; n < sizeCDF; n++) 
         cumulant.at(n) /= Sigma;
 
 	return Sigma;
@@ -3195,16 +3286,20 @@ double SwapMoveBase::getNorm(const beadLocator &beadIndex, const int sign) {
  * then generate a uniform random variable and find where it lies in 
  * the ordered CDF list.
  *
- * @parm wind the chosen winding number sector.
+ * @param wind the chosen winding number sector.
 ******************************************************************************/
 beadLocator SwapMoveBase::selectPivotBead(iVec &wind) {
 	
 	/* Generate a uniform deviate, and figure out where it fits in our cumulant
 	 * array using a binary search.  This is basic tower sampling */
 
-    int index = std::lower_bound(cumulant.begin(),cumulant.begin()+sizeCDF,
-            random.rand()) - cumulant.begin();
+    double x = random.rand();
+
+    int index = std::lower_bound(cumulant.begin(),cumulant.begin()+sizeCDF, x) - cumulant.begin();
     /* We need to determine the pivot index and winding sector */
+
+    /* for ordered lists */
+    /* index = indices.at(index); */
     
     /* row index */
     int w = (index/path.lookup.fullNumBeads) % numWind; 
@@ -3218,7 +3313,8 @@ beadLocator SwapMoveBase::selectPivotBead(iVec &wind) {
 
     /* Get the winding number */
     wind = winding.at(w);
-	
+
+
 	return pivotBead;
 }
 

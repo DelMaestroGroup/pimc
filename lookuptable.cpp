@@ -237,39 +237,46 @@ void LookupTable::setupNNGrid() {
 		} // end m
 	} // end n
 
-	/* This outputs the NN grid table */
-//	for (int n = 0; n < totNumGridBoxes; n++) {
-//		iVec tIndex;
-//		tIndex = gridIndex(n);
-//		for (int i = 0; i < NDIM; i++) 
-//			cout << tIndex[i];
-//		cout << "  ";
-//	}
-//	cout << endl;
-//
-//	for (int n = 0; n < totNumGridBoxes; n++) 
-//		cout << "===  ";
-//	cout << endl;
-//
-//	for (int m = 0; m < numNN; m++) {
-//		nnIndex[NDIM] = m;
-//		for (int n = 0; n < totNumGridBoxes; n++) {
-//			iVec tIndex;
-//			tIndex = gridIndex(n);
-//			for (int i = 0; i < NDIM; i++) 
-//				nnIndex[i] = tIndex[i];
-//
-//			for (int i = 0; i < NDIM; i++) {
-//				if (gridNNReduced(nnIndex)[i] == -1)
-//					cout << "x";
-//				else
-//					cout << gridNNReduced(nnIndex)[i];
-//			}
-//			cout << "  ";
-//		}
-//		cout << endl;
-//	}
 
+}
+
+/**************************************************************************//**
+ *  Print the NN Lookup table.
+******************************************************************************/
+void LookupTable::printGrid() {
+
+    /* This outputs the NN grid table */
+    for (int n = 0; n < totNumGridBoxes; n++) {
+        iVec tIndex;
+        tIndex = gridIndex(n);
+        for (int i = 0; i < NDIM; i++) 
+            cout << tIndex[i];
+        cout << "  ";
+    }
+    cout << endl;
+
+    for (int n = 0; n < totNumGridBoxes; n++) 
+        cout << "===  ";
+    cout << endl;
+
+    for (int m = 0; m < numNN; m++) {
+        nnIndex[NDIM] = m;
+        for (int n = 0; n < totNumGridBoxes; n++) {
+            iVec tIndex;
+            tIndex = gridIndex(n);
+            for (int i = 0; i < NDIM; i++) 
+                nnIndex[i] = tIndex[i];
+
+            for (int i = 0; i < NDIM; i++) {
+                if (gridNNReduced(nnIndex)[i] == -1)
+                    cout << "x";
+                else
+                    cout << gridNNReduced(nnIndex)[i];
+            }
+            cout << "  ";
+        }
+        cout << endl;
+    }
 }
 
 /**************************************************************************//**

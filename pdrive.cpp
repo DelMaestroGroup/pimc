@@ -200,7 +200,7 @@ int main (int argc, char *argv[]) {
 
 	/* Output Results */
     if (!constants()->saveStateFiles())
-        pimc.saveStateFromStr();
+        pimc.saveState(1);
 	pimc.finalOutput();
 
 	/* Free up memory */
