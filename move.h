@@ -562,7 +562,6 @@ class SwapMoveBase: public MoveBase {
         unsigned int sizeCDF;               ///< The size of the cumulative distribution function
 
 		vector <double> cumulant;			///< The cumulant array used in selecting a pivot
-        vector <size_t> indices;
 
 		beadLocator pivot;					///< The pivot bead
 		beadLocator swap;					///< The swap bead
@@ -571,7 +570,6 @@ class SwapMoveBase: public MoveBase {
 
 		/* Returns the normalization factor for the probability dist. */
 		double getNorm(const beadLocator&, const int sign=1);
-		double getNormSorted(const beadLocator&, const int sign=1);
 		
 		/* Gets the bead where the swap will pivot. */
 		beadLocator selectPivotBead();

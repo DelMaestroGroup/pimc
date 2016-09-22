@@ -3117,82 +3117,6 @@ vector<size_t> sort_indexes(const vector<T> &v) {
  * probability as well as the overall acceptance probabilty.  
  * @see Eq. (2.23) of PRE 74, 036701 (2006).
  *
- * This version uses a sorted weights list.
- *
- * @param sign corrects for always measuring distances forward in imaginary
- *             time
-******************************************************************************/
-double SwapMoveBase::getNormSorted(const beadLocator &beadIndex, const int sign) {
-
-	double Sigma = 0.0;
-    dVec sep;
-    int index = 0;
-
-    sizeCDF = path.lookup.fullNumBeads*numWind;
-
-    /* Check if we need to resisize our cumulative distribution funciton */
-     if (cumulant.size() < sizeCDF)
-         cumulant.assign(sizeCDF,0.0);
-
-    /* Check if we need to resisize our cumulative distribution funciton */
-     if (indices.size() < sizeCDF)
-         indices.assign(sizeCDF,0);
-
-     vector <double> weights(sizeCDF,0.0);
-
-    /* For each particle, we find the free particle weight for all winding
-     * sectors.  We start with W = 0. */
-
-	/* We sum up the free particle density matrices for each bead
-	 * in the list */
-    sep = path(path.lookup.fullBeadList(0)) - path(beadIndex);
-    weights.at(0) = actionPtr->rho0(sep,swapLength);
-    ++index;
-	for (int n = 1; n < path.lookup.fullNumBeads; n++) {
-        sep = path(path.lookup.fullBeadList(n)) - path(beadIndex);
-		weights.at(index) = actionPtr->rho0(sep,swapLength);
-        ++index;
-	}
-
-    /* Now we repeat for all winding sectors */
-    for (int w = 1; w < numWind; w++) {
-
-        /* Go through every particle in the lookup table. */
-        for (int n = 0; n < path.lookup.fullNumBeads; n++) {
-            sep = path(path.lookup.fullBeadList(n)) - path(beadIndex) 
-                + sign*winding.at(w)*path.boxPtr->side;
-            weights.at(index) = actionPtr->rho0(sep,swapLength);
-            ++index;
-        }
-    }
-
-    /* Sort the array */
-    indices = sort_indexes(weights);
-    std::stable_sort(weights.begin(), weights.end());
-
-    /* Compute the total normalization */
-    for (auto w: weights)
-        Sigma += w;
-
-    /* Generate the cumulative distribution function */
-    cumulant.at(0) = weights.at(0);
-    for (unsigned int n = 1; n < sizeCDF; n++)
-        cumulant.at(n) = cumulant.at(n-1) + weights.at(n);
-
-	/* Normalize the cumulant */
-	for (unsigned int n = 0; n < sizeCDF; n++) 
-        cumulant.at(n) /= Sigma;
-
-	return Sigma;
-}
-
-/*************************************************************************//**
- * Get the normalization constant for a swap move.
- * 
- * We compute the normalization constant used in both the pivot selection
- * probability as well as the overall acceptance probabilty.  
- * @see Eq. (2.23) of PRE 74, 036701 (2006).
- *
  * @param sign corrects for always measuring distances forward in imaginary
  *             time
 ******************************************************************************/
@@ -3298,9 +3222,6 @@ beadLocator SwapMoveBase::selectPivotBead(iVec &wind) {
     int index = std::lower_bound(cumulant.begin(),cumulant.begin()+sizeCDF, x) - cumulant.begin();
     /* We need to determine the pivot index and winding sector */
 
-    /* for ordered lists */
-    /* index = indices.at(index); */
-    
     /* row index */
     int w = (index/path.lookup.fullNumBeads) % numWind; 
 
