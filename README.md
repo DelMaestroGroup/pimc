@@ -8,9 +8,7 @@ This webpage contains the details of a worm algorithm path integral quantum
 Monte Carlo (WA-PIMC) code actively developed in c++ since 2008 in the [Del Maestro
 group](http://delmaestro.org/adrian) based on:
 
-- T>0: [M. Boninsegni, N. V. Prokofiev,
-and B. Svistunov, Phys. Rev. E <b>74</b>, 036701
-(2006)](http://link.aps.org/doi/10.1103/PhysRevE.74.036701)
+- T>0: [M. Boninsegni, N. V. Prokofiev, and B. Svistunov, Phys. Rev. E <b>74</b>, 036701 (2006)](http://link.aps.org/doi/10.1103/PhysRevE.74.036701)
 - T=0: [A. Sarsa, K.E. Schmidt and W. R. Magro, J. Chem. Phys. <b>113</b>, 1366 (2000)] (http://aip.scitation.org/doi/abs/10.1063/1.481926)
 
 It can be used to simulate indistinguishable bosons with various types of
