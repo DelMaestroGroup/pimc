@@ -4,21 +4,34 @@ Documentation  {#mainpage}
 Introduction {#introduction}
 ============
 
-This program implements the Worm Algorithm Path Integral Quantum Monte Carlo (WA-PIMC) technique
-introduced in [M. Boninsegni, N. V. Prokofiev, and B. Svistunov, Phys. Rev. E <b>74</b>, 036701
-(2006)](http://link.aps.org/doi/10.1103/PhysRevE.74.036701). It can be used to
-simulate indistinguishable bosons with various types of realistic interactions
-in one, two and three spatial dimensions. As written, it takes a large number
-of command line options and allows for the measurement of essentially any
-physical observable of interest. 
+This webpage contains the details of a worm algorithm path integral quantum
+Monte Carlo (WA-PIMC) code actively developed in c++ since 2008 in the [Del Maestro
+group](http://delmaestro.org/adrian) based on:
 
-The design philosophy included the goal of abstracting the actual implementation of the WA-PIMC
-method to a kernel that will never need to be touched by the end user.  The code can be easily
-extended to study a wide variety of situations by including new types of containers, potentials
+- T>0: [M. Boninsegni, N. V. Prokofiev,
+and B. Svistunov, Phys. Rev. E <b>74</b>, 036701
+(2006)](http://link.aps.org/doi/10.1103/PhysRevE.74.036701)
+- T=0: [A. Sarsa, K.E. Schmidt and W. R. Magro, J. Chem. Phys. <b>113</b>, 1366 (2000)] (http://aip.scitation.org/doi/abs/10.1063/1.481926)
+
+It can be used to simulate indistinguishable bosons with various types of
+realistic interactions in one, two and three spatial dimensions. As written, it
+takes a large number of command line options and allows for the measurement of
+essentially any physical observable of interest. 
+
+The design philosophy included the goal of abstracting the actual
+implementation of the WA-PIMC method to a kernel that will never need to be
+touched by the end user.  The code can be easily extended to study a wide
+variety of situations by including new types of containers, potentials
 estimators and communicators.
 
 If you have questions, bug reports or plan to use this code for scientific
 research, please contact me at Adrian.DelMaestro@uvm.edu.
+
+Since July 2016, the development and maintenance of this code base has been
+supported in part by the National Science Foundation under Award No.
+DMR-1553991.
+
+![NSF](https://www.nsf.gov/images/logos/nsf1.gif)
 
 Installation {#installation}
 ============
