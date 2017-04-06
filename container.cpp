@@ -20,6 +20,7 @@
 Container::Container() {
 	side     = 0.0;
 	sideInv  = 0.0;
+    sideInv2 = 0.0;
 	pSide    = 0.0;
 	periodic = 1;
 	volume   = 0.0;
@@ -82,6 +83,7 @@ Prism::Prism(double density, int numParticles) {
 	/* Setup the cube size in each dimension */
 	side = pow(1.0*numParticles / density, 1.0/(1.0*NDIM));
 	sideInv = 1.0/side;
+    sideInv2 = 2.0*sideInv;
 
 	rcut2 = 0.25*side[NDIM-1]*side[NDIM-1];
 
@@ -110,6 +112,7 @@ Prism::Prism(const dVec &_side) {
 	/* Setup the cube size in each dimension */
 	side = _side;
 	sideInv = 1.0/side;
+    sideInv2 = 2.0*sideInv;
 
 	/* The hyper cube has periodic boundary conditions */
 	periodic = 1; 
@@ -224,6 +227,7 @@ Cylinder::Cylinder(const double _rho, const double radius, const int numParticle
 		rcut2 = 0.25*side[2]*side[2];
 
 		sideInv = 1.0/side;
+        sideInv2 = 2.0*sideInv;
 
 		/* setup which dimensions have periodic boundary conditions, 1.0 for yes 
 		 * and 0.0 for no. */
@@ -274,6 +278,7 @@ Cylinder::Cylinder(const double radius, const double L) {
 		rcut2 = 0.25*side[2]*side[2];
 
 		sideInv = 1.0/side;
+        sideInv2 = 2.0*sideInv;
 
 		/* setup which dimensions have periodic boundary conditions, 1 for yes 
 		 * and 0 for no. */

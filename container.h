@@ -30,6 +30,7 @@ class Container {
 
 		dVec side;							///< The linear dimensions of the box
 		dVec sideInv;						///< The inverse box dimensions
+        dVec sideInv2;                      ///< 2 times the inverse box dimensions
 
 		double volume;						///< The volume of the container in A^3
 		double rcut2;						///< The smallest separation squared
@@ -41,6 +42,17 @@ class Container {
         dVec gridSize;                      ///< The grid size in each dimension
 
 		/** Place a vector in boundary conditions. */
+        /** COME BACK TO THIS
+         * SEE: Z. Phys. Chem. 227 (2013) 345–352
+         */
+		/* void putInBC(dVec & r) const { */
+            /* int k; */
+		/* 	for (int i = 0; i < NDIM; ++i) { */
+                /* k = (int) r[i] * sideInv2[i]; */
+                /* r[i] -= k*side[i]; */
+		/* 	} */
+		/* } */
+
 		void putInBC1(dVec & r) const {
 			for (int i = 0; i < NDIM; ++i) {
 				r[i] -= (r[i] >= 0.5*side[i])*pSide[i];
