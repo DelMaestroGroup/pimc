@@ -407,13 +407,13 @@ void Setup::initParameters() {
     vector<string> estimatorsToMeasure;
     vector<string> movesToPerform;
     if (PIGS) {
-        estimatorsToMeasure = {PigsEnergyEstimator::name};
+        estimatorsToMeasure = {PigsEnergyEstimator::name, TimeEstimator::name, NullEstimator::name};
         movesToPerform = {CenterOfMassMove::name, StagingMove::name, EndStagingMove::name,
             DisplaceMove::name};         
     }
     else {
         estimatorsToMeasure = {EnergyEstimator::name, NumberParticlesEstimator::name,
-            DiagonalFractionEstimator::name};
+            TimeEstimator::name, DiagonalFractionEstimator::name, NullEstimator::name};
 
         movesToPerform = {CenterOfMassMove::name, BisectionMove::name, OpenMove::name,
             CloseMove::name, InsertMove::name, RemoveMove::name, AdvanceHeadMove::name, 
@@ -698,7 +698,10 @@ bool Setup::parseOptions() {
     /* Make sure all our estimators are pigs estimators */
     else {
         for (string name : params["estimator"].as<vector<string> >()) {
-            bool foundPIGSEstimator = (name.find("pigs") != string::npos);
+            bool foundPIGSEstimator = (name.find("pigs") != string::npos)
+                || (name.find("null") != string::npos)
+                || (name.find("time") != string::npos);
+
             if (!foundPIGSEstimator) {
                 cerr << "ERROR: Tried to measure a non-PIGS estimator when T > 0: " << name << endl;
                 cerr << "Action: remove " << name << " estimator." <<  endl;
