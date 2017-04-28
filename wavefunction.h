@@ -139,14 +139,13 @@ public:
     SutherlandWaveFunction(const Path &, LookupTable &_lookup, double, string _name="Sutherland");
     ~SutherlandWaveFunction();
     
-    /** The 2-body trial wavefunction without pre-factors */
-    double PsiTrial(const double r) {return pow(sin(pioL*r),lambda);}
+    /** The 2-body trial wavefunction */
+    double PsiTrial(const double r) {return pow(2.0*sin(pioL*r),lambda);}
     double PsiTrial (const int);
     
 private:
-    double lambda;		    // Sutherland model \lambda
+    double lambda;          // Sutherland model \lambda
     double pioL;            // pi / L
-    double CN;              // The wavefunction prefactor
 };
 
 

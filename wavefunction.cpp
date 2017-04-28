@@ -365,12 +365,6 @@ WaveFunctionBase(_path,_lookup,_name)
 
     // pi/L
     pioL = M_PI/constants()->L();
-
-    // The wavefunction pre-factor
-    // N.B. This only works for canonical simulations 
-    int N = constants()->initialNumParticles();
-    CN = pow(tgamma(1.0+lambda)/constants()->L(),0.5*N) / sqrt(tgamma(1.0 + lambda*N));
-    CN *= pow(2.0,0.5*N*(N-1)*lambda);
 }
 
 /**************************************************************************//**
@@ -406,5 +400,5 @@ double SutherlandWaveFunction::PsiTrial(const int slice) {
         } // bead2
     } // bead1
 
-    return CN*psiT;
+    return psiT;
 }
