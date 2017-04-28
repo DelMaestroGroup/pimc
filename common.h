@@ -21,6 +21,7 @@
 #include <map>
 #include <algorithm>
 #include <sstream>
+#include <chrono>
 
 #include <blitz/array.h>
 #include <boost/format.hpp>
