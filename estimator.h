@@ -127,6 +127,36 @@ class NullEstimator : public EstimatorBase {
 };
 
 // ========================================================================  
+// Time Estimator Class
+// ========================================================================  
+/** 
+ * An estimator which tracks the ammount of time between bins, summing
+ * them into a total at the end. 
+ *
+ */
+class TimeEstimator : public EstimatorBase {
+
+	public:
+        TimeEstimator(const Path &, ActionBase *, const MTRand &, double,
+                int _frequency=1, string _label="estimator");
+		~TimeEstimator() {};
+        
+        void sample();          // Overload to always-on sampling
+
+        static const string name;
+        string getName() {return name;}
+
+        void output();		        // overload the output
+
+	private:
+		void accumulate();		// Accumulate values
+                std::chrono::high_resolution_clock::time_point time_begin;
+                std::chrono::high_resolution_clock::time_point time_end;
+
+};
+
+
+// ========================================================================  
 // Energy Estimator Class 
 // ========================================================================  
 /** 

@@ -39,6 +39,7 @@ REGISTER_ESTIMATOR("virial",VirialEnergyEstimator);
 REGISTER_ESTIMATOR("number particles",NumberParticlesEstimator);
 REGISTER_ESTIMATOR("number distribution",NumberDistributionEstimator);
 REGISTER_ESTIMATOR("null",NullEstimator);
+REGISTER_ESTIMATOR("time",TimeEstimator);
 REGISTER_ESTIMATOR("particle position",ParticlePositionEstimator);
 REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
 REGISTER_ESTIMATOR("planar density rho",PlaneParticlePositionEstimator);
@@ -296,6 +297,73 @@ void NullEstimator::output() {
 
 	/* Reset all values */
 	reset();
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// TIME ESTIMATOR CLASS ------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ * Used to measure the time between bins
+******************************************************************************/
+TimeEstimator::TimeEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
+
+    /* Set estimator name and header */
+    header = str(format("%16s%16s") % "us" % "mcsteps");
+    endLine = false;
+    initialize(2);
+}
+
+/*************************************************************************//**
+ *  Overload sampling to make sure it is always done, regardless of ensemble.
+******************************************************************************/
+void TimeEstimator::sample() {
+
+    numSampled++;
+
+    if (frequency && ((numSampled % frequency) == 0)) {
+        totNumAccumulated++;
+        numAccumulated++;
+        accumulate();
+    }
+}
+
+/*************************************************************************//**
+ *  Grab the initial time.
+******************************************************************************/
+void TimeEstimator::accumulate() {
+    if (totNumAccumulated == 1)
+        time_begin = std::chrono::high_resolution_clock::now();
+}
+
+/*************************************************************************//**
+ *  Grab the final time and write to disk.  
+******************************************************************************/
+void TimeEstimator::output() {
+    time_end = std::chrono::high_resolution_clock::now();
+    estimator(0) = 0.001*std::chrono::duration_cast<std::chrono::nanoseconds>(
+            time_end - time_begin).count()/numAccumulated;
+    estimator(1) = 1.0*numAccumulated;
+        
+    // close the loop
+    time_begin = time_end;
+
+    /* Now write the estimator values to disk */
+    for (int n = 0; n < numEst; n++) 
+        (*outFilePtr) << format("%16.8E") % estimator(n);
+
+    if (endLine)
+        (*outFilePtr) << endl;
+
+    /* Reset all values */
+    reset();
 }
 
 // ---------------------------------------------------------------------------
@@ -1576,8 +1644,8 @@ DiagonalFractionEstimator::DiagonalFractionEstimator (const Path &_path,
 
     initialize(1);
 
-	header = str(format("%16s") % "diagonal");
-
+    header = str(format("%16s") % "diagonal");
+    endLine = false;
 }
 
 /*************************************************************************//**
@@ -3379,7 +3447,7 @@ PigsEnergyEstimator::PigsEnergyEstimator (const Path &_path,
 	 * first, hence the comment symbol*/
 	header = str(format("#%15s%16s%16s%16s%16s%16s%16s")
                  % "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
-    endLine = true;
+    endLine = false;
     initialize(7);
 }
 
