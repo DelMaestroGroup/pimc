@@ -1,8 +1,11 @@
 #PIMC Makefile
 
+#$(info $$CXX is [${CXX}])
+
 CXX     ?= g++
 LD      = $(CXX)
 UNAME   = $(shell uname -s)
+
 
 # Determine the comiler toolset, gcc or intel
 ifeq ($(findstring g++,$(CXX)), g++)
@@ -12,6 +15,7 @@ TOOLSET = intel
 else ifeq ($(findstring c++,$(CXX)), c++)
 TOOLSET = clang
 endif
+
 
 #Number of dimensions to compile for
 ndim = 3

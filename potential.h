@@ -666,7 +666,6 @@ inline double AzizPotential::grad2V(const dVec &r) {
 	double rnorm = sqrt(dot(r,r));
 	double g2V;
 	//g2V = (newtonGregory(lookupd2Vdr2,extd2Vdr2,rnorm)/rnorm)*r;
-	//g2V = (direct(lookupd2Vdr2,extd2Vdr2,rnorm)/rnorm)*r;
 	g2V = direct(lookupd2Vdr2,extd2Vdr2,rnorm);
 	return g2V;
 }
