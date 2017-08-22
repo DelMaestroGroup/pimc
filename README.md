@@ -111,7 +111,7 @@ of the official Boost documentation.
 ~~~
 tools/build/v2/b2 install --prefix=PREFIX --toolset=gcc cxxflags=-std=c++11 linkflags=-std=c++11 --with-program_options --with-filesystem 
 ~~~
-or if you are using clang
+or if you are using the clang compiler
 ~~~
 ./b2 install --prefix=PREFIX --toolset=clang --with-program_options --with-filesystem cxxflags="-std=c++11 -stdlib=libc++" linkflags="-std=c++11 -stdlib=libc++" --layout=versioned
 ~~~
