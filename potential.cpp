@@ -929,12 +929,12 @@ Array<dVec,1> LJCylinderPotential::initialConfig(const Container *boxPtr, MTRand
  *  each with their own radius.  
  *  @see C. Chakravarty J. Phys. Chem. B,  101, 1878 (1997).
  *
- *  @param _L The length of the cylinder
  *  @param radius The radius of the cylinder
  *  @param deltaRadius R(z=0) = radius - deltaRadius
+ *  @param deltaWidth The width of the hourglass constriction
 ******************************************************************************/
-LJHourGlassPotential::LJHourGlassPotential(const double _L, 
-        const double radius, const double deltaRadius) : PotentialBase()
+LJHourGlassPotential::LJHourGlassPotential(const double radius, 
+        const double deltaRadius, const double deltaWidth) : PotentialBase()
 {
 	/* The radius of the tube */
 	R = radius;
@@ -943,15 +943,10 @@ LJHourGlassPotential::LJHourGlassPotential(const double _L,
     dR = deltaRadius;
 
     /* the length of the pore */
-    L = _L;
-
-    /* We break up the pore into dR/1000 \AA chunks in length, this choice
-     * is arbitrary. */
-    M = 1000;
-    dz = deltaRadius/M;
+    L = constants()->L();
 
     /* The inverse length scale over which the radius changes */
-    invd = 5.0/L;
+    invd = 1.0/deltaWidth;
     R0 = 1.0/tanh(0.5*L*invd);
 
 	/* The density of nitrogen in silicon nitride */
