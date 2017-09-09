@@ -3115,7 +3115,9 @@ void CylinderLinearPotentialEstimator::accumulate() {
 	/* sample all positions along the pore */
 	for (int n = 0; n < NRADSEP; n++) {
 
-        r1[2] = -0.5*Lz + n*dz;
+        r1[NDIM-1] = -0.5*Lz + n*dz;
+
+        /* Get the external potential */
 		totV = 0.0;
 
 		/* We sum up the interaction energy over all slices*/
@@ -3140,7 +3142,7 @@ void CylinderLinearPotentialEstimator::accumulate() {
 		totV /= 1.0*numBeads;
 
         /* Add the constant piece from the external potential */
-		/* totV += actionPtr->externalPtr->V(r1); */
+		totV += actionPtr->externalPtr->V(r1);
 
 		estimator(n) += totV;
 	} // n
