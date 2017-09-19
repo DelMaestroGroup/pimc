@@ -152,7 +152,7 @@ void Parameters::setupCommandLine(boost::ptr_map<string,po::options_description>
 void Parameters::update(int argc, char *argv[], po::options_description &cmdLineOptions) {
 
     /* create a temporary parameter map */
-    po::variables_map cmdparams;        		    
+    po::variables_map cmdparams;                    
 
     /* Get the values from the command line */
     po::store(po::parse_command_line(argc, argv, cmdLineOptions), cmdparams);
@@ -268,22 +268,22 @@ Setup::Setup() :
     optionClassNames = {"simulation","physical","cell","algorithm","potential",
         "measurement"};
 
-	/* Define the allowed interaction potential names */
+    /* Define the allowed interaction potential names */
     interactionPotentialName = {"aziz", "delta", "lorentzian", "sutherland", 
         "hard_sphere", "hard_rod", "free", "delta1D", "harmonic", "dipole"};
     interactionNames = getList(interactionPotentialName);
 
-	/* Define the allowed external  potential names */
-	externalPotentialName = {"free", "harmonic", "osc_tube", "lj_tube", 
+    /* Define the allowed external  potential names */
+    externalPotentialName = {"free", "harmonic", "osc_tube", "lj_tube", 
         "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "graphene"};
     externalNames = getList(externalPotentialName);
 
-	/* Define the allowed action names */
-	actionName = {"primitive", "li_broughton", "gsf", "pair_product"};
+    /* Define the allowed action names */
+    actionName = {"primitive", "li_broughton", "gsf", "pair_product"};
     actionNames = getList(actionName);
 
     /* Define the allowed trial wave function names */
-	waveFunctionName = {"constant", "sech", "jastrow", "lieb", "sutherland"};
+    waveFunctionName = {"constant", "sech", "jastrow", "lieb", "sutherland"};
     waveFunctionNames = getList(waveFunctionName);
 
     /* Get the allowed estimator names */
@@ -315,27 +315,27 @@ void Setup::initParameters() {
     /* Initialize the simulation options */
     string oClass = "simulation";
     params.add<bool>("help,h","produce help message",oClass);
-	params.add<bool>("version","output svn version",oClass);
-	params.add<bool>("validate","validate command line or xml options",oClass);
-	params.add<bool>("dimension","output currently compiled dimension",oClass);
-	params.add<int>("output_config,o","number of output configurations",oClass,0);
-	params.add<uint32>("process,p","process or cpu number",oClass,0);
-	params.add<uint32>("restart,R","restart running simulation with PIMCID",oClass);
+    params.add<bool>("version","output svn version",oClass);
+    params.add<bool>("validate","validate command line or xml options",oClass);
+    params.add<bool>("dimension","output currently compiled dimension",oClass);
+    params.add<int>("output_config,o","number of output configurations",oClass,0);
+    params.add<uint32>("process,p","process or cpu number",oClass,0);
+    params.add<uint32>("restart,R","restart running simulation with PIMCID",oClass);
     params.add<double>("wall_clock,W","set wall clock limit in hours",oClass);
-	params.add<string>("start_with_state,s", "start simulation with a supplied state file.",oClass,"");
-	params.add<bool>("no_save_state","Only save a state file at the end of a simulation",oClass);
-	params.add<bool>("estimator_list","Output a list of estimators in xml format.",oClass);
-	params.add<bool>("update_list","Output a list of updates in xml format.",oClass);
-	params.add<string>("param_file","a valid path to the parameters input xml file.",oClass);
+    params.add<string>("start_with_state,s", "start simulation with a supplied state file.",oClass,"");
+    params.add<bool>("no_save_state","Only save a state file at the end of a simulation",oClass);
+    params.add<bool>("estimator_list","Output a list of estimators in xml format.",oClass);
+    params.add<bool>("update_list","Output a list of updates in xml format.",oClass);
+    params.add<string>("param_file","a valid path to the parameters input xml file.",oClass);
 
     /* Initialize the cell options */
     oClass = "cell";
-	params.add<string>("geometry,b","simulation cell type [prism,cylinder]",oClass,"prism");
-	params.add<double>("size,L","linear system size [angstroms]",oClass);
-	params.add<double>("Lx","system size in x-direction [angstroms]",oClass);
-	params.add<double>("Ly","system size in y-direction [angstroms]",oClass);
-	params.add<double>("Lz","system size in z-direction [angstroms]",oClass);
-	params.add<double>("radius,r","tube radius [angstroms]",oClass);
+    params.add<string>("geometry,b","simulation cell type [prism,cylinder]",oClass,"prism");
+    params.add<double>("size,L","linear system size [angstroms]",oClass);
+    params.add<double>("Lx","system size in x-direction [angstroms]",oClass);
+    params.add<double>("Ly","system size in y-direction [angstroms]",oClass);
+    params.add<double>("Lz","system size in z-direction [angstroms]",oClass);
+    params.add<double>("radius,r","tube radius [angstroms]",oClass);
 
     /* Initialize the potential options */
     oClass = "potential";
@@ -357,48 +357,48 @@ void Setup::initParameters() {
 
     /* These are graphene potential options */
     params.add<double>("strain","strain of graphene lattice in y-direction",oClass,0.00);
-	params.add<double>("poisson","Poisson's ratio for graphene",oClass,0.165);
-	params.add<double>("carbon_carbon_dist,A","Carbon-Carbon distance for graphene",oClass,1.42);
+    params.add<double>("poisson","Poisson's ratio for graphene",oClass,0.165);
+    params.add<double>("carbon_carbon_dist,A","Carbon-Carbon distance for graphene",oClass,1.42);
 
     /* Initialize the physical options */
     oClass = "physical";
-	params.add<bool>("canonical","perform a canonical simulation",oClass);
-	params.add<double>("mass,m","particle mass [amu]",oClass,4.0030);
-	params.add<double>("density,n",str(format("initial density [angstroms^(-%d)]") % NDIM).c_str(),oClass);
-	params.add<int>("number_particles,N","number of particles",oClass);
-	params.add<double>("temperature,T","temperature [kelvin]",oClass);
+    params.add<bool>("canonical","perform a canonical simulation",oClass);
+    params.add<double>("mass,m","particle mass [amu]",oClass,4.0030);
+    params.add<double>("density,n",str(format("initial density [angstroms^(-%d)]") % NDIM).c_str(),oClass);
+    params.add<int>("number_particles,N","number of particles",oClass);
+    params.add<double>("temperature,T","temperature [kelvin]",oClass);
     params.add<string>("wavefunction",str(format("trial wave function type:\n%s") 
                 % waveFunctionNames).c_str(),oClass,"constant");
     params.add<double>("R_LL_wfn","length scale of the lieb liniger wave function",oClass,0.0);
     params.add<double>("k_LL_wfn","wave number of the lieb liniger wave function",oClass,0.0);
     params.add<double>("end_factor","end bead potential action multiplicatave factor",oClass,1.0);
-	params.add<double>("chemical_potential,u","chemical potential [kelvin]",oClass,0.0);
+    params.add<double>("chemical_potential,u","chemical potential [kelvin]",oClass,0.0);
     params.add<int>("number_paths","number of paths",oClass,1);
 
     /* Initialize the algorithm options */
     oClass = "algorithm";
-	params.add<bool>("relax","perform a worm constant relaxation",oClass);
-	params.add<bool>("relaxmu", "perform a chemical potential relaxation to target a fixed density",oClass);
-	params.add<int>("number_time_slices,P","number of time slices",oClass);
+    params.add<bool>("relax","perform a worm constant relaxation",oClass);
+    params.add<bool>("relaxmu", "perform a chemical potential relaxation to target a fixed density",oClass);
+    params.add<int>("number_time_slices,P","number of time slices",oClass);
     params.add<int>("window","set particle number window",oClass);
     params.add<double>("gaussian_window_width", "set gaussian ensemble weight",oClass);
-	params.add<double>("imaginary_time_step,t", "imaginary time step [kelvin^(-1)]",oClass);
-	params.add<double>("imaginary_time_length","total path length in imaginary time [kelvin^(-1)]",oClass);
-	params.add<double>("worm_constant,C", "worm acceptance constant",oClass,1.0);
-	params.add<double>("com_delta,D", "center of mass update radius[angstroms]",oClass);
-	params.add<double>("displace_delta,d", "displace update radius [angstroms]",oClass);
-	params.add<int>("update_length,M", "non-local update length, (Mbar), -1 sets maximal value",oClass);
-	params.add<string>("action", str(format("action type:\n%s") % actionNames).c_str(),oClass,"gsf");
-	params.add<bool>("full_updates", "perform full staging updates",oClass);
-	params.add<bool>("staging", "perform staging instead of bisection for the diagonal update",oClass);
-	params.add<int>("max_winding", "the maximum winding number to sample",oClass,1);
+    params.add<double>("imaginary_time_step,t", "imaginary time step [kelvin^(-1)]",oClass);
+    params.add<double>("imaginary_time_length","total path length in imaginary time [kelvin^(-1)]",oClass);
+    params.add<double>("worm_constant,C", "worm acceptance constant",oClass,1.0);
+    params.add<double>("com_delta,D", "center of mass update radius[angstroms]",oClass);
+    params.add<double>("displace_delta,d", "displace update radius [angstroms]",oClass);
+    params.add<int>("update_length,M", "non-local update length, (Mbar), -1 sets maximal value",oClass);
+    params.add<string>("action", str(format("action type:\n%s") % actionNames).c_str(),oClass,"gsf");
+    params.add<bool>("full_updates", "perform full staging updates",oClass);
+    params.add<bool>("staging", "perform staging instead of bisection for the diagonal update",oClass);
+    params.add<int>("max_winding", "the maximum winding number to sample",oClass,1);
 
     /* Initialize the measurement options */
     oClass = "measurement";
-	params.add<uint32>("number_eq_steps,E", "number of equilibration steps",oClass,1);
-	params.add<int>("number_bins_stored,S", "number of estimator bins stored",oClass,1);
+    params.add<uint32>("number_eq_steps,E", "number of equilibration steps",oClass,1);
+    params.add<int>("number_bins_stored,S", "number of estimator bins stored",oClass,1);
     params.add<int>("bin_size", "number of updates per bin",oClass,100);
-	params.add<double>("estimator_radius,w", "maximum radius for cylinder estimators",oClass,2.0); 
+    params.add<double>("estimator_radius,w", "maximum radius for cylinder estimators",oClass,2.0); 
     params.add<int>("virial_window,V", "centroid virial energy estimator window",oClass,5);
     params.add<int>("number_broken", "number of broken world-lines",oClass,0);
     params.add<double>("spatial_subregion", "define a spatial subregion",oClass);
@@ -476,203 +476,203 @@ void Setup::getOptions(int argc, char *argv[])
 ******************************************************************************/
 bool Setup::parseOptions() {
 
-	/* Do we need help? */
-	if (params("help")) {
-		cout << cmdLineOptions << endl;
-		return true;
-	}
+    /* Do we need help? */
+    if (params("help")) {
+        cout << cmdLineOptions << endl;
+        return true;
+    }
 
-	/* Output the dimension the code was compiled with then exit */
-	if (params("dimension")) {
-		cout << endl << format("Code was compiled for a %d-dimensional system.") % NDIM 
-			<< endl << endl;
-		return true;
-	}
+    /* Output the dimension the code was compiled with then exit */
+    if (params("dimension")) {
+        cout << endl << format("Code was compiled for a %d-dimensional system.") % NDIM 
+            << endl << endl;
+        return true;
+    }
 
-	/* Output the svn version that the code was compiled with */
-	if (params("version")) {
-		cout << endl << format("Code was compiled with repo version %s.") % SVN_VERSION
-			<< endl << endl;
-		return true;
-	}
+    /* Output the svn version that the code was compiled with */
+    if (params("version")) {
+        cout << endl << format("Code was compiled with repo version %s.") % SVN_VERSION
+            << endl << endl;
+        return true;
+    }
 
     /* Print a list of allowed estimators in xml format */
-	if (params("estimator_list")) {
-		cout << endl << "The following estimators can be included in an xml input file." << endl;
+    if (params("estimator_list")) {
+        cout << endl << "The following estimators can be included in an xml input file." << endl;
         cout << getXMLOptionList(estimatorName, "estimator") << endl << endl;
-		return true;
+        return true;
     }
 
     /* Have we defined a temperature for a PIMC simulation?*/
     if (!params("temperature") && !PIGS ) {
-		cerr << endl << "ERROR: No temperature defined!" << endl << endl;
-		cerr << "Action: specify temperature (T)" << endl;
-		return true;
+        cerr << endl << "ERROR: No temperature defined!" << endl << endl;
+        cerr << "Action: specify temperature (T)" << endl;
+        return true;
     }
 
     /* Have we mistakingly defined one for a PIGS simulation? */
     if (params("temperature") && PIGS) {
-		cerr << endl << "ERROR: Did you mean to define a non-zero temperature for PIGS?" << endl << endl;
-		cerr << "Action: remove temperature (T)" << endl;
-		return true;
+        cerr << endl << "ERROR: Did you mean to define a non-zero temperature for PIGS?" << endl << endl;
+        cerr << "Action: remove temperature (T)" << endl;
+        return true;
     }
 
-	/* Have we physically defined a simulation cell? */
+    /* Have we physically defined a simulation cell? */
     dVec side;
-	definedCell = false;
-	if (params("size")) {
-		definedCell = true;
-		side = params["size"].as<double>();
+    definedCell = false;
+    if (params("size")) {
+        definedCell = true;
+        side = params["size"].as<double>();
         params.set<dVec>("side",side);
 
-	}
-	else if ((params("Lx") + params("Ly") + params("Lz")) == NDIM) {
-		definedCell = true;
+    }
+    else if ((params("Lx") + params("Ly") + params("Lz")) == NDIM) {
+        definedCell = true;
 
         /* The side labels */
         vector<string> sides = {"Lx","Ly","Lz"};
         for (int i = 0; i < NDIM; i++)
-			side[i] = params[sides[i]].as<double>();
+            side[i] = params[sides[i]].as<double>();
         params.set<dVec>("side",side);
-	}
+    }
 
-	/* Make sure we have defined enough options to create the simulation cell */
-	if (!( (params("density") && params("number_particles")) ||
-	 	 (definedCell && params("number_particles")) ||
-		 (definedCell && params("density")) ) ) {
-		cerr << endl << "ERROR: Cannot create the simulation cell!" << endl << endl;
-		cerr << "Action: define a valid simulation cell." << endl;
-		cerr << "Need: [number_particles (N) AND density (n)] OR " << endl;
-		cerr << "      [number_particles (N) AND size (L) or Lx,Ly,Lz] OR" << endl;
-		cerr << "      [size (L) or Lx,Ly,Lz AND density (n)]" << endl << endl;
-		cerr << optionClasses["cell"] << endl;
-		return true;
-	}
+    /* Make sure we have defined enough options to create the simulation cell */
+    if (!( (params("density") && params("number_particles")) ||
+         (definedCell && params("number_particles")) ||
+         (definedCell && params("density")) ) ) {
+        cerr << endl << "ERROR: Cannot create the simulation cell!" << endl << endl;
+        cerr << "Action: define a valid simulation cell." << endl;
+        cerr << "Need: [number_particles (N) AND density (n)] OR " << endl;
+        cerr << "      [number_particles (N) AND size (L) or Lx,Ly,Lz] OR" << endl;
+        cerr << "      [size (L) or Lx,Ly,Lz AND density (n)]" << endl << endl;
+        cerr << optionClasses["cell"] << endl;
+        return true;
+    }
 
-	/* Make sure we have selected a valid cell type */
-	if (!( (params["geometry"].as<string>() == "cylinder")  || 
-	       (params["geometry"].as<string>() == "prism") ))
-	{
-		cerr << endl << "ERROR: Invalid simulation cell type." << endl << endl;
-		cerr << "Action: change cell (b) to one of:" << endl
-			<< "\t[prism,cylinder]" << endl;
-		return true;
-	}
+    /* Make sure we have selected a valid cell type */
+    if (!( (params["geometry"].as<string>() == "cylinder")  || 
+           (params["geometry"].as<string>() == "prism") ))
+    {
+        cerr << endl << "ERROR: Invalid simulation cell type." << endl << endl;
+        cerr << "Action: change cell (b) to one of:" << endl
+            << "\t[prism,cylinder]" << endl;
+        return true;
+    }
 
-	/* Can we create the worldlines? */
+    /* Can we create the worldlines? */
     if (!((params("imaginary_time_length") && params("number_time_slices")) || 
                (params("imaginary_time_length") && params("imaginary_time_step")) || 
                (params("number_time_slices") && params("imaginary_time_step")) ||
                (params("temperature") && (params("number_time_slices") || 
                (params("imaginary_time_step")))) ) ) {
-		cerr << endl << "ERROR: Cannot create imaginary time paths!" << endl << endl;
-		cerr << "Action: define imaginary_time_length AND imaginary_time_step (t) OR" << endl;
-		cerr << "        define imaginary_time_length AND number_time_steps (P) OR" << endl; 
-		cerr << "        define number_time_slices (P) AND imaginary_time_step (t)" << endl << endl;
-		cerr << "        define temperature (T) AND (number_time_slices (P) OR imaginary_time_step (t))" << endl << endl;
-		cerr << optionClasses["algorithm"] << endl;
-		return true;
-	}
+        cerr << endl << "ERROR: Cannot create imaginary time paths!" << endl << endl;
+        cerr << "Action: define imaginary_time_length AND imaginary_time_step (t) OR" << endl;
+        cerr << "        define imaginary_time_length AND number_time_steps (P) OR" << endl; 
+        cerr << "        define number_time_slices (P) AND imaginary_time_step (t)" << endl << endl;
+        cerr << "        define temperature (T) AND (number_time_slices (P) OR imaginary_time_step (t))" << endl << endl;
+        cerr << optionClasses["algorithm"] << endl;
+        return true;
+    }
 
-	/* Make sure we have selected a valid interaction potential */
+    /* Make sure we have selected a valid interaction potential */
     if (std::find(interactionPotentialName.begin(), interactionPotentialName.end(), 
                 params["interaction"].as<string>()) == interactionPotentialName.end()) {
-		cerr << endl << "ERROR: Invalid interaction potential!" << endl << endl;
-		cerr << "Action: set interaction (I) to one of:" << endl
-			 << "\t[" << interactionNames << "]" <<  endl;
-		return true;
-	}
+        cerr << endl << "ERROR: Invalid interaction potential!" << endl << endl;
+        cerr << "Action: set interaction (I) to one of:" << endl
+             << "\t[" << interactionNames << "]" <<  endl;
+        return true;
+    }
 
-	/* Make sure we have selected a valid external potential */
+    /* Make sure we have selected a valid external potential */
     if (std::find(externalPotentialName.begin(), externalPotentialName.end(), 
                 params["external"].as<string>()) == externalPotentialName.end()) {
-		cerr << endl << "ERROR: Invalid external potential!" << endl << endl;
-		cerr << "Action: set external (X) must to one of:" << endl
-			 << "\t[" << externalNames << "]" << endl;
-		return true;
-	}
+        cerr << endl << "ERROR: Invalid external potential!" << endl << endl;
+        cerr << "Action: set external (X) must to one of:" << endl
+             << "\t[" << externalNames << "]" << endl;
+        return true;
+    }
 
-	/* Make sure we have selected a valid action type */
+    /* Make sure we have selected a valid action type */
     if (std::find(actionName.begin(), actionName.end(), 
                 params["action"].as<string>()) == actionName.end()) {
-		cerr << endl << "ERROR: Invalid action!" << endl << endl;
-		cerr << "Action: set action to one of:" << endl
-			 << "\t[" << actionNames << "]" <<  endl;
-		return true;
-	}
+        cerr << endl << "ERROR: Invalid action!" << endl << endl;
+        cerr << "Action: set action to one of:" << endl
+             << "\t[" << actionNames << "]" <<  endl;
+        return true;
+    }
     
     /* Make sure we have selected a valid trial wave fucntion */
     if (std::find(waveFunctionName.begin(), waveFunctionName.end(), 
                 params["wavefunction"].as<string>()) == waveFunctionName.end()) {
-		cerr << endl << "ERROR: Invalid trial wave function!" << endl << endl;
-		cerr << "Action: set wave function to one of :" << endl
+        cerr << endl << "ERROR: Invalid trial wave function!" << endl << endl;
+        cerr << "Action: set wave function to one of :" << endl
         << "\t[" << waveFunctionNames << "]" << endl;
-		return true;
-	}
+        return true;
+    }
 
     /* Make sure we use the pair product approximation for discontinuous
      * potentials */
     if (((params["interaction"].as<string>() == "hard_sphere") ||
         (params["interaction"].as<string>() == "hard_rod") ||
         (params["interaction"].as<string>() == "delta1D") ) &&
-	    (params["action"].as<string>() != "pair_product") ) {
+        (params["action"].as<string>() != "pair_product") ) {
         cout << endl;
-		cerr << "ERROR: Need to use the pair product approximation with discontinuous potentials!"; 
+        cerr << "ERROR: Need to use the pair product approximation with discontinuous potentials!"; 
         cout << endl << endl;
-		cerr << "Action: change the action to pair_product." << endl;
-		return 1;
+        cerr << "Action: change the action to pair_product." << endl;
+        return 1;
     }
 
-	/* We can only use the cylinder potentials for a 3D system */
-	if ((params["external"].as<string>().find("tube") != string::npos) && (NDIM != 3)) {
-		cerr << endl << "ERROR: Can only use tube potentials for a 3D system!" << endl << endl;
-		cerr << "Action: change the potential or recompile with ndim=3." << endl;
-		return 1;
-	}
+    /* We can only use the cylinder potentials for a 3D system */
+    if ((params["external"].as<string>().find("tube") != string::npos) && (NDIM != 3)) {
+        cerr << endl << "ERROR: Can only use tube potentials for a 3D system!" << endl << endl;
+        cerr << "Action: change the potential or recompile with ndim=3." << endl;
+        return 1;
+    }
 
-	/* Need to specify a radius for the tube potentials */
-	if ( (params["external"].as<string>().find("tube") != string::npos) && (!params("radius")) ) {
-		cerr << endl << "ERROR: Incomplete specification for external potential!" << endl << endl;
-		cerr << "Action: specfiy a radius (r) for the tube potentials." << endl;
-		return 1;
-	}
+    /* Need to specify a radius for the tube potentials */
+    if ( (params["external"].as<string>().find("tube") != string::npos) && (!params("radius")) ) {
+        cerr << endl << "ERROR: Incomplete specification for external potential!" << endl << endl;
+        cerr << "Action: specfiy a radius (r) for the tube potentials." << endl;
+        return 1;
+    }
 
     /* Need to specify a y- barrier width scale factor for Gasparini potential */
-	if ( (params["external"].as<string>().find("gasp_prim") != string::npos) && 
+    if ( (params["external"].as<string>().find("gasp_prim") != string::npos) && 
             (!params("empty_width_y")) ) {
-		cerr << endl << "ERROR: Incomplete specification for external potential!" << endl << endl;
-		cerr << "Action: specify a y- scale factor (y) for the Gasparini potential." << endl;
-		return 1;
-	}
+        cerr << endl << "ERROR: Incomplete specification for external potential!" << endl << endl;
+        cerr << "Action: specify a y- scale factor (y) for the Gasparini potential." << endl;
+        return 1;
+    }
 
     /* Need to specify a z- barrier width scale factor for Gasparini potential */
-	if ( (params["external"].as<string>().find("gasp_prim") != string::npos) && 
+    if ( (params["external"].as<string>().find("gasp_prim") != string::npos) && 
             (!params("empty_width_z")) ) {
-		cerr << endl << "ERROR: Incomplete specification for external potential!" << endl << endl;
-		cerr << "Action: specify a z- scale factor (z) for the Gasparini potential." << endl;
-		return 1;
-	}
+        cerr << endl << "ERROR: Incomplete specification for external potential!" << endl << endl;
+        cerr << "Action: specify a z- scale factor (z) for the Gasparini potential." << endl;
+        return 1;
+    }
 
-	/* We can only use the hard sphere potential in a 3D system */
-	if ((params["interaction"].as<string>().find("hard_sphere") != string::npos) && (NDIM != 3)) {
-		cerr << endl << "ERROR: Can only use hard sphere potentials for a 3D system!" << endl << endl;
-		cerr << "Action: change the potential or recompile with ndim=3." << endl;
-		return 1;
-	}
+    /* We can only use the hard sphere potential in a 3D system */
+    if ((params["interaction"].as<string>().find("hard_sphere") != string::npos) && (NDIM != 3)) {
+        cerr << endl << "ERROR: Can only use hard sphere potentials for a 3D system!" << endl << endl;
+        cerr << "Action: change the potential or recompile with ndim=3." << endl;
+        return 1;
+    }
 
-	/* We can only use the hard rod potential in a 1D system */
-	if ((params["interaction"].as<string>().find("hard_rod") != string::npos) && (NDIM != 1)) {
-		cerr << endl << "ERROR: Can only use hard rod potentials for a 1D system!" << endl << endl;
-		cerr << "Action: change the potential or recompile with ndim=1." << endl;
-		return 1;
-	}
+    /* We can only use the hard rod potential in a 1D system */
+    if ((params["interaction"].as<string>().find("hard_rod") != string::npos) && (NDIM != 1)) {
+        cerr << endl << "ERROR: Can only use hard rod potentials for a 1D system!" << endl << endl;
+        cerr << "Action: change the potential or recompile with ndim=1." << endl;
+        return 1;
+    }
     
     /* We can only use the delta1D potential in a 1D system */
-	if ((params["interaction"].as<string>().find("delta1D") != string::npos) && (NDIM != 1)) {
-		cerr << endl << "ERROR: Can only use delta1D potentials for a 1D system!" << endl << endl;
-		cerr << "Action: change the potential or recompile with ndim=1." << endl;
-		return 1;
-	}
+    if ((params["interaction"].as<string>().find("delta1D") != string::npos) && (NDIM != 1)) {
+        cerr << endl << "ERROR: Can only use delta1D potentials for a 1D system!" << endl << endl;
+        cerr << "Action: change the potential or recompile with ndim=1." << endl;
+        return 1;
+    }
 
     /* If a list of estimators has been supplied, we need to verify */
     for (string name : params["estimator"].as<vector<string>>()){
@@ -711,7 +711,7 @@ bool Setup::parseOptions() {
     }
 
     /* Only measure cylinder estimators when we have a cylinder cell */
-	if (params["geometry"].as<string>() == "prism") {
+    if (params["geometry"].as<string>() == "prism") {
         for (string name : params["estimator"].as<vector<string> >()) {
             bool foundCylinderEstimator = (name.find("cylinder") != string::npos);
             if (foundCylinderEstimator) {
@@ -738,7 +738,7 @@ bool Setup::parseOptions() {
         return true;
     }
 
-	return false;
+    return false;
 }
 
 /**************************************************************************//**
@@ -749,7 +749,7 @@ bool Setup::parseOptions() {
  * @return A seed shifted by the process number
 ******************************************************************************/
 uint32 Setup::seed (const uint32 startSeed) {
-	return startSeed + params["process"].as<uint32>();
+    return startSeed + params["process"].as<uint32>();
 }
 
 /**************************************************************************//**
@@ -760,11 +760,11 @@ uint32 Setup::seed (const uint32 startSeed) {
 ******************************************************************************/
 Container * Setup::cell() {
 
-	/* Initialize the local box pointer */
-	Container *boxPtr = NULL;
+    /* Initialize the local box pointer */
+    Container *boxPtr = NULL;
 
-	/* Setup a cylindrical simulation cell */
-	if (params["geometry"].as<string>() == "cylinder") {
+    /* Setup a cylindrical simulation cell */
+    if (params["geometry"].as<string>() == "cylinder") {
 
         double radius = params["radius"].as<double>();
 
@@ -775,33 +775,33 @@ Container * Setup::cell() {
             radius += params["hourglass_radius"].as<double>();
 
 
-		if (definedCell && params("number_particles"))
-			boxPtr = new Cylinder(radius,params["side"].as<dVec>()[NDIM-1]);
-		else if (definedCell && params("density")) {
-			boxPtr = new Cylinder(radius,params["side"].as<dVec>()[NDIM-1]);
-			params.set<int>("number_particles", int(boxPtr->volume*params["density"].as<double>()));
-		}
-		else
+        if (definedCell && params("number_particles"))
+            boxPtr = new Cylinder(radius,params["side"].as<dVec>()[NDIM-1]);
+        else if (definedCell && params("density")) {
+            boxPtr = new Cylinder(radius,params["side"].as<dVec>()[NDIM-1]);
+            params.set<int>("number_particles", int(boxPtr->volume*params["density"].as<double>()));
+        }
+        else
             boxPtr = new Cylinder(params["density"].as<double>(), 
                     radius,params["number_particles"].as<int>());
-	}
-	/* Setup a hyperprism */
-	else if (params["geometry"].as<string>() == "prism") {
-		if (definedCell && params("number_particles")) 
-			boxPtr = new Prism(params["side"].as<dVec>());
-		else if (definedCell && params("density")) {
-			boxPtr = new Prism(params["side"].as<dVec>());
-			params.set<int>("number_particles", int(boxPtr->volume*params["density"].as<double>()));
-		}
-		else
-			boxPtr = new Prism(params["density"].as<double>(),params["number_particles"].as<int>());
-	}
+    }
+    /* Setup a hyperprism */
+    else if (params["geometry"].as<string>() == "prism") {
+        if (definedCell && params("number_particles")) 
+            boxPtr = new Prism(params["side"].as<dVec>());
+        else if (definedCell && params("density")) {
+            boxPtr = new Prism(params["side"].as<dVec>());
+            params.set<int>("number_particles", int(boxPtr->volume*params["density"].as<double>()));
+        }
+        else
+            boxPtr = new Prism(params["density"].as<double>(),params["number_particles"].as<int>());
+    }
 
-	/* Add the volume to the parameter map */
+    /* Add the volume to the parameter map */
     params.set<double>("volume",boxPtr->volume);
     params.set<dVec>("side",boxPtr->side);
 
-	return boxPtr;
+    return boxPtr;
 }
 
 /**************************************************************************//**
@@ -813,7 +813,7 @@ Container * Setup::cell() {
 ******************************************************************************/
 bool Setup::worldlines() {
 
-	int numTimeSlices,numDeltaTau;
+    int numTimeSlices,numDeltaTau;
     double tau,imaginaryTimeLength;
     bool pathBreak = (params["number_broken"].as<int>() > 0 || 
             params("spatial_subregion"));
@@ -906,22 +906,22 @@ bool Setup::worldlines() {
         params.set<double>("temperature",1.0/params["imaginary_time_length"].as<double>());
     }
 
-	/* If we haven't fixed Mbar, do so now. We use the value defined in
-	 * PRE 74, 036701 (2006). We make sure it is always >= 8 */
-	int Mbar = 0;
-	if (!params("update_length")) {
-		/* Compute the average inter-particle separation */
+    /* If we haven't fixed Mbar, do so now. We use the value defined in
+     * PRE 74, 036701 (2006). We make sure it is always >= 8 */
+    int Mbar = 0;
+    if (!params("update_length")) {
+        /* Compute the average inter-particle separation */
         double ell = pow((1.0*params["number_particles"].as<int>() /
                     params["volume"].as<double>()),-1.0/(1.0*NDIM));
-		double lambda = 24.24 / params["mass"].as<double>();
-		Mbar = int(ell*ell/(16*lambda*params["imaginary_time_step"].as<double>()));
-		if (Mbar < 2)
-			Mbar = 2;
+        double lambda = 24.24 / params["mass"].as<double>();
+        Mbar = int(ell*ell/(16*lambda*params["imaginary_time_step"].as<double>()));
+        if (Mbar < 2)
+            Mbar = 2;
         else if (Mbar > numTimeSlices)
             Mbar = numTimeSlices/2;
-		params.set<int>("update_length",Mbar);
-	}
-	else 
+        params.set<int>("update_length",Mbar);
+    }
+    else 
     {
         /* Any negative integer sets the maximum Mbar, useful for free particles */
         if (params["update_length"].as<int>() < 0)
@@ -930,23 +930,23 @@ bool Setup::worldlines() {
             Mbar = params["update_length"].as<int>();
     }
 
-	/* Now we make sure it is even and not too large*/
-	if (Mbar % 2)
-		Mbar++;
+    /* Now we make sure it is even and not too large*/
+    if (Mbar % 2)
+        Mbar++;
 
-	params.set<int>("update_length",Mbar);
+    params.set<int>("update_length",Mbar);
 
-	if (Mbar > numTimeSlices) {
+    if (Mbar > numTimeSlices) {
         cerr << Mbar << " " << numTimeSlices << endl;
-		cerr << endl << "ERROR: Update length > number time slices!" << endl << endl;
+        cerr << endl << "ERROR: Update length > number time slices!" << endl << endl;
         cerr << "Action: Increase number_time_slices (P) OR" <<  endl;
         cerr << "        Increase update_length (M) OR"  << endl;
         cerr << "        Decrease imaginary_time_step (t) OR" << endl; 
         cerr << "        Increase imaginary_time_length" << endl; 
         return true;
-	}
+    }
 
-	return false;
+    return false;
 }
 
 /**************************************************************************//**
@@ -967,16 +967,16 @@ void Setup::setConstants() {
 
     /* If we have specified either the center of mass or displace shift on the
      * command line, we update their values. */
-	if (params("com_delta"))
-		constants()->setCoMDelta(params["com_delta"].as<double>());
-	else {
-		params.set<double>("com_delta",constants()->comDelta());
-	}
-	if (params("displace_delta"))
-		constants()->setDisplaceDelta(params["displace_delta"].as<double>());
-	else {
-		params.set<double>("displace_delta",constants()->displaceDelta());
-	}
+    if (params("com_delta"))
+        constants()->setCoMDelta(params["com_delta"].as<double>());
+    else {
+        params.set<double>("com_delta",constants()->comDelta());
+    }
+    if (params("displace_delta"))
+        constants()->setDisplaceDelta(params["displace_delta"].as<double>());
+    else {
+        params.set<double>("displace_delta",constants()->displaceDelta());
+    }
 
 }
 
@@ -992,7 +992,7 @@ void Setup::setConstants() {
  * we pass it to the communicator for propper labelling of output files.
 ******************************************************************************/
 void Setup::communicator() {
-		
+        
     communicate()->init(params["imaginary_time_step"].as<double>(),
             (params["output_config"].as<int>() > 0),params["start_with_state"].as<string>(),
             params["fixed"].as<string>());
@@ -1006,31 +1006,31 @@ void Setup::communicator() {
 ******************************************************************************/
 PotentialBase * Setup::interactionPotential() {
 
-	PotentialBase *interactionPotentialPtr = NULL;
-	if (constants()->intPotentialType() == "free")
-		interactionPotentialPtr = new FreePotential();
-	else if (constants()->intPotentialType() == "delta")
-		interactionPotentialPtr = new DeltaPotential(params["delta_width"].as<double>(),
+    PotentialBase *interactionPotentialPtr = NULL;
+    if (constants()->intPotentialType() == "free")
+        interactionPotentialPtr = new FreePotential();
+    else if (constants()->intPotentialType() == "delta")
+        interactionPotentialPtr = new DeltaPotential(params["delta_width"].as<double>(),
                 params["delta_strength"].as<double>());
-	else if (constants()->intPotentialType() == "sutherland")
-		interactionPotentialPtr = new SutherlandPotential(params["interaction_strength"].as<double>());
-	else if (constants()->intPotentialType() == "hard_sphere")
+    else if (constants()->intPotentialType() == "sutherland")
+        interactionPotentialPtr = new SutherlandPotential(params["interaction_strength"].as<double>());
+    else if (constants()->intPotentialType() == "hard_sphere")
         interactionPotentialPtr = new HardSpherePotential(params["scattering_length"].as<double>());
-	else if (constants()->intPotentialType() == "hard_rod")
+    else if (constants()->intPotentialType() == "hard_rod")
         interactionPotentialPtr = new HardRodPotential(params["scattering_length"].as<double>());
     else if (constants()->intPotentialType() == "delta1D")
         interactionPotentialPtr = new Delta1DPotential(params["delta_strength"].as<double>());
-	else if (constants()->intPotentialType() == "lorentzian")
-		interactionPotentialPtr = new LorentzianPotential(params["delta_width"].as<double>(),
-				params["delta_strength"].as<double>());
-	else if (constants()->intPotentialType() == "aziz")
-		interactionPotentialPtr = new AzizPotential(params["side"].as<dVec>());
+    else if (constants()->intPotentialType() == "lorentzian")
+        interactionPotentialPtr = new LorentzianPotential(params["delta_width"].as<double>(),
+                params["delta_strength"].as<double>());
+    else if (constants()->intPotentialType() == "aziz")
+        interactionPotentialPtr = new AzizPotential(params["side"].as<dVec>());
     else if (constants()->intPotentialType() == "harmonic")
-		interactionPotentialPtr = new HarmonicPotential(params["omega"].as<double>());
+        interactionPotentialPtr = new HarmonicPotential(params["omega"].as<double>());
     else if (constants()->intPotentialType() == "dipole")
-		interactionPotentialPtr = new DipolePotential();
+        interactionPotentialPtr = new DipolePotential();
 
-	return interactionPotentialPtr;
+    return interactionPotentialPtr;
 }
 
 /*************************************************************************//**
@@ -1041,37 +1041,37 @@ PotentialBase * Setup::interactionPotential() {
 ******************************************************************************/
 PotentialBase * Setup::externalPotential(const Container* boxPtr) {
 
-	PotentialBase *externalPotentialPtr = NULL;
+    PotentialBase *externalPotentialPtr = NULL;
 
-	if (constants()->extPotentialType() == "harmonic")
-		externalPotentialPtr = new HarmonicPotential();
-	else if (constants()->extPotentialType() == "free")
-		externalPotentialPtr = new FreePotential();
-	else if (constants()->extPotentialType() == "osc_tube")
-		externalPotentialPtr = new HarmonicCylinderPotential(params["radius"].as<double>());
-	else if (constants()->extPotentialType() == "hg_tube")
-		externalPotentialPtr = new LJHourGlassPotential(params["radius"].as<double>(),
+    if (constants()->extPotentialType() == "harmonic")
+        externalPotentialPtr = new HarmonicPotential();
+    else if (constants()->extPotentialType() == "free")
+        externalPotentialPtr = new FreePotential();
+    else if (constants()->extPotentialType() == "osc_tube")
+        externalPotentialPtr = new HarmonicCylinderPotential(params["radius"].as<double>());
+    else if (constants()->extPotentialType() == "hg_tube")
+        externalPotentialPtr = new LJHourGlassPotential(params["radius"].as<double>(),
                 params["hourglass_radius"].as<double>(), params["hourglass_width"].as<double>());
-	else if (constants()->extPotentialType() == "lj_tube")
-		externalPotentialPtr = new LJCylinderPotential(params["radius"].as<double>());
-	else if (constants()->extPotentialType() == "hard_tube") 
-		externalPotentialPtr = new HardCylinderPotential(params["radius"].as<double>());
-	else if (constants()->extPotentialType() == "single_well")
-		externalPotentialPtr = new SingleWellPotential();
-	else if (constants()->extPotentialType() == "fixed_aziz") 
-		externalPotentialPtr = new FixedAzizPotential(boxPtr);
+    else if (constants()->extPotentialType() == "lj_tube")
+        externalPotentialPtr = new LJCylinderPotential(params["radius"].as<double>());
+    else if (constants()->extPotentialType() == "hard_tube") 
+        externalPotentialPtr = new HardCylinderPotential(params["radius"].as<double>());
+    else if (constants()->extPotentialType() == "single_well")
+        externalPotentialPtr = new SingleWellPotential();
+    else if (constants()->extPotentialType() == "fixed_aziz") 
+        externalPotentialPtr = new FixedAzizPotential(boxPtr);
     else if (constants()->extPotentialType() == "gasp_prim")
         externalPotentialPtr = new Gasparini_1_Potential(params["empty_width_z"].as<double>(),
                 params["empty_width_y"].as<double>(),boxPtr);
-	else if (constants()->extPotentialType() == "graphene") 
+    else if (constants()->extPotentialType() == "graphene") 
         externalPotentialPtr = new GraphenePotential(params["strain"].as<double>(),
                 params["poisson"].as<double>(),
                 params["carbon_carbon_dist"].as<double>(),
                 params["lj_sigma"].as<double>(),
                 params["lj_epsilon"].as<double>()
-								);
+                                );
 
-	return externalPotentialPtr;
+    return externalPotentialPtr;
 }
 
 /*************************************************************************//**
@@ -1082,21 +1082,21 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
 ******************************************************************************/
 WaveFunctionBase * Setup::waveFunction(const Path &path, LookupTable &lookup) {
     
-	WaveFunctionBase *waveFunctionPtr = NULL;
+    WaveFunctionBase *waveFunctionPtr = NULL;
 
-	if (constants()->waveFunctionType() == "constant")
-		waveFunctionPtr = new WaveFunctionBase(path,lookup);
-	else if (constants()->waveFunctionType() == "sech")
-		waveFunctionPtr = new SechWaveFunction(path,lookup);
-	else if (constants()->waveFunctionType() == "jastrow")
-		waveFunctionPtr = new JastrowWaveFunction(path,lookup);
+    if (constants()->waveFunctionType() == "constant")
+        waveFunctionPtr = new WaveFunctionBase(path,lookup);
+    else if (constants()->waveFunctionType() == "sech")
+        waveFunctionPtr = new SechWaveFunction(path,lookup);
+    else if (constants()->waveFunctionType() == "jastrow")
+        waveFunctionPtr = new JastrowWaveFunction(path,lookup);
     else if (constants()->waveFunctionType() == "lieb")
-		waveFunctionPtr = new LiebLinigerWaveFunction(path,lookup);
+        waveFunctionPtr = new LiebLinigerWaveFunction(path,lookup);
     else if (constants()->waveFunctionType() == "sutherland")
-		waveFunctionPtr = new SutherlandWaveFunction(path,lookup,
+        waveFunctionPtr = new SutherlandWaveFunction(path,lookup,
                 params["interaction_strength"].as<double>());
     
-	return waveFunctionPtr;
+    return waveFunctionPtr;
 }
 
 /*************************************************************************//**
@@ -1115,14 +1115,14 @@ ActionBase * Setup::action(const Path &path, LookupTable &lookup,
     /* Non Local Actions */
     if (constants()->actionType() == "pair_product") {
         actionPtr = new NonLocalAction(path,lookup,externalPotentialPtr,
-                interactionPotentialPtr,waveFunctionPtr,false,constants()->actionType());	
+                interactionPotentialPtr,waveFunctionPtr,false,constants()->actionType());   
     }
     /* Local Actions */
     else {
 
         /* The factors needed for local actions. */
-        TinyVector <double,2> VFactor;	    
-        TinyVector <double,2> gradVFactor;	
+        TinyVector <double,2> VFactor;      
+        TinyVector <double,2> gradVFactor;  
 
         VFactor = 1.0;
         gradVFactor = 0.0;
@@ -1178,7 +1178,7 @@ boost::ptr_vector<MoveBase>* Setup::moves(Path &path, ActionBase *actionPtr,
             params.set<vector<string>>("update",updates);
             constants()->setAttemptProb("diagonal",0.5);
             constants()->setAttemptProb("swap break",0.1);
-	    
+        
         } else if (params("spatial_subregion")) {
 
             /* Add the mid staging move */
@@ -1306,70 +1306,70 @@ bool Setup::checkOption(const string option, const string target) {
  * @param nnGrid The lookup table nearest neighbor grid
 ******************************************************************************/
 void Setup::outputOptions(int argc, char *argv[], const uint32 _seed, 
-		const Container *boxPtr, const iVec &nnGrid) {
+        const Container *boxPtr, const iVec &nnGrid) {
 
-	communicate()->file("log")->stream() << endl << "# ";
+    communicate()->file("log")->stream() << endl << "# ";
 
-	/* Construct the command that would be required to restart the simulation */
-	bool outputC0 = false;
-	bool outputD = false;
-	bool outputd = false;
+    /* Construct the command that would be required to restart the simulation */
+    bool outputC0 = false;
+    bool outputD = false;
+    bool outputd = false;
     bool outputEstimator = false;
     bool outputUpdate = false;
 
-	for (int n = 0; n < argc; n++) {
+    for (int n = 0; n < argc; n++) {
 
         /* convert the argument to a string */
         string arg(argv[n]);
 
-		if (checkOption(arg,"-s") || checkOption(arg,"start_with_state") ) {
+        if (checkOption(arg,"-s") || checkOption(arg,"start_with_state") ) {
             n++;
         }
-		else if ( checkOption(arg,"-C") || checkOption(arg,"worm_constant") ) {
-			communicate()->file("log")->stream() << format("-C %21.15e ") % constants()->C0();
-			n++;
-			outputC0 = true;
-		}
-		else if (checkOption(arg,"-p") || checkOption(arg,"process")) {
-			communicate()->file("log")->stream() << format("-p %03d ") % params["process"].as<uint32>();
-			n++;
-		}
-		else if (checkOption(arg,"-D") || checkOption(arg,"com_delta")) {
+        else if ( checkOption(arg,"-C") || checkOption(arg,"worm_constant") ) {
+            communicate()->file("log")->stream() << format("-C %21.15e ") % constants()->C0();
+            n++;
+            outputC0 = true;
+        }
+        else if (checkOption(arg,"-p") || checkOption(arg,"process")) {
+            communicate()->file("log")->stream() << format("-p %03d ") % params["process"].as<uint32>();
+            n++;
+        }
+        else if (checkOption(arg,"-D") || checkOption(arg,"com_delta")) {
             communicate()->file("log")->stream() << format("-D %21.15e ") % constants()->comDelta();
-			outputD = true;
-			n++;
-		}
-		else if (checkOption(arg,"-d") || checkOption(arg,"displace_delta")) {
+            outputD = true;
+            n++;
+        }
+        else if (checkOption(arg,"-d") || checkOption(arg,"displace_delta")) {
             communicate()->file("log")->stream() << format("-d %21.15e ") % constants()->displaceDelta();
-			outputd = true;
-			n++;
-		}
-		else if (checkOption(arg,"estimator")) {
+            outputd = true;
+            n++;
+        }
+        else if (checkOption(arg,"estimator")) {
             outputEstimator = true;
-			n++;
+            n++;
         }
-		else if (checkOption(arg,"update")) {
+        else if (checkOption(arg,"update")) {
             outputUpdate = false;
-			n++;
+            n++;
         }
-		else {
-			communicate()->file("log")->stream() << arg << " ";
+        else {
+            communicate()->file("log")->stream() << arg << " ";
         }
 
-	}
+    }
 
     /* Output the restart flag */
     communicate()->file("log")->stream() << format("-R %09d ") % constants()->id();
 
-	/* If we haven't specified the worm constant, output it now */
-	if (!outputC0)
-		communicate()->file("log")->stream() << format("-C %21.15e ") % constants()->C0();
+    /* If we haven't specified the worm constant, output it now */
+    if (!outputC0)
+        communicate()->file("log")->stream() << format("-C %21.15e ") % constants()->C0();
 
-	/* If we haven't specified the center of mass Delta, output it now */
-	if (!outputD)
+    /* If we haven't specified the center of mass Delta, output it now */
+    if (!outputD)
         communicate()->file("log")->stream() << format("-D %21.15e ") % constants()->comDelta();
     
-	/* If we haven't specified the displace delta, output it now */
+    /* If we haven't specified the displace delta, output it now */
     if (PIGS && !outputd)
         communicate()->file("log")->stream() << format("-d %21.15e ") % constants()->displaceDelta();
 
@@ -1383,55 +1383,55 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
         for (string mvName : params["updates"].as<vector<string>>()) 
             communicate()->file("log")->stream() << format("--update='%s' ") % mvName;
 
-	communicate()->file("log")->stream() << endl << endl;
-	communicate()->file("log")->stream() << "---------- Begin Simulation Parameters ----------" << endl;
-	communicate()->file("log")->stream() << endl;
-	if (constants()->canonical())
-		communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Ensenble" % "canonical";
-	else
-		communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Ensenble" % "grand canonical";
+    communicate()->file("log")->stream() << endl << endl;
+    communicate()->file("log")->stream() << "---------- Begin Simulation Parameters ----------" << endl;
+    communicate()->file("log")->stream() << endl;
+    if (constants()->canonical())
+        communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Ensenble" % "canonical";
+    else
+        communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Ensenble" % "grand canonical";
 
-	if (PIGS)
-		communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Simulation Type" % "PIGS";
-	else
-		communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Simulation Type" % "PIMC";
-	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Action Type" % params["action"].as<string>();
+    if (PIGS)
+        communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Simulation Type" % "PIGS";
+    else
+        communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Simulation Type" % "PIMC";
+    communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Action Type" % params["action"].as<string>();
     communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Number of paths" % params["number_paths"].as<int>();
-	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Interaction Potential" % 
+    communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Interaction Potential" % 
         params["interaction"].as<string>();
 
     /* Ouptut a possible delta function width and strength */
-	if ( (params["interaction"].as<string>().find("delta") != string::npos) ||
+    if ( (params["interaction"].as<string>().find("delta") != string::npos) ||
         (params["interaction"].as<string>().find("lorentzian") != string::npos) ) {
-		communicate()->file("log")->stream() << format("%-24s\t:\t%8.3e\n") % "Delta Width"
+        communicate()->file("log")->stream() << format("%-24s\t:\t%8.3e\n") % "Delta Width"
             % params["delta_width"].as<double>();
-		communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") % "Delta Strength"
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") % "Delta Strength"
             % params["delta_strength"].as<double>();
-	}
+    }
 
     /* Ouptut a possible sutherland model interaction strength*/
-	if (params["interaction"].as<string>().find("sutherland") != string::npos) {
-		communicate()->file("log")->stream() << format("%-24s\t:\t%8.3e\n") % "Interaction Strength"
+    if (params["interaction"].as<string>().find("sutherland") != string::npos) {
+        communicate()->file("log")->stream() << format("%-24s\t:\t%8.3e\n") % "Interaction Strength"
             % params["interaction_strength"].as<double>();
-	}
+    }
 
     /* Output harmonic interaction frequecy */
     if ( (params["interaction"].as<string>().find("harmonic") != string::npos) ) {
         communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") % "Harmonic Int. Freq."
             % params["omega"].as<double>();
-	}
+    }
 
     /* Output a possible scattering length */
-	if ( (params["interaction"].as<string>().find("hard_sphere") != string::npos) ||
+    if ( (params["interaction"].as<string>().find("hard_sphere") != string::npos) ||
          (params["interaction"].as<string>().find("hard_rod") != string::npos) ) {
-		communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") % "Scattering Length" 
-			% params["scattering_length"].as<double>();
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") % "Scattering Length" 
+            % params["scattering_length"].as<double>();
     }
-	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") 
-		% "External Potential" % params["external"].as<string>();
+    communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") 
+        % "External Potential" % params["external"].as<string>();
 
     /* output a possible hourglass radius and width for the hourglass potential. */
-	if (params["external"].as<string>().find("hg_tube") != string::npos) {
+    if (params["external"].as<string>().find("hg_tube") != string::npos) {
         communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
             % "HourGlass Radius" % params["hourglass_radius"].as<double>();
         communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
@@ -1440,7 +1440,7 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 
     /* output a possible carbon-carbon distance, strain value and LJ
      * parameters for the graphene potential */
-	if (params["external"].as<string>().find("graphene") != string::npos) {
+    if (params["external"].as<string>().find("graphene") != string::npos) {
         communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
             % "Carbon Carbon Distance" % params["carbon_carbon_dist"].as<double>();
         communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
@@ -1466,73 +1466,73 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
                 % params["k_LL_wfn"].as<double>();
         }
     }
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%7.5f\n") % "Temperature" % params["temperature"].as<double>();
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%7.5f\n") % "Chemical Potential" % constants()->mu();
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%7.5f\n") % "Particle Mass" % params["mass"].as<double>();
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%d\n") % "Number Time Slices" % constants()->numTimeSlices();
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%7.5f\n") % "Imaginary Time Step" % constants()->tau();
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%7.5f\n") % "Imaginary Time Length" % constants()->imagTimeLength();
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%d\n") % "Initial Number Particles" % params["number_particles"].as<int>();
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%7.5f\n") % "Initial Density" 
-		% (1.0*params["number_particles"].as<int>()/boxPtr->volume);
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%7.5f\n") % "Temperature" % params["temperature"].as<double>();
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%7.5f\n") % "Chemical Potential" % constants()->mu();
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%7.5f\n") % "Particle Mass" % params["mass"].as<double>();
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%d\n") % "Number Time Slices" % constants()->numTimeSlices();
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%7.5f\n") % "Imaginary Time Step" % constants()->tau();
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%7.5f\n") % "Imaginary Time Length" % constants()->imagTimeLength();
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%d\n") % "Initial Number Particles" % params["number_particles"].as<int>();
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%7.5f\n") % "Initial Density" 
+        % (1.0*params["number_particles"].as<int>()/boxPtr->volume);
     communicate()->file("log")->stream() <<
         format("%-24s\t:\t%d\n") % "Num. Broken World-lines" % params["number_broken"].as<int>();
     if ( constants()->spatialSubregionOn()){
         communicate()->file("log")->stream() <<
             format("%-24s\t:\t%d\n") % "Spatial Subregion" % params["spatial_subregion"].as<double>();
     }
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%s\n") % "Container Type" % boxPtr->name;
-	communicate()->file("log")->stream() << format("%-24s\t:\t") % "Container Dimensions";
-	for (int i = 0; i < NDIM; i++) {
-		communicate()->file("log")->stream() << format("%7.5f") % boxPtr->side[i];
-		if (i < (NDIM-1))
-			communicate()->file("log")->stream() << " x ";
-		else
-			communicate()->file("log")->stream() << endl;
-	}
-	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Container Volume" 
-		% boxPtr->volume;
-	communicate()->file("log")->stream() << format("%-24s\t:\t") % "Lookup Table";
-	for (int i = 0; i < NDIM; i++) {
-		communicate()->file("log")->stream() << format("%d") % nnGrid[i];
-		if (i < (NDIM-1))
-			communicate()->file("log")->stream() << " x ";
-		else
-			communicate()->file("log")->stream() << endl;
-	}
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%s\n") % "Container Type" % boxPtr->name;
+    communicate()->file("log")->stream() << format("%-24s\t:\t") % "Container Dimensions";
+    for (int i = 0; i < NDIM; i++) {
+        communicate()->file("log")->stream() << format("%7.5f") % boxPtr->side[i];
+        if (i < (NDIM-1))
+            communicate()->file("log")->stream() << " x ";
+        else
+            communicate()->file("log")->stream() << endl;
+    }
+    communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Container Volume" 
+        % boxPtr->volume;
+    communicate()->file("log")->stream() << format("%-24s\t:\t") % "Lookup Table";
+    for (int i = 0; i < NDIM; i++) {
+        communicate()->file("log")->stream() << format("%d") % nnGrid[i];
+        if (i < (NDIM-1))
+            communicate()->file("log")->stream() << " x ";
+        else
+            communicate()->file("log")->stream() << endl;
+    }
     communicate()->file("log")->stream() <<
         format("%-24s\t:\t%d\n") % "Maximum Winding Sector" % params["max_winding"].as<int>();
-	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Initial Worm Constant" % 
-		params["worm_constant"].as<double>();
-	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Worm Constant" % constants()->C0();
-	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Inital CoM Delta" % params["com_delta"].as<double>();
-	communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "CoM Delta" % constants()->comDelta();
+    communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Initial Worm Constant" % 
+        params["worm_constant"].as<double>();
+    communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Worm Constant" % constants()->C0();
+    communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Inital CoM Delta" % params["com_delta"].as<double>();
+    communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "CoM Delta" % constants()->comDelta();
     if (PIGS) {
         communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Inital Displace Delta" % params["displace_delta"].as<double>();
         communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Displace Delta" % constants()->displaceDelta();
     }
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%d\n") % "Bisection Parameter" % constants()->b();
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%d\n") % "Update Length" % constants()->Mbar();
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%7.5f\n") % "Potential Cutoff Length" % params["potential_cutoff"].as<double>();
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%d\n") % "Bisection Parameter" % constants()->b();
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%d\n") % "Update Length" % constants()->Mbar();
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%7.5f\n") % "Potential Cutoff Length" % params["potential_cutoff"].as<double>();
     communicate()->file("log")->stream() <<
         format("%-24s\t:\t%d\n") % "Bin Size" % params["bin_size"].as<int>();
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%d\n") % "Number EQ Steps" % params["number_eq_steps"].as<uint32>();
-	communicate()->file("log")->stream() << 
-		format("%-24s\t:\t%d\n") % "Number Bins Stored" % params["number_bins_stored"].as<int>();
-	communicate()->file("log")->stream() << format("%-24s\t:\t%d\n") % "Random Number Seed" % _seed;
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%d\n") % "Number EQ Steps" % params["number_eq_steps"].as<uint32>();
+    communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%d\n") % "Number Bins Stored" % params["number_bins_stored"].as<int>();
+    communicate()->file("log")->stream() << format("%-24s\t:\t%d\n") % "Random Number Seed" % _seed;
     if (params["virial_window"].as<int>() == 0){
         communicate()->file("log")->stream() << 
             format("%-24s\t:\t%d\n") % "Virial Window" % constants()->numTimeSlices();
@@ -1541,6 +1541,6 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
         communicate()->file("log")->stream() << 
             format("%-24s\t:\t%d\n") % "Virial Window" % params["virial_window"].as<int>();
     }
-	communicate()->file("log")->stream() << endl;
-	communicate()->file("log")->stream() << "---------- End Simulation Parameters ------------" << endl;
+    communicate()->file("log")->stream() << endl;
+    communicate()->file("log")->stream() << "---------- End Simulation Parameters ------------" << endl;
 }

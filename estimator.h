@@ -27,78 +27,78 @@ class Potential;
  */
 class EstimatorBase {
 
-	public:
+    public:
         EstimatorBase(const Path & _path, ActionBase *_actionPtr, const MTRand &_random, 
                 double _maxR, int _frequency=1, string _label="");
-		virtual ~EstimatorBase();
+        virtual ~EstimatorBase();
 
-		/* Sample the estimator */
-		virtual void sample();		
-		
-		/* Reset the estimator */
-		void reset();								
+        /* Sample the estimator */
+        virtual void sample();      
+        
+        /* Reset the estimator */
+        void reset();                               
 
-		/* Restart the estimator */
-		void restart(const uint32, const uint32); 
+        /* Restart the estimator */
+        void restart(const uint32, const uint32); 
 
-		/* Output the estimator */
-		virtual void output();					
+        /* Output the estimator */
+        virtual void output();                  
 
-		/** Ouptut the fooder to disk */
-		virtual void outputFooter() {};
+        /** Ouptut the fooder to disk */
+        virtual void outputFooter() {};
 
         /* Evaluate the basic conditions for sampling */
         bool baseSample();
 
-		/** Get the total number of accumulated measurments */
-		uint32 getTotNumAccumulated() { return totNumAccumulated; }
+        /** Get the total number of accumulated measurments */
+        uint32 getTotNumAccumulated() { return totNumAccumulated; }
 
-		/** Get the number of accumulated measurements since the last reset */
-		uint32 getNumAccumulated() { return numAccumulated; }
+        /** Get the number of accumulated measurements since the last reset */
+        uint32 getNumAccumulated() { return numAccumulated; }
 
-		/** Get the number of samples since the last reset */
-		uint32 getNumSampled() { return numSampled; }
+        /** Get the number of samples since the last reset */
+        uint32 getNumSampled() { return numSampled; }
 
-		/** Get the name of the estimator */
-		virtual string getName() { return "base"; }
+        /** Get the name of the estimator */
+        virtual string getName() { return "base"; }
 
-		/* Prepare the estimator for i/o */
-		void prepare();
+        /* Prepare the estimator for i/o */
+        void prepare();
     
         /* Append to default label */
         void appendLabel(string append);
 
-	protected:
-		const Path &path;				///< A constant reference to the paths
-		ActionBase *actionPtr;          ///< A pointer to the action
-		MTRand random;					// A local copy of the random number generator
-		double maxR;			        // An estimator cutoff radius
+    protected:
+        const Path &path;               ///< A constant reference to the paths
+        ActionBase *actionPtr;          ///< A pointer to the action
+        MTRand random;                  // A local copy of the random number generator
+        double maxR;                    // An estimator cutoff radius
 
-		fstream *outFilePtr;			///< The output fie
+        fstream *outFilePtr;            ///< The output fie
 
-		Array<double,1> estimator;		///< The estimator array
-		Array<double,1> norm;			///< The normalization factor for each estimator
+        Array<double,1> estimator;      ///< The estimator array
+        Array<double,1> norm;           ///< The normalization factor for each estimator
 
-		int numEst;						///< The number of individual quantities measured
-		int frequency;					///< The frequency at which we accumulate
+        int numEst;                     ///< The number of individual quantities measured
+        int frequency;                  ///< The frequency at which we accumulate
         string label;                   ///< The label used for the output file
 
-		uint32 numSampled;				///< The number of times we have sampled
-		uint32 numAccumulated;			///< The number of accumulated values
-		uint32 totNumAccumulated;		///< The total number of accumulated values
-		int numBeads0;					///< The target number of beads for the canonical ensemble
+        uint32 numSampled;              ///< The number of times we have sampled
+        uint32 numAccumulated;          ///< The number of accumulated values
+        uint32 totNumAccumulated;       ///< The total number of accumulated values
+        int numBeads0;                  ///< The target number of beads for the canonical ensemble
 
-		bool diagonal;					///< Is this a diagonal estimator?
-		bool endLine;					///< Should we output a carriage return?
-		bool canonical;					///< Are we in the canonical ensemble?
+        bool diagonal;                  ///< Is this a diagonal estimator?
+        bool endLine;                   ///< Should we output a carriage return?
+        bool canonical;                 ///< Are we in the canonical ensemble?
 
-		string header;					///< The data file header
+        string header;                  ///< The data file header
 
-		/** Accumulate the estimator */
-		virtual void accumulate() {}
+        /** Accumulate the estimator */
+        virtual void accumulate() {}
 
-		/* Initialize the estimator */
-		void initialize(int);
+        /* Initialize the estimator */
+        void initialize(int);
 };
 
 // ========================================================================  
@@ -111,18 +111,18 @@ class EstimatorBase {
  */
 class NullEstimator : public EstimatorBase {
 
-	public:
+    public:
         NullEstimator(const Path &, ActionBase *, const MTRand &, double,
                 int _frequency=1, string _label="estimator");
-		~NullEstimator() {};
+        ~NullEstimator() {};
 
         static const string name;
         string getName() {return name;}
 
-        void output();		        // overload the output
+        void output();              // overload the output
     
-	private:
-		void accumulate() {};		// Accumulate null value 
+    private:
+        void accumulate() {};       // Accumulate null value 
 
 };
 
@@ -136,20 +136,20 @@ class NullEstimator : public EstimatorBase {
  */
 class TimeEstimator : public EstimatorBase {
 
-	public:
+    public:
         TimeEstimator(const Path &, ActionBase *, const MTRand &, double,
                 int _frequency=1, string _label="estimator");
-		~TimeEstimator() {};
+        ~TimeEstimator() {};
         
         void sample();          // Overload to always-on sampling
 
         static const string name;
         string getName() {return name;}
 
-        void output();		        // overload the output
+        void output();              // overload the output
 
-	private:
-		void accumulate();		// Accumulate values
+    private:
+        void accumulate();      // Accumulate values
                 std::chrono::high_resolution_clock::time_point time_begin;
                 std::chrono::high_resolution_clock::time_point time_end;
 
@@ -170,16 +170,16 @@ class TimeEstimator : public EstimatorBase {
  */
 class EnergyEstimator: public EstimatorBase {
 
-	public:
+    public:
         EnergyEstimator (const Path &, ActionBase *, const MTRand &, double,
                 int _frequency=1, string _label="estimator");
-		~EnergyEstimator();
+        ~EnergyEstimator();
 
         static const string name;
         string getName() {return name;}
     
-	private:
-		void accumulate();		// Accumulate values
+    private:
+        void accumulate();      // Accumulate values
 
 };
 
@@ -207,16 +207,16 @@ class EnergyEstimator: public EstimatorBase {
  */
 class VirialEnergyEstimator: public EstimatorBase {
 
-	public:
+    public:
         VirialEnergyEstimator (const Path &, ActionBase *, const MTRand &, double,
                 int _frequency=1, string _label="estimator");
-		~VirialEnergyEstimator();
+        ~VirialEnergyEstimator();
 
         static const string name;
         string getName() {return name;}
 
-	private:
-		void accumulate();		// Accumulate values
+    private:
+        void accumulate();      // Accumulate values
 
 };
 
@@ -228,16 +228,16 @@ class VirialEnergyEstimator: public EstimatorBase {
  */
 class NumberParticlesEstimator: public EstimatorBase {
 
-	public:
-		NumberParticlesEstimator(const Path &, ActionBase *, const MTRand &, double,
+    public:
+        NumberParticlesEstimator(const Path &, ActionBase *, const MTRand &, double,
                 int _frequency=1, string _label="estimator");
-		~NumberParticlesEstimator();
+        ~NumberParticlesEstimator();
 
         static const string name;
         string getName() {return name;}
     
-	private:
-		void accumulate();			// Accumulate values
+    private:
+        void accumulate();          // Accumulate values
 };
 
 // ========================================================================  
@@ -249,10 +249,10 @@ class NumberParticlesEstimator: public EstimatorBase {
  */
 class ParticlePositionEstimator: public EstimatorBase {
 
-	public:
-		ParticlePositionEstimator(const Path &, ActionBase *, const MTRand &, double,
+    public:
+        ParticlePositionEstimator(const Path &, ActionBase *, const MTRand &, double,
                 int _frequency=1, string _label="position");
-		~ParticlePositionEstimator();
+        ~ParticlePositionEstimator();
 
         static const string name;
         string getName() {return name;}
@@ -260,7 +260,7 @@ class ParticlePositionEstimator: public EstimatorBase {
         void output();              // overload the output
 
     private:
-        void accumulate();			// Accumulate values
+        void accumulate();          // Accumulate values
 };
 
 // ========================================================================  
@@ -272,16 +272,16 @@ class ParticlePositionEstimator: public EstimatorBase {
  */
 class BipartitionDensityEstimator: public EstimatorBase {
 
-	public:
-		BipartitionDensityEstimator(const Path &, ActionBase *, const MTRand &, double,
+    public:
+        BipartitionDensityEstimator(const Path &, ActionBase *, const MTRand &, double,
                 int _frequency=1, string _label="bipart_dens");
-		~BipartitionDensityEstimator();
+        ~BipartitionDensityEstimator();
 
         static const string name;
         string getName() {return name;}
 
-	private:
-		void accumulate();		// Accumulate values
+    private:
+        void accumulate();      // Accumulate values
 };
 
 // ========================================================================  
@@ -293,10 +293,10 @@ class BipartitionDensityEstimator: public EstimatorBase {
  */
 class PlaneParticlePositionEstimator: public EstimatorBase {
 
-	public:
-		PlaneParticlePositionEstimator(const Path &, ActionBase *, const MTRand &, double,
+    public:
+        PlaneParticlePositionEstimator(const Path &, ActionBase *, const MTRand &, double,
                 int _frequency=1, string _label="planedensity");
-		~PlaneParticlePositionEstimator();
+        ~PlaneParticlePositionEstimator();
 
         static const string name;
         string getName() {return name;}
@@ -304,7 +304,7 @@ class PlaneParticlePositionEstimator: public EstimatorBase {
     private:
         int numGrid;                // The number of grid points
         dVec dl;                    // The linear size of each spatial bin
-        void accumulate();			// Accumulate values
+        void accumulate();          // Accumulate values
         dVec side;                  // Local copy of container geometry
 };
 
@@ -317,21 +317,21 @@ class PlaneParticlePositionEstimator: public EstimatorBase {
  */
 class NumberDistributionEstimator: public EstimatorBase {
 
-	public:
-		NumberDistributionEstimator(const Path &, ActionBase *, const MTRand &, double,
+    public:
+        NumberDistributionEstimator(const Path &, ActionBase *, const MTRand &, double,
                 int _frequency=1, string _label="number");
-		~NumberDistributionEstimator();
+        ~NumberDistributionEstimator();
     
         static const string name;
         string getName() {return name;}
 
-	private:
-		int startParticleNumber;	// The smallest number of particles
-		int endParticleNumber;		// The largest  number of particles
-		int maxNumParticles;		// The particle Range
-		int particleShift;			// The shift in the particle array
+    private:
+        int startParticleNumber;    // The smallest number of particles
+        int endParticleNumber;      // The largest  number of particles
+        int maxNumParticles;        // The particle Range
+        int particleShift;          // The shift in the particle array
 
-		void accumulate();			// Accumulate values
+        void accumulate();          // Accumulate values
 };
 
 // ========================================================================  
@@ -343,18 +343,18 @@ class NumberDistributionEstimator: public EstimatorBase {
  */
 class SuperfluidFractionEstimator: public EstimatorBase {
 
-	public:
-		SuperfluidFractionEstimator(const Path &, ActionBase *, const MTRand &, double,
+    public:
+        SuperfluidFractionEstimator(const Path &, ActionBase *, const MTRand &, double,
                 int _frequency=1, string _label="super");
-		~SuperfluidFractionEstimator();
+        ~SuperfluidFractionEstimator();
 
         static const string name;
         string getName() {return name;}
 
-	private:
-		int windMax;			// The maximum winding number considered
+    private:
+        int windMax;            // The maximum winding number considered
 
-		void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
 
 };
 
@@ -366,24 +366,24 @@ class SuperfluidFractionEstimator: public EstimatorBase {
  */
 class LocalSuperfluidDensityEstimator: public EstimatorBase {
 
-	public:
-		LocalSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, double,
+    public:
+        LocalSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, double,
                 int _frequency=1, string _label="locsuper");
-		~LocalSuperfluidDensityEstimator();
+        ~LocalSuperfluidDensityEstimator();
 
         void output();           ///< overload the output
 
         static const string name;
         string getName() {return name;}
 
-	private:
+    private:
         int numGrid;            // The number of grid points
         double dR;              // The size of the radial bin
         Array <double,1> locAz; // The local path area estimator
         Array <double,1> locA2; // The local area squared
         Array <double,1> locWz; // The local winding number estimator
 
-		void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
 
 };
 
@@ -395,21 +395,21 @@ class LocalSuperfluidDensityEstimator: public EstimatorBase {
  */
 class PlaneWindingSuperfluidDensityEstimator: public EstimatorBase {
 
-	public:
-		PlaneWindingSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        PlaneWindingSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="planewind");
-		~PlaneWindingSuperfluidDensityEstimator();
+        ~PlaneWindingSuperfluidDensityEstimator();
     
         static const string name;
         string getName() {return name;}
 
-	private:
+    private:
         dVec side;              // A local copy of the dimensions
         double dx;              // The linear x-size of the spatial bin
         double dy;              // The linear y-size of the spatial bin
         int numGrid;            // The number of grid points
         Array <double,1> locWz; // The local winding number estimator
-		void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
 
 };
 
@@ -421,21 +421,21 @@ class PlaneWindingSuperfluidDensityEstimator: public EstimatorBase {
  */
 class PlaneAreaSuperfluidDensityEstimator: public EstimatorBase {
 
-	public:
-		PlaneAreaSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        PlaneAreaSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="planearea");
-		~PlaneAreaSuperfluidDensityEstimator();
+        ~PlaneAreaSuperfluidDensityEstimator();
 
         static const string name;
         string getName() {return name;}
 
-	private:
+    private:
         dVec side;              // A local copy of the dimensions
         double dx;              // The linear x-size of the spatial bin
         double dy;              // The linear y-size of the spatial bin
         int numGrid;            // The number of grid points
         Array <double,1> locAz; // The local area estimator
-		void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
 
 };
 
@@ -447,19 +447,19 @@ class PlaneAreaSuperfluidDensityEstimator: public EstimatorBase {
  */
 class RadialWindingSuperfluidDensityEstimator: public EstimatorBase {
 
-	public:
-		RadialWindingSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        RadialWindingSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="radwind");
-		~RadialWindingSuperfluidDensityEstimator();
+        ~RadialWindingSuperfluidDensityEstimator();
 
         static const string name;
         string getName() {return name;}
 
-	private:
+    private:
         double dR;              // The size of the radial bin
         int numGrid;            // The number of grid points
         Array <double,1> locWz; // The local winding number estimator
-		void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
 
 };
 
@@ -471,19 +471,19 @@ class RadialWindingSuperfluidDensityEstimator: public EstimatorBase {
  */
 class RadialAreaSuperfluidDensityEstimator: public EstimatorBase {
 
-	public:
-		RadialAreaSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        RadialAreaSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="radarea");
-		~RadialAreaSuperfluidDensityEstimator();
+        ~RadialAreaSuperfluidDensityEstimator();
     
         static const string name;
         string getName() {return name;}
 
-	private:
+    private:
         double dR;              // The size of the radial bin
         int numGrid;            // The number of grid points
         Array <double,1> locAz; // The local winding number estimator
-		void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
 
 };
 
@@ -495,18 +495,18 @@ class RadialAreaSuperfluidDensityEstimator: public EstimatorBase {
  */
 class DiagonalFractionEstimator: public EstimatorBase {
 
-	public:
-		DiagonalFractionEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        DiagonalFractionEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="estimator");
-		~DiagonalFractionEstimator();
+        ~DiagonalFractionEstimator();
     
         void sample();          // Overload to always-on sampling
 
         static const string name;
         string getName() {return name;}
 
-	private:
-		void accumulate();		// Accumulate values
+    private:
+        void accumulate();      // Accumulate values
 };
 
 // ========================================================================  
@@ -517,18 +517,18 @@ class DiagonalFractionEstimator: public EstimatorBase {
  */
 class PermutationCycleEstimator: public EstimatorBase {
 
-	public:
-		PermutationCycleEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        PermutationCycleEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="pcycle");
-		~PermutationCycleEstimator();
+        ~PermutationCycleEstimator();
     
         static const string name;
         string getName() {return name;}
 
-	private:
-		Array <bool,1> doBead;		// Used for ensuring we don't double count beads
-		int maxNumCycles;			// The maximum number of cycles to consider
-		void accumulate();			// Accumulate values
+    private:
+        Array <bool,1> doBead;      // Used for ensuring we don't double count beads
+        int maxNumCycles;           // The maximum number of cycles to consider
+        void accumulate();          // Accumulate values
 };
 
 // ========================================================================  
@@ -540,21 +540,21 @@ class PermutationCycleEstimator: public EstimatorBase {
  */
 class LocalPermutationEstimator: public EstimatorBase {
 
-	public:
-		LocalPermutationEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        LocalPermutationEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="locperm");
-		~LocalPermutationEstimator();
+        ~LocalPermutationEstimator();
 
         void output();
 
         static const string name;
         string getName() {return name;}
 
-	private:
+    private:
         Array <int, 1> numBeadInGrid;
-		Array <bool,1> doBead;		// Used for ensuring we don't double count beads
-		int maxNumCycles;			// The maximum number of cycles to consider
-		void accumulate();			// Accumulate values
+        Array <bool,1> doBead;      // Used for ensuring we don't double count beads
+        int maxNumCycles;           // The maximum number of cycles to consider
+        void accumulate();          // Accumulate values
 };
 
 
@@ -571,42 +571,42 @@ class LocalPermutationEstimator: public EstimatorBase {
  */
 class OneBodyDensityMatrixEstimator: public EstimatorBase {
 
-	public:
-		OneBodyDensityMatrixEstimator(Path &, ActionBase *, const MTRand &, 
+    public:
+        OneBodyDensityMatrixEstimator(Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=20, string _label="obdm");
-		~OneBodyDensityMatrixEstimator();
+        ~OneBodyDensityMatrixEstimator();
     
-		void sample();				// Sample the estimator
-		void outputFooter();		// Output the acceptance footer to disk
+        void sample();              // Sample the estimator
+        void outputFooter();        // Output the acceptance footer to disk
 
         static const string name;
         string getName() {return name;}
 
-	private:
-		Path &lpath;					// A non-constant local reference to the path
+    private:
+        Path &lpath;                    // A non-constant local reference to the path
 
-		double dR;						// The discretization
-		int numReps;					// The number of measurments reps					
-		uint32 numAccepted;				// The number of moves accepted
-		uint32 numAttempted;			// The number of moves attempted
+        double dR;                      // The discretization
+        int numReps;                    // The number of measurments reps                   
+        uint32 numAccepted;             // The number of moves accepted
+        uint32 numAttempted;            // The number of moves attempted
 
 
-	 	dVec newTailPos,oldTailPos;		// The new and old tail position
-	 	dVec newHeadPos;				// The new head position
-		dVec newRanPos,neighborPos;		// The random shift
+        dVec newTailPos,oldTailPos;     // The new and old tail position
+        dVec newHeadPos;                // The new head position
+        dVec newRanPos,neighborPos;     // The random shift
 
-		double sqrt2LambdaTau;			// sqrt(2 * lambda * tau)
-		double rho0Norm;				// Free density matrix
-		double oldAction,newAction;		// The old and new action
+        double sqrt2LambdaTau;          // sqrt(2 * lambda * tau)
+        double rho0Norm;                // Free density matrix
+        double oldAction,newAction;     // The old and new action
 
-		/* Get a random vector */
-		dVec getRandomVector(const double);
-		
-		/* Returns a position used by the staging algorithm */
-		dVec newStagingPosition(const beadLocator &, const beadLocator &, const int, const int);
+        /* Get a random vector */
+        dVec getRandomVector(const double);
+        
+        /* Returns a position used by the staging algorithm */
+        dVec newStagingPosition(const beadLocator &, const beadLocator &, const int, const int);
 
-		/* Accumulate values */
-		void accumulate();	
+        /* Accumulate values */
+        void accumulate();  
 };
 
 // ========================================================================  
@@ -617,17 +617,17 @@ class OneBodyDensityMatrixEstimator: public EstimatorBase {
  */
 class PairCorrelationEstimator: public EstimatorBase {
 
-	public:
-		PairCorrelationEstimator(const Path &, ActionBase *, const MTRand &,
+    public:
+        PairCorrelationEstimator(const Path &, ActionBase *, const MTRand &,
                 double, int _frequency=1, string _label="pair");
-		~PairCorrelationEstimator();
+        ~PairCorrelationEstimator();
     
         static const string name;
         string getName() {return name;}
 
-	private:
-		void accumulate();				// Accumulate values
-		double dR;						// The discretization
+    private:
+        void accumulate();              // Accumulate values
+        double dR;                      // The discretization
 };
 
 // ========================================================================  
@@ -638,17 +638,17 @@ class PairCorrelationEstimator: public EstimatorBase {
  */
 class RadialDensityEstimator: public EstimatorBase {
 
-	public:
-		RadialDensityEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        RadialDensityEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="radial");
-		~RadialDensityEstimator();
+        ~RadialDensityEstimator();
     
         static const string name;
         string getName() {return name;}
 
-	private:
-		void accumulate();				// Accumulate values
-		double dR;						// The discretization
+    private:
+        void accumulate();              // Accumulate values
+        double dR;                      // The discretization
 };
 
 // ========================================================================  
@@ -659,17 +659,17 @@ class RadialDensityEstimator: public EstimatorBase {
  */
 class WormPropertiesEstimator: public EstimatorBase {
 
-	public:
-		WormPropertiesEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        WormPropertiesEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="worm");
-		~WormPropertiesEstimator();
+        ~WormPropertiesEstimator();
     
         static const string name;
         string getName() {return name;}
 
-	private:
-		dVec sep;						// head-tail separation
-		void accumulate();				// Accumulate values
+    private:
+        dVec sep;                       // head-tail separation
+        void accumulate();              // Accumulate values
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -692,17 +692,17 @@ class WormPropertiesEstimator: public EstimatorBase {
  */
 class CylinderEnergyEstimator: public EstimatorBase {
 
-	public:
-		CylinderEnergyEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        CylinderEnergyEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="cyl_estimator");
-		~CylinderEnergyEstimator();
+        ~CylinderEnergyEstimator();
     
         static const string name;
         string getName() {return name;}
 
-	private:
+    private:
 
-		void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
 
 };
 
@@ -714,16 +714,16 @@ class CylinderEnergyEstimator: public EstimatorBase {
  */
 class CylinderNumberParticlesEstimator: public EstimatorBase {
 
-	public:
-		CylinderNumberParticlesEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        CylinderNumberParticlesEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="cyl_estimator");
-		~CylinderNumberParticlesEstimator();
+        ~CylinderNumberParticlesEstimator();
     
         static const string name;
         string getName() {return name;}
 
-	private:
-		void accumulate();		// Accumulate values
+    private:
+        void accumulate();      // Accumulate values
 };
 
 // ========================================================================  
@@ -734,18 +734,18 @@ class CylinderNumberParticlesEstimator: public EstimatorBase {
  */
 class CylinderNumberDistributionEstimator: public EstimatorBase {
 
-	public:
-		CylinderNumberDistributionEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        CylinderNumberDistributionEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="cyl_number");
-		~CylinderNumberDistributionEstimator();
+        ~CylinderNumberDistributionEstimator();
     
         static const string name;
         string getName() {return name;}
 
-	private:
-		int maxNumParticles;		// The maximum number considered
+    private:
+        int maxNumParticles;        // The maximum number considered
 
-		void accumulate();			// Accumulate values
+        void accumulate();          // Accumulate values
 };
 
 // ========================================================================  
@@ -756,19 +756,19 @@ class CylinderNumberDistributionEstimator: public EstimatorBase {
  */
 class CylinderLinearDensityEstimator: public EstimatorBase {
 
-	public:
-		CylinderLinearDensityEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        CylinderLinearDensityEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="cyl_linedensity");
-		~CylinderLinearDensityEstimator();
+        ~CylinderLinearDensityEstimator();
 
         static const string name;
         string getName() {return name;}
 
-	private:
+    private:
         double dz;                  // The bin-size in the z-direction
         double Lz;                  // The length of the cylinder
 
-		void accumulate();			// Accumulate values
+        void accumulate();          // Accumulate values
 };
 
 // ========================================================================  
@@ -780,19 +780,19 @@ class CylinderLinearDensityEstimator: public EstimatorBase {
  */
 class CylinderSuperfluidFractionEstimator: public EstimatorBase {
 
-	public:
-		CylinderSuperfluidFractionEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        CylinderSuperfluidFractionEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="cyl_super");
-		~CylinderSuperfluidFractionEstimator();
+        ~CylinderSuperfluidFractionEstimator();
     
         static const string name;
         string getName() {return name;}
 
-	private:
-		Array <bool,1> doBead;	// Used for ensuring we don't double count beads
-		int windMax;			// The maximum winding number considered
+    private:
+        Array <bool,1> doBead;  // Used for ensuring we don't double count beads
+        int windMax;            // The maximum winding number considered
 
-		void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
 
 };
 
@@ -809,41 +809,41 @@ class CylinderSuperfluidFractionEstimator: public EstimatorBase {
  */
 class CylinderOneBodyDensityMatrixEstimator: public EstimatorBase {
 
-	public:
-		CylinderOneBodyDensityMatrixEstimator(Path &, ActionBase *, const MTRand &, 
+    public:
+        CylinderOneBodyDensityMatrixEstimator(Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=20, string _label="cyl_obdm");
-		~CylinderOneBodyDensityMatrixEstimator();
+        ~CylinderOneBodyDensityMatrixEstimator();
 
-		void sample();				// Sample the estimator
+        void sample();              // Sample the estimator
 
         static const string name;
         string getName() {return name;}
 
-	private:
-		Path &lpath;					// A non-constant local reference to the path
+    private:
+        Path &lpath;                    // A non-constant local reference to the path
 
-		double dR;						// The discretization
-		int numReps;					// The number of measurments reps					
-		uint32 numAccepted;				// The number of moves accepted
-		uint32 numAttempted;			// The number of moves attempted
+        double dR;                      // The discretization
+        int numReps;                    // The number of measurments reps                   
+        uint32 numAccepted;             // The number of moves accepted
+        uint32 numAttempted;            // The number of moves attempted
 
 
-	 	dVec newTailPos,oldTailPos;		// The new and old tail position
-	 	dVec newHeadPos;				// The new head position
-		dVec newRanPos,neighborPos;		// The random shift
+        dVec newTailPos,oldTailPos;     // The new and old tail position
+        dVec newHeadPos;                // The new head position
+        dVec newRanPos,neighborPos;     // The random shift
 
-		double sqrt2LambdaTau;			// sqrt(2 * lambda * tau)
-		double rho0Norm;				// Free density matrix
-		double oldAction,newAction;		// The old and new action
+        double sqrt2LambdaTau;          // sqrt(2 * lambda * tau)
+        double rho0Norm;                // Free density matrix
+        double oldAction,newAction;     // The old and new action
 
-		/* Get a random vector */
-		dVec getRandomVector(const double);
-		
-		/* Returns a position used by the staging algorithm */
-		dVec newStagingPosition(const beadLocator &, const beadLocator &, const int, const int);
+        /* Get a random vector */
+        dVec getRandomVector(const double);
+        
+        /* Returns a position used by the staging algorithm */
+        dVec newStagingPosition(const beadLocator &, const beadLocator &, const int, const int);
 
-		/* Accumulate values */
-		void accumulate();	
+        /* Accumulate values */
+        void accumulate();  
 };
 
 // ========================================================================  
@@ -854,19 +854,19 @@ class CylinderOneBodyDensityMatrixEstimator: public EstimatorBase {
  */
 class CylinderPairCorrelationEstimator: public EstimatorBase {
 
-	public:
-		CylinderPairCorrelationEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        CylinderPairCorrelationEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="cyl_pair");
-		~CylinderPairCorrelationEstimator();
+        ~CylinderPairCorrelationEstimator();
     
-		void sample();				// Sample the estimator
+        void sample();              // Sample the estimator
 
         static const string name;
         string getName() {return name;}
 
-	private:
-		void accumulate();				// Accumulate values
-		double dR;						// The discretization
+    private:
+        void accumulate();              // Accumulate values
+        double dR;                      // The discretization
 };
 
 // ========================================================================  
@@ -877,20 +877,20 @@ class CylinderPairCorrelationEstimator: public EstimatorBase {
  */
 class CylinderLinearPotentialEstimator: public EstimatorBase {
 
-	public:
-		CylinderLinearPotentialEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        CylinderLinearPotentialEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="cyl_linepotential");
-		~CylinderLinearPotentialEstimator();
+        ~CylinderLinearPotentialEstimator();
 
         static const string name;
         string getName() {return name;}
 
-	private:
-		
-		double dz;						// The discretization
+    private:
+        
+        double dz;                      // The discretization
         double Lz;                      // The length of the cylinder
 
-		void accumulate();				// Accumulate values
+        void accumulate();              // Accumulate values
 };
 
 // ========================================================================  
@@ -901,21 +901,21 @@ class CylinderLinearPotentialEstimator: public EstimatorBase {
  */
 class CylinderRadialPotentialEstimator: public EstimatorBase {
 
-	public:
-		CylinderRadialPotentialEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        CylinderRadialPotentialEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="cyl_potential");
-		~CylinderRadialPotentialEstimator();
+        ~CylinderRadialPotentialEstimator();
     
         static const string name;
         string getName() {return name;}
 
-	private:
-		
-		double dR;						// The discretization
-		Array <double,1> radPot;		// Used for normalization
+    private:
+        
+        double dR;                      // The discretization
+        Array <double,1> radPot;        // Used for normalization
 
-		void accumulate();				// Accumulate values
-		void accumulate1();				// Accumulate values
+        void accumulate();              // Accumulate values
+        void accumulate1();             // Accumulate values
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
@@ -931,16 +931,16 @@ class CylinderRadialPotentialEstimator: public EstimatorBase {
  */
 class PotentialEnergyEstimator: public EstimatorBase {
 
-	public:
-		PotentialEnergyEstimator(const Path &, ActionBase *, const MTRand &, 
+    public:
+        PotentialEnergyEstimator(const Path &, ActionBase *, const MTRand &, 
                 double, int _frequency=1, string _label="potential");
-		~PotentialEnergyEstimator();
+        ~PotentialEnergyEstimator();
 
         static const string name;
         string getName() {return name;}
 
-	private:
-		void accumulate();		// Accumulate values
+    private:
+        void accumulate();      // Accumulate values
 
 };
 
@@ -961,7 +961,7 @@ class KineticEnergyEstimator: public EstimatorBase {
         string getName() {return name;}
 
     private:
-        void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
     
 };
 
@@ -988,7 +988,7 @@ class PigsEnergyEstimator: public EstimatorBase {
         string getName() {return name;}
     
     private:
-        void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
     
 };
 
@@ -1015,7 +1015,7 @@ public:
     string getName() {return name;}
     
 private:
-    void accumulate();		// Accumulate values
+    void accumulate();      // Accumulate values
 };
 
 
@@ -1037,7 +1037,7 @@ class TotalEnergyEstimator: public EstimatorBase {
         string getName() {return name;}
 
     private:
-        void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
 
 };
 
@@ -1058,7 +1058,7 @@ class ThermoPotentialEnergyEstimator: public EstimatorBase {
         string getName() {return name;}
 
     private:
-        void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
     
 };
 
@@ -1080,7 +1080,7 @@ class PositionEstimator: public EstimatorBase {
         string getName() {return name;}
 
     private:
-        void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
 
 };
 
@@ -1102,7 +1102,7 @@ class ParticleResolvedPositionEstimator: public EstimatorBase {
         string getName() {return name;}
 
     private:
-        void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
     
 };
 
@@ -1126,7 +1126,7 @@ class ParticleCorrelationEstimator: public EstimatorBase {
 
 
     private:
-        void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
 
 };
 
@@ -1149,7 +1149,7 @@ class VelocityEstimator: public EstimatorBase {
         string getName() {return name;}
 
     private:
-        void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
 
 };
 
@@ -1171,7 +1171,7 @@ class SubregionOccupationEstimator: public EstimatorBase {
         string getName() {return name;}
 
     private:
-        void accumulate();		// Accumulate values
+        void accumulate();      // Accumulate values
 
 };
 // ========================================================================
@@ -1192,32 +1192,32 @@ class PIGSOneBodyDensityMatrixEstimator: public EstimatorBase {
                 double, int _frequency=1, string _label="obdm");
         ~PIGSOneBodyDensityMatrixEstimator();
 
-        void sample();				// Sample the estimator
-        void outputFooter();		// Output the acceptance footer to disk
+        void sample();              // Sample the estimator
+        void outputFooter();        // Output the acceptance footer to disk
 
         static const string name;
         string getName() {return name;}
 
     private:
-        Path &lpath;					// A non-constant local reference to the path
+        Path &lpath;                    // A non-constant local reference to the path
 
-        double dR;						// The discretization
-        int numReps;					// The number of measurments reps
-        uint32 numAccepted;				// The number of moves accepted
-        uint32 numAttempted;			// The number of moves attempted
+        double dR;                      // The discretization
+        int numReps;                    // The number of measurments reps
+        uint32 numAccepted;             // The number of moves accepted
+        uint32 numAttempted;            // The number of moves attempted
 
 
-        dVec newTailPos,oldTailPos;		// The new and old tail position
-        dVec newRanPos,neighborPos;		// The random shift
+        dVec newTailPos,oldTailPos;     // The new and old tail position
+        dVec newRanPos,neighborPos;     // The random shift
 
-        double sqrt2LambdaTau;			// sqrt(2 * lambda * tau)
-        double oldAction,newAction;		// The old and new action
+        double sqrt2LambdaTau;          // sqrt(2 * lambda * tau)
+        double oldAction,newAction;     // The old and new action
 
         /* Get a random vector */
         dVec getRandomVector(const double);
 
         /* Accumulate values */
-        void accumulate();	
+        void accumulate();  
 };
 
 
@@ -1237,7 +1237,7 @@ class DoubledEstimator: public EstimatorBase {
         string getName() {return "doubled base";}
 
     protected:
-        const Path &path2;				///< A constant reference to the paths
+        const Path &path2;              ///< A constant reference to the paths
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
@@ -1262,14 +1262,14 @@ class SwapEstimator: public DoubledEstimator {
         string getName() {return name;}
 
     private:
-        Path &lpath;					// A non-constant local reference to path 1
-        Path &lpath2;					// A non-constant local reference to path 2
-        ActionBase *actionPtr;			// The action pointer for path 1
-        ActionBase *actionPtr2;			// The action pointer for path 2
+        Path &lpath;                    // A non-constant local reference to path 1
+        Path &lpath2;                   // A non-constant local reference to path 2
+        ActionBase *actionPtr;          // The action pointer for path 1
+        ActionBase *actionPtr2;         // The action pointer for path 2
 
-        void accumulate();			// Accumulate values
-        void accumulateOpen();			// Accumulate values for open paths
-        void accumulateClosed();			// Accumulate values for open paths
+        void accumulate();          // Accumulate values
+        void accumulateOpen();          // Accumulate values for open paths
+        void accumulateClosed();            // Accumulate values for open paths
 };
 
 
@@ -1290,12 +1290,12 @@ class EntPartEstimator: public DoubledEstimator {
         string getName() {return name;}
 
     private:
-        Path &lpath;					// A non-constant local reference to path 1
-        Path &lpath2;					// A non-constant local reference to path 2
-        ActionBase *actionPtr;			// The action pointer for path 1
-        ActionBase *actionPtr2;			// The action pointer for path 2
+        Path &lpath;                    // A non-constant local reference to path 1
+        Path &lpath2;                   // A non-constant local reference to path 2
+        ActionBase *actionPtr;          // The action pointer for path 1
+        ActionBase *actionPtr2;         // The action pointer for path 2
 
-        void accumulate();			// Accumulate values
+        void accumulate();          // Accumulate values
 };
 
 

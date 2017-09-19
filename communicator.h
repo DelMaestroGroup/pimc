@@ -1,7 +1,7 @@
 /**
  * @file communicator.h
  * @author Adrian Del Maestro
- * @date 03.25.2009	
+ * @date 03.25.2009 
  *
  * @brief Class definitions for all file input/output
  */
@@ -30,12 +30,12 @@ class File
         ~File() {close();}
 
         /* Return the file stream */
-		fstream & stream() { 
+        fstream & stream() { 
             return rwfile;
         }
 
         /* Open the primary file */
-		void open(ios_base::openmode);
+        void open(ios_base::openmode);
 
         /* Reset and rename the primary file */
         void reset();
@@ -51,7 +51,7 @@ class File
         fstream rwfile;     // The i/o file object
 
         /* An alternate open which takes a filename */
-		void open(ios_base::openmode,string);
+        void open(ios_base::openmode,string);
 
 };
 
@@ -68,11 +68,11 @@ class File
  */
 class Communicator
 {
-	public:
-		static Communicator* getInstance();
+    public:
+        static Communicator* getInstance();
 
-		/** Initialize the output files */
-		void init(double,bool,string,string);
+        /** Initialize the output files */
+        void init(double,bool,string,string);
 
         /** Get method returning file object */
         File *file(string type) {
@@ -81,16 +81,16 @@ class Communicator
             return &file_.at(type);
         }
 
-	protected:
-		Communicator() {}									
-		Communicator(const Communicator&);				///< Copy constructor
-		Communicator& operator= (const Communicator&);	///< Singleton equals
+    protected:
+        Communicator() {}                                   
+        Communicator(const Communicator&);              ///< Copy constructor
+        Communicator& operator= (const Communicator&);  ///< Singleton equals
 
-	private:
+    private:
         ios_base::openmode mode;    // The file i/o mode
 
-		string ensemble;			// The type of ensemble
-		string dataName;			// The labelling scheme of the output files
+        string ensemble;            // The type of ensemble
+        string dataName;            // The labelling scheme of the output files
         string header;              // A unique file header
 
         string initName;      // A possible initial file name
@@ -111,8 +111,8 @@ class Communicator
  *  Global public access to the communcator singleton.
 ******************************************************************************/
 inline Communicator* communicate() {
-	Communicator *temp = Communicator::getInstance();
-	return temp;
+    Communicator *temp = Communicator::getInstance();
+    return temp;
 }
 #endif
 

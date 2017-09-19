@@ -45,8 +45,8 @@ class Factory<BaseType (ParamType...)>
         }
 
         /** Overload () to return a singleton instance */
-		const Factory<BaseType (ParamType...)> * operator() () const { return Instance();}
-		Factory<BaseType (ParamType...)> * operator() () { return Instance();}
+        const Factory<BaseType (ParamType...)> * operator() () const { return Instance();}
+        Factory<BaseType (ParamType...)> * operator() () { return Instance();}
 
         /** Return an instantiated object with a given name */
         BaseType Create(string name, ParamType ...param) {

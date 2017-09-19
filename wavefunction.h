@@ -25,14 +25,14 @@ class Path;
  */
 class WaveFunctionBase {
 
-	public:
-		WaveFunctionBase (const Path &,LookupTable &_lookup, string _name="constant");
-		virtual ~WaveFunctionBase();
+    public:
+        WaveFunctionBase (const Path &,LookupTable &_lookup, string _name="constant");
+        virtual ~WaveFunctionBase();
 
         /** Name of the trial wave function */
         string name;
 
-		/** The Constant Trial Wave Function*/
+        /** The Constant Trial Wave Function*/
         virtual double PsiTrial(const int) { return 1.0; };
         virtual double PsiTrial(const double) { return 1.0; };
         virtual double PsiTrial(const beadLocator &) { return 1.0; };
@@ -40,9 +40,9 @@ class WaveFunctionBase {
         virtual double delSqPsiTrial(const double ) { return 0.0; };
         virtual double gradSqPsiTrial(const int) { return 0.0; };
 
-	protected:
-		const Path &path;				///< A reference to the paths
-        LookupTable &lookup;			///< We need a non-constant reference for updates
+    protected:
+        const Path &path;               ///< A reference to the paths
+        LookupTable &lookup;            ///< We need a non-constant reference for updates
 
 };
 
@@ -57,14 +57,14 @@ class WaveFunctionBase {
  */
 class SechWaveFunction: public WaveFunctionBase {
 
-	public:
-		SechWaveFunction(const Path &,LookupTable &_lookup, string _name="SHO sech");
-		~SechWaveFunction();
+    public:
+        SechWaveFunction(const Path &,LookupTable &_lookup, string _name="SHO sech");
+        ~SechWaveFunction();
 
         double PsiTrial (const int);
 
-	private:
-		double a;			// The parameter of the wave function 
+    private:
+        double a;           // The parameter of the wave function 
 
 };
 
@@ -90,8 +90,8 @@ public:
     double twoBodyPsiTrial (const double);
     
 private:
-    double alpha;			// The parameter of the wave function
-    double beta;			// The parameter of the wave function
+    double alpha;           // The parameter of the wave function
+    double beta;            // The parameter of the wave function
     
 };
 
@@ -120,8 +120,8 @@ public:
     
     
 private:
-    double R;			// The parameter length scale of the wave function
-    double k;			// The wavevector of the wave function
+    double R;           // The parameter length scale of the wave function
+    double k;           // The wavevector of the wave function
     
 };
 

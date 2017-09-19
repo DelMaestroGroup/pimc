@@ -38,44 +38,44 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     estimatorPtrVec(_estimatorPtrVec),
     estimator(estimatorPtrVec.front())
 {
-	/* Are we starting from a saved state? */
-	startWithState = _startWithState;
+    /* Are we starting from a saved state? */
+    startWithState = _startWithState;
     
     /* Initialize stateStrings */
     stateStrings.resize(Npaths);
     
-	/* We keep simulating until we have stored a certain number of measurements */
-	numStoredBins = 0;
+    /* We keep simulating until we have stored a certain number of measurements */
+    numStoredBins = 0;
     
     /* Initialize the number of sweeps and updates per sweep to zero */
     numSteps = 0;
     numUpdates = 0;
     
-	/* Calculate the number of sweeps to make sure we touch every bead */
-	numImagTimeSweeps = int(ceil((1.0*constants()->numTimeSlices()/(1.0*constants()->Mbar()))));
+    /* Calculate the number of sweeps to make sure we touch every bead */
+    numImagTimeSweeps = int(ceil((1.0*constants()->numTimeSlices()/(1.0*constants()->Mbar()))));
     
-	/* These counters are used in the equilibration process */
-	numConfig = 0;
-	numDiagonal = 0;
-	numCoMAttempted = 200;
-	prevNumCoMAttempted = 200;
-	numCoMAccepted = 0;
-	numDisplaceAttempted = 200;
-	numDisplaceAccepted = 0;
+    /* These counters are used in the equilibration process */
+    numConfig = 0;
+    numDiagonal = 0;
+    numCoMAttempted = 200;
+    prevNumCoMAttempted = 200;
+    numCoMAccepted = 0;
+    numDisplaceAttempted = 200;
+    numDisplaceAccepted = 0;
     numMuAttempted = 5000;
     numNAttempted = 0;
     cN = 0;
     
-	/* Intialize the config number to zero */
-	configNumber = 0;
+    /* Intialize the config number to zero */
+    configNumber = 0;
     
-	/* Determine the cumulative attempt move probabilities, and the indices of
+    /* Determine the cumulative attempt move probabilities, and the indices of
      * various diagonal moves */
     double cumDiagProb = 0.0;
     double cumOffDiagProb = 0.0;
     string moveName;
 
-	for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
+    for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
 
         /* Get the namne of the move and check if it is the generic diagonal
          * move */
@@ -107,9 +107,9 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     attemptDiagProb.back() = 1.0 + EPS;
     attemptOffDiagProb.back() = 1.0 + EPS;
     
-	/* If we are restarting, or loading a state from disk, do so now. */
-	if (startWithState || constants()->restart())
-		loadState();
+    /* If we are restarting, or loading a state from disk, do so now. */
+    if (startWithState || constants()->restart())
+        loadState();
 
     /* Setup all the estimators for measurement i/o */
     for (boost::ptr_vector<estimator_vector>::iterator estimatorPtrVecItr = estimatorPtrVec.begin();
@@ -138,11 +138,11 @@ PathIntegralMonteCarlo::~PathIntegralMonteCarlo () {
 string PathIntegralMonteCarlo::update(const double x, const int sweep, const int pathIdx=0) { 
 
     success = false;
-	string moveName = "NONE";
+    string moveName = "NONE";
     int index;
 
     /* Determine the index of the move to be performed */
-	if (pathPtrVec[pathIdx].worm.isConfigDiagonal)
+    if (pathPtrVec[pathIdx].worm.isConfigDiagonal)
         index = std::lower_bound(attemptDiagProb.begin(),attemptDiagProb.end(),x)
             - attemptDiagProb.begin();
     else 
@@ -153,7 +153,7 @@ string PathIntegralMonteCarlo::update(const double x, const int sweep, const int
     moveName = movePtrVec[pathIdx].at(index).getName();
     success = movePtrVec[pathIdx].at(index).attemptMove();
 
-	return moveName;
+    return moveName;
 }
 
 /**************************************************************************//**
@@ -166,18 +166,18 @@ string PathIntegralMonteCarlo::update(const double x, const int sweep, const int
 ******************************************************************************/
 void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, const bool relaxmu) {
 
-	double x;
+    double x;
 
-	/* How far are we into the equilibration? */
-	double equilFrac = (1.0*iStep) / (1.0*constants()->numEqSteps());
+    /* How far are we into the equilibration? */
+    double equilFrac = (1.0*iStep) / (1.0*constants()->numEqSteps());
     numParticles = path.getTrueNumParticles();
 
     /* Always do at least one move */
     if (numParticles == 0)
         ++numParticles;
 
-	/* For the first 1/3 of equilibration steps, we only do diagonal moves */
-	if (equilFrac < 1.0/3.0 && !startWithState) {
+    /* For the first 1/3 of equilibration steps, we only do diagonal moves */
+    if (equilFrac < 1.0/3.0 && !startWithState) {
 
         for (int n = 0; n < numParticles; n++) {
             
@@ -272,7 +272,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
     } // equilFrac < 1/3 and !startWithState
 
     /* Start the 2/3 off diagonal portion of the equilibration */
-	else {
+    else {
 
         /* How many updates should we perform? We always try atleast 1 */
         numUpdates = max(1,int(ceil(path.worm.getNumBeadsOn()/(1.0*constants()->Mbar()))));
@@ -382,7 +382,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
 ******************************************************************************/
 void PathIntegralMonteCarlo::step() {
 
-	string moveName;
+    string moveName;
 
     numUpdates = int(ceil(constants()->initialNumParticles()*constants()->numTimeSlices()/
                 (1.0*constants()->Mbar())));
@@ -450,50 +450,50 @@ void PathIntegralMonteCarlo::step() {
 ******************************************************************************/
 void PathIntegralMonteCarlo::finalOutput() {
 
-	/* Output the acceptance data to the log file */
-	communicate()->file("log")->stream() << endl;
-	communicate()->file("log")->stream() << endl;
+    /* Output the acceptance data to the log file */
+    communicate()->file("log")->stream() << endl;
+    communicate()->file("log")->stream() << endl;
 
-	communicate()->file("log")->stream() << "---------- Begin Acceptance Data ---------------" << endl;
-	communicate()->file("log")->stream() << endl;
-	communicate()->file("log")->stream() << format("%-29s\t:\t%7.5f\n") % "Total Rate" 
-		% move.front().getTotAcceptanceRatio();
-	communicate()->file("log")->stream() << endl;
+    communicate()->file("log")->stream() << "---------- Begin Acceptance Data ---------------" << endl;
+    communicate()->file("log")->stream() << endl;
+    communicate()->file("log")->stream() << format("%-29s\t:\t%7.5f\n") % "Total Rate" 
+        % move.front().getTotAcceptanceRatio();
+    communicate()->file("log")->stream() << endl;
 
-	/* Ouptut all the move acceptance information to disk */
-	string moveName;
-	for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
-		moveName = movePtr->getName();
+    /* Ouptut all the move acceptance information to disk */
+    string moveName;
+    for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
+        moveName = movePtr->getName();
 
-		/* We only output levels for those moves which have a variable size */
+        /* We only output levels for those moves which have a variable size */
         if (movePtr->variableLength) {
-			for (int n = 0; n <= constants()->b(); n++) {
-				communicate()->file("log")->stream() << format("%-12s Level %-10d\t:\t%7.5f\t(%d/%d)\n") 
-					% moveName % n % movePtr->getAcceptanceRatioLevel(n) 
-					% movePtr->numAcceptedLevel(n) % movePtr->numAttemptedLevel(n);
-			}
-		}
-		communicate()->file("log")->stream() << format("%-29s\t:\t%7.5f\t(%d/%d)\n") % moveName
-			% movePtr->getAcceptanceRatio() % movePtr->numAccepted
-			% movePtr->numAttempted;
-		communicate()->file("log")->stream() << endl;
-	}
-	communicate()->file("log")->stream() << "---------- End Acceptance Data -----------------" << endl;
+            for (int n = 0; n <= constants()->b(); n++) {
+                communicate()->file("log")->stream() << format("%-12s Level %-10d\t:\t%7.5f\t(%d/%d)\n") 
+                    % moveName % n % movePtr->getAcceptanceRatioLevel(n) 
+                    % movePtr->numAcceptedLevel(n) % movePtr->numAttemptedLevel(n);
+            }
+        }
+        communicate()->file("log")->stream() << format("%-29s\t:\t%7.5f\t(%d/%d)\n") % moveName
+            % movePtr->getAcceptanceRatio() % movePtr->numAccepted
+            % movePtr->numAttempted;
+        communicate()->file("log")->stream() << endl;
+    }
+    communicate()->file("log")->stream() << "---------- End Acceptance Data -----------------" << endl;
 
-	communicate()->file("log")->stream() << endl;
-	communicate()->file("log")->stream() << endl;
+    communicate()->file("log")->stream() << endl;
+    communicate()->file("log")->stream() << endl;
 
-	/* Output the estimator statistics to the log file */
-	communicate()->file("log")->stream() << "---------- Begin Estimator Data ----------------" << endl;
-	communicate()->file("log")->stream() << endl;
-	for (estimator_vector::iterator estimatorPtr = estimator.begin();
-			estimatorPtr != estimator.end(); ++estimatorPtr) {
-		communicate()->file("log")->stream() << format("%-29s\t:\t%16d\t%16d\n") % estimatorPtr->getName()
-			% estimatorPtr->getNumSampled() % estimatorPtr->getTotNumAccumulated();
+    /* Output the estimator statistics to the log file */
+    communicate()->file("log")->stream() << "---------- Begin Estimator Data ----------------" << endl;
+    communicate()->file("log")->stream() << endl;
+    for (estimator_vector::iterator estimatorPtr = estimator.begin();
+            estimatorPtr != estimator.end(); ++estimatorPtr) {
+        communicate()->file("log")->stream() << format("%-29s\t:\t%16d\t%16d\n") % estimatorPtr->getName()
+            % estimatorPtr->getNumSampled() % estimatorPtr->getTotNumAccumulated();
 
-	}
-	communicate()->file("log")->stream() << endl;
-	communicate()->file("log")->stream() << "---------- End Estimator Data ------------------" << endl;
+    }
+    communicate()->file("log")->stream() << endl;
+    communicate()->file("log")->stream() << "---------- End Estimator Data ------------------" << endl;
 }
 
 /**************************************************************************//**
@@ -866,164 +866,164 @@ void PathIntegralMonteCarlo::loadState() {
 ******************************************************************************/
 void PathIntegralMonteCarlo::outputPDB() {
 
-	numParticles = path.getNumParticles();
-	int numTimeSlices = path.numTimeSlices;
+    numParticles = path.getNumParticles();
+    int numTimeSlices = path.numTimeSlices;
 
-	configNumber++;
+    configNumber++;
 
-	/* We go through all beads, and find the start and end bead for each
-	 * worldline, adding them to an array */
-	Array <beadLocator,1> startBead,endBead;
-	startBead.resize(numParticles);
-	endBead.resize(numParticles);
+    /* We go through all beads, and find the start and end bead for each
+     * worldline, adding them to an array */
+    Array <beadLocator,1> startBead,endBead;
+    startBead.resize(numParticles);
+    endBead.resize(numParticles);
 
-	/* We sort the output by the number of beads in a worldline */
-	Array <int,1> wlLength(numParticles);
-	wlLength = 0;
+    /* We sort the output by the number of beads in a worldline */
+    Array <int,1> wlLength(numParticles);
+    wlLength = 0;
 
-	/* This is the index-beadNumber mapping array */
-	Array <int,2> beadNum(numTimeSlices,numParticles);
-	beadNum = 0;
+    /* This is the index-beadNumber mapping array */
+    Array <int,2> beadNum(numTimeSlices,numParticles);
+    beadNum = 0;
 
-	int numWorldLines = 0;
+    int numWorldLines = 0;
 
-	/* Get the list of beads that are active in the simulation */
-	Array <bool,2> doBead(numTimeSlices,numParticles);		
-	doBead = cast<bool>(path.worm.getBeads());
+    /* Get the list of beads that are active in the simulation */
+    Array <bool,2> doBead(numTimeSlices,numParticles);      
+    doBead = cast<bool>(path.worm.getBeads());
 
-	/* We go through each particle/worldline */
-	int nwl = 0;
-	int beadNumber = 0;
-	for (int n = 0; n < numParticles; n++) {
+    /* We go through each particle/worldline */
+    int nwl = 0;
+    int beadNumber = 0;
+    for (int n = 0; n < numParticles; n++) {
 
-		/* The initial bead to be moved */
-		startBead(nwl) = 0,n;
+        /* The initial bead to be moved */
+        startBead(nwl) = 0,n;
 
-		/* We make sure we don't try to touch the same worldline twice */
-		if (doBead(startBead(nwl))) {
+        /* We make sure we don't try to touch the same worldline twice */
+        if (doBead(startBead(nwl))) {
 
-			/* Check to see if the start bead is on a worm.  If it is, we start
-			 * at the worm tail and end at its head. */
-			if (path.worm.foundBead(path,startBead(nwl))) {
-				startBead(nwl) = path.worm.tail;
-				endBead(nwl)   = path.next(path.worm.head);
-			}
-			/* Otherwise, we loop around until we find the initial bead */
-			else
-				endBead(nwl) = startBead(nwl);
+            /* Check to see if the start bead is on a worm.  If it is, we start
+             * at the worm tail and end at its head. */
+            if (path.worm.foundBead(path,startBead(nwl))) {
+                startBead(nwl) = path.worm.tail;
+                endBead(nwl)   = path.next(path.worm.head);
+            }
+            /* Otherwise, we loop around until we find the initial bead */
+            else
+                endBead(nwl) = startBead(nwl);
 
-			/* Mark the beads as touched and increment the number of worldlines */
-			beadLocator beadIndex;
-			beadIndex = startBead(nwl);
-			int length = 1;
-			do {
-				doBead(beadIndex) = false;
-				beadNum(beadIndex) = beadNumber;
-				beadNumber++;
-				length++;
-				beadIndex = path.next(beadIndex);
-			} while (!all(beadIndex==endBead(nwl)));
+            /* Mark the beads as touched and increment the number of worldlines */
+            beadLocator beadIndex;
+            beadIndex = startBead(nwl);
+            int length = 1;
+            do {
+                doBead(beadIndex) = false;
+                beadNum(beadIndex) = beadNumber;
+                beadNumber++;
+                length++;
+                beadIndex = path.next(beadIndex);
+            } while (!all(beadIndex==endBead(nwl)));
 
-			/* We label each trajectory by the number of particles it contains.
-			 * a worm is always given label 0 */
-			if ((length % numTimeSlices) == 0)
-				wlLength(nwl) = length/numTimeSlices;
-			else 
-				wlLength(nwl) = 0;
+            /* We label each trajectory by the number of particles it contains.
+             * a worm is always given label 0 */
+            if ((length % numTimeSlices) == 0)
+                wlLength(nwl) = length/numTimeSlices;
+            else 
+                wlLength(nwl) = 0;
 
-			nwl++;
-		} // doBead
+            nwl++;
+        } // doBead
 
-	} // n
-	numWorldLines = nwl;
+    } // n
+    numWorldLines = nwl;
 
-	/* Output the PDB header */
-	communicate()->file("wl")->stream() << format("REMARK [CONFIG %04d]\n") % configNumber;
+    /* Output the PDB header */
+    communicate()->file("wl")->stream() << format("REMARK [CONFIG %04d]\n") % configNumber;
 
-	/* Output the unit cell information.  It is always cubic.  Everything is scaled by
-	 * an overall factor for better visualization. */
+    /* Output the unit cell information.  It is always cubic.  Everything is scaled by
+     * an overall factor for better visualization. */
 
-	double scale = 10.0;				
-	int i;
-	communicate()->file("wl")->stream() << format("%-6s") % "CRYST1";
-	for (i = 0; i < NDIM; i++) 
-		communicate()->file("wl")->stream() << format("%9.3f") % (scale*path.boxPtr->side[i]);
-	while (i < 3) {
-		communicate()->file("wl")->stream() << format("%9.3f") % 1.0;
-		i++;
-	}
-	communicate()->file("wl")->stream() << format("%7.2f%7.2f%7.2f %-11s%4d\n") % 90.0 % 90.0 % 90.0 % "P 1" % 1;
+    double scale = 10.0;                
+    int i;
+    communicate()->file("wl")->stream() << format("%-6s") % "CRYST1";
+    for (i = 0; i < NDIM; i++) 
+        communicate()->file("wl")->stream() << format("%9.3f") % (scale*path.boxPtr->side[i]);
+    while (i < 3) {
+        communicate()->file("wl")->stream() << format("%9.3f") % 1.0;
+        i++;
+    }
+    communicate()->file("wl")->stream() << format("%7.2f%7.2f%7.2f %-11s%4d\n") % 90.0 % 90.0 % 90.0 % "P 1" % 1;
 
-	/* We output the atom block */
-	beadLocator beadIndex;
-	for (int n = 0; n < numWorldLines;  n++) {
-		beadIndex = startBead(n);
-		do {
-			/* We give the zero-time-slice bead a special name */
-			if (beadIndex[0] == 0) {
-				communicate()->file("wl")->stream() << format("%-6s%5d %-4s %03d %9s") % "ATOM" 
-					% beadNum(beadIndex) % "H0" % wlLength(n) % " ";
-			}
-			else {
-				communicate()->file("wl")->stream() << format("%-6s%5d %-4s %03d %9s") % "ATOM" 
-					% beadNum(beadIndex) % "HE" % wlLength(n) % " ";
-			}
+    /* We output the atom block */
+    beadLocator beadIndex;
+    for (int n = 0; n < numWorldLines;  n++) {
+        beadIndex = startBead(n);
+        do {
+            /* We give the zero-time-slice bead a special name */
+            if (beadIndex[0] == 0) {
+                communicate()->file("wl")->stream() << format("%-6s%5d %-4s %03d %9s") % "ATOM" 
+                    % beadNum(beadIndex) % "H0" % wlLength(n) % " ";
+            }
+            else {
+                communicate()->file("wl")->stream() << format("%-6s%5d %-4s %03d %9s") % "ATOM" 
+                    % beadNum(beadIndex) % "HE" % wlLength(n) % " ";
+            }
 
-			/* Output the coordinates in 3D */
-			for (i = 0; i < NDIM; i++) {
-				communicate()->file("wl")->stream() << format("%8.3f") % (scale*path(beadIndex)[i]);
-			}
-			while (i < 3) {
-				communicate()->file("wl")->stream() << format("%8.3f") % 0.0;
-				i++;
-			}
-			communicate()->file("wl")->stream() << format("%14s\n") % "HE";
+            /* Output the coordinates in 3D */
+            for (i = 0; i < NDIM; i++) {
+                communicate()->file("wl")->stream() << format("%8.3f") % (scale*path(beadIndex)[i]);
+            }
+            while (i < 3) {
+                communicate()->file("wl")->stream() << format("%8.3f") % 0.0;
+                i++;
+            }
+            communicate()->file("wl")->stream() << format("%14s\n") % "HE";
 
-			beadIndex = path.next(beadIndex);
-		} while (!all(beadIndex==endBead(n)));
-	}
-	communicate()->file("wl")->stream() <<("TER\n");
+            beadIndex = path.next(beadIndex);
+        } while (!all(beadIndex==endBead(n)));
+    }
+    communicate()->file("wl")->stream() <<("TER\n");
 
-	/* Now output the connect block */
-	for (int n = 0; n < numWorldLines;  n++) {
-		beadIndex = startBead(n);
-		do {
-			communicate()->file("wl")->stream() << format("%-6s%5d") % "CONECT" % beadNum(beadIndex);
-			beadLocator prevIndex,nextIndex;
-			prevIndex = path.prev(beadIndex);
-			nextIndex = path.next(beadIndex);
-			
-			/* We make sure that we don't connect beads linked by periodic bondary 
-			 * conditions */
+    /* Now output the connect block */
+    for (int n = 0; n < numWorldLines;  n++) {
+        beadIndex = startBead(n);
+        do {
+            communicate()->file("wl")->stream() << format("%-6s%5d") % "CONECT" % beadNum(beadIndex);
+            beadLocator prevIndex,nextIndex;
+            prevIndex = path.prev(beadIndex);
+            nextIndex = path.next(beadIndex);
+            
+            /* We make sure that we don't connect beads linked by periodic bondary 
+             * conditions */
 
-			/* Check the previous bead */
-			if (path.worm.beadOn(prevIndex)) {
-				dVec sep;
-				sep = path(beadIndex) - path(prevIndex);
-				if (dot(sep,sep) < path.boxPtr->rcut2)
-					communicate()->file("wl")->stream() << format("%5d") % beadNum(prevIndex);
-			}
+            /* Check the previous bead */
+            if (path.worm.beadOn(prevIndex)) {
+                dVec sep;
+                sep = path(beadIndex) - path(prevIndex);
+                if (dot(sep,sep) < path.boxPtr->rcut2)
+                    communicate()->file("wl")->stream() << format("%5d") % beadNum(prevIndex);
+            }
 
-			/* Now the next bead */
-			if (path.worm.beadOn(nextIndex)) {
-				dVec sep;
-				sep = path(nextIndex) - path(beadIndex);
-				if (dot(sep,sep) < path.boxPtr->rcut2)
-					communicate()->file("wl")->stream() << format("%5d") % beadNum(nextIndex);
-			}
-			communicate()->file("wl")->stream() << endl;
+            /* Now the next bead */
+            if (path.worm.beadOn(nextIndex)) {
+                dVec sep;
+                sep = path(nextIndex) - path(beadIndex);
+                if (dot(sep,sep) < path.boxPtr->rcut2)
+                    communicate()->file("wl")->stream() << format("%5d") % beadNum(nextIndex);
+            }
+            communicate()->file("wl")->stream() << endl;
 
-			beadIndex = path.next(beadIndex);
-		} while (!all(beadIndex==endBead(n)));
-	}
-	communicate()->file("wl")->stream() <<("END\n");
+            beadIndex = path.next(beadIndex);
+        } while (!all(beadIndex==endBead(n)));
+    }
+    communicate()->file("wl")->stream() <<("END\n");
 
-	/* Free up memory */
-	startBead.free();
-	endBead.free();
-	wlLength.free();
-	beadNum.free();
-	doBead.free();
+    /* Free up memory */
+    startBead.free();
+    endBead.free();
+    wlLength.free();
+    beadNum.free();
+    doBead.free();
 }
 
 /**************************************************************************//**
@@ -1032,31 +1032,31 @@ void PathIntegralMonteCarlo::outputPDB() {
 ******************************************************************************/
 void PathIntegralMonteCarlo::printWormState() {
 
-	/* We make a list of all the beads contained in the worm */
-	Array <beadLocator,1> wormBeads;	// Used for debugging
-	wormBeads.resize(path.worm.length+1);
-	wormBeads = XXX;
+    /* We make a list of all the beads contained in the worm */
+    Array <beadLocator,1> wormBeads;    // Used for debugging
+    wormBeads.resize(path.worm.length+1);
+    wormBeads = XXX;
 
-	/* Output the worldline configuration */
-	communicate()->file("debug")->stream() << " (" << path.getTrueNumParticles() << ")" << endl;
-	communicate()->file("debug")->stream() << "head " << path.worm.head[0] << " " << path.worm.head[1]
+    /* Output the worldline configuration */
+    communicate()->file("debug")->stream() << " (" << path.getTrueNumParticles() << ")" << endl;
+    communicate()->file("debug")->stream() << "head " << path.worm.head[0] << " " << path.worm.head[1]
         << " tail " << path.worm.tail[0] << " " << path.worm.tail[1]
         << " length " << path.worm.length 
         << " gap " << path.worm.gap << endl;
 
-	if (!path.worm.isConfigDiagonal) {
-		beadLocator beadIndex;
-		beadIndex = path.worm.tail;
-		int n = 0;
-		do {
-			wormBeads(n) = beadIndex;
-			beadIndex = path.next(beadIndex);
-			++n;
-		} while(!all(beadIndex==path.next(path.worm.head)));
-	}
+    if (!path.worm.isConfigDiagonal) {
+        beadLocator beadIndex;
+        beadIndex = path.worm.tail;
+        int n = 0;
+        do {
+            wormBeads(n) = beadIndex;
+            beadIndex = path.next(beadIndex);
+            ++n;
+        } while(!all(beadIndex==path.next(path.worm.head)));
+    }
 
-	path.printWormConfig(wormBeads);
-	path.printLinks<fstream>(communicate()->file("debug")->stream());
-	wormBeads.free();
+    path.printWormConfig(wormBeads);
+    path.printLinks<fstream>(communicate()->file("debug")->stream());
+    wormBeads.free();
 }
 

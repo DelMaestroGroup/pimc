@@ -24,19 +24,19 @@
  * monte carlo from.
  */
 class ClassicalMonteCarlo{
-	public:
+    public:
         ClassicalMonteCarlo(PotentialBase *, PotentialBase *, MTRand &, const
                 Container *, Array <dVec,1> &);
         ~ClassicalMonteCarlo();
 
         void run(uint32, bool);                  ///< Perform the Monte Carlo equilibration
 
-	private:
+    private:
 
-		PotentialBase *externalPtr;		// The external potential
-		PotentialBase *interactionPtr;	// The interaction potential
-        MTRand &random;			        // A reference to the RNG
-		const Container *boxPtr;		// A constant reference to the container class
+        PotentialBase *externalPtr;     // The external potential
+        PotentialBase *interactionPtr;  // The interaction potential
+        MTRand &random;                 // A reference to the RNG
+        const Container *boxPtr;        // A constant reference to the container class
         Array <dVec,1> config;          // The particle configurations
 
         double z;                       // The fugacity

@@ -60,12 +60,12 @@ void File::close() {
 ******************************************************************************/
 void File::open(ios_base::openmode mode) {
 
-	/* Convert the filename to a c string, and open the file */ 
-	rwfile.open(name.c_str(), mode);
-	if (!rwfile) {
-		cerr << "Unable to process file: " << name << endl;
-		exit(EXIT_FAILURE);
-	}
+    /* Convert the filename to a c string, and open the file */ 
+    rwfile.open(name.c_str(), mode);
+    if (!rwfile) {
+        cerr << "Unable to process file: " << name << endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 /**************************************************************************//**
@@ -76,12 +76,12 @@ void File::open(ios_base::openmode mode) {
 ******************************************************************************/
 void File::open(ios_base::openmode mode, string _name) {
 
-	/* Convert the filename to a c string, and open the file */ 
-	rwfile.open(_name.c_str(), mode);
-	if (!rwfile) {
-		cerr << "Unable to process file: " << _name << endl;
-		exit(EXIT_FAILURE);
-	}
+    /* Convert the filename to a c string, and open the file */ 
+    rwfile.open(_name.c_str(), mode);
+    if (!rwfile) {
+        cerr << "Unable to process file: " << _name << endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 /**************************************************************************//**
@@ -152,16 +152,16 @@ void Communicator::getUniqueID(const double _tau) {
     }
 
     /* Now we need to update the dataName variable to reflect the new PIMCID */
-	if (!constants()->canonical()) {
-		dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%09u") % constants()->T() 
-				% constants()->L() % constants()->mu() % _tau % constants()->id());
-	}
-	else {
-		dataName = str(format("%06.3f-%04d-%06.3f-%7.5f-%09d") % constants()->T()
-				% constants()->initialNumParticles() 
-				% (1.0*constants()->initialNumParticles()/constants()->V()) 
-				% _tau % constants()->id());
-	}
+    if (!constants()->canonical()) {
+        dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%09u") % constants()->T() 
+                % constants()->L() % constants()->mu() % _tau % constants()->id());
+    }
+    else {
+        dataName = str(format("%06.3f-%04d-%06.3f-%7.5f-%09d") % constants()->T()
+                % constants()->initialNumParticles() 
+                % (1.0*constants()->initialNumParticles()/constants()->V()) 
+                % _tau % constants()->id());
+    }
 }
 
 /**************************************************************************//**
@@ -181,18 +181,18 @@ void Communicator::init(double _tau, bool outputWorldline, string _initName,
     fixedName = _fixedName;
 
     /* Determine the ensemble and unique parameter file string or dataname */
-	if (!constants()->canonical()) {
-		ensemble = "gce";
-		dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%09u") % constants()->T() 
-				% constants()->L() % constants()->mu() % _tau % constants()->id());
-	}
-	else {
-		ensemble = "ce";
-		dataName = str(format("%06.3f-%04d-%06.3f-%7.5f-%09d") % constants()->T()
-				% constants()->initialNumParticles() 
-				% (1.0*constants()->initialNumParticles()/constants()->V()) 
-				% _tau % constants()->id());
-	}
+    if (!constants()->canonical()) {
+        ensemble = "gce";
+        dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%09u") % constants()->T() 
+                % constants()->L() % constants()->mu() % _tau % constants()->id());
+    }
+    else {
+        ensemble = "ce";
+        dataName = str(format("%06.3f-%04d-%06.3f-%7.5f-%09d") % constants()->T()
+                % constants()->initialNumParticles() 
+                % (1.0*constants()->initialNumParticles()/constants()->V()) 
+                % _tau % constants()->id());
+    }
 
     /* Check to make sure the correct directory structure for OUTPUT files is
      * in place.  We do this using boost::filesystem */
@@ -200,26 +200,26 @@ void Communicator::init(double _tau, bool outputWorldline, string _initName,
     boost::filesystem::create_directory(outputPath);
 
     /* If we have cylinder output files, add the required directory. */
-	if (constants()->extPotentialType().find("tube") != string::npos) {
+    if (constants()->extPotentialType().find("tube") != string::npos) {
         boost::filesystem::path cylPath(baseDir + "/CYLINDER");
         boost::filesystem::create_directory(cylPath);
     }
 
-	/* Depending on whether or not we are restarting the simulations, the open mode
-	 * changes and header line changes. */
-	if (constants()->restart()) {
-		mode = ios::out|ios::app;
-		header = "";
-	}
-	else {
-		mode = ios::out;
+    /* Depending on whether or not we are restarting the simulations, the open mode
+     * changes and header line changes. */
+    if (constants()->restart()) {
+        mode = ios::out|ios::app;
+        header = "";
+    }
+    else {
+        mode = ios::out;
 
         /* Make sure we have a unique PIMCID using the log file */
         getUniqueID(_tau);
 
         /* Update the header line */
-		header =  str(format("# PIMCID: %09d\n") % constants()->id());
-	}
+        header =  str(format("# PIMCID: %09d\n") % constants()->id());
+    }
 }
 
 /**************************************************************************//**
@@ -247,9 +247,9 @@ void Communicator::initFile(string type) {
         
         file_.at(type).open(ios::in);
     }
-	/* Initialize a possible fixed coordinate file */
+    /* Initialize a possible fixed coordinate file */
     else if (type == "fixed") {
-		file_.insert(type,new File(fixedName));
+        file_.insert(type,new File(fixedName));
         file_.at(type).open(ios::in);
     }
     /* All other file types act normally */
@@ -279,6 +279,6 @@ void Communicator::initFile(string type) {
 ******************************************************************************/
 Communicator* Communicator::getInstance ()
 {   
-	static Communicator inst;
-	return &inst;
+    static Communicator inst;
+    return &inst;
 }

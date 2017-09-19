@@ -21,10 +21,10 @@
  *  Setup the path data members and canonical re-weighting factors.
 ******************************************************************************/
 ActionBase::ActionBase (const Path &_path, LookupTable &_lookup, 
-		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
+        PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
         WaveFunctionBase *_waveFunctionPtr, bool _local, string _name, 
         double _endFactor) :
-	local(_local), 
+    local(_local), 
     externalPtr(_externalPtr),
     interactionPtr(_interactionPtr),
     name(_name),
@@ -68,11 +68,11 @@ ActionBase::~ActionBase() {
  *  along spatial dimensions with periodic boundary conditions.
 ******************************************************************************/
 inline void ActionBase::updateSepHist(const dVec &_sep) {
-	dVec psep;
-	psep = path.boxPtr->periodic*_sep;
-	int nR = int(sqrt(dot(psep,psep))/dSep);
-	if (nR < NPCFSEP)
-		++sepHist(nR);
+    dVec psep;
+    psep = path.boxPtr->periodic*_sep;
+    int nR = int(sqrt(dot(psep,psep))/dSep);
+    if (nR < NPCFSEP)
+        ++sepHist(nR);
 }
 
 /**************************************************************************//**
@@ -80,11 +80,11 @@ inline void ActionBase::updateSepHist(const dVec &_sep) {
  *  time separation M.
 ******************************************************************************/
 double ActionBase::rho0(const dVec &r1, const dVec &r2, int M) {
-	dVec vel;
-	vel = r2 - r1;
-	path.boxPtr->putInBC(vel);
-	double rho0Norm = pow(4.0*M_PI*constants()->lambda()*M*constants()->tau(),-0.5*NDIM);
-	return ( rho0Norm * exp(-dot(vel,vel) / (4.0*constants()->lambda()*M*constants()->tau()) ) );
+    dVec vel;
+    vel = r2 - r1;
+    path.boxPtr->putInBC(vel);
+    double rho0Norm = pow(4.0*M_PI*constants()->lambda()*M*constants()->tau(),-0.5*NDIM);
+    return ( rho0Norm * exp(-dot(vel,vel) / (4.0*constants()->lambda()*M*constants()->tau()) ) );
 }
 
 /**************************************************************************//**
@@ -92,10 +92,10 @@ double ActionBase::rho0(const dVec &r1, const dVec &r2, int M) {
  *  time separation M.
 ******************************************************************************/
 double ActionBase::rho0(const beadLocator &bead1, const beadLocator &bead4, int M) {
-	dVec vel;
-	vel = path.getSeparation(bead1,bead4);
-	double rho0Norm = pow(4.0*M_PI*constants()->lambda()*M*constants()->tau(),-0.5*NDIM);
-	return ( rho0Norm * exp(-dot(vel,vel) / (4.0*constants()->lambda()*M*constants()->tau()) ) );
+    dVec vel;
+    vel = path.getSeparation(bead1,bead4);
+    double rho0Norm = pow(4.0*M_PI*constants()->lambda()*M*constants()->tau(),-0.5*NDIM);
+    return ( rho0Norm * exp(-dot(vel,vel) / (4.0*constants()->lambda()*M*constants()->tau()) ) );
 }
 
 /**************************************************************************//**
@@ -107,8 +107,8 @@ double ActionBase::rho0(const beadLocator &bead1, const beadLocator &bead4, int 
  *  @return The free density matrix
 ******************************************************************************/
 double ActionBase::rho0(const dVec &vel, const int M) {
-	double rho0Norm = pow(4.0*M_PI*constants()->lambda()*M*constants()->tau(),-0.5*NDIM);
-	return ( rho0Norm * exp(-dot(vel,vel) / (4.0*constants()->lambda()*M*constants()->tau()) ) );
+    double rho0Norm = pow(4.0*M_PI*constants()->lambda()*M*constants()->tau(),-0.5*NDIM);
+    return ( rho0Norm * exp(-dot(vel,vel) / (4.0*constants()->lambda()*M*constants()->tau()) ) );
 }
 
 /**************************************************************************//**
@@ -157,16 +157,16 @@ double ActionBase::ensembleWeight(const int deltaNumBeads) {
 ******************************************************************************/
 double ActionBase::kineticAction (const beadLocator &beadIndex) {
 
-	double totK = 0.0;
-	/* We get the Kinetic action for a single slice, which connects
-	 * to two other slices */
-	dVec vel;
-	vel = path.getVelocity(path.prev(beadIndex));
-	totK += dot(vel,vel);
-	vel = path.getVelocity(beadIndex);
-	totK += dot(vel,vel);
+    double totK = 0.0;
+    /* We get the Kinetic action for a single slice, which connects
+     * to two other slices */
+    dVec vel;
+    vel = path.getVelocity(path.prev(beadIndex));
+    totK += dot(vel,vel);
+    vel = path.getVelocity(beadIndex);
+    totK += dot(vel,vel);
 
-	return totK / (4.0*constants()->lambda()*tau());
+    return totK / (4.0*constants()->lambda()*tau());
 }
 
 /**************************************************************************//**
@@ -178,22 +178,22 @@ double ActionBase::kineticAction (const beadLocator &beadIndex) {
 ******************************************************************************/
 double ActionBase::kineticAction (const beadLocator &beadIndex, int wlLength) {
 
-	double totK = 0.0;
+    double totK = 0.0;
 
-	/* Make a local copy of beadIndex */
-	beadLocator beadID;
-	beadID = beadIndex;
+    /* Make a local copy of beadIndex */
+    beadLocator beadID;
+    beadID = beadIndex;
 
-	/* Starting from the initial bead, move wlLength slices in imaginary time
-	 * and accumulate the kinetic action */
-	dVec vel;
-	for (int n = 0; n < wlLength; n++) {
-		vel = path.getVelocity(beadID);
-		totK += dot(vel, vel);
-		beadID = path.next(beadID);
-	} 
+    /* Starting from the initial bead, move wlLength slices in imaginary time
+     * and accumulate the kinetic action */
+    dVec vel;
+    for (int n = 0; n < wlLength; n++) {
+        vel = path.getVelocity(beadID);
+        totK += dot(vel, vel);
+        beadID = path.next(beadID);
+    } 
 
-	return totK / (4.0*constants()->lambda()*tau());
+    return totK / (4.0*constants()->lambda()*tau());
 }
 
 /**************************************************************************//**
@@ -203,21 +203,21 @@ double ActionBase::kineticAction (const beadLocator &beadIndex, int wlLength) {
 ******************************************************************************/
 double ActionBase::kineticAction () {
 
-	double totK = 0.0;
+    double totK = 0.0;
 
-	/* Calculate the kinetic energy.  Even though there
-	 * may be multiple mixing and swaps, it doesn't matter as we always
-	 * just advance one time step at a time, as taken care of through the
-	 * linking arrays.  This has been checked! */
-	beadLocator beadIndex;
-	for (int slice = 0; slice < path.numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-			beadIndex = slice,ptcl;
-			totK += kineticAction(beadIndex);
-		}
-	}
+    /* Calculate the kinetic energy.  Even though there
+     * may be multiple mixing and swaps, it doesn't matter as we always
+     * just advance one time step at a time, as taken care of through the
+     * linking arrays.  This has been checked! */
+    beadLocator beadIndex;
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
+            totK += kineticAction(beadIndex);
+        }
+    }
 
-	return totK;
+    return totK;
 }
 
 /**************************************************************************//**
@@ -242,7 +242,7 @@ double ActionBase::potentialAction (const beadLocator &startBead,
     do {
         totU += potentialAction(beadIndex);
         beadIndex = path.next(beadIndex);
-	} while (!all(beadIndex==path.next(endBead)));
+    } while (!all(beadIndex==path.next(endBead)));
 
     return totU;
 }
@@ -257,7 +257,7 @@ double ActionBase::potentialAction (const beadLocator &startBead,
  *  Setup the path data members and local action factors.
 ******************************************************************************/
 LocalAction::LocalAction (const Path &_path, LookupTable &_lookup, 
-		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
+        PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
         WaveFunctionBase *_waveFunctionPtr, const TinyVector<double,2> &_VFactor, 
         const TinyVector<double,2> & _gradVFactor, bool _local, string _name,
         double _endFactor) :
@@ -290,18 +290,18 @@ double LocalAction::potentialAction () {
 
     double totU = 0.0;
 
-	/* Combine the potential and a possible correction */
-	for (int slice = 0; slice < path.numTimeSlices; slice++) {
-		eo = (slice % 2);
+    /* Combine the potential and a possible correction */
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+        eo = (slice % 2);
         totU += VFactor[eo]*tau()*V(slice);
-		
-		/* We only add the correction if it is finite */
+        
+        /* We only add the correction if it is finite */
          if ( gradVFactor[eo] > EPS ) 
              totU += gradVFactor[eo] * tau() * tau() * tau() * constants()->lambda() 
                  * gradVSquared(slice);
     }
 
-	return ( totU );
+    return ( totU );
 }
 
 /**************************************************************************//**
@@ -319,18 +319,18 @@ double LocalAction::potentialAction () {
 ******************************************************************************/
 double LocalAction::potentialAction (const beadLocator &beadIndex) {
 
-	double bareU = 0.0;
-	double corU = 0.0;
-	eo = (beadIndex[0] % 2);
+    double bareU = 0.0;
+    double corU = 0.0;
+    eo = (beadIndex[0] % 2);
 
- 	/* We first compute the base potential action piece */
- 	bareU = VFactor[eo]*tau()*Vnn(beadIndex);
+    /* We first compute the base potential action piece */
+    bareU = VFactor[eo]*tau()*Vnn(beadIndex);
  
- 	/* If we have a finite correction and are not at the base level
+    /* If we have a finite correction and are not at the base level
      * of bisection (shift=1) we compute the full correction */
- 	 if ( (shift == 1) && (gradVFactor[eo] > EPS) )
- 	 	corU = gradVFactor[eo] * tau() * tau() * tau() * constants()->lambda() 
- 	 		* gradVnnSquared(beadIndex);
+     if ( (shift == 1) && (gradVFactor[eo] > EPS) )
+        corU = gradVFactor[eo] * tau() * tau() * tau() * constants()->lambda() 
+            * gradVnnSquared(beadIndex);
      
 #if PIGS
      /* We tack on a trial wave function and boundary piece if necessary */  
@@ -371,12 +371,12 @@ double LocalAction::barePotentialAction (const beadLocator &beadIndex) {
 ******************************************************************************/
 double LocalAction::potentialActionCorrection (const beadLocator &beadIndex) {
 
-	eo = (beadIndex[0] % 2);
+    eo = (beadIndex[0] % 2);
     /* If we have a finite correction */
-	if (gradVFactor[eo] > EPS) {
+    if (gradVFactor[eo] > EPS) {
 
         /* We need to update the lookup table here */
-		lookup.updateInteractionList(path,beadIndex);
+        lookup.updateInteractionList(path,beadIndex);
 
         /* Compute the correction */
        return (gradVFactor[eo] * tau() * tau() * tau() * constants()->lambda() 
@@ -405,7 +405,7 @@ double LocalAction::potentialActionCorrection (const beadLocator &startBead,
     do {
         corU += potentialActionCorrection(beadIndex);
         beadIndex = path.next(beadIndex);
-	} while (!all(beadIndex==path.next(endBead)));
+    } while (!all(beadIndex==path.next(endBead)));
 
     return corU;
 }
@@ -424,13 +424,13 @@ double LocalAction::derivPotentialActionTau (int slice) {
     double dU = 0.0;
     eo = (slice % 2);
 
- 	/* We first compute the base potential action piece */
- 	dU = VFactor[eo]*V(slice);
+    /* We first compute the base potential action piece */
+    dU = VFactor[eo]*V(slice);
  
- 	/* As long as there is a finite correction, we include it */
- 	if ( gradVFactor[eo] > EPS )
- 		dU += 3.0 * gradVFactor[eo] * tau() * tau() * constants()->lambda() 
- 			* gradVSquared(slice);
+    /* As long as there is a finite correction, we include it */
+    if ( gradVFactor[eo] > EPS )
+        dU += 3.0 * gradVFactor[eo] * tau() * tau() * constants()->lambda() 
+            * gradVSquared(slice);
     return (dU);
 
 }
@@ -449,10 +449,10 @@ double LocalAction::secondderivPotentialActionTau (int slice) {
     double d2U = 0.0;
     eo = (slice % 2);
 
- 	/* As long as there is a finite correction, we include it */
- 	if ( gradVFactor[eo] > EPS )
- 		d2U += 6.0 * gradVFactor[eo] * tau() * constants()->lambda() 
- 			* gradVSquared(slice);
+    /* As long as there is a finite correction, we include it */
+    if ( gradVFactor[eo] > EPS )
+        d2U += 6.0 * gradVFactor[eo] * tau() * constants()->lambda() 
+            * gradVSquared(slice);
     return (d2U);
 
 }
@@ -469,9 +469,9 @@ double LocalAction::secondderivPotentialActionTau (int slice) {
 double LocalAction::derivPotentialActionLambda (int slice) {
     eo = (slice % 2);
 
- 	/* As long as thers is a finite correction, we include it */
- 	if ( gradVFactor[eo] > EPS )
- 		return gradVFactor[eo] * tau() * tau() * tau() * gradVSquared(slice);
+    /* As long as thers is a finite correction, we include it */
+    if ( gradVFactor[eo] > EPS )
+        return gradVFactor[eo] * tau() * tau() * tau() * gradVSquared(slice);
     else
         return 0.0;
 }
@@ -491,13 +491,13 @@ double LocalAction::derivPotentialActionTau (int slice, double maxR) {
     double dU = 0.0;
     eo = (slice % 2);
 
- 	/* We first compute the base potential action piece */
- 	dU = VFactor[eo]*V(slice,maxR);
+    /* We first compute the base potential action piece */
+    dU = VFactor[eo]*V(slice,maxR);
  
- 	/* As long as there is a finite correction, we include it */
- 	if ( gradVFactor[eo] > EPS )
- 		dU += 3.0 * gradVFactor[eo] * tau() * tau() * constants()->lambda() 
- 			* gradVSquared(slice,maxR);
+    /* As long as there is a finite correction, we include it */
+    if ( gradVFactor[eo] > EPS )
+        dU += 3.0 * gradVFactor[eo] * tau() * tau() * constants()->lambda() 
+            * gradVSquared(slice,maxR);
     return (dU);
 
 }
@@ -515,9 +515,9 @@ double LocalAction::derivPotentialActionTau (int slice, double maxR) {
 double LocalAction::derivPotentialActionLambda (int slice, double maxR) {
     eo = (slice % 2);
 
- 	/* As long as there is a finite correction, we include it */
- 	if ( gradVFactor[eo] > EPS )
- 		return gradVFactor[eo] * tau() * tau() * tau() * gradVSquared(slice,maxR);
+    /* As long as there is a finite correction, we include it */
+    if ( gradVFactor[eo] > EPS )
+        return gradVFactor[eo] * tau() * tau() * tau() * gradVSquared(slice,maxR);
     else
         return 0.0;
 }
@@ -528,38 +528,38 @@ double LocalAction::derivPotentialActionLambda (int slice, double maxR) {
 ******************************************************************************/
 double LocalAction::V(const beadLocator &bead1) {
 
-	/* We only need to calculate the potential if the bead is on */
-	if (path.worm.beadOn(bead1)) {
+    /* We only need to calculate the potential if the bead is on */
+    if (path.worm.beadOn(bead1)) {
 
-		bead2[0] = bead1[0];
-		
-		/* Calculate the total external potential */
-		double totVext = externalPtr->V(path(bead1));
+        bead2[0] = bead1[0];
+        
+        /* Calculate the total external potential */
+        double totVext = externalPtr->V(path(bead1));
 
-		/* Now calculate the total interation potential, neglecting self-interactions */
-		double totVint = 0.0;
+        /* Now calculate the total interation potential, neglecting self-interactions */
+        double totVint = 0.0;
 
-		/* Get the state of bead 1 */
-		beadState state1 = path.worm.getState(bead1);
-		
-		for (bead2[1]= 0; bead2[1] < path.numBeadsAtSlice(bead1[0]); bead2[1]++) {
+        /* Get the state of bead 1 */
+        beadState state1 = path.worm.getState(bead1);
+        
+        for (bead2[1]= 0; bead2[1] < path.numBeadsAtSlice(bead1[0]); bead2[1]++) {
 
-			/* Skip self interactions */
-			if ( bead2[1] != bead1[1] ) {
+            /* Skip self interactions */
+            if ( bead2[1] != bead1[1] ) {
 
-				/* get the separation between the two particles */
-				sep = path.getSeparation(bead2,bead1);
+                /* get the separation between the two particles */
+                sep = path.getSeparation(bead2,bead1);
 
-				/* Now add the interaction potential */
-				totVint += path.worm.factor(state1,bead2) * interactionPtr->V(sep);
-			} // bead2 != bead1 
+                /* Now add the interaction potential */
+                totVint += path.worm.factor(state1,bead2) * interactionPtr->V(sep);
+            } // bead2 != bead1 
 
-		} // for bead2
-		return ( totVext + totVint );
+        } // for bead2
+        return ( totVext + totVint );
 
-	} // if bead1On
-	else
-		return 0.0;
+    } // if bead1On
+    else
+        return 0.0;
 }
 
 /*************************************************************************//**
@@ -572,37 +572,37 @@ double LocalAction::V(const beadLocator &bead1) {
 ******************************************************************************/
 double LocalAction::V(const int slice) {
 
-	double totVint = 0.0;
-	double totVext = 0.0;
+    double totVint = 0.0;
+    double totVext = 0.0;
 
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
+    beadLocator bead1;
+    bead1[0] = bead2[0] = slice;
 
-	int numParticles = path.numBeadsAtSlice(slice);
+    int numParticles = path.numBeadsAtSlice(slice);
 
-	/* Initialize the separation histogram */
-	sepHist = 0;
+    /* Initialize the separation histogram */
+    sepHist = 0;
 
-	/* Calculate the total potential, including external and interaction
-	 * effects*/
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+    /* Calculate the total potential, including external and interaction
+     * effects*/
+    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
 
             /* Get the state of bead 1 */
             beadState state1 = path.worm.getState(bead1);
 
-			/* Evaluate the external potential */
-			totVext += externalPtr->V(path(bead1));
+            /* Evaluate the external potential */
+            totVext += externalPtr->V(path(bead1));
 
-			/* The loop over all other particles, to find the total interaction
-			 * potential */
-			for (bead2[1] = bead1[1]+1; bead2[1] < numParticles; bead2[1]++) {
-				sep = path.getSeparation(bead2,bead1);
-				updateSepHist(sep);
-				totVint += path.worm.factor(state1,bead2) * interactionPtr->V(sep);
-			} // bead2
+            /* The loop over all other particles, to find the total interaction
+             * potential */
+            for (bead2[1] = bead1[1]+1; bead2[1] < numParticles; bead2[1]++) {
+                sep = path.getSeparation(bead2,bead1);
+                updateSepHist(sep);
+                totVint += path.worm.factor(state1,bead2) * interactionPtr->V(sep);
+            } // bead2
 
-	} // bead1
-	return ( totVext + totVint );
+    } // bead1
+    return ( totVext + totVint );
 }
 
 /*************************************************************************//**
@@ -616,57 +616,57 @@ double LocalAction::V(const int slice) {
 ******************************************************************************/
 double LocalAction::V(const int slice, const double maxR) {
 
-	double totVint = 0.0;
-	double totVext = 0.0;
-	dVec r1,r2;
+    double totVint = 0.0;
+    double totVext = 0.0;
+    dVec r1,r2;
 
     double r1sq,r2sq;
 
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
+    beadLocator bead1;
+    bead1[0] = bead2[0] = slice;
 
-	int numParticles = path.numBeadsAtSlice(slice);
+    int numParticles = path.numBeadsAtSlice(slice);
 
-	/* Initialize the separation histogram */
-	cylSepHist = 0;
+    /* Initialize the separation histogram */
+    cylSepHist = 0;
 
-	/* Calculate the total potential, including external and interaction
-	 * effects*/
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+    /* Calculate the total potential, including external and interaction
+     * effects*/
+    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
 
-		r1 = path(bead1);
+        r1 = path(bead1);
 
         r1sq = 0.0;
         for (int i = 0; i < NDIM-1; i++)
             r1sq += r1[i]*r1[i];
 
-		if (r1sq < maxR*maxR) {
+        if (r1sq < maxR*maxR) {
 
-			/* Evaluate the external potential */
-			totVext += externalPtr->V(path(bead1));
+            /* Evaluate the external potential */
+            totVext += externalPtr->V(path(bead1));
 
-			/* The loop over all other particles, to find the total interaction
-			 * potential */
-			for (bead2[1] = bead1[1]+1; bead2[1] < numParticles; bead2[1]++) {
-				r2 = path(bead2);
+            /* The loop over all other particles, to find the total interaction
+             * potential */
+            for (bead2[1] = bead1[1]+1; bead2[1] < numParticles; bead2[1]++) {
+                r2 = path(bead2);
 
                 r2sq = 0.0;
                 for (int i = 0; i < NDIM-1; i++)
                     r2sq += r2[i]*r2[i];
 
-				sep = path.getSeparation(bead2,bead1);
-				if (r2sq < maxR*maxR) {
-					int nR = int(abs(sep[2])/dSep);
-					if (nR < NPCFSEP)
-						++cylSepHist(nR);
-				}
-				totVint += interactionPtr->V(sep);
-			} // bead2
+                sep = path.getSeparation(bead2,bead1);
+                if (r2sq < maxR*maxR) {
+                    int nR = int(abs(sep[2])/dSep);
+                    if (nR < NPCFSEP)
+                        ++cylSepHist(nR);
+                }
+                totVint += interactionPtr->V(sep);
+            } // bead2
 
-		} // maxR
-	} // bead1
+        } // maxR
+    } // bead1
 
-	return ( totVext + totVint );
+    return ( totVext + totVint );
 }
 
 /*************************************************************************//**
@@ -677,28 +677,28 @@ double LocalAction::V(const int slice, const double maxR) {
 ******************************************************************************/
 double LocalAction::Vnn(const beadLocator &bead1) {
 
-	double totVint = 0.0;
-	double totVext = 0.0;
+    double totVint = 0.0;
+    double totVext = 0.0;
 
-	/* We only continue if bead1 is turned on */
-	if (path.worm.beadOn(bead1)) {
+    /* We only continue if bead1 is turned on */
+    if (path.worm.beadOn(bead1)) {
 
-		/* Fill up th nearest neighbor list */
-		lookup.updateInteractionList(path,bead1);
+        /* Fill up th nearest neighbor list */
+        lookup.updateInteractionList(path,bead1);
 
-		/* Evaluate the external potential */
-		totVext = externalPtr->V(path(bead1));
+        /* Evaluate the external potential */
+        totVext = externalPtr->V(path(bead1));
 
-		/* Get the state of bead 1 */
-		beadState state1 = path.worm.getState(bead1);
+        /* Get the state of bead 1 */
+        beadState state1 = path.worm.getState(bead1);
 
-		/* Sum the interaction potential over all NN beads */
-		for (int n = 0; n < lookup.numBeads; n++) {
-			totVint += path.worm.factor(state1,lookup.beadList(n)) 
-				* interactionPtr->V(lookup.beadSep(n));
-		}
-	}
-	return ( totVext + totVint );
+        /* Sum the interaction potential over all NN beads */
+        for (int n = 0; n < lookup.numBeads; n++) {
+            totVint += path.worm.factor(state1,lookup.beadList(n)) 
+                * interactionPtr->V(lookup.beadSep(n));
+        }
+    }
+    return ( totVext + totVint );
 }
 
 
@@ -710,47 +710,47 @@ double LocalAction::Vnn(const beadLocator &bead1) {
 ******************************************************************************/
 double LocalAction::Vnn(const int slice) {
 
-	Array <bool,1> doParticles(path.numBeadsAtSlice(slice));
-	doParticles = true;
+    Array <bool,1> doParticles(path.numBeadsAtSlice(slice));
+    doParticles = true;
 
-	double totVint = 0.0;
-	double totVext = 0.0;
+    double totVint = 0.0;
+    double totVext = 0.0;
 
-	iVec gIndex,nngIndex;			// The grid box of a particle
-	TinyVector<int,NDIM+1> nnIndex;	// The nearest neighbor boxes of a particle
-	TinyVector<int,NDIM+2> hI1,hI2;	// The hash indices
+    iVec gIndex,nngIndex;           // The grid box of a particle
+    TinyVector<int,NDIM+1> nnIndex; // The nearest neighbor boxes of a particle
+    TinyVector<int,NDIM+2> hI1,hI2; // The hash indices
 
-	dVec pos;						// The position of a particle
+    dVec pos;                       // The position of a particle
 
-	beadLocator bead1; 		// Interacting beads
-	bead1[0] = slice;
+    beadLocator bead1;      // Interacting beads
+    bead1[0] = slice;
 
-	for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(slice); bead1[1]++) {
+    for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(slice); bead1[1]++) {
 
-		doParticles(bead1[1]) = false;
+        doParticles(bead1[1]) = false;
 
-		/* Accumulate the external potential */
-		pos = path(bead1);
-		totVext += externalPtr->V(pos);
+        /* Accumulate the external potential */
+        pos = path(bead1);
+        totVext += externalPtr->V(pos);
 
-		/* Get the interaction list */
-		lookup.updateInteractionList(path,bead1);
+        /* Get the interaction list */
+        lookup.updateInteractionList(path,bead1);
 
-		/* Get the state of bead 1 */
-		beadState state1 = path.worm.getState(bead1);
+        /* Get the state of bead 1 */
+        beadState state1 = path.worm.getState(bead1);
 
-		/* Sum the interaction potential over all NN beads */
-		for (int n = 0; n < lookup.numBeads; n++) {
-			bead2 = lookup.beadList(n);
-			if (doParticles(bead2[1])) {
-				sep = path.getSeparation(bead2,bead1);
-				totVint += path.worm.factor(state1,bead2) * interactionPtr->V(sep);
-			}
-		} // n
+        /* Sum the interaction potential over all NN beads */
+        for (int n = 0; n < lookup.numBeads; n++) {
+            bead2 = lookup.beadList(n);
+            if (doParticles(bead2[1])) {
+                sep = path.getSeparation(bead2,bead1);
+                totVint += path.worm.factor(state1,bead2) * interactionPtr->V(sep);
+            }
+        } // n
 
-	} // bead1
+    } // bead1
 
-	return ( totVext + totVint );
+    return ( totVext + totVint );
 }
 
 /**************************************************************************//**
@@ -759,55 +759,55 @@ double LocalAction::Vnn(const int slice) {
 ******************************************************************************/
 double LocalAction::gradVSquared(const beadLocator &bead1) {
 
-	double totF2 = 0.0;		// The total force squared
+    double totF2 = 0.0;     // The total force squared
 
-	if (path.worm.beadOn(bead1)) {
+    if (path.worm.beadOn(bead1)) {
 
-		/* All interacting beads are on the same slice. */
-		bead2[0] = bead3[0] = bead1[0];
+        /* All interacting beads are on the same slice. */
+        bead2[0] = bead3[0] = bead1[0];
 
-		/* The 'forces' and particle separation */
-		dVec Fext1,Fext2;
-		dVec Fint1,Fint2,Fint3;
+        /* The 'forces' and particle separation */
+        dVec Fext1,Fext2;
+        dVec Fint1,Fint2,Fint3;
 
-		int numParticles = path.numBeadsAtSlice(bead1[0]);
-	
-		/* Get the gradient squared part for the external potential*/
-		Fext1 = externalPtr->gradV(path(bead1));
+        int numParticles = path.numBeadsAtSlice(bead1[0]);
+    
+        /* Get the gradient squared part for the external potential*/
+        Fext1 = externalPtr->gradV(path(bead1));
 
-		/* We loop through all beads and compute the forces between beads
-		 * 1 and 2 */
-		Fint1 = 0.0;
-		for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
+        /* We loop through all beads and compute the forces between beads
+         * 1 and 2 */
+        Fint1 = 0.0;
+        for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
-			if (!all(bead1==bead2)) {
+            if (!all(bead1==bead2)) {
 
-				sep = path.getSeparation(bead2,bead1);
-				Fint2 = interactionPtr->gradV(sep);
-				Fint1 -= Fint2;
-				Fext2 = externalPtr->gradV(path(bead2));
+                sep = path.getSeparation(bead2,bead1);
+                Fint2 = interactionPtr->gradV(sep);
+                Fint1 -= Fint2;
+                Fext2 = externalPtr->gradV(path(bead2));
 
-				/* There is a single term that depends on this additional interaction
-				 * between beads 2 and 3.  This is where all the time is taken */
-				Fint3 = 0.0;
-				for (bead3[1] = 0; bead3[1] < numParticles; bead3[1]++) {
-					if ( !all(bead3==bead2) && !all(bead3==bead1) ) {
-						sep = path.getSeparation(bead2,bead3);
-						Fint3 += interactionPtr->gradV(sep);
-					}
-				} // for bead3
+                /* There is a single term that depends on this additional interaction
+                 * between beads 2 and 3.  This is where all the time is taken */
+                Fint3 = 0.0;
+                for (bead3[1] = 0; bead3[1] < numParticles; bead3[1]++) {
+                    if ( !all(bead3==bead2) && !all(bead3==bead1) ) {
+                        sep = path.getSeparation(bead2,bead3);
+                        Fint3 += interactionPtr->gradV(sep);
+                    }
+                } // for bead3
 
-				totF2 += dot(Fint2,Fint2) + 2.0*dot(Fext2,Fint2) + 2.0*dot(Fint2,Fint3);
+                totF2 += dot(Fint2,Fint2) + 2.0*dot(Fext2,Fint2) + 2.0*dot(Fint2,Fint3);
 
-			} //bead1 != bead2
+            } //bead1 != bead2
 
-		} // for bead2
+        } // for bead2
 
-		totF2 += dot(Fext1,Fext1) + 2.0 * dot(Fext1,Fint1) + dot(Fint1,Fint1);
+        totF2 += dot(Fext1,Fext1) + 2.0 * dot(Fext1,Fint1) + dot(Fint1,Fint1);
 
-	} // bead1 On
+    } // bead1 On
 
-	return totF2;
+    return totF2;
 }
 
 /**************************************************************************//**
@@ -818,39 +818,39 @@ double LocalAction::gradVSquared(const beadLocator &bead1) {
 ******************************************************************************/
 double LocalAction::gradVSquared(const int slice) {
 
-	double totF2 = 0.0;
+    double totF2 = 0.0;
 
-	int numParticles = path.numBeadsAtSlice(slice);
+    int numParticles = path.numBeadsAtSlice(slice);
 
-	/* The two interacting particles */
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
+    /* The two interacting particles */
+    beadLocator bead1;
+    bead1[0] = bead2[0] = slice;
 
-	dVec F;					// The 'force'
+    dVec F;                 // The 'force'
 
-	/* We loop over the first bead */
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+    /* We loop over the first bead */
+    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
 
-		F = 0.0;
-		/* Sum up potential for all other active beads in the system */
-		for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
+        F = 0.0;
+        /* Sum up potential for all other active beads in the system */
+        for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
-			/* Avoid self interactions */
-			if (!all(bead1==bead2)) {
+            /* Avoid self interactions */
+            if (!all(bead1==bead2)) {
 
-				/* The interaction component of the force */
-				F += interactionPtr->gradV(path.getSeparation(bead1,bead2));
-			} 
+                /* The interaction component of the force */
+                F += interactionPtr->gradV(path.getSeparation(bead1,bead2));
+            } 
 
-		} // end bead2
+        } // end bead2
 
-		/* Now add the external component */
-		F += externalPtr->gradV(path(bead1));
+        /* Now add the external component */
+        F += externalPtr->gradV(path(bead1));
 
-		totF2 += dot(F,F);
-	} // end bead1
+        totF2 += dot(F,F);
+    } // end bead1
 
-	return totF2;
+    return totF2;
 }
 
 /**************************************************************************//**
@@ -861,47 +861,47 @@ double LocalAction::gradVSquared(const int slice) {
 ******************************************************************************/
 double LocalAction::gradVSquared(const int slice, const double maxR) {
 
-	double totF2 = 0.0;
+    double totF2 = 0.0;
 
-	int numParticles = path.numBeadsAtSlice(slice);
+    int numParticles = path.numBeadsAtSlice(slice);
 
-	/* The two interacting particles */
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
-	dVec r1;
+    /* The two interacting particles */
+    beadLocator bead1;
+    bead1[0] = bead2[0] = slice;
+    dVec r1;
     double r1sq;
 
-	dVec F;					// The 'force'
+    dVec F;                 // The 'force'
 
-	/* We loop over the first bead */
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+    /* We loop over the first bead */
+    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
 
-		r1 = path(bead1);
+        r1 = path(bead1);
         r1sq = 0.0;
         for (int i = 0; i < NDIM-1; i++)
             r1sq += r1[i]*r1[i];
 
-		if (r1sq < maxR*maxR) {
+        if (r1sq < maxR*maxR) {
 
-			F = 0.0;
-			/* Sum up potential for all other active beads in the system */
-			for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
-				/* Avoid self interactions */
-				if (!all(bead1==bead2)) {
+            F = 0.0;
+            /* Sum up potential for all other active beads in the system */
+            for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
+                /* Avoid self interactions */
+                if (!all(bead1==bead2)) {
 
-					/* The interaction component of the force */
-					F += interactionPtr->gradV(path.getSeparation(bead1,bead2));
-				} 
-			} // end bead2
+                    /* The interaction component of the force */
+                    F += interactionPtr->gradV(path.getSeparation(bead1,bead2));
+                } 
+            } // end bead2
 
-			/* Now add the external component */
-			F += externalPtr->gradV(path(bead1));
+            /* Now add the external component */
+            F += externalPtr->gradV(path(bead1));
 
-			totF2 += dot(F,F);
-		} // maxR
-	} // end bead1
+            totF2 += dot(F,F);
+        } // maxR
+    } // end bead1
 
-	return totF2;
+    return totF2;
 }
 
 /**************************************************************************//**
@@ -912,59 +912,59 @@ double LocalAction::gradVSquared(const int slice, const double maxR) {
 ******************************************************************************/
 double LocalAction::gradVnnSquared(const beadLocator &bead1) {
 
-	/* This should always be called after Vnn, such that the lookup table 
-	 * interaction list has been updated!!! */
+    /* This should always be called after Vnn, such that the lookup table 
+     * interaction list has been updated!!! */
 
-	double totF2 = 0.0;		// The total force squared
+    double totF2 = 0.0;     // The total force squared
 
-	if (path.worm.beadOn(bead1)) {
+    if (path.worm.beadOn(bead1)) {
 
-		/* The 'forces' and particle separation */
-		dVec Fext1,Fext2;
-		dVec Fint1,Fint2,Fint3;
+        /* The 'forces' and particle separation */
+        dVec Fext1,Fext2;
+        dVec Fint1,Fint2,Fint3;
 
-		/* Get the gradient squared part for the external potential*/
-		Fext1 = externalPtr->gradV(path(bead1));
+        /* Get the gradient squared part for the external potential*/
+        Fext1 = externalPtr->gradV(path(bead1));
 
-		/* We first loop over bead2's interacting with bead1 via the nn lookup table */
-		Fint1 = 0.0;
-		for (int n = 0; n < lookup.numBeads; n++) {
-			bead2 = lookup.beadList(n);
+        /* We first loop over bead2's interacting with bead1 via the nn lookup table */
+        Fint1 = 0.0;
+        for (int n = 0; n < lookup.numBeads; n++) {
+            bead2 = lookup.beadList(n);
 
-			/* Eliminate self and null interactions */
-			if ( !all(bead1 == bead2) ) {
+            /* Eliminate self and null interactions */
+            if ( !all(bead1 == bead2) ) {
 
-				/* Get the separation between beads 1 and 2 and compute the terms in the
-				 * gradient squared */
-				sep = lookup.beadSep(n); 
-				Fint2 = interactionPtr->gradV(sep);
-				Fint1 -= Fint2;
-				Fext2 = externalPtr->gradV(path(bead2));
+                /* Get the separation between beads 1 and 2 and compute the terms in the
+                 * gradient squared */
+                sep = lookup.beadSep(n); 
+                Fint2 = interactionPtr->gradV(sep);
+                Fint1 -= Fint2;
+                Fext2 = externalPtr->gradV(path(bead2));
 
-				/* We now loop over bead3, this is the time-intensive part of the calculation */
-				Fint3 = 0.0;
-				for (int m = 0; m < lookup.numBeads; m++) {
-					bead3 = lookup.beadList(m);
+                /* We now loop over bead3, this is the time-intensive part of the calculation */
+                Fint3 = 0.0;
+                for (int m = 0; m < lookup.numBeads; m++) {
+                    bead3 = lookup.beadList(m);
 
-					/* Eliminate self-interactions */
-					if ( !all(bead3==bead2) && !all(bead3==bead1) ) {
-						sep = path.getSeparation(bead2,bead3);
-						Fint3 += interactionPtr->gradV(sep);
-					}
+                    /* Eliminate self-interactions */
+                    if ( !all(bead3==bead2) && !all(bead3==bead1) ) {
+                        sep = path.getSeparation(bead2,bead3);
+                        Fint3 += interactionPtr->gradV(sep);
+                    }
 
-				} // end bead3
+                } // end bead3
 
-				totF2 += dot(Fint2,Fint2) + 2.0*dot(Fext2,Fint2) + 2.0*dot(Fint2,Fint3);
+                totF2 += dot(Fint2,Fint2) + 2.0*dot(Fext2,Fint2) + 2.0*dot(Fint2,Fint3);
 
-			} // bead2 != bead1
+            } // bead2 != bead1
 
-		} // end bead2
+        } // end bead2
 
-		totF2 += dot(Fext1,Fext1) + 2.0 * dot(Fext1,Fint1) + dot(Fint1,Fint1);
+        totF2 += dot(Fext1,Fext1) + 2.0 * dot(Fext1,Fint1) + dot(Fint1,Fint1);
 
-	} // bead1 on
+    } // bead1 on
 
-	return totF2;
+    return totF2;
 }
 
 /**************************************************************************//**
@@ -975,33 +975,33 @@ double LocalAction::gradVnnSquared(const beadLocator &bead1) {
 ******************************************************************************/
 dVec LocalAction::gradientV(const int slice) {
 
-	int numParticles = path.numBeadsAtSlice(slice);
+    int numParticles = path.numBeadsAtSlice(slice);
 
-	/* The two interacting particles */
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
+    /* The two interacting particles */
+    beadLocator bead1;
+    bead1[0] = bead2[0] = slice;
 
-	dVec gV;					// The 'force'
+    dVec gV;                    // The 'force'
 
-	/* We loop over the first bead */
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
-		gV = 0.0;
-		/* Sum up potential for all other active beads in the system */
-		for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
+    /* We loop over the first bead */
+    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+        gV = 0.0;
+        /* Sum up potential for all other active beads in the system */
+        for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
-			/* Avoid self interactions */
-			if (!all(bead1==bead2)) {
+            /* Avoid self interactions */
+            if (!all(bead1==bead2)) {
 
-				/* The interaction component of the force */
-				gV += interactionPtr->gradV(path.getSeparation(bead1,bead2));
-			} 
-		} // end bead2
+                /* The interaction component of the force */
+                gV += interactionPtr->gradV(path.getSeparation(bead1,bead2));
+            } 
+        } // end bead2
 
-		/* Now add the external component */
-		gV += externalPtr->gradV(path(bead1));
-	} // end bead1
+        /* Now add the external component */
+        gV += externalPtr->gradV(path(bead1));
+    } // end bead1
 
-	return gV;
+    return gV;
 }
 
 /*************************************************************************//**
@@ -1012,7 +1012,7 @@ dVec LocalAction::gradientV(const int slice) {
 ******************************************************************************/
 dMat LocalAction::tMatrix(const int slice) {
 
-	int numParticles = path.numBeadsAtSlice(slice);
+    int numParticles = path.numBeadsAtSlice(slice);
 
     dMat tMat = 0.0; // tMat(row, col)
 
@@ -1058,7 +1058,7 @@ dMat LocalAction::tMatrix(const int slice) {
     }
 
     tMat /= 2.0; // don't want to double count interactions
-	
+    
     return ( tMat ); 
 }
 
@@ -1077,36 +1077,36 @@ dMat LocalAction::tMatrix(const int slice) {
 double LocalAction::rDOTgradUterm1(const int slice) {
 
     eo = slice % 2;
-	int numParticles = path.numBeadsAtSlice(slice);
+    int numParticles = path.numBeadsAtSlice(slice);
 
-	/* The two interacting particles */
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
+    /* The two interacting particles */
+    beadLocator bead1;
+    bead1[0] = bead2[0] = slice;
 
-	dVec gVi, gV;
+    dVec gVi, gV;
     double rDotgV = 0.0;
 
-	/* We loop over the first bead */
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+    /* We loop over the first bead */
+    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
         gVi = 0.0;
-		/* Sum potential of bead1 interacting with all other beads at
+        /* Sum potential of bead1 interacting with all other beads at
          * a given time slice.*/
-		for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
+        for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
-			/* Avoid self interactions */
-			if (!all(bead1==bead2)) {
+            /* Avoid self interactions */
+            if (!all(bead1==bead2)) {
 
-				/* The interaction component of the force */
-				gVi += interactionPtr->gradV(path.getSeparation(bead1,bead2));
-			} 
+                /* The interaction component of the force */
+                gVi += interactionPtr->gradV(path.getSeparation(bead1,bead2));
+            } 
         } // end bead2
-		
-		/* Now add the external component */
+        
+        /* Now add the external component */
         gV = (externalPtr->gradV(path(bead1)) + gVi);
 
         rDotgV += dot(gV, path(bead1));
 
-	} // end bead1
+    } // end bead1
 
     return (VFactor[eo]*constants()->tau()*rDotgV);
 }
@@ -1226,35 +1226,35 @@ double LocalAction::rDOTgradUterm2(const int slice) {
 double LocalAction::deltadotgradUterm1(const int slice) {
 
     eo = slice % 2;
-	int numParticles = path.numBeadsAtSlice(slice);
+    int numParticles = path.numBeadsAtSlice(slice);
     int virialWindow = constants()->virialWindow();
 
-	/* The two interacting particles */
-	beadLocator bead1, beadNext, beadPrev, beadNextOld, beadPrevOld;
-	bead1[0] = bead2[0] = slice;
+    /* The two interacting particles */
+    beadLocator bead1, beadNext, beadPrev, beadNextOld, beadPrevOld;
+    bead1[0] = bead2[0] = slice;
 
-	dVec gVi, gVe, gV, delta;
+    dVec gVi, gVe, gV, delta;
     double rDotgV = 0.0;
 
-	/* We loop over the first bead */
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+    /* We loop over the first bead */
+    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
         gVi = 0.0;
         gVe = 0.0;
         gV = 0.0;
         delta = 0.0;
-		/* Sum potential of bead1 interacting with all other beads at
+        /* Sum potential of bead1 interacting with all other beads at
          * a given time slice.*/
-		for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
+        for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
-			/* Avoid self interactions */
-			if (!all(bead1==bead2)) {
+            /* Avoid self interactions */
+            if (!all(bead1==bead2)) {
 
-				/* The interaction component of the force */
-				gVi += interactionPtr->gradV(path.getSeparation(bead1,bead2));
-			} 
+                /* The interaction component of the force */
+                gVi += interactionPtr->gradV(path.getSeparation(bead1,bead2));
+            } 
         } // end bead2
-		
-		/* Now add the external component */
+        
+        /* Now add the external component */
         gVe += externalPtr->gradV(path(bead1));
         
         /* Compute deviation of bead from COM of worldline, 
@@ -1288,7 +1288,7 @@ double LocalAction::deltadotgradUterm1(const int slice) {
 
         rDotgV += dot(gV, delta);
 
-	} // end bead1
+    } // end bead1
 
     return (VFactor[eo]*constants()->tau()*rDotgV);
 }
@@ -1432,7 +1432,7 @@ double LocalAction::virialKinCorrection(const int slice) {
 
     double vKC = 0.0;
 
-	/* Combine the potential and a possible correction */
+    /* Combine the potential and a possible correction */
     eo = (slice % 2);
 
     /* We only add the correction if it is finite */
@@ -1443,7 +1443,7 @@ double LocalAction::virialKinCorrection(const int slice) {
         /* scale by constants */
         vKC *= gradVFactor[eo] * pow(tau(),3) * constants()->lambda();
     }
-	
+    
     return ( vKC );
 }
 
@@ -1459,7 +1459,7 @@ dVec LocalAction::gradU(const int slice) {
     dMat tM = tMatrix(slice);
     dVec gV = gradientV(slice);
 
-	/* Combine the potential and a possible correction */
+    /* Combine the potential and a possible correction */
     eo = (slice % 2);
     dVec gU1 = VFactor[eo]*tau()*gradientV(slice);
 
@@ -1475,7 +1475,7 @@ dVec LocalAction::gradU(const int slice) {
         /* now scale by constants */
         gU2 *= 2.0 * gradVFactor[eo] * pow(tau(),3) * constants()->lambda();
     }
-	
+    
     return ( gU1+gU2 );
 }
 // ---------------------------------------------------------------------------
@@ -1488,7 +1488,7 @@ dVec LocalAction::gradU(const int slice) {
  *  Setup the path data members for non-local actions.
 ******************************************************************************/
 NonLocalAction::NonLocalAction (const Path &_path, LookupTable &_lookup, 
-		PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
+        PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
         WaveFunctionBase *_waveFunctionPtr, bool _local, string _name) :
     ActionBase(_path,_lookup,_externalPtr,_interactionPtr,_waveFunctionPtr,
             _local,_name) 
@@ -1512,10 +1512,10 @@ NonLocalAction::~NonLocalAction() {
 double NonLocalAction::potentialAction () {
 
     double totU = 0.0;
-	for (int slice = 0; slice < path.numTimeSlices; slice++) 
+    for (int slice = 0; slice < path.numTimeSlices; slice++) 
         totU += U(slice);
 
-	return ( totU );
+    return ( totU );
 }
 
 /**************************************************************************//**
@@ -1527,7 +1527,7 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
 
     /* We only need to calculate the potential action if the two neighboring
      * beads are on */
-	if (!path.worm.beadOn(bead1))
+    if (!path.worm.beadOn(bead1))
         return 0.0;
    
     /* Since the non-local action lives on a link, both bead1 and nextBead1
@@ -1605,7 +1605,7 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
         
     /* } // for bead2 */
     
-	return (totU + totUext);
+    return (totU + totUext);
 }
 
 /**************************************************************************//**
@@ -1618,19 +1618,19 @@ double NonLocalAction::U(int slice) {
 
     double totU = 0.0;
 
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
+    beadLocator bead1;
+    bead1[0] = bead2[0] = slice;
 
     beadLocator nextBead1,nextBead2;
 
-	int numParticles = path.numBeadsAtSlice(slice);
+    int numParticles = path.numBeadsAtSlice(slice);
 
-	/* Initialize the separation histogram */
-	sepHist = 0;
+    /* Initialize the separation histogram */
+    sepHist = 0;
 
-	/* Calculate the total potential, including external and interaction
-	 * effects*/
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+    /* Calculate the total potential, including external and interaction
+     * effects*/
+    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
 
         /* Get the advanced neightbor of bead1 */
         nextBead1 = path.next(bead1);
@@ -1645,8 +1645,8 @@ double NonLocalAction::U(int slice) {
             totU += interactionPtr->V(sep,sep2);
         } // bead2
 
-	} // bead1
-	return ( totU );
+    } // bead1
+    return ( totU );
 }
 
 /**************************************************************************//**
@@ -1662,19 +1662,19 @@ double NonLocalAction::derivPotentialActionTau (int slice) {
 
     double totU = 0.0;
 
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
+    beadLocator bead1;
+    bead1[0] = bead2[0] = slice;
 
     beadLocator nextBead1,nextBead2;
 
-	int numParticles = path.numBeadsAtSlice(slice);
+    int numParticles = path.numBeadsAtSlice(slice);
 
-	/* Initialize the separation histogram */
-	sepHist = 0;
+    /* Initialize the separation histogram */
+    sepHist = 0;
 
-	/* Calculate the total potential, including external and interaction
-	 * effects*/
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+    /* Calculate the total potential, including external and interaction
+     * effects*/
+    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
 
         /* Get the advanced neightbor of bead1 */
         nextBead1 = path.next(bead1);
@@ -1690,8 +1690,8 @@ double NonLocalAction::derivPotentialActionTau (int slice) {
             totU += interactionPtr->dVdtau(sep,sep2);
         } // bead2
 
-	} // bead1
-	return ( totU );
+    } // bead1
+    return ( totU );
 }
 
 /**************************************************************************//**
@@ -1707,16 +1707,16 @@ double NonLocalAction::derivPotentialActionLambda (int slice) {
 
     double totU = 0.0;
 
-	beadLocator bead1;
-	bead1[0] = bead2[0] = slice;
+    beadLocator bead1;
+    bead1[0] = bead2[0] = slice;
 
     beadLocator nextBead1,nextBead2;
 
-	int numParticles = path.numBeadsAtSlice(slice);
+    int numParticles = path.numBeadsAtSlice(slice);
 
-	/* Calculate the total potential, including external and interaction
-	 * effects*/
-	for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+    /* Calculate the total potential, including external and interaction
+     * effects*/
+    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
 
         /* Get the advanced neightbor of bead1 */
         nextBead1 = path.next(bead1);
@@ -1731,6 +1731,6 @@ double NonLocalAction::derivPotentialActionLambda (int slice) {
             totU += interactionPtr->dVdlambda(sep,sep2);
         } // bead2
 
-	} // bead1
-	return ( totU );
+    } // bead1
+    return ( totU );
 }

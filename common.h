@@ -77,14 +77,14 @@
 
 #include "MersenneTwister.h"
 
-#define NPCFSEP 50 	    ///< Spatial separations to be used in the pair correlation function
-#define NOBDMSEP 50	 	///< Spatial separations to be used in the one body density matrix
-#define NRADSEP 200	 	///< Spatial separations to be used in the radial density
+#define NPCFSEP 50      ///< Spatial separations to be used in the pair correlation function
+#define NOBDMSEP 50     ///< Spatial separations to be used in the one body density matrix
+#define NRADSEP 200     ///< Spatial separations to be used in the radial density
 #define NGRIDSEP 50     ///< Spatial separations to be used in each dimension of the particle position grid
-#define EPS 1.0E-7 		///< A small number
-#define BIG 1.0E30		///< A big number
+#define EPS 1.0E-7      ///< A small number
+#define BIG 1.0E30      ///< A big number
 #define LBIG 69.07755279 ///< The log of a big number
-#define XXX	-1		    ///< Used to refer to a nonsense beadIndex
+#define XXX -1          ///< Used to refer to a nonsense beadIndex
 
 using namespace std;
 using namespace blitz;
@@ -123,7 +123,7 @@ enum ensemble {DIAGONAL, OFFDIAGONAL, ANY};
 
 /** Return the integer value of a number raised to a power */
 inline int ipow (int base, int power) {
-	return static_cast<int>(floor(pow(1.0*base,1.0*power) + EPS));
+    return static_cast<int>(floor(pow(1.0*base,1.0*power) + EPS));
 }
 
 /** Minimum of two inputs */

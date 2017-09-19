@@ -36,60 +36,60 @@ PotentialBase::~PotentialBase () {
  * spaced grid.
 ******************************************************************************/
 Array<dVec,1> PotentialBase::initialConfig(const Container *boxPtr, MTRand &random,
-		const int numParticles) {
+        const int numParticles) {
 
-	/* The particle configuration */
-	Array<dVec,1> initialPos(numParticles);
-	initialPos = 0.0;
+    /* The particle configuration */
+    Array<dVec,1> initialPos(numParticles);
+    initialPos = 0.0;
 
-	/* Get the linear size per particle, and the number of particles */
-	double initSide = pow((1.0*numParticles/boxPtr->volume),-1.0/(1.0*NDIM));
+    /* Get the linear size per particle, and the number of particles */
+    double initSide = pow((1.0*numParticles/boxPtr->volume),-1.0/(1.0*NDIM));
 
-	/* We determine the number of initial grid boxes there are in 
-	 * in each dimension and compute their size */
-	int totNumGridBoxes = 1;
-	iVec numNNGrid;
-	dVec sizeNNGrid;
+    /* We determine the number of initial grid boxes there are in 
+     * in each dimension and compute their size */
+    int totNumGridBoxes = 1;
+    iVec numNNGrid;
+    dVec sizeNNGrid;
 
-	for (int i = 0; i < NDIM; i++) {
-		numNNGrid[i] = static_cast<int>(ceil((boxPtr->side[i] / initSide) - EPS));
+    for (int i = 0; i < NDIM; i++) {
+        numNNGrid[i] = static_cast<int>(ceil((boxPtr->side[i] / initSide) - EPS));
 
-		/* Make sure we have at least one grid box */
-		if (numNNGrid[i] < 1)
-			numNNGrid[i] = 1;
+        /* Make sure we have at least one grid box */
+        if (numNNGrid[i] < 1)
+            numNNGrid[i] = 1;
 
-		/* Compute the actual size of the grid */
-		sizeNNGrid[i] = boxPtr->side[i] / (1.0 * numNNGrid[i]);
+        /* Compute the actual size of the grid */
+        sizeNNGrid[i] = boxPtr->side[i] / (1.0 * numNNGrid[i]);
 
-		/* Determine the total number of grid boxes */
-		totNumGridBoxes *= numNNGrid[i];
-	}
+        /* Determine the total number of grid boxes */
+        totNumGridBoxes *= numNNGrid[i];
+    }
 
-	/* Now, we place the particles at the middle of each box */
-	PIMC_ASSERT(totNumGridBoxes>=numParticles);
-	dVec pos;
-	for (int n = 0; n < totNumGridBoxes; n++) {
+    /* Now, we place the particles at the middle of each box */
+    PIMC_ASSERT(totNumGridBoxes>=numParticles);
+    dVec pos;
+    for (int n = 0; n < totNumGridBoxes; n++) {
 
-		iVec gridIndex;
-		for (int i = 0; i < NDIM; i++) {
-			int scale = 1;
-			for (int j = i+1; j < NDIM; j++) 
-				scale *= numNNGrid[j];
-			gridIndex[i] = (n/scale) % numNNGrid[i];
-		}
+        iVec gridIndex;
+        for (int i = 0; i < NDIM; i++) {
+            int scale = 1;
+            for (int j = i+1; j < NDIM; j++) 
+                scale *= numNNGrid[j];
+            gridIndex[i] = (n/scale) % numNNGrid[i];
+        }
 
-		for (int i = 0; i < NDIM; i++) 
-			pos[i] = (gridIndex[i]+0.5)*sizeNNGrid[i] - 0.5*boxPtr->side[i];
+        for (int i = 0; i < NDIM; i++) 
+            pos[i] = (gridIndex[i]+0.5)*sizeNNGrid[i] - 0.5*boxPtr->side[i];
 
-		boxPtr->putInside(pos);
+        boxPtr->putInside(pos);
 
-		if (n < numParticles)
-			initialPos(n) = pos;
-		else 
-			break;
-	}
+        if (n < numParticles)
+            initialPos(n) = pos;
+        else 
+            break;
+    }
 
-	return initialPos;
+    return initialPos;
 }
 
 /**************************************************************************//**
@@ -101,27 +101,27 @@ Array<dVec,1> PotentialBase::initialConfig(const Container *boxPtr, MTRand &rand
  * @param maxSep the maximum separation
 ******************************************************************************/
 void PotentialBase::output(const double maxSep) {
-	dVec sep;
-	sep = 0.0;
-	for (double d = 0; d < maxSep; d+= (maxSep/1000.0)) {
-		sep[0] = d;
-		communicate()->file("debug")->stream() 
+    dVec sep;
+    sep = 0.0;
+    for (double d = 0; d < maxSep; d+= (maxSep/1000.0)) {
+        sep[0] = d;
+        communicate()->file("debug")->stream() 
             << format("%10.4E\t%16.8E\n") % d % V(sep);
-	}
+    }
 }
 
 /**************************************************************************//**
 * Return the minimum image difference for 1D separations 
 ******************************************************************************/
 double PotentialBase::deltaSeparation(double sep1, double sep2) const {
-	
+    
     double delta = sep2-sep1;
     while (delta >= 0.5*constants()->L())
         delta -= constants()->L();
     while (delta < -0.5*constants()->L()) 
         delta += constants()->L();
 
-	return delta;
+    return delta;
 }
 
 /**************************************************************************//**
@@ -130,9 +130,9 @@ double PotentialBase::deltaSeparation(double sep1, double sep2) const {
  * This is only used for Gasparini potential, could probably be better.
 ******************************************************************************/
 Array<double,1> PotentialBase::getExcLen() {
-	/* The particle configuration */
-	Array<double,1> excLens(0);
-	return excLens;
+    /* The particle configuration */
+    Array<double,1> excLens(0);
+    return excLens;
 }
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -144,8 +144,8 @@ Array<double,1> PotentialBase::getExcLen() {
  * Constructor.
 ******************************************************************************/
 TabulatedPotential::TabulatedPotential() { 
-	extV = 0.0;
-	extdVdr = 0.0;
+    extV = 0.0;
+    extdVdr = 0.0;
     extd2Vdr2 = 0.0;
 }
 
@@ -153,8 +153,8 @@ TabulatedPotential::TabulatedPotential() {
  * Destructor. 
 ******************************************************************************/
 TabulatedPotential::~TabulatedPotential() {
-	lookupV.free();
-	lookupdVdr.free();
+    lookupV.free();
+    lookupdVdr.free();
     lookupd2Vdr2.free();
 }
 
@@ -164,40 +164,40 @@ TabulatedPotential::~TabulatedPotential() {
 ******************************************************************************/
 void TabulatedPotential::initLookupTable(const double _dr, const double maxSep) {
 
-	/* We now calculate the lookup tables for the interaction potential and 
-	 * its first and second derivatives. */
-	dr = _dr;
-	tableLength = int(maxSep/dr);
-	lookupV.resize(tableLength);
-	lookupdVdr.resize(tableLength);
+    /* We now calculate the lookup tables for the interaction potential and 
+     * its first and second derivatives. */
+    dr = _dr;
+    tableLength = int(maxSep/dr);
+    lookupV.resize(tableLength);
+    lookupdVdr.resize(tableLength);
     lookupd2Vdr2.resize(tableLength);
-	lookupV = 0.0;
-	lookupdVdr = 0.0;
+    lookupV = 0.0;
+    lookupdVdr = 0.0;
     lookupd2Vdr2 = 0.0;
 
-	double r = 0;
+    double r = 0;
 
-	for (int n = 0; n < tableLength; n++) {
-		lookupV(n)    = valueV(r);
-		lookupdVdr(n) = valuedVdr(r);
+    for (int n = 0; n < tableLength; n++) {
+        lookupV(n)    = valueV(r);
+        lookupdVdr(n) = valuedVdr(r);
         lookupd2Vdr2(n) = valued2Vdr2(r);
-		r += dr;
-	}
+        r += dr;
+    }
 
-//	double rc = constants()->rc();
-//	for (int n = 0; n < tableLength; n++) {
-//		r += dr;
-//		if (r <= rc) {
-//			lookupV(n) = valueV(r) - valueV(rc) - valuedVdr(rc)*(r-rc);
-//			lookupdVdr(n) = valuedVdr(r) - valuedVdr(rc);
-//		}
-//		else {
-//			lookupV(n) = 0.0;
-//			lookupdVdr(n) = 0.0;
-//		}
-//		cout << format("%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E\n") % r % lookupV(n) % valueV(r) % 
-//			lookupdVdr(n) % valuedVdr(r) % (lookupV(n) - valueV(r)) % (lookupdVdr(n) - valuedVdr(r));
-//	}
+//  double rc = constants()->rc();
+//  for (int n = 0; n < tableLength; n++) {
+//      r += dr;
+//      if (r <= rc) {
+//          lookupV(n) = valueV(r) - valueV(rc) - valuedVdr(rc)*(r-rc);
+//          lookupdVdr(n) = valuedVdr(r) - valuedVdr(rc);
+//      }
+//      else {
+//          lookupV(n) = 0.0;
+//          lookupdVdr(n) = 0.0;
+//      }
+//      cout << format("%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E\n") % r % lookupV(n) % valueV(r) % 
+//          lookupdVdr(n) % valuedVdr(r) % (lookupV(n) - valueV(r)) % (lookupdVdr(n) - valuedVdr(r));
+//  }
 
 }
 
@@ -209,26 +209,26 @@ void TabulatedPotential::initLookupTable(const double _dr, const double maxSep) 
  *  (Oxford Press, London, England) p 144 (2004).
 ******************************************************************************/
 double TabulatedPotential::newtonGregory(const Array<double,1> &VTable, 
-		const TinyVector<double,2> &extVal, const double r) {
+        const TinyVector<double,2> &extVal, const double r) {
 
-	double rdr = r/dr;
-	int k = int(rdr);
+    double rdr = r/dr;
+    int k = int(rdr);
 
-	if (k <= 0) 
-		return extVal[0];
+    if (k <= 0) 
+        return extVal[0];
 
-	if (k >= tableLength)
-		return extVal[1];
+    if (k >= tableLength)
+        return extVal[1];
 
-	double xi = rdr - 1.0*k;
-	double vkm1 = VTable(k-1);
-	double vk = VTable(k);
-	double vkp1 = VTable(k+1);
+    double xi = rdr - 1.0*k;
+    double vkm1 = VTable(k-1);
+    double vk = VTable(k);
+    double vkp1 = VTable(k+1);
 
-	double T1 = vkm1 + (vk - vkm1) * xi;
-	double T2 = vk + (vkp1 - vk) * (xi - 1.0);
+    double T1 = vkm1 + (vk - vkm1) * xi;
+    double T2 = vk + (vkp1 - vk) * (xi - 1.0);
 
-	return (T1 + 0.5 * (T2 - T1) * xi);
+    return (T1 + 0.5 * (T2 - T1) * xi);
 }
 
 /**************************************************************************//**
@@ -238,14 +238,14 @@ double TabulatedPotential::newtonGregory(const Array<double,1> &VTable,
  *  enough mesh.
 ******************************************************************************/
 double TabulatedPotential::direct(const Array<double,1> &VTable, 
-		const TinyVector<double,2> &extVal, const double r) {
+        const TinyVector<double,2> &extVal, const double r) {
 
-	int k = int(r/dr);
-	if (k <= 0) 
-		return extVal[0];
+    int k = int(r/dr);
+    if (k <= 0) 
+        return extVal[0];
 
-	if (k >= tableLength)
-		return extVal[1];
+    if (k >= tableLength)
+        return extVal[1];
 
     return VTable(k);
 }
@@ -315,18 +315,18 @@ HarmonicPotential::~HarmonicPotential() {
  * We create particles at random locations close to the origin.
 ******************************************************************************/
 Array<dVec,1> HarmonicPotential::initialConfig(const Container *boxPtr, MTRand &random,
-		const int numParticles) {
+        const int numParticles) {
 
-	/* The particle configuration */
-	Array<dVec,1> initialPos(numParticles);
-	initialPos = 0.0;
+    /* The particle configuration */
+    Array<dVec,1> initialPos(numParticles);
+    initialPos = 0.0;
 
-	for (int n = 0; n < numParticles; n++) {
-		for (int i = 0; i < NDIM; i++) 
-			initialPos(n)[i] = 0.1*boxPtr->side[i]*(-1.0 + 2.0*random.rand());
-	}
+    for (int n = 0; n < numParticles; n++) {
+        for (int i = 0; i < NDIM; i++) 
+            initialPos(n)[i] = 0.1*boxPtr->side[i]*(-1.0 + 2.0*random.rand());
+    }
 
-	return initialPos;
+    return initialPos;
 }
 
 // ---------------------------------------------------------------------------
@@ -342,12 +342,12 @@ Array<dVec,1> HarmonicPotential::initialConfig(const Container *boxPtr, MTRand &
 ******************************************************************************/
 HarmonicCylinderPotential::HarmonicCylinderPotential(const double radius) : PotentialBase()
 {
-	/* c is a dimensionless constant */
-	c = 1.20272;
+    /* c is a dimensionless constant */
+    c = 1.20272;
 
-	/* We have to determine the frequency of the oscillator from it's length.
-	 * w = \hbar / (m R^2).  It is measured in THz */
-	w = 6.35077 / (radius*radius*constants()->m());
+    /* We have to determine the frequency of the oscillator from it's length.
+     * w = \hbar / (m R^2).  It is measured in THz */
+    w = 6.35077 / (radius*radius*constants()->m());
 }
 
 /**************************************************************************//**
@@ -371,8 +371,8 @@ HarmonicCylinderPotential::~HarmonicCylinderPotential() {
 ******************************************************************************/
 DeltaPotential::DeltaPotential(double _sigma, double _g) : PotentialBase() 
 {
-	/* Define the parameters of the delta function potential. */
-	norm = _g/sqrt(2.0*_sigma*_sigma*M_PI);
+    /* Define the parameters of the delta function potential. */
+    norm = _g/sqrt(2.0*_sigma*_sigma*M_PI);
     inv2sigma2 = 1.0/(2.0*_sigma*_sigma);
 }
 
@@ -397,10 +397,10 @@ DeltaPotential::~DeltaPotential() {
 ******************************************************************************/
 LorentzianPotential::LorentzianPotential(double _a, double _c) : PotentialBase() 
 {
-	/* Define the parameters of the Lorentzian delta function potential. */
-	a = _a;
-	c = _c;
-	norm = 2.0 * c * a / M_PI;
+    /* Define the parameters of the Lorentzian delta function potential. */
+    a = _a;
+    c = _c;
+    norm = 2.0 * c * a / M_PI;
 }
 
 /**************************************************************************//**
@@ -473,66 +473,66 @@ DipolePotential::~DipolePotential() {
  *  The interactions with the fixed particles are assumed to be Aziz.
 ******************************************************************************/
 FixedAzizPotential::FixedAzizPotential(const Container *_boxPtr) :
-	aziz(_boxPtr->side) {
+    aziz(_boxPtr->side) {
 
-	char state;				// Fixed or updateable?
-	dVec pos;				// The loaded position
+    char state;             // Fixed or updateable?
+    dVec pos;               // The loaded position
 
-	/* Initialize the cutoff^2 */
-	rc2 = constants()->rc2();
+    /* Initialize the cutoff^2 */
+    rc2 = constants()->rc2();
 
-	/* We start with an array of size 500 */
-	fixedParticles.resize(500);
+    /* We start with an array of size 500 */
+    fixedParticles.resize(500);
 
-	/* Here we load both the number and location of fixed helium atoms from disk. */
-	numFixedParticles = 0;
-	int n = 0;
-	while (!communicate()->file("fixed")->stream().eof()) {
-		if (communicate()->file("fixed")->stream().peek() == '#') {
-			communicate()->file("fixed")->stream().ignore(512,'\n');
-		}
-		else {
-			communicate()->file("fixed")->stream() >> state;
-			for (int i = 0; i < NDIM; i++) 
-				communicate()->file("fixed")->stream() >> pos[i];
+    /* Here we load both the number and location of fixed helium atoms from disk. */
+    numFixedParticles = 0;
+    int n = 0;
+    while (!communicate()->file("fixed")->stream().eof()) {
+        if (communicate()->file("fixed")->stream().peek() == '#') {
+            communicate()->file("fixed")->stream().ignore(512,'\n');
+        }
+        else {
+            communicate()->file("fixed")->stream() >> state;
+            for (int i = 0; i < NDIM; i++) 
+                communicate()->file("fixed")->stream() >> pos[i];
 
-			/* If the particle is labelled with an 'F' it is fixed and should
-			 * be included here */
-			if (state == 'F') {
-				numFixedParticles++;
-				if (numFixedParticles >= int(fixedParticles.size()))
-					fixedParticles.resizeAndPreserve(numFixedParticles);
+            /* If the particle is labelled with an 'F' it is fixed and should
+             * be included here */
+            if (state == 'F') {
+                numFixedParticles++;
+                if (numFixedParticles >= int(fixedParticles.size()))
+                    fixedParticles.resizeAndPreserve(numFixedParticles);
 
-				/* Put the initial position in the container */
-				_boxPtr->putInside(pos);
-				fixedParticles(n) = pos;
-				n++;
-			}
-			communicate()->file("fixed")->stream().ignore();
-		}
-	}
+                /* Put the initial position in the container */
+                _boxPtr->putInside(pos);
+                fixedParticles(n) = pos;
+                n++;
+            }
+            communicate()->file("fixed")->stream().ignore();
+        }
+    }
 
-	fixedParticles.resizeAndPreserve(numFixedParticles);
+    fixedParticles.resizeAndPreserve(numFixedParticles);
 
-	/* Now that we have the particle positions, create a new lookup table pointer
-	 * and initialize it */
-	lookupPtr = new LookupTable(_boxPtr,1,numFixedParticles);
-	lookupPtr->updateGrid(fixedParticles);
+    /* Now that we have the particle positions, create a new lookup table pointer
+     * and initialize it */
+    lookupPtr = new LookupTable(_boxPtr,1,numFixedParticles);
+    lookupPtr->updateGrid(fixedParticles);
 
-	/* Resize and initialize our local grid box arrays */
-	fixedBeadsInGrid.resize(lookupPtr->getTotNumGridBoxes(),numFixedParticles);
-	numFixedBeadsInGrid.resize(lookupPtr->getTotNumGridBoxes());
-	fixedBeadsInGrid = XXX;
-	numFixedBeadsInGrid = 0;
+    /* Resize and initialize our local grid box arrays */
+    fixedBeadsInGrid.resize(lookupPtr->getTotNumGridBoxes(),numFixedParticles);
+    numFixedBeadsInGrid.resize(lookupPtr->getTotNumGridBoxes());
+    fixedBeadsInGrid = XXX;
+    numFixedBeadsInGrid = 0;
 
-	/* Create a local copy of all beads in each grid box plus nearest neighbors.
-	 * This will drastically speed up the computing of potential energies. */
-	for (n = 0; n < lookupPtr->getTotNumGridBoxes(); n++) {
-		lookupPtr->updateFullInteractionList(n,0);
-		numFixedBeadsInGrid(n) = lookupPtr->fullNumBeads;
-		for (int m = 0; m < lookupPtr->fullNumBeads; m++) 
-			fixedBeadsInGrid(n,m) = lookupPtr->fullBeadList(m)[1];
-	}
+    /* Create a local copy of all beads in each grid box plus nearest neighbors.
+     * This will drastically speed up the computing of potential energies. */
+    for (n = 0; n < lookupPtr->getTotNumGridBoxes(); n++) {
+        lookupPtr->updateFullInteractionList(n,0);
+        numFixedBeadsInGrid(n) = lookupPtr->fullNumBeads;
+        for (int m = 0; m < lookupPtr->fullNumBeads; m++) 
+            fixedBeadsInGrid(n,m) = lookupPtr->fullBeadList(m)[1];
+    }
 
 }
 
@@ -540,10 +540,10 @@ FixedAzizPotential::FixedAzizPotential(const Container *_boxPtr) :
  * Destructor.
 ******************************************************************************/
 FixedAzizPotential::~FixedAzizPotential() {
-	delete lookupPtr;
-	fixedParticles.free();
-	fixedBeadsInGrid.free();
-	numFixedBeadsInGrid.free();
+    delete lookupPtr;
+    fixedParticles.free();
+    fixedBeadsInGrid.free();
+    numFixedBeadsInGrid.free();
 }
 
 /**************************************************************************//**
@@ -552,22 +552,22 @@ FixedAzizPotential::~FixedAzizPotential() {
 ******************************************************************************/
 double FixedAzizPotential::V(const dVec &pos) {
 
-	double totV = 0.0;
+    double totV = 0.0;
 
-	/* We first find the grid box number that the particle resides in */
-	int gridNumber = lookupPtr->gridNumber(pos);
+    /* We first find the grid box number that the particle resides in */
+    int gridNumber = lookupPtr->gridNumber(pos);
 
-	/* We now loop over all fixed particles in this grid box, only computing
-	 * interactions when the separation is less than the cutoff */
-	dVec sep;
-	for (int n = 0; n < numFixedBeadsInGrid(gridNumber); n++) {
-		sep = fixedParticles(fixedBeadsInGrid(gridNumber,n)) - pos;
-		lookupPtr->boxPtr->putInBC(sep);
-		if (dot(sep,sep) < rc2)
-			totV += aziz.V(sep);
-	}
+    /* We now loop over all fixed particles in this grid box, only computing
+     * interactions when the separation is less than the cutoff */
+    dVec sep;
+    for (int n = 0; n < numFixedBeadsInGrid(gridNumber); n++) {
+        sep = fixedParticles(fixedBeadsInGrid(gridNumber,n)) - pos;
+        lookupPtr->boxPtr->putInBC(sep);
+        if (dot(sep,sep) < rc2)
+            totV += aziz.V(sep);
+    }
 
-	return totV;
+    return totV;
 }
 
 /**************************************************************************//**
@@ -576,23 +576,23 @@ double FixedAzizPotential::V(const dVec &pos) {
 ******************************************************************************/
 dVec FixedAzizPotential::gradV(const dVec &pos) {
 
-	dVec totGradV;
-	totGradV = 0.0;
+    dVec totGradV;
+    totGradV = 0.0;
 
-	/* We first find the grid box number that the particle resides in */
-	int gridNumber = lookupPtr->gridNumber(pos);
+    /* We first find the grid box number that the particle resides in */
+    int gridNumber = lookupPtr->gridNumber(pos);
 
-	/* We now loop over all fixed particles in this grid box, only computing
-	 * the gradient of interactions when the separation is less than the cutoff */
-	dVec sep;
-	for (int n = 0; n < numFixedBeadsInGrid(gridNumber); n++) {
-		sep = fixedParticles(fixedBeadsInGrid(gridNumber,n)) - pos;
-		lookupPtr->boxPtr->putInBC(sep);
-		if (dot(sep,sep) < rc2)
-			totGradV += aziz.gradV(sep);
-	}
+    /* We now loop over all fixed particles in this grid box, only computing
+     * the gradient of interactions when the separation is less than the cutoff */
+    dVec sep;
+    for (int n = 0; n < numFixedBeadsInGrid(gridNumber); n++) {
+        sep = fixedParticles(fixedBeadsInGrid(gridNumber,n)) - pos;
+        lookupPtr->boxPtr->putInBC(sep);
+        if (dot(sep,sep) < rc2)
+            totGradV += aziz.gradV(sep);
+    }
 
-	return totGradV;
+    return totGradV;
 }
 
 /**************************************************************************//**
@@ -603,50 +603,50 @@ dVec FixedAzizPotential::gradV(const dVec &pos) {
  * proceeded by a letter 'U'.
 ******************************************************************************/
 Array<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, MTRand &random,
-		const int numParticles) {
+        const int numParticles) {
 
-	/* The particle configuration */
-	Array<dVec,1> initialPos(1);
-	initialPos = 0.0;
+    /* The particle configuration */
+    Array<dVec,1> initialPos(1);
+    initialPos = 0.0;
 
-	int locNumParticles = 0;	// Number of updateable particles
-	char state;					// Update or Fix
-	dVec pos;					// The current position
+    int locNumParticles = 0;    // Number of updateable particles
+    char state;                 // Update or Fix
+    dVec pos;                   // The current position
 
-	/* We go through all lines in the fixed input file, discarding any comments
-	 * and assign the initial positions of the particles */
-	int n = 0;
-	while (!communicate()->file("fixed")->stream().eof()) {
-		if (communicate()->file("fixed")->stream().peek() == '#') {
-			communicate()->file("fixed")->stream().ignore(512,'\n');
-		}
-		else {
-			communicate()->file("fixed")->stream() >> state;
-			for (int i = 0; i < NDIM; i++)
-				communicate()->file("fixed")->stream() >> pos[i];
+    /* We go through all lines in the fixed input file, discarding any comments
+     * and assign the initial positions of the particles */
+    int n = 0;
+    while (!communicate()->file("fixed")->stream().eof()) {
+        if (communicate()->file("fixed")->stream().peek() == '#') {
+            communicate()->file("fixed")->stream().ignore(512,'\n');
+        }
+        else {
+            communicate()->file("fixed")->stream() >> state;
+            for (int i = 0; i < NDIM; i++)
+                communicate()->file("fixed")->stream() >> pos[i];
 
-			/* If the particle is labelled with an 'U' it is updatable and should
-			 * be included */
-			if (state == 'U') {
-				locNumParticles++;
-				initialPos.resizeAndPreserve(locNumParticles);
+            /* If the particle is labelled with an 'U' it is updatable and should
+             * be included */
+            if (state == 'U') {
+                locNumParticles++;
+                initialPos.resizeAndPreserve(locNumParticles);
 
-				/* Put the initial position in the box */
-				boxPtr->putInside(pos);
+                /* Put the initial position in the box */
+                boxPtr->putInside(pos);
 
-				/* Assign the position to all time slices*/
-				initialPos(n) = pos;
-				n++;
-			}
-			communicate()->file("fixed")->stream().ignore();
-		}
-	}
+                /* Assign the position to all time slices*/
+                initialPos(n) = pos;
+                n++;
+            }
+            communicate()->file("fixed")->stream().ignore();
+        }
+    }
 
-	/* Reset the file pointer */
-	communicate()->file("fixed")->stream().seekg(0, ios::beg);
+    /* Reset the file pointer */
+    communicate()->file("fixed")->stream().seekg(0, ios::beg);
 
-	/* Return the initial Positions */
-	return initialPos;
+    /* Return the initial Positions */
+    return initialPos;
 }
 
 // ---------------------------------------------------------------------------
@@ -660,8 +660,8 @@ Array<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, MTRand 
  *  @param radius The radius of the cylinder
 ******************************************************************************/
 HardCylinderPotential::HardCylinderPotential(const double radius) : 
-	PotentialBase(),
-	R(radius) {
+    PotentialBase(),
+    R(radius) {
 }
 
 /**************************************************************************//**
@@ -686,50 +686,50 @@ HardCylinderPotential::~HardCylinderPotential() {
  *  @param radius The radius of the cylinder
 ******************************************************************************/
 LJCylinderPotential::LJCylinderPotential(const double radius) : 
-	PotentialBase(),
-	TabulatedPotential()
+    PotentialBase(),
+    TabulatedPotential()
 {
 
-	/* The radius of the tube */
-	R = radius;
+    /* The radius of the tube */
+    R = radius;
 
-	/* The density of nitrogen in silicon nitride */
-	density = 0.078; // atoms / angstrom^3
-//	density = 0.008; // atoms / angstrom^3
+    /* The density of nitrogen in silicon nitride */
+    density = 0.078; // atoms / angstrom^3
+//  density = 0.008; // atoms / angstrom^3
 
-	/* We define the values of epsilon and sigma for N and He */ 
-//	double epsilonHe = 10.216; 	// Kelvin
-//	double sigmaHe   = 2.556; 	// angstroms
-//	double sigmaN    = 3.299; 	// angstroms
-//	double epsilonN  = 36.2;	// Kelvin
-//	epsilon = sqrt(epsilonHe*epsilonN);
-//	sigma = 0.5*(sigmaHe + sigmaN);
+    /* We define the values of epsilon and sigma for N and He */ 
+//  double epsilonHe = 10.216;  // Kelvin
+//  double sigmaHe   = 2.556;   // angstroms
+//  double sigmaN    = 3.299;   // angstroms
+//  double epsilonN  = 36.2;    // Kelvin
+//  epsilon = sqrt(epsilonHe*epsilonN);
+//  sigma = 0.5*(sigmaHe + sigmaN);
 
-	/* We operate under the assumption that the silicon can be neglected in the 
-	 * silicon-nitride, and thus only consider the Nitrogen.  We use a
-	 * Kiselov type model to extract the actual parameters.  We assume that
-	 * silicate and silicon-nitride are roughly equivalent. */
-	epsilon = 10.22; 	// Kelvin
-	sigma   = 2.628;	// angstroms
+    /* We operate under the assumption that the silicon can be neglected in the 
+     * silicon-nitride, and thus only consider the Nitrogen.  We use a
+     * Kiselov type model to extract the actual parameters.  We assume that
+     * silicate and silicon-nitride are roughly equivalent. */
+    epsilon = 10.22;    // Kelvin
+    sigma   = 2.628;    // angstroms
 
-//	epsilon = 32; 	// Kelvin
-//	sigma   = 3.08;	// angstroms
+//  epsilon = 32;   // Kelvin
+//  sigma   = 3.08; // angstroms
 
-	/* We choose a mesh consisting of 10^6 points, and create the lookup table */
-	dR = (1.0E-6)*R;
+    /* We choose a mesh consisting of 10^6 points, and create the lookup table */
+    dR = (1.0E-6)*R;
 
-	initLookupTable(dR,R);
-	
-	/* Find the minimun of the potential */
-	minV = 1.0E5;
-	for (int n = 0; n < tableLength; n++) {
-		if (lookupV(n) < minV)
-			minV = lookupV(n);
-	}
+    initLookupTable(dR,R);
+    
+    /* Find the minimun of the potential */
+    minV = 1.0E5;
+    for (int n = 0; n < tableLength; n++) {
+        if (lookupV(n) < minV)
+            minV = lookupV(n);
+    }
 
-	/* The extremal values for the lookup table */
-	extV = valueV(0.0),valueV(R);
-	extdVdr = valuedVdr(0.0),valuedVdr(R);
+    /* The extremal values for the lookup table */
+    extV = valueV(0.0),valueV(R);
+    extdVdr = valuedVdr(0.0),valuedVdr(R);
 }
 
 /**************************************************************************//**
@@ -747,28 +747,28 @@ LJCylinderPotential::~LJCylinderPotential() {
  *  Checked and working with Mathematica.
 ******************************************************************************/
 double LJCylinderPotential::valueV(const double r) {
-	double x = r / R;
+    double x = r / R;
 
-	if (x >= 1.0)
-		x = 1.0 - EPS;
-	
-	double x2 = x*x;
-	double x4 = x2*x2;
-	double x6 = x2*x4;
-	double x8 = x4*x4;
-	double f1 = 1.0 / (1.0 - x2);
-	double sigoR3 = pow(sigma/R,3.0);
-	double sigoR9 = sigoR3*sigoR3*sigoR3;
+    if (x >= 1.0)
+        x = 1.0 - EPS;
+    
+    double x2 = x*x;
+    double x4 = x2*x2;
+    double x6 = x2*x4;
+    double x8 = x4*x4;
+    double f1 = 1.0 / (1.0 - x2);
+    double sigoR3 = pow(sigma/R,3.0);
+    double sigoR9 = sigoR3*sigoR3*sigoR3;
 
-	double Kx2 = boost::math::ellint_1(x);
-	double Ex2 = boost::math::ellint_2(x);
+    double Kx2 = boost::math::ellint_1(x);
+    double Ex2 = boost::math::ellint_2(x);
 
-	double v9 = (1.0*pow(f1,9.0)/(240.0)) * (
-			(1091.0 + 11156*x2 + 16434*x4 + 4052*x6 + 35*x8)*Ex2 - 
-			8.0*(1.0 - x2)*(1.0 + 7*x2)*(97.0 + 134*x2 + 25*x4)*Kx2);
-	double v3 = 2.0*pow(f1,3.0) * ((7.0 + x2)*Ex2 - 4.0*(1.0-x2)*Kx2);
+    double v9 = (1.0*pow(f1,9.0)/(240.0)) * (
+            (1091.0 + 11156*x2 + 16434*x4 + 4052*x6 + 35*x8)*Ex2 - 
+            8.0*(1.0 - x2)*(1.0 + 7*x2)*(97.0 + 134*x2 + 25*x4)*Kx2);
+    double v3 = 2.0*pow(f1,3.0) * ((7.0 + x2)*Ex2 - 4.0*(1.0-x2)*Kx2);
 
-	return ((M_PI*epsilon*sigma*sigma*sigma*density/3.0)*(sigoR9*v9 - sigoR3*v3));
+    return ((M_PI*epsilon*sigma*sigma*sigma*density/3.0)*(sigoR9*v9 - sigoR3*v3));
 }
 
 /**************************************************************************//**
@@ -778,33 +778,33 @@ double LJCylinderPotential::valueV(const double r) {
 ******************************************************************************/
 double LJCylinderPotential::valuedVdr(const double r) {
 
-	double x = r / R; 
+    double x = r / R; 
 
-	if (x >= 1.0) 
-		x = 1.0 - EPS;
+    if (x >= 1.0) 
+        x = 1.0 - EPS;
 
-	/* dV/dr */
-	if (x < EPS)
-		return (1.28121E8/pow(R,11.0) - 102245.0/pow(R,5.0))*x;
-	else {
-		double x2 = x*x;
-		double x4 = x2*x2;
-		double x6 = x2*x4;
-		double x8 = x4*x4;
-		double f1 = 1.0 / (1.0 - x2);
-		double sigoR3 = pow(sigma/R,3.0);
-		double sigoR9 = sigoR3*sigoR3*sigoR3;
+    /* dV/dr */
+    if (x < EPS)
+        return (1.28121E8/pow(R,11.0) - 102245.0/pow(R,5.0))*x;
+    else {
+        double x2 = x*x;
+        double x4 = x2*x2;
+        double x6 = x2*x4;
+        double x8 = x4*x4;
+        double f1 = 1.0 / (1.0 - x2);
+        double sigoR3 = pow(sigma/R,3.0);
+        double sigoR9 = sigoR3*sigoR3*sigoR3;
 
-		double Kx2 = boost::math::ellint_1(x);
-		double Ex2 = boost::math::ellint_2(x);
+        double Kx2 = boost::math::ellint_1(x);
+        double Ex2 = boost::math::ellint_2(x);
 
-		double dv9dx =(3.0*pow(f1,10.0)/(80.0*x)) *
-			( (1.0 + x2)*(35.0 + 5108*x2 + 22482*x4 + 5108*x6 + 35*x8)*Ex2 -
-			  (1.0 - x2)*(35.0 + 3428*x2 + 15234*x4 + 12356*x6 +1715*x8)*Kx2 );
-		double dv3dx = (6.0*pow(f1,4.0)/x) *
-			( (1.0 + 14*x2 + x4)*Ex2 - (1.0 + 6*x2 - 7*x4)*Kx2 );
-		return ((M_PI*epsilon*sigma*sigma*sigma*density/(3.0*R))*(sigoR9*dv9dx - sigoR3*dv3dx));
-	}
+        double dv9dx =(3.0*pow(f1,10.0)/(80.0*x)) *
+            ( (1.0 + x2)*(35.0 + 5108*x2 + 22482*x4 + 5108*x6 + 35*x8)*Ex2 -
+              (1.0 - x2)*(35.0 + 3428*x2 + 15234*x4 + 12356*x6 +1715*x8)*Kx2 );
+        double dv3dx = (6.0*pow(f1,4.0)/x) *
+            ( (1.0 + 14*x2 + x4)*Ex2 - (1.0 + 6*x2 - 7*x4)*Kx2 );
+        return ((M_PI*epsilon*sigma*sigma*sigma*density/(3.0*R))*(sigoR9*dv9dx - sigoR3*dv3dx));
+    }
 }
 
 /**************************************************************************//**
@@ -852,67 +852,67 @@ double LJCylinderPotential::valued2Vdr2(const double r) {
  * Return a set of initial positions inside the cylinder.
 ******************************************************************************/
 Array<dVec,1> LJCylinderPotential::initialConfig(const Container *boxPtr, MTRand &random,
-		const int numParticles) {
+        const int numParticles) {
 
-	/* The particle configuration */
-	Array<dVec,1> initialPos(numParticles);
-	initialPos = 0.0;
+    /* The particle configuration */
+    Array<dVec,1> initialPos(numParticles);
+    initialPos = 0.0;
 
-	/* We shift the radius inward to account for the excluded volume from the
-	 * hard wall.  This represents the largest prism that can be put
-	 * inside a cylinder. */
-	dVec lside;
-	lside[0] = lside[1] = sqrt(2.0)*(R-sigma);
-	lside[2] = boxPtr->side[NDIM-1];
+    /* We shift the radius inward to account for the excluded volume from the
+     * hard wall.  This represents the largest prism that can be put
+     * inside a cylinder. */
+    dVec lside;
+    lside[0] = lside[1] = sqrt(2.0)*(R-sigma);
+    lside[2] = boxPtr->side[NDIM-1];
 
-	/* Get the linear size per particle */
-	double initSide = pow((1.0*numParticles/product(lside)),-1.0/(1.0*NDIM));
+    /* Get the linear size per particle */
+    double initSide = pow((1.0*numParticles/product(lside)),-1.0/(1.0*NDIM));
 
-	/* We determine the number of initial grid boxes there are in 
-	 * in each dimension and compute their size */
-	int totNumGridBoxes = 1;
-	iVec numNNGrid;
-	dVec sizeNNGrid;
+    /* We determine the number of initial grid boxes there are in 
+     * in each dimension and compute their size */
+    int totNumGridBoxes = 1;
+    iVec numNNGrid;
+    dVec sizeNNGrid;
 
-	for (int i = 0; i < NDIM; i++) {
-		numNNGrid[i] = static_cast<int>(ceil((lside[i] / initSide) - EPS));
+    for (int i = 0; i < NDIM; i++) {
+        numNNGrid[i] = static_cast<int>(ceil((lside[i] / initSide) - EPS));
 
-		/* Make sure we have at least one grid box */
-		if (numNNGrid[i] < 1)
-			numNNGrid[i] = 1;
+        /* Make sure we have at least one grid box */
+        if (numNNGrid[i] < 1)
+            numNNGrid[i] = 1;
 
-		/* Compute the actual size of the grid */
-		sizeNNGrid[i] = lside[i] / (1.0 * numNNGrid[i]);
+        /* Compute the actual size of the grid */
+        sizeNNGrid[i] = lside[i] / (1.0 * numNNGrid[i]);
 
-		/* Determine the total number of grid boxes */
-		totNumGridBoxes *= numNNGrid[i];
-	}
+        /* Determine the total number of grid boxes */
+        totNumGridBoxes *= numNNGrid[i];
+    }
 
-	/* Now, we place the particles at the middle of each box */
-	PIMC_ASSERT(totNumGridBoxes>=numParticles);
-	dVec pos;
-	for (int n = 0; n < totNumGridBoxes; n++) {
+    /* Now, we place the particles at the middle of each box */
+    PIMC_ASSERT(totNumGridBoxes>=numParticles);
+    dVec pos;
+    for (int n = 0; n < totNumGridBoxes; n++) {
 
-		iVec gridIndex;
-		for (int i = 0; i < NDIM; i++) {
-			int scale = 1;
-			for (int j = i+1; j < NDIM; j++) 
-				scale *= numNNGrid[j];
-			gridIndex[i] = (n/scale) % numNNGrid[i];
-		}
+        iVec gridIndex;
+        for (int i = 0; i < NDIM; i++) {
+            int scale = 1;
+            for (int j = i+1; j < NDIM; j++) 
+                scale *= numNNGrid[j];
+            gridIndex[i] = (n/scale) % numNNGrid[i];
+        }
 
-		for (int i = 0; i < NDIM; i++) 
-			pos[i] = (gridIndex[i]+0.5)*sizeNNGrid[i] - 0.5*lside[i];
+        for (int i = 0; i < NDIM; i++) 
+            pos[i] = (gridIndex[i]+0.5)*sizeNNGrid[i] - 0.5*lside[i];
 
-		boxPtr->putInside(pos);
+        boxPtr->putInside(pos);
 
-		if (n < numParticles)
-			initialPos(n) = pos;
-		else 
-			break;
-	}
+        if (n < numParticles)
+            initialPos(n) = pos;
+        else 
+            break;
+    }
 
-	return initialPos;
+    return initialPos;
 }
 
 // ---------------------------------------------------------------------------
@@ -936,10 +936,10 @@ Array<dVec,1> LJCylinderPotential::initialConfig(const Container *boxPtr, MTRand
 LJHourGlassPotential::LJHourGlassPotential(const double radius, 
         const double deltaRadius, const double deltaWidth) : PotentialBase()
 {
-	/* The radius of the tube */
-	R = radius;
+    /* The radius of the tube */
+    R = radius;
 
-	/* The modification in radius: R(z=0) = R - dR */
+    /* The modification in radius: R(z=0) = R - dR */
     dR = deltaRadius;
 
     /* the length of the pore */
@@ -949,13 +949,13 @@ LJHourGlassPotential::LJHourGlassPotential(const double radius,
     invd = 1.0/deltaWidth;
     R0 = 1.0/tanh(0.5*L*invd);
 
-	/* The density of nitrogen in silicon nitride */
-	density = 0.078; // atoms / angstrom^3
+    /* The density of nitrogen in silicon nitride */
+    density = 0.078; // atoms / angstrom^3
 
     /* These are the values we have historically used for amorphous silicon
      * nitride. */ 
-	epsilon = 10.22; 	// Kelvin
-	sigma   = 2.628;	// angstroms
+    epsilon = 10.22;    // Kelvin
+    sigma   = 2.628;    // angstroms
 }
 
 /**************************************************************************//**
@@ -988,26 +988,26 @@ double LJHourGlassPotential::V(const dVec &r) {
 
     x = sqrt(x)/Rz;
 
-	if (x >= 1.0)
-		x = 1.0 - EPS;
-	
+    if (x >= 1.0)
+        x = 1.0 - EPS;
+    
     double x2 = x*x;
-	double x4 = x2*x2;
-	double x6 = x2*x4;
-	double x8 = x4*x4;
-	double f1 = 1.0 / (1.0 - x2);
-	double sigoR3 = pow(sigma/Rz,3.0);
-	double sigoR9 = sigoR3*sigoR3*sigoR3;
+    double x4 = x2*x2;
+    double x6 = x2*x4;
+    double x8 = x4*x4;
+    double f1 = 1.0 / (1.0 - x2);
+    double sigoR3 = pow(sigma/Rz,3.0);
+    double sigoR9 = sigoR3*sigoR3*sigoR3;
 
-	double Kx2 = boost::math::ellint_1(x);
-	double Ex2 = boost::math::ellint_2(x);
+    double Kx2 = boost::math::ellint_1(x);
+    double Ex2 = boost::math::ellint_2(x);
 
-	double v9 = (1.0*pow(f1,9.0)/(240.0)) * (
-			(1091.0 + 11156*x2 + 16434*x4 + 4052*x6 + 35*x8)*Ex2 - 
-			8.0*(1.0 - x2)*(1.0 + 7*x2)*(97.0 + 134*x2 + 25*x4)*Kx2);
-	double v3 = 2.0*pow(f1,3.0) * ((7.0 + x2)*Ex2 - 4.0*(1.0-x2)*Kx2);
+    double v9 = (1.0*pow(f1,9.0)/(240.0)) * (
+            (1091.0 + 11156*x2 + 16434*x4 + 4052*x6 + 35*x8)*Ex2 - 
+            8.0*(1.0 - x2)*(1.0 + 7*x2)*(97.0 + 134*x2 + 25*x4)*Kx2);
+    double v3 = 2.0*pow(f1,3.0) * ((7.0 + x2)*Ex2 - 4.0*(1.0-x2)*Kx2);
 
-	return ((M_PI*epsilon*sigma*sigma*sigma*density/3.0)*(sigoR9*v9 - sigoR3*v3));
+    return ((M_PI*epsilon*sigma*sigma*sigma*density/3.0)*(sigoR9*v9 - sigoR3*v3));
 }
 
 /**************************************************************************//**
@@ -1021,68 +1021,68 @@ double LJHourGlassPotential::V(const dVec &r) {
 Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr, 
         MTRand &random, const int numParticles) {
 
-	/* The particle configuration */
-	Array<dVec,1> initialPos(numParticles);
-	initialPos = 0.0;
+    /* The particle configuration */
+    Array<dVec,1> initialPos(numParticles);
+    initialPos = 0.0;
 
-	/* We shift the radius inward to account for the excluded volume from the
-	 * hard wall.  This represents the largest prism that can be put
-	 * inside a cylinder. */
-	dVec lside;
-	lside[0] = lside[1] = sqrt(2.0)*(R-dR-sigma);
-	lside[2] = boxPtr->side[NDIM-1];
+    /* We shift the radius inward to account for the excluded volume from the
+     * hard wall.  This represents the largest prism that can be put
+     * inside a cylinder. */
+    dVec lside;
+    lside[0] = lside[1] = sqrt(2.0)*(R-dR-sigma);
+    lside[2] = boxPtr->side[NDIM-1];
 
     /* Make sure our radius isn't too small */
-	PIMC_ASSERT(lside[0]>0.0);
+    PIMC_ASSERT(lside[0]>0.0);
 
-	/* Get the linear size per particle */
-	double initSide = pow((1.0*numParticles/product(lside)),-1.0/(1.0*NDIM));
+    /* Get the linear size per particle */
+    double initSide = pow((1.0*numParticles/product(lside)),-1.0/(1.0*NDIM));
 
-	/* We determine the number of initial grid boxes there are in 
-	 * in each dimension and compute their size */
-	int totNumGridBoxes = 1;
-	iVec numNNGrid;
-	dVec sizeNNGrid;
+    /* We determine the number of initial grid boxes there are in 
+     * in each dimension and compute their size */
+    int totNumGridBoxes = 1;
+    iVec numNNGrid;
+    dVec sizeNNGrid;
 
-	for (int i = 0; i < NDIM; i++) {
-		numNNGrid[i] = static_cast<int>(ceil((lside[i] / initSide) - EPS));
+    for (int i = 0; i < NDIM; i++) {
+        numNNGrid[i] = static_cast<int>(ceil((lside[i] / initSide) - EPS));
 
-		/* Make sure we have at least one grid box */
-		if (numNNGrid[i] < 1)
-			numNNGrid[i] = 1;
+        /* Make sure we have at least one grid box */
+        if (numNNGrid[i] < 1)
+            numNNGrid[i] = 1;
 
-		/* Compute the actual size of the grid */
-		sizeNNGrid[i] = lside[i] / (1.0 * numNNGrid[i]);
+        /* Compute the actual size of the grid */
+        sizeNNGrid[i] = lside[i] / (1.0 * numNNGrid[i]);
 
-		/* Determine the total number of grid boxes */
-		totNumGridBoxes *= numNNGrid[i];
-	}
+        /* Determine the total number of grid boxes */
+        totNumGridBoxes *= numNNGrid[i];
+    }
 
-	/* Now, we place the particles at the middle of each box */
-	PIMC_ASSERT(totNumGridBoxes>=numParticles);
-	dVec pos;
-	for (int n = 0; n < totNumGridBoxes; n++) {
+    /* Now, we place the particles at the middle of each box */
+    PIMC_ASSERT(totNumGridBoxes>=numParticles);
+    dVec pos;
+    for (int n = 0; n < totNumGridBoxes; n++) {
 
-		iVec gridIndex;
-		for (int i = 0; i < NDIM; i++) {
-			int scale = 1;
-			for (int j = i+1; j < NDIM; j++) 
-				scale *= numNNGrid[j];
-			gridIndex[i] = (n/scale) % numNNGrid[i];
-		}
+        iVec gridIndex;
+        for (int i = 0; i < NDIM; i++) {
+            int scale = 1;
+            for (int j = i+1; j < NDIM; j++) 
+                scale *= numNNGrid[j];
+            gridIndex[i] = (n/scale) % numNNGrid[i];
+        }
 
-		for (int i = 0; i < NDIM; i++) 
-			pos[i] = (gridIndex[i]+0.5)*sizeNNGrid[i] - 0.5*lside[i];
+        for (int i = 0; i < NDIM; i++) 
+            pos[i] = (gridIndex[i]+0.5)*sizeNNGrid[i] - 0.5*lside[i];
 
-		boxPtr->putInside(pos);
+        boxPtr->putInside(pos);
 
-		if (n < numParticles)
-			initialPos(n) = pos;
-		else 
-			break;
-	}
+        if (n < numParticles)
+            initialPos(n) = pos;
+        else 
+            break;
+    }
 
-	return initialPos;
+    return initialPos;
 }
 
 
@@ -1103,39 +1103,39 @@ Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr,
 ******************************************************************************/
 AzizPotential::AzizPotential(const dVec &side) : PotentialBase(), TabulatedPotential()
 {
-	/* Define all variables for the Aziz potential */
-	/* R.A. Aziz et al. J. Chem. Phys. 70, 4330 (1979) */
-	rm      = 2.9673;  	// A
-	A       = 0.5449E6; 
-	epsilon = 10.8; 	// K
-	alpha   = 13.353; 
-	D       = 1.2413; 
-	C6      = 1.3732;
-	C8      = 0.42538;
-	C10     = 0.1781;
+    /* Define all variables for the Aziz potential */
+    /* R.A. Aziz et al. J. Chem. Phys. 70, 4330 (1979) */
+    rm      = 2.9673;   // A
+    A       = 0.5449E6; 
+    epsilon = 10.8;     // K
+    alpha   = 13.353; 
+    D       = 1.2413; 
+    C6      = 1.3732;
+    C8      = 0.42538;
+    C10     = 0.1781;
 
-	/* The extremal values are all zero here */
-	extV = 0.0;
-	extdVdr = 0.0;
+    /* The extremal values are all zero here */
+    extV = 0.0;
+    extdVdr = 0.0;
     extd2Vdr2 = 0.0;
 
-	/* We take the maximum possible separation */
-	double L = max(side);
+    /* We take the maximum possible separation */
+    double L = max(side);
 
-	/* Create the potential lookup tables */
-	// initLookupTable(0.00005*rm,L);
-	initLookupTable((1.0E-6)*rm,L);
+    /* Create the potential lookup tables */
+    // initLookupTable(0.00005*rm,L);
+    initLookupTable((1.0E-6)*rm,L);
 
-	/* Now we compute the tail correction */
-	double rmoL = rm / L;
-	double rm3 = rm*rm*rm;
-	double t1 = A*exp(-alpha*L/(2.0*rm))*rm*(8.0*rm*rm + 4.0*L*rm * alpha + L*L*alpha*alpha)
-		/ (4.0*alpha*alpha*alpha);
-	double t2 = 8.0*C6*pow(rmoL,3.0)/3.0;
-	double t3 = 32.0*C8*pow(rmoL,5.0)/5.0;
-	double t4 = 128.0*C10*pow(rmoL,7.0)/7.0;
-	
-	tailV = 2.0*M_PI*epsilon*(t1 - rm3*(t2+t3+t4));
+    /* Now we compute the tail correction */
+    double rmoL = rm / L;
+    double rm3 = rm*rm*rm;
+    double t1 = A*exp(-alpha*L/(2.0*rm))*rm*(8.0*rm*rm + 4.0*L*rm * alpha + L*L*alpha*alpha)
+        / (4.0*alpha*alpha*alpha);
+    double t2 = 8.0*C6*pow(rmoL,3.0)/3.0;
+    double t3 = 32.0*C8*pow(rmoL,5.0)/5.0;
+    double t4 = 128.0*C10*pow(rmoL,7.0)/7.0;
+    
+    tailV = 2.0*M_PI*epsilon*(t1 - rm3*(t2+t3+t4));
 }
 
 /**************************************************************************//**
@@ -1151,24 +1151,24 @@ AzizPotential::~AzizPotential() {
  *  Checked and working with Mathematica.
 ******************************************************************************/
 double AzizPotential::valueV(const double r) {
-	double x = r / rm;
+    double x = r / rm;
 
-	double Urep = A * exp(-alpha*x);
+    double Urep = A * exp(-alpha*x);
 
-	/* No self interactions */
-	if (x < EPS) 
-		return 0.0;
-	/* Hard core limit */
-	else if (x < 0.01)
-		return (epsilon * Urep);
-	else {
-		double ix2 = 1.0 / (x * x);
-		double ix6 = ix2 * ix2 * ix2;
-		double ix8 = ix6 * ix2;
-		double ix10 = ix8 * ix2;
-		double Uatt = -( C6*ix6 + C8*ix8 + C10*ix10 ) * F(x);
-		return ( epsilon * (Urep + Uatt) );
-	}
+    /* No self interactions */
+    if (x < EPS) 
+        return 0.0;
+    /* Hard core limit */
+    else if (x < 0.01)
+        return (epsilon * Urep);
+    else {
+        double ix2 = 1.0 / (x * x);
+        double ix6 = ix2 * ix2 * ix2;
+        double ix8 = ix6 * ix2;
+        double ix10 = ix8 * ix2;
+        double Uatt = -( C6*ix6 + C8*ix8 + C10*ix10 ) * F(x);
+        return ( epsilon * (Urep + Uatt) );
+    }
 }
 
 /**************************************************************************//**
@@ -1177,31 +1177,31 @@ double AzizPotential::valueV(const double r) {
  *  Checked and working with Mathematica.
 ******************************************************************************/
 double AzizPotential::valuedVdr(const double r) {
-	double x = r / rm;
+    double x = r / rm;
 
-	double T1 = -A * alpha * exp(-alpha*x);
-	
-	/* dV/dR */
-	/* No self interactions */
-	if (x < EPS) 
-		return 0.0;
-	/* Hard core limit */
-	else if (x < 0.01)
-		return ( ( epsilon / rm ) * T1 );
-	else {
-		/* The various inverse powers of x */
-		double ix = 1.0 / x;
-		double ix2 = ix*ix;
-		double ix6 = ix2 * ix2 * ix2;
-		double ix7 = ix6 * ix;
-		double ix8 = ix6 * ix2;
-		double ix9 = ix8 * ix;
-		double ix10 = ix8 * ix2;
-		double ix11 = ix10 * ix;
-		double T2 = ( 6.0*C6*ix7 + 8.0*C8*ix9 + 10.0*C10*ix11 ) * F(x);
-		double T3 = -( C6*ix6 + C8*ix8 + C10*ix10 ) * dF(x);
-		return ( ( epsilon / rm ) * (T1 + T2 + T3) );
-	}
+    double T1 = -A * alpha * exp(-alpha*x);
+    
+    /* dV/dR */
+    /* No self interactions */
+    if (x < EPS) 
+        return 0.0;
+    /* Hard core limit */
+    else if (x < 0.01)
+        return ( ( epsilon / rm ) * T1 );
+    else {
+        /* The various inverse powers of x */
+        double ix = 1.0 / x;
+        double ix2 = ix*ix;
+        double ix6 = ix2 * ix2 * ix2;
+        double ix7 = ix6 * ix;
+        double ix8 = ix6 * ix2;
+        double ix9 = ix8 * ix;
+        double ix10 = ix8 * ix2;
+        double ix11 = ix10 * ix;
+        double T2 = ( 6.0*C6*ix7 + 8.0*C8*ix9 + 10.0*C10*ix11 ) * F(x);
+        double T3 = -( C6*ix6 + C8*ix8 + C10*ix10 ) * dF(x);
+        return ( ( epsilon / rm ) * (T1 + T2 + T3) );
+    }
 }
 
 /**************************************************************************//**
@@ -1210,33 +1210,33 @@ double AzizPotential::valuedVdr(const double r) {
  *  Double checked and working with Mathematica. -MTG
 ******************************************************************************/
 double AzizPotential::valued2Vdr2(const double r) {
-	double x = r / rm;
+    double x = r / rm;
 
-	double T1 = A * alpha * alpha * exp(-alpha*x);
-	
-	/* d^2V/dR^2 */
-	/* No self interactions */
-	if (x < EPS) 
-		return 0.0;
-	/* Hard core limit */
-	else if (x < 0.01)
-		return ( ( epsilon / rm ) * T1 );
-	else {
-		/* The various inverse powers of x */
-		double ix = 1.0 / x;
-		double ix2 = ix*ix;
-		double ix6 = ix2 * ix2 * ix2;
-		double ix7 = ix6 * ix;
-		double ix8 = ix6 * ix2;
-		double ix9 = ix8 * ix;
-		double ix10 = ix8 * ix2;
-		double ix11 = ix10 * ix;
-		double ix12 = ix11 * ix;
-		double T2 = - ( 42.0*C6*ix8 + 72.0*C8*ix10 + 110.0*C10*ix12 ) * F(x);
-		double T3 = 2.0*( 6.0*C6*ix7 + 8.0*C8*ix9 + 10.0*C10*ix11 ) * dF(x);
-		double T4 = - ( C6*ix6 + C8*ix8 + C10*ix10 ) * d2F(x);
-		return ( ( epsilon / (rm*rm) ) * (T1 + T2 + T3 + T4) );
-	}
+    double T1 = A * alpha * alpha * exp(-alpha*x);
+    
+    /* d^2V/dR^2 */
+    /* No self interactions */
+    if (x < EPS) 
+        return 0.0;
+    /* Hard core limit */
+    else if (x < 0.01)
+        return ( ( epsilon / rm ) * T1 );
+    else {
+        /* The various inverse powers of x */
+        double ix = 1.0 / x;
+        double ix2 = ix*ix;
+        double ix6 = ix2 * ix2 * ix2;
+        double ix7 = ix6 * ix;
+        double ix8 = ix6 * ix2;
+        double ix9 = ix8 * ix;
+        double ix10 = ix8 * ix2;
+        double ix11 = ix10 * ix;
+        double ix12 = ix11 * ix;
+        double T2 = - ( 42.0*C6*ix8 + 72.0*C8*ix10 + 110.0*C10*ix12 ) * F(x);
+        double T3 = 2.0*( 6.0*C6*ix7 + 8.0*C8*ix9 + 10.0*C10*ix11 ) * dF(x);
+        double T4 = - ( C6*ix6 + C8*ix8 + C10*ix10 ) * d2F(x);
+        return ( ( epsilon / (rm*rm) ) * (T1 + T2 + T3 + T4) );
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1271,7 +1271,7 @@ Gasparini_1_Potential::~Gasparini_1_Potential() {
 Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
         MTRand &random, const int numParticles) {
 
-	/* label the lengths of the sides of the simulation cell */
+    /* label the lengths of the sides of the simulation cell */
     dVec lside;
     lside[0] = boxPtr->side[0];
     lside[1] = boxPtr->side[1];
@@ -1290,7 +1290,7 @@ Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
     int correctNum = int(numParticles-density*volExc);
 
     /* The particle configuration */
-	Array<dVec,1> initialPos(correctNum);
+    Array<dVec,1> initialPos(correctNum);
 
     /* get linear size per particle  */
     double initSide = pow((1.0*correctNum/(volTot-volExc)),-1.0/(1.0*NDIM));
@@ -1376,10 +1376,10 @@ Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
             boxPtr->putInside(pos1);
 
         if (n < numIn1){
-			initialPos(n) = pos1;
+            initialPos(n) = pos1;
         }
-		else 
-			break;
+        else 
+            break;
     }
 
     /* Place particles in the middle of the boxes -- volume 2 */
@@ -1404,10 +1404,10 @@ Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
             boxPtr->putInside(pos2);
         
         if (n < numIn2){
-			initialPos(n+numIn1) = pos2;
+            initialPos(n+numIn1) = pos2;
         }
-		else 
-			break;
+        else 
+            break;
     }
     /* do we want to output the initial config to disk? */
     bool outToDisk = 1;
@@ -1432,7 +1432,7 @@ Array<double,1> Gasparini_1_Potential::getExcLen(){
     Array<double, 1> excLens(2);
     excLens(0) = excY; // was ay
     excLens(1) = excZ; // was az
-	
+    
     return (excLens);
 }
 
@@ -1448,7 +1448,7 @@ Array<double,1> Gasparini_1_Potential::getExcLen(){
  *  @param _a The radius of the hard sphere (also the scattering length)
 ******************************************************************************/
 HardSpherePotential::HardSpherePotential(double _a) : 
-	PotentialBase(),
+    PotentialBase(),
     a(_a) {
 
 }
@@ -1762,7 +1762,7 @@ double Delta1DPotential::dVdtau(const dVec &sep1, const dVec &sep2)
  *  @param _a The radius of the hard rod (also the scattering length)
 ******************************************************************************/
 HardRodPotential::HardRodPotential(double _a) : 
-	PotentialBase(),
+    PotentialBase(),
     a(_a) {
 
 }
@@ -1871,33 +1871,33 @@ double HardRodPotential::dVdtau(const dVec &sep1, const dVec &sep2)
 #include <boost/math/special_functions/bessel.hpp>
 GraphenePotential::GraphenePotential (double _strain, double _poisson, double _a0, 
         double _sigma, double _epsilon) : PotentialBase() {
-	double strain = _strain;
-	double poisson = _poisson;
-	double a0 = _a0;
+    double strain = _strain;
+    double poisson = _poisson;
+    double a0 = _a0;
 
-	sigma = _sigma;
-	epsilon = _epsilon;
+    sigma = _sigma;
+    epsilon = _epsilon;
 
-	/* Lattice vectors */
-	a1x = (sqrt(3.)*a0/8.)*(4.+strain-(3.*strain*poisson));
-	a1y = (3.*a0/8.)*(4.+(3.*strain)-(strain*poisson));
-	a2x = -a1x;
-	a2y = a1y;
+    /* Lattice vectors */
+    a1x = (sqrt(3.)*a0/8.)*(4.+strain-(3.*strain*poisson));
+    a1y = (3.*a0/8.)*(4.+(3.*strain)-(strain*poisson));
+    a2x = -a1x;
+    a2y = a1y;
 
-	/* reciprocal lattice vectors */
-	g1x = 8.*M_PI*sqrt(3.)*(4. + (3.*strain) - (strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
-	g1y = 8.*M_PI*(4. + strain - (3.*strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
-	g2x = -g1x;
-	g2y = g1y;
+    /* reciprocal lattice vectors */
+    g1x = 8.*M_PI*sqrt(3.)*(4. + (3.*strain) - (strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
+    g1y = 8.*M_PI*(4. + strain - (3.*strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
+    g2x = -g1x;
+    g2y = g1y;
 
-	/* basis vectors */
-	b1x = a2x;
-	b1y = -0.5 * (1. + strain) * a0;
-	b2x = 0.;
-	b2y = -.5*(1. + strain) * a0-(a1x/sqrt(3.));
+    /* basis vectors */
+    b1x = a2x;
+    b1y = -0.5 * (1. + strain) * a0;
+    b2x = 0.;
+    b2y = -.5*(1. + strain) * a0-(a1x/sqrt(3.));
 
-	/* area of unit cell */
-	A = fabs((a1x*a2y) - (a1y*a2x));
+    /* area of unit cell */
+    A = fabs((a1x*a2y) - (a1y*a2x));
 
 }
 
@@ -1918,42 +1918,42 @@ GraphenePotential::~GraphenePotential() {
 ******************************************************************************/
 double GraphenePotential::V(const dVec &r) {
 
-	double x = r[0];
-	double y = r[1];
-	double z = r[2]+EPS;
-	double g = 0.;
-	double gdotb1 = 0.;
-	double gdotb2 = 0.;
-	double k5term = 0.;
-	double k2term = 0.;
-	double prefactor = 0.;
-	double v_g = 0.;
-	double v = (4.*M_PI/A)*epsilon*sigma*sigma*( ((2./5.)*pow((sigma/z),10)) - pow((sigma/z),4) );
-	if (z < 1.5) {
-		return 10000.;
-	}
-	
-	else {
-		for (double m = -1; m < 1+1; m++) {
-			for (double n = -1; n < 1+1; n++) {
-			    if ((m != 0) || (n != 0)){
-				g = sqrt(pow((m*g1x + n*g2x),2.) + pow((m*g1y + n*g2y),2.));
-				gdotb1 = ((m*g1x + n*g2x)*(b1x+x)) + ((m*g1y + n*g2y)*(b1y+y));
-				gdotb2 = ((m*g1x + n*g2x)*(b2x+x)) + ((m*g1y + n*g2y)*(b2y+y));
-				k5term = pow((g*sigma*sigma/2./z),5.)*boost::math::cyl_bessel_k(5., g*z)/30.;
-				k2term = 2.*pow((g*sigma*sigma/2./z),2.)*boost::math::cyl_bessel_k(2., g*z);
-				prefactor = epsilon*sigma*sigma*2.*M_PI/A;
+    double x = r[0];
+    double y = r[1];
+    double z = r[2]+EPS;
+    double g = 0.;
+    double gdotb1 = 0.;
+    double gdotb2 = 0.;
+    double k5term = 0.;
+    double k2term = 0.;
+    double prefactor = 0.;
+    double v_g = 0.;
+    double v = (4.*M_PI/A)*epsilon*sigma*sigma*( ((2./5.)*pow((sigma/z),10)) - pow((sigma/z),4) );
+    if (z < 1.5) {
+        return 10000.;
+    }
+    
+    else {
+        for (double m = -1; m < 1+1; m++) {
+            for (double n = -1; n < 1+1; n++) {
+                if ((m != 0) || (n != 0)){
+                g = sqrt(pow((m*g1x + n*g2x),2.) + pow((m*g1y + n*g2y),2.));
+                gdotb1 = ((m*g1x + n*g2x)*(b1x+x)) + ((m*g1y + n*g2y)*(b1y+y));
+                gdotb2 = ((m*g1x + n*g2x)*(b2x+x)) + ((m*g1y + n*g2y)*(b2y+y));
+                k5term = pow((g*sigma*sigma/2./z),5.)*boost::math::cyl_bessel_k(5., g*z)/30.;
+                k2term = 2.*pow((g*sigma*sigma/2./z),2.)*boost::math::cyl_bessel_k(2., g*z);
+                prefactor = epsilon*sigma*sigma*2.*M_PI/A;
 
-				v_g = prefactor*(k5term-k2term);
-				v += (cos(gdotb1)+cos(gdotb2))*v_g;
-			    }
-			}
-		}
-		
+                v_g = prefactor*(k5term-k2term);
+                v += (cos(gdotb1)+cos(gdotb2))*v_g;
+                }
+            }
+        }
+        
 
-		return v;
+        return v;
 
-	}
+    }
 }
 /**************************************************************************//**
  * Return an initial particle configuration.
@@ -1961,78 +1961,78 @@ double GraphenePotential::V(const dVec &r) {
  * We create particles at random locations above the graphene sheet.
 ******************************************************************************/
 Array<dVec,1> GraphenePotential::initialConfig(const Container *boxPtr, MTRand &random,
-		const int numParticles) {
+        const int numParticles) {
 
-	/* The particle configuration */
-	Array<dVec,1> initialPos(numParticles);
-	initialPos = 0.0;
-	double initSideCube = 1.0*numParticles;
-	
-	for (int i = 0; i < NDIM - 1; i++) {
-		initSideCube /= boxPtr->side[i];
-	}
+    /* The particle configuration */
+    Array<dVec,1> initialPos(numParticles);
+    initialPos = 0.0;
+    double initSideCube = 1.0*numParticles;
+    
+    for (int i = 0; i < NDIM - 1; i++) {
+        initSideCube /= boxPtr->side[i];
+    }
 
-	initSideCube /= ((boxPtr->side[NDIM-1] / 2.0) - 6.0);
+    initSideCube /= ((boxPtr->side[NDIM-1] / 2.0) - 6.0);
 
-	/* Get the linear size per particle, and the number of particles */
-	double initSide = pow((initSideCube),-1.0/(1.0*NDIM));
+    /* Get the linear size per particle, and the number of particles */
+    double initSide = pow((initSideCube),-1.0/(1.0*NDIM));
 
-	/* We determine the number of initial grid boxes there are in 
-	 * in each dimension and compute their size */
-	int totNumGridBoxes = 1;
-	iVec numNNGrid;
-	dVec sizeNNGrid;
+    /* We determine the number of initial grid boxes there are in 
+     * in each dimension and compute their size */
+    int totNumGridBoxes = 1;
+    iVec numNNGrid;
+    dVec sizeNNGrid;
 
-	for (int i = 0; i < NDIM - 1; i++) {
-		numNNGrid[i] = static_cast<int>(ceil((boxPtr->side[i] / initSide) - EPS));
+    for (int i = 0; i < NDIM - 1; i++) {
+        numNNGrid[i] = static_cast<int>(ceil((boxPtr->side[i] / initSide) - EPS));
 
-		/* Make sure we have at least one grid box */
-		if (numNNGrid[i] < 1)
-			numNNGrid[i] = 1;
+        /* Make sure we have at least one grid box */
+        if (numNNGrid[i] < 1)
+            numNNGrid[i] = 1;
 
-		/* Compute the actual size of the grid */
-		sizeNNGrid[i] = boxPtr->side[i] / (1.0 * numNNGrid[i]);
+        /* Compute the actual size of the grid */
+        sizeNNGrid[i] = boxPtr->side[i] / (1.0 * numNNGrid[i]);
 
-		/* Determine the total number of grid boxes */
-		totNumGridBoxes *= numNNGrid[i];
-	}
+        /* Determine the total number of grid boxes */
+        totNumGridBoxes *= numNNGrid[i];
+    }
 
-	numNNGrid[NDIM-1] = static_cast<int>(ceil(((boxPtr->side[NDIM-1] - 12.0) / (2.0 * initSide)) - EPS));
+    numNNGrid[NDIM-1] = static_cast<int>(ceil(((boxPtr->side[NDIM-1] - 12.0) / (2.0 * initSide)) - EPS));
 
-	/* Make sure we have at least one grid box */
-	if (numNNGrid[NDIM-1] < 1)
-		numNNGrid[NDIM-1] = 1;
+    /* Make sure we have at least one grid box */
+    if (numNNGrid[NDIM-1] < 1)
+        numNNGrid[NDIM-1] = 1;
 
-	/* Compute the actual size of the grid */
-	sizeNNGrid[NDIM-1] = (boxPtr->side[NDIM-1] - 12.0) / (2.0 * numNNGrid[NDIM-1]);
+    /* Compute the actual size of the grid */
+    sizeNNGrid[NDIM-1] = (boxPtr->side[NDIM-1] - 12.0) / (2.0 * numNNGrid[NDIM-1]);
 
-	/* Determine the total number of grid boxes */
-	totNumGridBoxes *= numNNGrid[NDIM-1];
+    /* Determine the total number of grid boxes */
+    totNumGridBoxes *= numNNGrid[NDIM-1];
 
-	/* Now, we place the particles at the middle of each box */
-	PIMC_ASSERT(totNumGridBoxes>=numParticles);
-	dVec pos;
-	for (int n = 0; n < totNumGridBoxes; n++) {
+    /* Now, we place the particles at the middle of each box */
+    PIMC_ASSERT(totNumGridBoxes>=numParticles);
+    dVec pos;
+    for (int n = 0; n < totNumGridBoxes; n++) {
 
-		iVec gridIndex;
-		for (int i = 0; i < NDIM; i++) {
-			int scale = 1;
-			for (int j = i+1; j < NDIM; j++) 
-				scale *= numNNGrid[j];
-			gridIndex[i] = (n/scale) % numNNGrid[i];
-		}
+        iVec gridIndex;
+        for (int i = 0; i < NDIM; i++) {
+            int scale = 1;
+            for (int j = i+1; j < NDIM; j++) 
+                scale *= numNNGrid[j];
+            gridIndex[i] = (n/scale) % numNNGrid[i];
+        }
 
-		for (int i = 0; i < NDIM - 1; i++) 
-			pos[i] = (gridIndex[i]+0.5)*sizeNNGrid[i] - 0.5*boxPtr->side[i];
-		
-		pos[NDIM - 1] = (gridIndex[NDIM - 1]+0.5)*sizeNNGrid[NDIM - 1] + 3.0;
+        for (int i = 0; i < NDIM - 1; i++) 
+            pos[i] = (gridIndex[i]+0.5)*sizeNNGrid[i] - 0.5*boxPtr->side[i];
+        
+        pos[NDIM - 1] = (gridIndex[NDIM - 1]+0.5)*sizeNNGrid[NDIM - 1] + 3.0;
 
-		boxPtr->putInside(pos);
+        boxPtr->putInside(pos);
 
-		if (n < numParticles)
-			initialPos(n) = pos;
-		else 
-			break;
-	}
-	return initialPos;
+        if (n < numParticles)
+            initialPos(n) = pos;
+        else 
+            break;
+    }
+    return initialPos;
 }

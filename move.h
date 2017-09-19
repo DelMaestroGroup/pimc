@@ -29,10 +29,10 @@ class ActionBase;
  */
 class MoveBase {
 
-	public:
-		MoveBase (Path &, ActionBase *, MTRand &, 
+    public:
+        MoveBase (Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=ANY, bool _varLength=false);
-		virtual ~MoveBase();
+        virtual ~MoveBase();
     
         ensemble operateOnConfig;       ///< What configurations do we operate on?
         bool variableLength;            ///< Does the move have a variable length?
@@ -41,88 +41,88 @@ class MoveBase {
         /** return the move name */
         virtual string getName() {return "base";}
 
-		/** Get the acceptance ratio. */
-		double getAcceptanceRatio() {
-			return (numAttempted == 0 ? 0.0 : 1.0*numAccepted/(1.0*numAttempted));
-		}
+        /** Get the acceptance ratio. */
+        double getAcceptanceRatio() {
+            return (numAttempted == 0 ? 0.0 : 1.0*numAccepted/(1.0*numAttempted));
+        }
 
-		/** Get the total acceptance ratio. */
-		double getTotAcceptanceRatio() {
-			return (totAttempted == 0 ? 0.0 : 1.0*totAccepted/(1.0*totAttempted));
-		}
+        /** Get the total acceptance ratio. */
+        double getTotAcceptanceRatio() {
+            return (totAttempted == 0 ? 0.0 : 1.0*totAccepted/(1.0*totAttempted));
+        }
 
-		/** Get the acceptance ratio by level. */
-		double getAcceptanceRatioLevel(int n) { 
-			return (numAttemptedLevel(n) == 0 ? 0.0 : 
-					1.0*numAcceptedLevel(n)/(1.0*numAttemptedLevel(n)));
-		}
+        /** Get the acceptance ratio by level. */
+        double getAcceptanceRatioLevel(int n) { 
+            return (numAttemptedLevel(n) == 0 ? 0.0 : 
+                    1.0*numAcceptedLevel(n)/(1.0*numAttemptedLevel(n)));
+        }
 
-		/** Get the number of moves attempted */
-		int getNumAttempted() { return numAttempted; }
-		/** Get the number of moves accepted */
-		int getNumAccepted() { return numAccepted; }
-		/** Get the number of moves attempted by level */
-		int getNumAttemptedLevel(int n) { return numAttemptedLevel(n); }
-		/** Get the number of moves accepted by level */
-		int getNumAcceptedLevel(int n) { return numAcceptedLevel(n); }
+        /** Get the number of moves attempted */
+        int getNumAttempted() { return numAttempted; }
+        /** Get the number of moves accepted */
+        int getNumAccepted() { return numAccepted; }
+        /** Get the number of moves attempted by level */
+        int getNumAttemptedLevel(int n) { return numAttemptedLevel(n); }
+        /** Get the number of moves accepted by level */
+        int getNumAcceptedLevel(int n) { return numAcceptedLevel(n); }
 
-		/** Attempt the move (will be overloaded). */
-		virtual bool attemptMove() = 0;	
+        /** Attempt the move (will be overloaded). */
+        virtual bool attemptMove() = 0; 
 
-		/** Reset the total accepted counter */
-		void resetTotAccept() { totAccepted = totAttempted = 0; }
-		/** Reset the number accepted counter */
-		void resetAccept() { numAccepted = numAttempted = 0; }
+        /** Reset the total accepted counter */
+        void resetTotAccept() { totAccepted = totAttempted = 0; }
+        /** Reset the number accepted counter */
+        void resetAccept() { numAccepted = numAttempted = 0; }
 
-	protected:
-		friend class PathIntegralMonteCarlo;	// Friends for I/O
+    protected:
+        friend class PathIntegralMonteCarlo;    // Friends for I/O
 
-		Path &path;						///< A reference to the paths
-		ActionBase *actionPtr;			///< A base pointer to the action
-		MTRand &random;					///< A reference to the RNG
+        Path &path;                     ///< A reference to the paths
+        ActionBase *actionPtr;          ///< A base pointer to the action
+        MTRand &random;                 ///< A reference to the RNG
 
-		bool success;					///< Did we sucessfully perform a move?
+        bool success;                   ///< Did we sucessfully perform a move?
 
-		uint32 numAccepted;				///< The number of accepted moves
-		uint32 numAttempted;			///< The number of attempted moves
-		int numToMove;					///< The number of particles moved
-		int numLevels;					// The 2^numLevels = num slices moved
+        uint32 numAccepted;             ///< The number of accepted moves
+        uint32 numAttempted;            ///< The number of attempted moves
+        int numToMove;                  ///< The number of particles moved
+        int numLevels;                  // The 2^numLevels = num slices moved
 
-		static uint32 totAccepted;		///< The total number of  moves accepted
-		static uint32 totAttempted;		///< The total number of  moves attempted
+        static uint32 totAccepted;      ///< The total number of  moves accepted
+        static uint32 totAttempted;     ///< The total number of  moves attempted
 
-		Array <uint32,1> numAcceptedLevel;	///< The number of moves accepted at each level
-		Array <uint32,1> numAttemptedLevel;	///< The number of moves attempted at each level
+        Array <uint32,1> numAcceptedLevel;  ///< The number of moves accepted at each level
+        Array <uint32,1> numAttemptedLevel; ///< The number of moves attempted at each level
 
-		Array <dVec,1> originalPos;		///< The original particle positions
-		Array <dVec,1> newPos;		    ///< New particle positions
+        Array <dVec,1> originalPos;     ///< The original particle positions
+        Array <dVec,1> newPos;          ///< New particle positions
         
         vector <iVec> winding;          ///< The winding vectors         
         vector <int> windingSector;     ///< Used to index different winding sectors
-        vector <double> cumrho0;		///< Used for tower-sampling winding sectors
+        vector <double> cumrho0;        ///< Used for tower-sampling winding sectors
 
         int maxWind;                    ///< The largest winding number
         int numWind;                    ///< The total number of winding vectors
 
-		double oldAction;				///< The original potential action
-		double newAction;				///< The new potential action
+        double oldAction;               ///< The original potential action
+        double newAction;               ///< The new potential action
         double deltaAction;             ///< The action difference
 
-		double sqrt2LambdaTau;			///< sqrt(2 * Lambda * tau)
-		double sqrtLambdaTau;		    ///< sqrt(Lambda * tau)
+        double sqrt2LambdaTau;          ///< sqrt(2 * Lambda * tau)
+        double sqrtLambdaTau;           ///< sqrt(Lambda * tau)
 
         beadLocator nBeadIndex;         ///< Neighbor bead index
-		dVec neighborPos; 				///< Staging neighbor position
-		dVec newRanPos; 				///< Staing random position
+        dVec neighborPos;               ///< Staging neighbor position
+        dVec newRanPos;                 ///< Staing random position
 
-		/** Keep the move */
-		virtual void keepMove();		
-		/** undo the move */
-		virtual void undoMove() = 0;	
+        /** Keep the move */
+        virtual void keepMove();        
+        /** undo the move */
+        virtual void undoMove() = 0;    
 
-		/* Returns a new bead position based on the staging algorithm */
-		dVec newStagingPosition(const beadLocator &, const beadLocator &, const int, const int);
-		dVec newStagingPosition(const beadLocator &, const beadLocator &, const int, const int, iVec &);
+        /* Returns a new bead position based on the staging algorithm */
+        dVec newStagingPosition(const beadLocator &, const beadLocator &, const int, const int);
+        dVec newStagingPosition(const beadLocator &, const beadLocator &, const int, const int, iVec &);
 
         /** Obtain a winding sector for a stage-like move */
         iVec sampleWindingSector(const beadLocator &, const beadLocator &, const int, double &);
@@ -130,18 +130,18 @@ class MoveBase {
         /** Find the winding number for a path between two beads */
         iVec getWindingNumber(const beadLocator &, const beadLocator &);
 
-		/* Return a new bead position which samples the free particle density matrix */
-		dVec newFreeParticlePosition(const beadLocator &);
+        /* Return a new bead position which samples the free particle density matrix */
+        dVec newFreeParticlePosition(const beadLocator &);
 
-		/* Returns a new bead position based on the bisection algorithm */
-		dVec newBisectionPosition(const beadLocator&, const int); 	
+        /* Returns a new bead position based on the bisection algorithm */
+        dVec newBisectionPosition(const beadLocator&, const int);   
 
-		double newK,oldK;				///< The old and new kinetic action
-		double newV,oldV;               ///< The old and new potential action
+        double newK,oldK;               ///< The old and new kinetic action
+        double newV,oldV;               ///< The old and new potential action
 
-		/* Debugging methods */
-		void printMoveState(string);
-		void checkMove(int,double);
+        /* Debugging methods */
+        void printMoveState(string);
+        void checkMove(int,double);
 };
 
 // ========================================================================  
@@ -152,18 +152,18 @@ class MoveBase {
  */
 class DisplaceMove: public MoveBase {
 
-	public:
-		DisplaceMove(Path &, ActionBase *, MTRand &, 
+    public:
+        DisplaceMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=ANY);
-		~DisplaceMove();
+        ~DisplaceMove();
     
-		bool attemptMove();
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
-		beadLocator beadIndex;	// The index of the bead being moved
-		void undoMove();		// revert everything back
+    private:
+        beadLocator beadIndex;  // The index of the bead being moved
+        void undoMove();        // revert everything back
 };
 
 
@@ -185,9 +185,9 @@ class EndStagingMove: public MoveBase {
 
     private:
         bool leftMoving;        // True if update moves left to right
-        beadLocator leftBead;	// The left most bead being moved
-        beadLocator rightBead;	// The left most bead being moved
-        void undoMove();		// revert everything back
+        beadLocator leftBead;   // The left most bead being moved
+        beadLocator rightBead;  // The left most bead being moved
+        void undoMove();        // revert everything back
 };
 
 
@@ -208,11 +208,11 @@ class MidStagingMove: public MoveBase {
         string getName() {return name;}
     
     private:
-        beadLocator leftBead;	// The left most bead being moved
-        beadLocator rightBead;	// The left most bead being moved
+        beadLocator leftBead;   // The left most bead being moved
+        beadLocator rightBead;  // The left most bead being moved
         beadLocator midBeadL;   // Bead on left of break to be updated
         beadLocator midBeadR;   // Bead on right of break to be updated
-        void undoMove();		// revert everything back
+        void undoMove();        // revert everything back
 };
 
 
@@ -246,18 +246,18 @@ class SwapBreakMove: public MoveBase {
  */
 class CenterOfMassMove: public MoveBase {
 
-	public:
+    public:
         CenterOfMassMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=ANY);
-		~CenterOfMassMove();
+        ~CenterOfMassMove();
 
-		bool attemptMove();
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
-		beadLocator startBead,endBead;	// The start and end beads
-		void undoMove();				// revert everything back
+    private:
+        beadLocator startBead,endBead;  // The start and end beads
+        void undoMove();                // revert everything back
 };
 
 
@@ -270,19 +270,19 @@ class CenterOfMassMove: public MoveBase {
  */
 class StagingMove: public MoveBase {
 
-	public:
-		StagingMove(Path &, ActionBase *, MTRand &, 
+    public:
+        StagingMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=ANY);
-		~StagingMove();
+        ~StagingMove();
 
-		bool attemptMove();
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
-		beadLocator startBead,endBead;		// The start and end of the stage
+    private:
+        beadLocator startBead,endBead;      // The start and end of the stage
 
-		void undoMove(); 					// Undo the move
+        void undoMove();                    // Undo the move
 };
 
 // ========================================================================  
@@ -293,28 +293,28 @@ class StagingMove: public MoveBase {
  */
 class BisectionMove: public MoveBase {
 
-	public:
-		BisectionMove(Path &, ActionBase *, MTRand &,
+    public:
+        BisectionMove(Path &, ActionBase *, MTRand &,
                 ensemble _operateOnConfig=ANY);
-		~BisectionMove();
+        ~BisectionMove();
     
-		bool attemptMove();
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
+    private:
         Array <bool,1> include;             // Which beads have been included?
 
         beadLocator startBead,endBead;
 
-		int numActiveBeads;					// The total number of active beads
-		int level;							// The current level
-		int shift;							// The distance between slices at a given level
+        int numActiveBeads;                 // The total number of active beads
+        int level;                          // The current level
+        int shift;                          // The distance between slices at a given level
 
-		double oldDeltaAction;	            // The old and new action differences
+        double oldDeltaAction;              // The old and new action differences
 
-		void keepMove(); 					// Keep the move
-		void undoMove(); 					// Undo the move
+        void keepMove();                    // Keep the move
+        void undoMove();                    // Undo the move
 };
 
 // ========================================================================  
@@ -326,22 +326,22 @@ class BisectionMove: public MoveBase {
  */
 class OpenMove: public MoveBase {
 
-	public:
-		OpenMove(Path &, ActionBase *, MTRand &, 
+    public:
+        OpenMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=DIAGONAL, bool _varLength=true);
-		~OpenMove();
+        ~OpenMove();
 
-		bool attemptMove();
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
-		beadLocator headBead, tailBead;	// The temporary head and tail locatores
-		int gapLength;					// The proposed WL length to remove 
-		int numLevels;					// The 2^numLevels = num slices moved
+    private:
+        beadLocator headBead, tailBead; // The temporary head and tail locatores
+        int gapLength;                  // The proposed WL length to remove 
+        int numLevels;                  // The 2^numLevels = num slices moved
 
-		void undoMove();				// Undo a move
-		void keepMove();				// keep the move
+        void undoMove();                // Undo a move
+        void keepMove();                // keep the move
 
 };
 
@@ -354,23 +354,23 @@ class OpenMove: public MoveBase {
  */
 class CloseMove: public MoveBase {
 
-	public:
-		CloseMove(Path &, ActionBase *, MTRand &, 
+    public:
+        CloseMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
-		~CloseMove();
+        ~CloseMove();
 
-		bool attemptMove();
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
-		beadLocator headBead,tailBead;	// The temporary head and tail slices
-		int numLevels;						// The 2^numLevels = num slices moved
+    private:
+        beadLocator headBead,tailBead;  // The temporary head and tail slices
+        int numLevels;                      // The 2^numLevels = num slices moved
 
-		Array <int,1> oldBeadOn;		// The old and new bead states
+        Array <int,1> oldBeadOn;        // The old and new bead states
 
-		void undoMove();				// Undo a move
-		void keepMove();				// keep the move
+        void undoMove();                // Undo a move
+        void keepMove();                // keep the move
 };
 
 // ========================================================================  
@@ -382,23 +382,23 @@ class CloseMove: public MoveBase {
  */
 class InsertMove: public MoveBase {
 
-	public:
-		InsertMove(Path &, ActionBase *, MTRand &, 
+    public:
+        InsertMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=DIAGONAL, bool _varLength=true);
-		~InsertMove();
+        ~InsertMove();
     
-		bool attemptMove();
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
-		beadLocator headBead,tailBead;	// The temporary head and tail beads
+    private:
+        beadLocator headBead,tailBead;  // The temporary head and tail beads
 
-		int wormLength;					// The proposed WL length to close
-		int numLevels;					// The 2^numLevels = num slices moved
+        int wormLength;                 // The proposed WL length to close
+        int numLevels;                  // The 2^numLevels = num slices moved
 
-		void undoMove();				// Undo a move
-		void keepMove();				// keep the move
+        void undoMove();                // Undo a move
+        void keepMove();                // keep the move
 };
 
 // ========================================================================  
@@ -410,20 +410,20 @@ class InsertMove: public MoveBase {
  */
 class RemoveMove: public MoveBase {
 
-	public:
-		RemoveMove(Path &, ActionBase *, MTRand &, 
+    public:
+        RemoveMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
-		~RemoveMove();
+        ~RemoveMove();
 
-		bool attemptMove();
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
-		int numLevels;					// The 2^numLevels = num slices moved
+    private:
+        int numLevels;                  // The 2^numLevels = num slices moved
 
-		void undoMove();				// Undo a move
-		void keepMove();				// keep the move
+        void undoMove();                // Undo a move
+        void keepMove();                // keep the move
 };
 
 // ========================================================================  
@@ -435,27 +435,27 @@ class RemoveMove: public MoveBase {
  */
 class AdvanceHeadMove: public MoveBase {
 
-	public:
-		AdvanceHeadMove(Path &, ActionBase *, MTRand &, 
+    public:
+        AdvanceHeadMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
-		~AdvanceHeadMove();
-		
-		bool attemptMove();
+        ~AdvanceHeadMove();
+        
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
-		beadLocator headBead;			// The temporary new head
+    private:
+        beadLocator headBead;           // The temporary new head
 
-		int advanceLength;				// The proposed WL length to advance
-		int numLevels;					// The 2^numLevels = num slices moved
+        int advanceLength;              // The proposed WL length to advance
+        int numLevels;                  // The 2^numLevels = num slices moved
 
-		void undoMove();				// Undo a move
-		void keepMove();				// keep the move
+        void undoMove();                // Undo a move
+        void keepMove();                // keep the move
 
-		beadLocator startBead;			
-		Array <dVec,1> newPos;					// The modified particle positions
-		Array <unsigned int,1> oldBeadOn;		// The old and new bead states
+        beadLocator startBead;          
+        Array <dVec,1> newPos;                  // The modified particle positions
+        Array <unsigned int,1> oldBeadOn;       // The old and new bead states
 
 };
 
@@ -469,23 +469,23 @@ class AdvanceHeadMove: public MoveBase {
  */
 class AdvanceTailMove: public MoveBase {
 
-	public:
+    public:
         AdvanceTailMove(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
-		~AdvanceTailMove();
+        ~AdvanceTailMove();
     
-		bool attemptMove();
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
-		beadLocator tailBead;			// The temporary new tail
+    private:
+        beadLocator tailBead;           // The temporary new tail
 
-		int advanceLength;				// The proposed WL length to advance
-		int numLevels;					// The 2^numLevels = num slices moved
+        int advanceLength;              // The proposed WL length to advance
+        int numLevels;                  // The 2^numLevels = num slices moved
 
-		void undoMove();				// Undo a move
-		void keepMove();				// keep the move
+        void undoMove();                // Undo a move
+        void keepMove();                // keep the move
 };
 
 // ========================================================================  
@@ -497,22 +497,22 @@ class AdvanceTailMove: public MoveBase {
  */
 class RecedeHeadMove: public MoveBase {
 
-	public:
-		RecedeHeadMove(Path &, ActionBase *, MTRand &,
+    public:
+        RecedeHeadMove(Path &, ActionBase *, MTRand &,
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
-		~RecedeHeadMove();
+        ~RecedeHeadMove();
     
-		bool attemptMove();
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
-		beadLocator headBead;			// The proposed new head position
-		int recedeLength;				// The number of slices to recede by
-		int numLevels;					// The 2^numLevels = num slices moved
+    private:
+        beadLocator headBead;           // The proposed new head position
+        int recedeLength;               // The number of slices to recede by
+        int numLevels;                  // The 2^numLevels = num slices moved
 
-		void undoMove();				// Undo a move
-		void keepMove();				// keep the move
+        void undoMove();                // Undo a move
+        void keepMove();                // keep the move
 };
 
 // ========================================================================  
@@ -524,22 +524,22 @@ class RecedeHeadMove: public MoveBase {
  */
 class RecedeTailMove: public MoveBase {
 
-	public:
-		RecedeTailMove(Path &, ActionBase *, MTRand &,
+    public:
+        RecedeTailMove(Path &, ActionBase *, MTRand &,
                 ensemble _operateOnConfig=OFFDIAGONAL, bool _varLength=true);
-		~RecedeTailMove();
-		
-		bool attemptMove();
+        ~RecedeTailMove();
+        
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
-		beadLocator tailBead;			// The proposed new head position
-		int recedeLength;				// The number of slices to recede by
-		int numLevels;					// The 2^numLevels = num slices moved
+    private:
+        beadLocator tailBead;           // The proposed new head position
+        int recedeLength;               // The number of slices to recede by
+        int numLevels;                  // The 2^numLevels = num slices moved
 
-		void undoMove();				// Undo a move
-		void keepMove();				// keep the move
+        void undoMove();                // Undo a move
+        void keepMove();                // keep the move
 };
 
 // ========================================================================  
@@ -551,31 +551,31 @@ class RecedeTailMove: public MoveBase {
  */
 class SwapMoveBase: public MoveBase {
 
-	public:
-		SwapMoveBase(Path &, ActionBase *, MTRand &, 
+    public:
+        SwapMoveBase(Path &, ActionBase *, MTRand &, 
                 ensemble _operateOnConfig=OFFDIAGONAL);
-		~SwapMoveBase();
+        ~SwapMoveBase();
 
-	protected:
-		int swapLength;						///< The length of worldLine to be moved
-		int numLevels;						///< The number of bisection levels
+    protected:
+        int swapLength;                     ///< The length of worldLine to be moved
+        int numLevels;                      ///< The number of bisection levels
         unsigned int sizeCDF;               ///< The size of the cumulative distribution function
 
-		vector <double> cumulant;			///< The cumulant array used in selecting a pivot
+        vector <double> cumulant;           ///< The cumulant array used in selecting a pivot
 
-		beadLocator pivot;					///< The pivot bead
-		beadLocator swap;					///< The swap bead
+        beadLocator pivot;                  ///< The pivot bead
+        beadLocator swap;                   ///< The swap bead
 
-		double SigmaSwap;					///< Probability normalization factor
+        double SigmaSwap;                   ///< Probability normalization factor
 
-		/* Returns the normalization factor for the probability dist. */
-		double getNorm(const beadLocator&, const int sign=1);
-		
-		/* Gets the bead where the swap will pivot. */
-		beadLocator selectPivotBead();
+        /* Returns the normalization factor for the probability dist. */
+        double getNorm(const beadLocator&, const int sign=1);
+        
+        /* Gets the bead where the swap will pivot. */
+        beadLocator selectPivotBead();
 
         /* An overloaded version which also gets the winding sector */
-		beadLocator selectPivotBead(iVec&);
+        beadLocator selectPivotBead(iVec&);
 };
 
 // ========================================================================  
@@ -588,22 +588,22 @@ class SwapMoveBase: public MoveBase {
  */
 class SwapHeadMove: public SwapMoveBase {
 
-	public:
-		SwapHeadMove(Path &, ActionBase *, MTRand &,
+    public:
+        SwapHeadMove(Path &, ActionBase *, MTRand &,
                 ensemble _operateOnConfig=OFFDIAGONAL);
-		~SwapHeadMove();
+        ~SwapHeadMove();
 
-		bool attemptMove();
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
+    private:
 
-		double SigmaHead;		// The probability normalization factor
-		beadLocator nextSwap;	// Used for re-linking
+        double SigmaHead;       // The probability normalization factor
+        beadLocator nextSwap;   // Used for re-linking
 
-		void undoMove();		// Undo a move
-		void keepMove();		// keep the move
+        void undoMove();        // Undo a move
+        void keepMove();        // keep the move
 };
 
 // ========================================================================  
@@ -616,22 +616,22 @@ class SwapHeadMove: public SwapMoveBase {
  */
 class SwapTailMove: public SwapMoveBase {
 
-	public:
-		SwapTailMove(Path &, ActionBase *, MTRand &,
+    public:
+        SwapTailMove(Path &, ActionBase *, MTRand &,
                 ensemble _operateOnConfig=OFFDIAGONAL);
-		~SwapTailMove();
-		
-		bool attemptMove();
+        ~SwapTailMove();
+        
+        bool attemptMove();
         static const string name;
         string getName() {return name;}
 
-	private:
+    private:
 
-		double SigmaTail;				// The probability normalization factor
-		beadLocator prevSwap;			// Used for re-linking
+        double SigmaTail;               // The probability normalization factor
+        beadLocator prevSwap;           // Used for re-linking
 
-		void undoMove();				// Undo a move
-		void keepMove();				// keep the move
+        void undoMove();                // Undo a move
+        void keepMove();                // keep the move
 };
 
 #endif

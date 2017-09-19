@@ -75,8 +75,8 @@ class Parameters {
         void print();
 
         /** Parmaters() returns the full map */
-		const po::variables_map& operator()() const {return params;}
-		po::variables_map& operator()() { return params;}
+        const po::variables_map& operator()() const {return params;}
+        po::variables_map& operator()() { return params;}
 
         /** Parmaters(key) returns the existence of a parameter */
         const bool operator()(const string & key) const { return !(state.at(key) == UNSET); }
@@ -89,7 +89,7 @@ class Parameters {
 
         using Extractor = map<string, void(*)(const po::variable_value &)>;
 
-        po::variables_map params;        		  ///< Parameter map
+        po::variables_map params;                 ///< Parameter map
         map<string, const type_info&> type;       ///< Parameter types
         map<string,string> pClass;                ///< Class of the parameters
         map<string,ParamState> state;             ///< State of a parameter
@@ -253,37 +253,37 @@ po::typed_value<Ttype, char>* Parameters::initValue(const string& key) {
  * @see http://www.boost.org/doc/libs/release/doc/html/program_options.html
  */
 class Setup {
-	public:
-		Setup();
+    public:
+        Setup();
 
-		/* Get the options from the command line */
-		void getOptions(int, char*[]);
-		/* Parse the options and check for errors (needs to be more complete) */
-		bool parseOptions();
+        /* Get the options from the command line */
+        void getOptions(int, char*[]);
+        /* Parse the options and check for errors (needs to be more complete) */
+        bool parseOptions();
 
-		/* Setup the worldlines */
-		bool worldlines();
+        /* Setup the worldlines */
+        bool worldlines();
 
-		/* Setup the physical simulation cell */
-		Container *cell();
+        /* Setup the physical simulation cell */
+        Container *cell();
 
-		/* Setup the simulation constants */
-		void setConstants();
-		
-		/* Setup the communicator */
-		void communicator();
+        /* Setup the simulation constants */
+        void setConstants();
+        
+        /* Setup the communicator */
+        void communicator();
 
-		/* Define the random seed */
-		uint32 seed(const uint32);
-		
-		/* Output all options to disk */
-		void outputOptions(int, char*[], const uint32, const Container*, const iVec&);
+        /* Define the random seed */
+        uint32 seed(const uint32);
+        
+        /* Output all options to disk */
+        void outputOptions(int, char*[], const uint32, const Container*, const iVec&);
 
-		/* Setup the interaction potential */
-		PotentialBase * interactionPotential();
+        /* Setup the interaction potential */
+        PotentialBase * interactionPotential();
 
-		/* Setup the external potential */
-		PotentialBase * externalPotential(const Container*);
+        /* Setup the external potential */
+        PotentialBase * externalPotential(const Container*);
     
         /* Setup the trial wave function */
         WaveFunctionBase * waveFunction(const Path &, LookupTable &);
@@ -301,17 +301,17 @@ class Setup {
 
         Parameters params;                          ///< All simulation parameters
 
-	private:
-		vector<string> interactionPotentialName;	///< The allowed interaction potential names
-		vector<string> externalPotentialName;		///< The allowed external potential names
-        vector<string> waveFunctionName;		    ///< The allowed trial wave function names
-        vector<string> actionName;		            ///< The allowed action names
-        vector<string> estimatorName;		        ///< The allowed estimator names
-        vector<string> moveName;		            ///< The allowed move names
-        vector<string> optionClassNames;		    ///< The allowed option class names
+    private:
+        vector<string> interactionPotentialName;    ///< The allowed interaction potential names
+        vector<string> externalPotentialName;       ///< The allowed external potential names
+        vector<string> waveFunctionName;            ///< The allowed trial wave function names
+        vector<string> actionName;                  ///< The allowed action names
+        vector<string> estimatorName;               ///< The allowed estimator names
+        vector<string> moveName;                    ///< The allowed move names
+        vector<string> optionClassNames;            ///< The allowed option class names
 
-		string interactionNames;					///< The interaction output list
-		string externalNames;						///< The external output list
+        string interactionNames;                    ///< The interaction output list
+        string externalNames;                       ///< The external output list
         string waveFunctionNames;                   ///< The wavefunction output list
         string actionNames;                         ///< The action output list
         string estimatorNames;                      ///< The estimator list
@@ -322,10 +322,10 @@ class Setup {
         EstimatorFactory estimatorFactory;
         MultiEstimatorFactory multiEstimatorFactory;
 
-		bool definedCell;							///< The user has physically set the sim. cell
+        bool definedCell;                           ///< The user has physically set the sim. cell
 
         boost::ptr_map<string,po::options_description> optionClasses; ///< A map of different option types
-        po::options_description cmdLineOptions;		///< All options combined
+        po::options_description cmdLineOptions;     ///< All options combined
 
         bool checkOption(const string, const string);    // check an option string
 

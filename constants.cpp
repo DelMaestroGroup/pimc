@@ -27,21 +27,21 @@ ConstantParameters::ConstantParameters()
  *
  *  We initialize all constant parameters used in the simulation.  The ID is
  *  computed as the number of seconds since January 01, 2009.  The value of
- *	lambda = hbar^2/2 m k_B is computed in units where lenghts are measured in 
- *	angstroms and energies in kelvin.
+ *  lambda = hbar^2/2 m k_B is computed in units where lenghts are measured in 
+ *  angstroms and energies in kelvin.
 ******************************************************************************/
 void ConstantParameters::initConstants(po::variables_map &params) {
 
-	/* The simulation ID is the number of seconds since January 1 2009 */
-	if (params["restart"].empty()) {
-		time_t seconds = (time(NULL) - 39*365*24*60*60);
-		id_ = uint32(seconds + params["process"].as<uint32>());
-		restart_ = false;
-	}
-	else {
-		id_ = params["restart"].as<uint32>();
-		restart_ = true;
-	}
+    /* The simulation ID is the number of seconds since January 1 2009 */
+    if (params["restart"].empty()) {
+        time_t seconds = (time(NULL) - 39*365*24*60*60);
+        id_ = uint32(seconds + params["process"].as<uint32>());
+        restart_ = false;
+    }
+    else {
+        id_ = params["restart"].as<uint32>();
+        restart_ = true;
+    }
 
     /* Are we starting from a supplied state file? */
     startWithState_ = !params["start_with_state"].as<string>().empty();
@@ -57,7 +57,7 @@ void ConstantParameters::initConstants(po::variables_map &params) {
         wallClock_ = uint32( floor(params["wall_clock"].as<double>()*3600));
     }
 
-	/* Are we working in the grand canonical ensemble? */
+    /* Are we working in the grand canonical ensemble? */
     canonical_ = !params["canonical"].empty();
 
     /* Are we saving a state file every bin? */
@@ -83,35 +83,35 @@ void ConstantParameters::initConstants(po::variables_map &params) {
     /* The maximum winding number sampled */
     maxWind_ = params["max_winding"].as<int>();
 
-	/* Assigned values */
-	b_  = int (ceil(log(1.0*params["update_length"].as<int>()) / log(2.0)-EPS));
+    /* Assigned values */
+    b_  = int (ceil(log(1.0*params["update_length"].as<int>()) / log(2.0)-EPS));
 
     /* We need to make sure b_ < numTimeSlices */
     while (ipow(2,b_) >= params["number_time_slices"].as<int>())
         b_--;
 
-	/* Assigned values */
-	Mbar_           = params["update_length"].as<int>();
-	T_              = params["temperature"].as<double>();
+    /* Assigned values */
+    Mbar_           = params["update_length"].as<int>();
+    T_              = params["temperature"].as<double>();
     imagTimeLength_ = params["imaginary_time_length"].as<double>();
-	mu_             = params["chemical_potential"].as<double>();
-	m_              = params["mass"].as<double>();
-	lambda_         = 24.24 / m_;
-	rc_             = params["potential_cutoff"].as<double>();
-	rc2_            = rc_*rc_;
-	C0_             = params["worm_constant"].as<double>();
-	numTimeSlices_  = params["number_time_slices"].as<int>();
+    mu_             = params["chemical_potential"].as<double>();
+    m_              = params["mass"].as<double>();
+    lambda_         = 24.24 / m_;
+    rc_             = params["potential_cutoff"].as<double>();
+    rc2_            = rc_*rc_;
+    C0_             = params["worm_constant"].as<double>();
+    numTimeSlices_  = params["number_time_slices"].as<int>();
     if (PIGS)
         tau_       = 1.0/((numTimeSlices_-1)*T_);
     else
         tau_       = 1.0/(numTimeSlices_*T_);
-	V_	           = params["volume"].as<double>();
-	L_             = params["side"].as<dVec>()[NDIM-1];
-	numEqSteps_    = params["number_eq_steps"].as<uint32>();
+    V_             = params["volume"].as<double>();
+    L_             = params["side"].as<dVec>()[NDIM-1];
+    numEqSteps_    = params["number_eq_steps"].as<uint32>();
 
     virialWindow_  = params["virial_window"].as<int>();
     
-	initialNumParticles_ = params["number_particles"].as<int>();
+    initialNumParticles_ = params["number_particles"].as<int>();
     numBroken_ = params["number_broken"].as<int>();
 
     spatialSubregionOn_ = !params["spatial_subregion"].empty();
@@ -121,16 +121,16 @@ void ConstantParameters::initConstants(po::variables_map &params) {
     endFactor_ = params["end_factor"].as<double>();
     Npaths_ = params["number_paths"].as<int>();
 
-	intPotentialType_ = params["interaction"].as<string>();
-	extPotentialType_ = params["external"].as<string>();
+    intPotentialType_ = params["interaction"].as<string>();
+    extPotentialType_ = params["external"].as<string>();
     waveFunctionType_ = params["wavefunction"].as<string>();
     actionType_       = params["action"].as<string>();
 
-	/* Computed values */
-	dBWavelength_ = 2.0*sqrt(M_PI * lambda_ / T_);
-	comDelta_ = 0.04*dBWavelength_;
+    /* Computed values */
+    dBWavelength_ = 2.0*sqrt(M_PI * lambda_ / T_);
+    comDelta_ = 0.04*dBWavelength_;
     displaceDelta_ = 0.04*dBWavelength_;
-	getC();
+    getC();
 
     /* Set the move probabilities */
 
@@ -178,22 +178,22 @@ void ConstantParameters::initConstants(po::variables_map &params) {
         + attemptProb_["center of mass"] + attemptProb_["displace"] + attemptProb_["end staging"] 
         + attemptProb_["mid staging"]+attemptProb_["swap break"];
 
-	if (abs(totProb - 1.0) > EPS) {
-		cout << "Close + AdvanceHead + RecedeHead + AdvanceTail + RecedeTail + Remove + SwapHead " 
-			 << "+ Diagonal + CoM Probability != 1" << endl;
-		exit(EXIT_FAILURE);
-	}
-	PIMC_ASSERT(totProb-1.0 < EPS);
+    if (abs(totProb - 1.0) > EPS) {
+        cout << "Close + AdvanceHead + RecedeHead + AdvanceTail + RecedeTail + Remove + SwapHead " 
+             << "+ Diagonal + CoM Probability != 1" << endl;
+        exit(EXIT_FAILURE);
+    }
+    PIMC_ASSERT(totProb-1.0 < EPS);
 
     totProb = attemptProb_["open"] + attemptProb_["insert"] + attemptProb_["diagonal"]
        + attemptProb_["center of mass"] + attemptProb_["displace"] + attemptProb_["swap break"] 
        + attemptProb_["end staging"] + attemptProb_["mid staging"];
-	
-	if (abs(totProb - 1.0) > EPS) {
-		cout << "Open + Insert + Diagonal + CoM Probability != 1" << endl;
-		exit(EXIT_FAILURE);
-	}
-	PIMC_ASSERT(totProb-1.0 < EPS);
+    
+    if (abs(totProb - 1.0) > EPS) {
+        cout << "Open + Insert + Diagonal + CoM Probability != 1" << endl;
+        exit(EXIT_FAILURE);
+    }
+    PIMC_ASSERT(totProb-1.0 < EPS);
 }
 
 /**************************************************************************//**
@@ -202,6 +202,6 @@ void ConstantParameters::initConstants(po::variables_map &params) {
 ******************************************************************************/
 ConstantParameters* ConstantParameters::getInstance ()
 {   
-	static ConstantParameters inst;
-	return &inst;
+    static ConstantParameters inst;
+    return &inst;
 }

@@ -21,7 +21,7 @@
 WaveFunctionBase::WaveFunctionBase (const Path &_path, LookupTable &_lookup,
         string _name) :
     name(_name),
-	path(_path),
+    path(_path),
     lookup(_lookup)
 {
     // empty constructor
@@ -44,10 +44,10 @@ WaveFunctionBase::~WaveFunctionBase() {
  * Constructor.
 ******************************************************************************/
 SechWaveFunction::SechWaveFunction(const Path &_path,LookupTable &_lookup, string _name) :
-	WaveFunctionBase(_path,_lookup,_name)
+    WaveFunctionBase(_path,_lookup,_name)
 {
-	/* Set the parameter to its optimized value */
-	a = sqrt(0.5*M_PI);
+    /* Set the parameter to its optimized value */
+    a = sqrt(0.5*M_PI);
 }
 
 /**************************************************************************//**
@@ -91,8 +91,8 @@ double SechWaveFunction::PsiTrial(const int slice) {
 JastrowWaveFunction::JastrowWaveFunction(const Path &_path,LookupTable &_lookup, string _name) :
 WaveFunctionBase(_path,_lookup,_name)
 {
-	/* Set the parameter to its optimized value */
-	alpha = 19.0;
+    /* Set the parameter to its optimized value */
+    alpha = 19.0;
     beta = 0.12;
     //beta = 3.07;
 }
@@ -141,10 +141,10 @@ double JastrowWaveFunction::PsiTrial(const int slice) {
     /* The cumulative value */
     double psiT = 1.0;
     int numParticles = path.numBeadsAtSlice(slice);    
-    dVec sep;						// The spatial separation between beads.
+    dVec sep;                       // The spatial separation between beads.
     double r;                       // Distance between beads
     beadLocator bead1,bead2;
-	bead1[0] = bead2[0] = slice;
+    bead1[0] = bead2[0] = slice;
         
     for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
         /* The loop over all other particles, to find the total interaction
@@ -155,7 +155,7 @@ double JastrowWaveFunction::PsiTrial(const int slice) {
             psiT *= PsiTrial(r);
         } // bead2
         
-	} // bead1
+    } // bead1
     
     return psiT;
 }
@@ -169,10 +169,10 @@ double JastrowWaveFunction::gradSqPsiTrial(const int slice) {
     double gradSqPsiT = 1.0;
     double delPsi12;
     int numParticles = path.numBeadsAtSlice(slice);
-    dVec sep;						// The spatial separation between beads.
+    dVec sep;                       // The spatial separation between beads.
     double r;                       // Distance between beads
     beadLocator bead1,bead2,bead3;
-	bead1[0] = bead2[0] = bead3[0] = slice;
+    bead1[0] = bead2[0] = bead3[0] = slice;
     
     for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
         /* The loop over all other particles, to find the total interaction
@@ -189,7 +189,7 @@ double JastrowWaveFunction::gradSqPsiTrial(const int slice) {
             }// bead 3
         } // bead2
         
-	} // bead1
+    } // bead1
     
     return gradSqPsiT;
 }
@@ -207,7 +207,7 @@ double JastrowWaveFunction::gradSqPsiTrial(const int slice) {
 LiebLinigerWaveFunction::LiebLinigerWaveFunction(const Path &_path,LookupTable &_lookup, string _name) :
 WaveFunctionBase(_path,_lookup,_name)
 {
-	/* Set the parameter to its optimized value */
+    /* Set the parameter to its optimized value */
     R = constants()->R_LL_wfn();
     k = constants()->k_LL_wfn();
 }
@@ -256,10 +256,10 @@ double LiebLinigerWaveFunction::PsiTrial(const int slice) {
     Array <bool,1> doParticles(path.numBeadsAtSlice(slice));
     doParticles = true;
 
-    dVec sep;						// The spatial separation between beads.
+    dVec sep;                       // The spatial separation between beads.
     double r;                       // Distance between beads
     beadLocator bead1,bead2;
-	bead1[0] = bead2[0] = slice;
+    bead1[0] = bead2[0] = slice;
     
     /* No cutoff */
 //    for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
@@ -271,27 +271,27 @@ double LiebLinigerWaveFunction::PsiTrial(const int slice) {
 //            psiT *= PsiTrial(r);
 //        } // bead2
 //        
-//	} // bead1
+//  } // bead1
     
     /* Using cutoff */
-	for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(slice); bead1[1]++) {
+    for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(slice); bead1[1]++) {
         
-		doParticles(bead1[1]) = false;
+        doParticles(bead1[1]) = false;
         
-		/* Get the interaction list */
-		lookup.updateInteractionList(path,bead1);
+        /* Get the interaction list */
+        lookup.updateInteractionList(path,bead1);
         
-		/* Sum the interaction potential over all NN beads */
-		for (int n = 0; n < lookup.numBeads; n++) {
-			bead2 = lookup.beadList(n);
-			if (doParticles(bead2[1])) {
-				sep = path.getSeparation(bead2,bead1);
+        /* Sum the interaction potential over all NN beads */
+        for (int n = 0; n < lookup.numBeads; n++) {
+            bead2 = lookup.beadList(n);
+            if (doParticles(bead2[1])) {
+                sep = path.getSeparation(bead2,bead1);
                 r = sqrt(dot(sep,sep));
                 psiT *= PsiTrial(r);
-			}
-		} // n
+            }
+        } // n
         
-	} // bead1
+    } // bead1
     
     return psiT;
 }
@@ -304,7 +304,7 @@ double LiebLinigerWaveFunction::PsiTrial(const beadLocator &bead1) {
     /* The cumulative value */
     double psiT = 1.0;
     
-    dVec sep;						// The spatial separation between beads.
+    dVec sep;                       // The spatial separation between beads.
     double r;                       // Distance between beads
     
     /* No cutoff */
@@ -317,22 +317,22 @@ double LiebLinigerWaveFunction::PsiTrial(const beadLocator &bead1) {
     //            psiT *= PsiTrial(r);
     //        } // bead2
     //
-    //	} // bead1
+    //  } // bead1
     
-	/* We only continue if bead1 is turned on */
-	if (path.worm.beadOn(bead1)) {
+    /* We only continue if bead1 is turned on */
+    if (path.worm.beadOn(bead1)) {
         
-		/* Fill up th nearest neighbor list */
-		lookup.updateInteractionList(path,bead1);
+        /* Fill up th nearest neighbor list */
+        lookup.updateInteractionList(path,bead1);
         
-		/* Sum the interaction potential over all NN beads */
-		for (int n = 0; n < lookup.numBeads; n++) {
+        /* Sum the interaction potential over all NN beads */
+        for (int n = 0; n < lookup.numBeads; n++) {
             
             sep = path.getSeparation(bead1,lookup.beadList(n));
             r = sqrt(dot(sep,sep));
             psiT *= PsiTrial(r);
-		}
-	}
+        }
+    }
     
     return psiT;
 }
@@ -385,10 +385,10 @@ double SutherlandWaveFunction::PsiTrial(const int slice) {
     /* The number of particles */
     int numParticles = path.numBeadsAtSlice(slice);    
 
-    dVec sep;						// The spatial separation between beads.
+    dVec sep;                       // The spatial separation between beads.
     double r;                       // Distance between beads
     beadLocator bead1,bead2;
-	bead1[0] = bead2[0] = slice;
+    bead1[0] = bead2[0] = slice;
     
     /* No cutoff */
     for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {

@@ -22,63 +22,63 @@
  * physical dimensions of the simulation cell. 
  */
 class Container {
-	public:
-		Container();
-		virtual ~Container();
+    public:
+        Container();
+        virtual ~Container();
 
-		TinyVector <unsigned int, NDIM> periodic;	///< Determines which dimensions have periodic bc
+        TinyVector <unsigned int, NDIM> periodic;   ///< Determines which dimensions have periodic bc
 
-		dVec side;							///< The linear dimensions of the box
-		dVec sideInv;						///< The inverse box dimensions
+        dVec side;                          ///< The linear dimensions of the box
+        dVec sideInv;                       ///< The inverse box dimensions
         dVec sideInv2;                      ///< 2 times the inverse box dimensions
 
-		double volume;						///< The volume of the container in A^3
-		double rcut2;						///< The smallest separation squared
+        double volume;                      ///< The volume of the container in A^3
+        double rcut2;                       ///< The smallest separation squared
 
-		string name;						///< The name of the container
+        string name;                        ///< The name of the container
 
         int numGrid;                        ///< The number of grid boxes for the position grid
 
         dVec gridSize;                      ///< The grid size in each dimension
 
-		/** Place a vector in boundary conditions. */
+        /** Place a vector in boundary conditions. */
         /** COME BACK TO THIS
          * SEE: Z. Phys. Chem. 227 (2013) 345–352
          */
-		/* void putInBC(dVec & r) const { */
+        /* void putInBC(dVec & r) const { */
             /* int k; */
-		/* 	for (int i = 0; i < NDIM; ++i) { */
+        /*  for (int i = 0; i < NDIM; ++i) { */
                 /* k = (int) r[i] * sideInv2[i]; */
                 /* r[i] -= k*side[i]; */
-		/* 	} */
-		/* } */
+        /*  } */
+        /* } */
 
-		void putInBC1(dVec & r) const {
-			for (int i = 0; i < NDIM; ++i) {
-				r[i] -= (r[i] >= 0.5*side[i])*pSide[i];
-				r[i] += (r[i] < -0.5*side[i])*pSide[i];
-			}
-		}
+        void putInBC1(dVec & r) const {
+            for (int i = 0; i < NDIM; ++i) {
+                r[i] -= (r[i] >= 0.5*side[i])*pSide[i];
+                r[i] += (r[i] < -0.5*side[i])*pSide[i];
+            }
+        }
 
-		/** Place a vector in boundary conditions. */
+        /** Place a vector in boundary conditions. */
         /* Not sure if I need this, more testing is needed */
-		void putInBC(dVec & r) const {
-			for (int i = 0; i < NDIM; ++i) {
+        void putInBC(dVec & r) const {
+            for (int i = 0; i < NDIM; ++i) {
                 while (r[i] >= 0.5*side[i])
                     r[i] -= pSide[i];
                 while (r[i] < -0.5*side[i])
                     r[i] += pSide[i];
-			}
-		}
+            }
+        }
 
-		/** Place a vector inside the simulation cell */
-		virtual void putInside(dVec &) const = 0;	
-		
-		/** Random position inside a box. */
-		virtual dVec randPosition(MTRand &) const = 0; 					
+        /** Place a vector inside the simulation cell */
+        virtual void putInside(dVec &) const = 0;   
+        
+        /** Random position inside a box. */
+        virtual dVec randPosition(MTRand &) const = 0;                  
 
-		/** Random updated position inside a box. */
-		virtual dVec randUpdate(MTRand &, const dVec &) const = 0;
+        /** Random updated position inside a box. */
+        virtual dVec randUpdate(MTRand &, const dVec &) const = 0;
 
         /** Map a position into a grid index */
         virtual int gridIndex(const dVec &) const = 0;
@@ -90,8 +90,8 @@ class Container {
         double gridRadius2(const int) const;
 
 
-	protected:
-		dVec pSide;		    ///< Periodic * side
+    protected:
+        dVec pSide;         ///< Periodic * side
 };
 
 // ========================================================================  
@@ -101,18 +101,18 @@ class Container {
  * A NDIM-dimensional hyperprism with periodic boundary conditions.
  */
 class Prism: public Container {
-	public:
-		Prism(const double, const int);
-		Prism(const dVec &);
-		~Prism();
+    public:
+        Prism(const double, const int);
+        Prism(const dVec &);
+        ~Prism();
 
-		/** For PBC, this is identical to putInBC */
-		void putInside(dVec &r) const {
-			putInBC(r);
-		}
+        /** For PBC, this is identical to putInBC */
+        void putInside(dVec &r) const {
+            putInBC(r);
+        }
 
-		dVec randPosition(MTRand &) const; 					
-		dVec randUpdate(MTRand &, const dVec &) const;
+        dVec randPosition(MTRand &) const;                  
+        dVec randUpdate(MTRand &, const dVec &) const;
         int gridIndex(const dVec &) const;
         double gridBoxVolume(const int) const;
 };
@@ -125,20 +125,20 @@ class Prism: public Container {
  * x and y directions and periodic boundary conditions in the z direction.
  */
 class Cylinder: public Container {
-	public:
-		Cylinder(const double, const double, const int);
-		Cylinder(const double, const double);
-		~Cylinder();
+    public:
+        Cylinder(const double, const double, const int);
+        Cylinder(const double, const double);
+        ~Cylinder();
 
-		/* Place a vector inside the cylinder */
-		void putInside(dVec &r) const;
+        /* Place a vector inside the cylinder */
+        void putInside(dVec &r) const;
 
-		/* The various types of random positions inside the cylinder */
-		dVec randPosition(MTRand &) const; 					
-		dVec randUpdate(MTRand &, const dVec &) const;
+        /* The various types of random positions inside the cylinder */
+        dVec randPosition(MTRand &) const;                  
+        dVec randUpdate(MTRand &, const dVec &) const;
 
-		dVec randUpdateJumpShell(MTRand &, const dVec &) const;
-		dVec randUpdateSmall(MTRand &, const dVec &) const;
+        dVec randUpdateJumpShell(MTRand &, const dVec &) const;
+        dVec randUpdateSmall(MTRand &, const dVec &) const;
 
         int gridIndex(const dVec &) const;
         double gridBoxVolume(const int) const;

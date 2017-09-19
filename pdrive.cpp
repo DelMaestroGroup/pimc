@@ -35,13 +35,13 @@ int main (int argc, char *argv[]) {
     time_t current_time; //current time
     bool wallClockReached = false;
 
-	uint32 seed = 139853;	// The seed for the random number generator
+    uint32 seed = 139853;   // The seed for the random number generator
 
-	Setup setup;
+    Setup setup;
 
-	/* Attempt to parse the command line options */
+    /* Attempt to parse the command line options */
     try {
-		setup.getOptions(argc,argv);
+        setup.getOptions(argc,argv);
     }
     catch(exception& ex) {
         cerr << "error: " << ex.what() << "\n";
@@ -51,27 +51,27 @@ int main (int argc, char *argv[]) {
         cerr << "Exception of unknown type!\n";
     }
 
-	/* Parse the setup options and possibly exit */
-	if (setup.parseOptions())
-		return 1;
+    /* Parse the setup options and possibly exit */
+    if (setup.parseOptions())
+        return 1;
 
-	/* The global random number generator, we add the process number to the seed (for
-	 * use in parallel simulations.*/
-	seed = setup.seed(seed);
-	MTRand random(seed);
+    /* The global random number generator, we add the process number to the seed (for
+     * use in parallel simulations.*/
+    seed = setup.seed(seed);
+    MTRand random(seed);
 
-	/* Get the simulation box */
-	Container *boxPtr = setup.cell();
+    /* Get the simulation box */
+    Container *boxPtr = setup.cell();
 
-	/* Create the worldlines */
-	if (setup.worldlines())
-		return 1;
+    /* Create the worldlines */
+    if (setup.worldlines())
+        return 1;
 
-	/* Setup the simulation constants */
-	setup.setConstants();
+    /* Setup the simulation constants */
+    setup.setConstants();
 
-	/* Setup the simulation communicator */
-	setup.communicator();
+    /* Setup the simulation communicator */
+    setup.communicator();
 
     /* Get number of paths to use */
     int Npaths = constants()->Npaths();
@@ -84,14 +84,14 @@ int main (int argc, char *argv[]) {
                     constants()->initialNumParticles()));
     }
     
-	/* Create and initialize the potential pointers */
-	PotentialBase *interactionPotentialPtr = setup.interactionPotential();
-	PotentialBase *externalPotentialPtr = setup.externalPotential(boxPtr);
+    /* Create and initialize the potential pointers */
+    PotentialBase *interactionPotentialPtr = setup.interactionPotential();
+    PotentialBase *externalPotentialPtr = setup.externalPotential(boxPtr);
 
-	/* Get the initial conditions associated with the external potential */
-	/* Must use the copy constructor as we return a copy */
-	Array<dVec,1> initialPos = 
-		externalPotentialPtr->initialConfig(boxPtr,random,constants()->initialNumParticles());
+    /* Get the initial conditions associated with the external potential */
+    /* Must use the copy constructor as we return a copy */
+    Array<dVec,1> initialPos = 
+        externalPotentialPtr->initialConfig(boxPtr,random,constants()->initialNumParticles());
 
     /* Perform a classical canonical pre-equilibration to obtain a suitable
      * initial state */
@@ -101,7 +101,7 @@ int main (int argc, char *argv[]) {
        CMC.run(constants()->numEqSteps(),0);
     }
 
-	/* Setup the path data variable */
+    /* Setup the path data variable */
     boost::ptr_vector<Path> pathPtrVec;
     for(int i=0; i<Npaths; i++){
         pathPtrVec.push_back(
@@ -112,7 +112,7 @@ int main (int argc, char *argv[]) {
     /* The Trial Wave Function (constant for pimc) */
     WaveFunctionBase *waveFunctionPtr = setup.waveFunction(pathPtrVec.front(),lookupPtrVec.front());
 
-	/* Setup the action */
+    /* Setup the action */
     boost::ptr_vector<ActionBase> actionPtrVec;
     for(int i=0; i<Npaths; i++){
         actionPtrVec.push_back(
@@ -145,44 +145,44 @@ int main (int argc, char *argv[]) {
         estimatorsPtrVec.push_back(setup.estimators(pathPtrVec,actionPtrVec,random));
     }
 
-	/* Setup the pimc object */
+    /* Setup the pimc object */
     PathIntegralMonteCarlo pimc(pathPtrVec,random,movesPtrVec,estimatorsPtrVec,
                                 !setup.params["start_with_state"].as<string>().empty(),
                                 setup.params["bin_size"].as<int>());
 
-	/* If this is a fresh run, we equilibrate and output simulation parameters to disk */
-	if (!constants()->restart()) {
+    /* If this is a fresh run, we equilibrate and output simulation parameters to disk */
+    if (!constants()->restart()) {
 
-		/* Equilibrate */
-		cout << format("[PIMCID: %09d] - Equilibration Stage.") % constants()->id() << endl;
-		for (uint32 n = 0; n < constants()->numEqSteps(); n++) 
-			pimc.equilStep(n,setup.params("relax"),setup.params("relaxmu"));
+        /* Equilibrate */
+        cout << format("[PIMCID: %09d] - Equilibration Stage.") % constants()->id() << endl;
+        for (uint32 n = 0; n < constants()->numEqSteps(); n++) 
+            pimc.equilStep(n,setup.params("relax"),setup.params("relaxmu"));
 
-		/* Output simulation details/parameters */
-		setup.outputOptions(argc,argv,seed,boxPtr,lookupPtrVec.front().getNumNNGrid());
-	}
+        /* Output simulation details/parameters */
+        setup.outputOptions(argc,argv,seed,boxPtr,lookupPtrVec.front().getNumNNGrid());
+    }
 
-	cout << format("[PIMCID: %09d] - Measurement Stage.") % constants()->id() << endl;
+    cout << format("[PIMCID: %09d] - Measurement Stage.") % constants()->id() << endl;
 
-	/* Sample */
-	int oldNumStored = 0;
-	int outNum = 0;
-	int numOutput = setup.params["output_config"].as<int>();
-	uint32 n = 0;
-	do {
-		pimc.step();
-		if (pimc.numStoredBins > oldNumStored) {
-			oldNumStored = pimc.numStoredBins;
-			cout << format("[PIMCID: %09d] - Bin #%4d stored to disk.") % constants()->id() 
-				% oldNumStored << endl;
-		}
-		n++;
+    /* Sample */
+    int oldNumStored = 0;
+    int outNum = 0;
+    int numOutput = setup.params["output_config"].as<int>();
+    uint32 n = 0;
+    do {
+        pimc.step();
+        if (pimc.numStoredBins > oldNumStored) {
+            oldNumStored = pimc.numStoredBins;
+            cout << format("[PIMCID: %09d] - Bin #%4d stored to disk.") % constants()->id() 
+                % oldNumStored << endl;
+        }
+        n++;
 
-		/* Output configurations to disk */
-		if ((numOutput > 0) && ((n % numOutput) == 0)) {
+        /* Output configurations to disk */
+        if ((numOutput > 0) && ((n % numOutput) == 0)) {
             pathPtrVec.front().outputConfig(outNum);
-			outNum++;
-		}
+            outNum++;
+        }
         
         /* Check if we've reached the wall clock limit*/
         if(constants()->wallClockOn()){
@@ -192,24 +192,24 @@ int main (int argc, char *argv[]) {
                 break;
             }
         }
-	} while (pimc.numStoredBins < setup.params["number_bins_stored"].as<int>());
+    } while (pimc.numStoredBins < setup.params["number_bins_stored"].as<int>());
     if (wallClockReached)
         cout << format("[PIMCID: %09d] - Wall clock limit reached.") % constants()->id() << endl;
     else
         cout << format("[PIMCID: %09d] - Measurement complete.") % constants()->id() << endl;
 
-	/* Output Results */
+    /* Output Results */
     if (!constants()->saveStateFiles())
         pimc.saveState(1);
-	pimc.finalOutput();
+    pimc.finalOutput();
 
-	/* Free up memory */
-	delete interactionPotentialPtr;
-	delete externalPotentialPtr;
-	delete boxPtr;
+    /* Free up memory */
+    delete interactionPotentialPtr;
+    delete externalPotentialPtr;
+    delete boxPtr;
     delete waveFunctionPtr;
 
-	initialPos.free();
+    initialPos.free();
 
-	return 1;
+    return 1;
 }

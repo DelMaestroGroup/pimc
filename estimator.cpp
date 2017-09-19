@@ -110,26 +110,26 @@ EstimatorBase::EstimatorBase(const Path &_path, ActionBase *_actionPtr,
         const MTRand &_random, double _maxR, int _frequency, string _label) :
     path(_path),
     actionPtr(_actionPtr),
-	random(_random),
+    random(_random),
     maxR(_maxR),
     frequency(_frequency),
     label(_label),
     numSampled(0),
-	numAccumulated(0),
-	totNumAccumulated(0),
+    numAccumulated(0),
+    totNumAccumulated(0),
     diagonal(true),
     endLine(true)
 {
     /* Two handy local constants */
-	canonical = constants()->canonical();
-	numBeads0 = constants()->initialNumParticles()*constants()->numTimeSlices();
+    canonical = constants()->canonical();
+    numBeads0 = constants()->initialNumParticles()*constants()->numTimeSlices();
 }
 
 /**************************************************************************//**
  *  Destructor.
 ******************************************************************************/
 EstimatorBase::~EstimatorBase() { 
-	estimator.free();
+    estimator.free();
     norm.free();
 }
 
@@ -156,7 +156,7 @@ bool EstimatorBase::baseSample() {
         return false;
     if (!canonical)
         return true;
-	if (path.worm.getNumBeadsOn() == numBeads0)
+    if (path.worm.getNumBeadsOn() == numBeads0)
         return true;
 
     return false;
@@ -186,10 +186,10 @@ void EstimatorBase::sample() {
 void EstimatorBase::initialize(int _numEst) {
 
     numEst = _numEst;
-	estimator.resize(numEst);
-	norm.resize(numEst);
-	norm = 1.0;
-	reset();
+    estimator.resize(numEst);
+    norm.resize(numEst);
+    norm = 1.0;
+    reset();
 }
 
 /**************************************************************************//**
@@ -219,17 +219,17 @@ void EstimatorBase::prepare() {
  *  Reset numAccumulated and the estimator to 0.
 ******************************************************************************/
 void EstimatorBase::reset() {
-	numAccumulated = 0;
-	estimator = 0.0;
+    numAccumulated = 0;
+    estimator = 0.0;
 }
 
 /*************************************************************************//**
  *  Restart the measurment process from a previous state
 ******************************************************************************/
 void EstimatorBase::restart(const uint32 _numSampled, const uint32 _totNumAccumulated) {
-	numSampled = _numSampled;
-	totNumAccumulated = _totNumAccumulated;
-	reset();
+    numSampled = _numSampled;
+    totNumAccumulated = _totNumAccumulated;
+    reset();
 }
 
 /*************************************************************************//**
@@ -242,25 +242,25 @@ void EstimatorBase::restart(const uint32 _numSampled, const uint32 _totNumAccumu
 ******************************************************************************/
 void EstimatorBase::output() {
 
-	/* Average */
-	estimator *= (norm/(1.0*numAccumulated));
+    /* Average */
+    estimator *= (norm/(1.0*numAccumulated));
 
-	/* Now write the estimator values to disk */
-	for (int n = 0; n < numEst; n++) 
-		(*outFilePtr) << format("%16.8E") % estimator(n);
+    /* Now write the estimator values to disk */
+    for (int n = 0; n < numEst; n++) 
+        (*outFilePtr) << format("%16.8E") % estimator(n);
 
-	if (endLine)
-		(*outFilePtr) << endl;
+    if (endLine)
+        (*outFilePtr) << endl;
 
-	/* Reset all values */
-	reset();
+    /* Reset all values */
+    reset();
 }
 
 /*************************************************************************//**
 *  AppendLabel
 ******************************************************************************/
 void EstimatorBase::appendLabel(string append) {
-	label = label + append;
+    label = label + append;
 }
 
 // ---------------------------------------------------------------------------
@@ -275,12 +275,12 @@ void EstimatorBase::appendLabel(string append) {
  * Used to add a newline character.
 ******************************************************************************/
 NullEstimator::NullEstimator (const Path &_path, ActionBase *_actionPtr,
-		const MTRand &_random, double _maxR, int _frequency, string _label) : 
+        const MTRand &_random, double _maxR, int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-	/* Set estimator name and header, we will always report the energy
-	 * first, hence the comment symbol*/
-	header = "";
+    /* Set estimator name and header, we will always report the energy
+     * first, hence the comment symbol*/
+    header = "";
     endLine = true;
     initialize(1);
 }
@@ -295,8 +295,8 @@ void NullEstimator::output() {
     /* add the new line */
     (*outFilePtr) << endl;
 
-	/* Reset all values */
-	reset();
+    /* Reset all values */
+    reset();
 }
 
 // ---------------------------------------------------------------------------
@@ -380,13 +380,13 @@ void TimeEstimator::output() {
  * estimators.
 ******************************************************************************/
 EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
-		const MTRand &_random, double _maxR, int _frequency, string _label) : 
+        const MTRand &_random, double _maxR, int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-	/* Set estimator name and header, we will always report the energy
-	 * first, hence the comment symbol*/
-	header = str(format("#%15s%16s%16s%16s%16s%16s%16s") 
-			% "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
+    /* Set estimator name and header, we will always report the energy
+     * first, hence the comment symbol*/
+    header = str(format("#%15s%16s%16s%16s%16s%16s%16s") 
+            % "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
     endLine = false;
     initialize(7);
 }
@@ -406,75 +406,75 @@ EnergyEstimator::~EnergyEstimator() {
 ******************************************************************************/
 void EnergyEstimator::accumulate() {
 
-	double totK = 0.0;
-	double totVop = 0.0;
-	double totV = 0.0;
+    double totK = 0.0;
+    double totVop = 0.0;
+    double totV = 0.0;
 
-	int numParticles  = path.getTrueNumParticles();
-	int numTimeSlices = path.numTimeSlices;
+    int numParticles  = path.getTrueNumParticles();
+    int numTimeSlices = path.numTimeSlices;
 
-	/* The total tail correction */
-	double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
-		* actionPtr->interactionPtr->tailV;
+    /* The total tail correction */
+    double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
+        * actionPtr->interactionPtr->tailV;
 
-	/* The kinetic normalization factor */
-	double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * numTimeSlices);
+    /* The kinetic normalization factor */
+    double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * numTimeSlices);
 
-	/* The classical contribution to the kinetic energy per particle 
-	 * including the chemical potential */
-	double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
+    /* The classical contribution to the kinetic energy per particle 
+     * including the chemical potential */
+    double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
 
-	/* We first calculate the kinetic energy.  Even though there
-	 * may be multiple mixing and swaps, it doesn't matter as we always
-	 * just advance one time step at a time, as taken care of through the
-	 * linking arrays.  This has been checked! */
-	beadLocator beadIndex;
-	dVec vel;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-			beadIndex = slice,ptcl;
-			vel = path.getVelocity(beadIndex);
-			totK -= dot(vel,vel);
-		}
-	}
+    /* We first calculate the kinetic energy.  Even though there
+     * may be multiple mixing and swaps, it doesn't matter as we always
+     * just advance one time step at a time, as taken care of through the
+     * linking arrays.  This has been checked! */
+    beadLocator beadIndex;
+    dVec vel;
+    for (int slice = 0; slice < numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
+            vel = path.getVelocity(beadIndex);
+            totK -= dot(vel,vel);
+        }
+    }
 
-	/* Normalize the accumulated link-action part */
-	totK *= kinNorm;
+    /* Normalize the accumulated link-action part */
+    totK *= kinNorm;
 
-	/* Now we compute the potential and kinetic energy.  We use an operator estimater
-	 * for V and the thermodynamic estimator for K */
-	int eo;
+    /* Now we compute the potential and kinetic energy.  We use an operator estimater
+     * for V and the thermodynamic estimator for K */
+    int eo;
     double t1 = 0.0;
     double t2 = 0.0;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		eo = (slice % 2);
+    for (int slice = 0; slice < numTimeSlices; slice++) {
+        eo = (slice % 2);
         t1 += actionPtr->derivPotentialActionLambda(slice);
         t2 += actionPtr->derivPotentialActionTau(slice);
-		if (eo==0) 
+        if (eo==0) 
             totVop  += actionPtr->potential(slice);
-	}
+    }
 
     t1 *= constants()->lambda()/(constants()->tau()*numTimeSlices);
     t2 /= 1.0*numTimeSlices;
 
-	/* Normalize the action correction and the total potential*/
-	totVop /= (0.5 * numTimeSlices);
+    /* Normalize the action correction and the total potential*/
+    totVop /= (0.5 * numTimeSlices);
 
-	/* Perform all the normalizations and compute the individual energy terms */
-	totK += (classicalKinetic + t1);
+    /* Perform all the normalizations and compute the individual energy terms */
+    totK += (classicalKinetic + t1);
     totV = t2 - t1 + tailV;
 
-	totVop += tailV;
+    totVop += tailV;
 
     totV = totVop;
 
-	/* Now we accumulate the average total, kinetic and potential energy, 
-	 * as well as their values per particles. */
-	estimator(0) += totK;
-	estimator(1) += totV;
-	estimator(2) += totK + totV;
+    /* Now we accumulate the average total, kinetic and potential energy, 
+     * as well as their values per particles. */
+    estimator(0) += totK;
+    estimator(1) += totV;
+    estimator(2) += totK + totV;
 
-	estimator(3) += totK + totV - constants()->mu()*numParticles;
+    estimator(3) += totK + totV - constants()->mu()*numParticles;
 
     if (numParticles > 0) {
         estimator(4) += totK/(1.0*numParticles);
@@ -498,12 +498,12 @@ void EnergyEstimator::accumulate() {
  *
 ******************************************************************************/
 VirialEnergyEstimator::VirialEnergyEstimator (const Path &_path, ActionBase *_actionPtr,
-		const MTRand &_random, double _maxR, int _frequency, string _label) : 
+        const MTRand &_random, double _maxR, int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-	/* Set estimator name and header, we will always report the energy
-	 * first, hence the comment symbol*/
-	header = str(format("#%15s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s") 
+    /* Set estimator name and header, we will always report the energy
+     * first, hence the comment symbol*/
+    header = str(format("#%15s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s") 
             % "K_op" % "K_cv" % "V_op" % "V_cv" % "E" % "E_mu" % "K_op/N" % "K_cv/N" % "V_op/N"
             % " V_cv/N" % "E/N" % "EEcv*Beta^2"% "Ecv*Beta" % "dEdB" % "CvCov1"
             % "CvCov2" % "CvCov3" % "E_th" % "P");
@@ -538,7 +538,7 @@ void VirialEnergyEstimator::accumulate() {
     /* Set up potential operator energy, thermodynamic energy,
      * centroid virial energy, centroid virial kinetic energy (see Jang Jang Voth),
      * and terms that go into both energy estimators. */
-	double totVop = 0.0;
+    double totVop = 0.0;
     double thermE = 0.0; // = thermTerm1 +  + T5 + tailV
     double totEcv = 0.0; // = T1+T2+T3+T4+T5+tailV
     double Kcv = 0.0; // = T1+T2+T3+T4+virKinTerm
@@ -547,25 +547,25 @@ void VirialEnergyEstimator::accumulate() {
     double T4 = 0.0;
     double virKinTerm = 0.0;
 
-	int numParticles  = path.getTrueNumParticles();
-	int numTimeSlices = path.numTimeSlices;
+    int numParticles  = path.getTrueNumParticles();
+    int numTimeSlices = path.numTimeSlices;
     double beta = 1.0*numTimeSlices*constants()->tau();
     int virialWindow = constants()->virialWindow();
 
-	/* The total tail correction */
-	double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
-		* actionPtr->interactionPtr->tailV;
+    /* The total tail correction */
+    double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
+        * actionPtr->interactionPtr->tailV;
 
-	/* The constant term from the thermodynamic energy. */
-	double thermTerm1 = (0.5 * NDIM / constants()->tau()) * numParticles;
+    /* The constant term from the thermodynamic energy. */
+    double thermTerm1 = (0.5 * NDIM / constants()->tau()) * numParticles;
 
     /* The constant term from the centroid virial energy. */ 
-	double T1 = 0.5 * NDIM * numParticles / (1.0*virialWindow*constants()->tau());
+    double T1 = 0.5 * NDIM * numParticles / (1.0*virialWindow*constants()->tau());
 
     /* Calculate the exchange energy for centroid virial energy.
      * Also computes kinetic piece of thermodynamic energy which 
      * fluctuates wildly. */
-	double exchangeNorm = 1.0/(4.0*virialWindow*pow(constants()->tau(),2)
+    double exchangeNorm = 1.0/(4.0*virialWindow*pow(constants()->tau(),2)
             *constants()->lambda()*numTimeSlices);
 
     /* Compute the thermodynamic pressure */
@@ -573,11 +573,11 @@ void VirialEnergyEstimator::accumulate() {
     double P2,P3;
     P2 = P3 = 0.0;
 
-	beadLocator bead1, beadNext, beadNextOld;
+    beadLocator bead1, beadNext, beadNextOld;
     dVec vel1, vel2;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-			bead1 = slice,ptcl; // current bead
+    for (int slice = 0; slice < numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            bead1 = slice,ptcl; // current bead
             vel2 = path.getVelocity(bead1);
             beadNextOld = bead1;
             vel1 = 0.0;
@@ -592,7 +592,7 @@ void VirialEnergyEstimator::accumulate() {
             /* compute second term of thermodynamic estimator */
             thermE -= dot(vel2,vel2);
         }
-    }	
+    }   
     P2 = thermE;
     T2 *= exchangeNorm;
 
@@ -602,10 +602,10 @@ void VirialEnergyEstimator::accumulate() {
 
     /* Compute T3, T4, T5, operator potential energy, 
      * and the kinetic energy correction. */
-	int eo;
+    int eo;
     double T5 = 0.0;
     for (int slice = 0; slice < numTimeSlices; slice++) {
-		eo = (slice % 2);
+        eo = (slice % 2);
         T3 += actionPtr->deltaDOTgradUterm1(slice);
         T4 += actionPtr->deltaDOTgradUterm2(slice);
         T5 += actionPtr->derivPotentialActionTau(slice);
@@ -623,8 +623,8 @@ void VirialEnergyEstimator::accumulate() {
     /* end pressure calculation */
     Pressure /= (NDIM*constants()->tau()*constants()->V());
 
-	totVop /= (0.5 * numTimeSlices);
-	totVop += tailV;
+    totVop /= (0.5 * numTimeSlices);
+    totVop += tailV;
 
     T3 /= (2.0*beta);
     T4 /= (1.0*beta);
@@ -654,17 +654,17 @@ void VirialEnergyEstimator::accumulate() {
     dEdB *= beta*beta/(1.0*numTimeSlices);
 
     /* accumulate all energy estimators. */
-	estimator(0) += totEcv - totVop; // operator kinetic energy
+    estimator(0) += totEcv - totVop; // operator kinetic energy
     estimator(1) += Kcv; // centroid virial kinetic energy
-	estimator(2) += totVop; // operator potential energy
+    estimator(2) += totVop; // operator potential energy
     estimator(3) += totEcv - Kcv; //centroid virial potential energy
-	estimator(4) += totEcv; // total energy
-	estimator(5) += totEcv - constants()->mu()*numParticles;
-	estimator(6) += (totEcv - totVop)/(1.0*numParticles);
+    estimator(4) += totEcv; // total energy
+    estimator(5) += totEcv - constants()->mu()*numParticles;
+    estimator(6) += (totEcv - totVop)/(1.0*numParticles);
     estimator(7) += Kcv/(1.0*numParticles);
-	estimator(8) += totVop/(1.0*numParticles);
+    estimator(8) += totVop/(1.0*numParticles);
     estimator(9) += (totEcv - Kcv)/(1.0*numParticles);
-	estimator(10) += totEcv/(1.0*numParticles);
+    estimator(10) += totEcv/(1.0*numParticles);
 
     /* accumulate specific heat estimators. */
     estimator(11) += totEcv*thermE*beta*beta;
@@ -699,8 +699,8 @@ NumberParticlesEstimator::NumberParticlesEstimator (const Path &_path,
         int _frequency, string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-	/* Set estimator name and header */
-	header = str(format("%16s%16s%16s") % "N" % "N^2" % "density");
+    /* Set estimator name and header */
+    header = str(format("%16s%16s%16s") % "N" % "N^2" % "density");
     endLine = false;
     initialize(3);
 }
@@ -715,10 +715,10 @@ NumberParticlesEstimator::~NumberParticlesEstimator() {
  * Accumulate the number of particles and density.
 ******************************************************************************/
 void NumberParticlesEstimator::accumulate() {
-	int numParticles = path.getTrueNumParticles();
-	estimator(0) += 1.0*numParticles;
-	estimator(1) += 1.0*numParticles*numParticles;
-	estimator(2) += 1.0*numParticles/path.boxPtr->volume;
+    int numParticles = path.getTrueNumParticles();
+    estimator(0) += 1.0*numParticles;
+    estimator(1) += 1.0*numParticles*numParticles;
+    estimator(2) += 1.0*numParticles/path.boxPtr->volume;
 }
 
 // ---------------------------------------------------------------------------
@@ -739,25 +739,25 @@ NumberDistributionEstimator::NumberDistributionEstimator (const Path &_path,
         int _frequency, string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-	/* For now, we assume 50 particles on each side of the mean */
-	particleShift = 50;
-	startParticleNumber = max(constants()->initialNumParticles()-particleShift,0);
-	if (startParticleNumber == 0)
-		endParticleNumber = 2*particleShift;
-	else
-		endParticleNumber = constants()->initialNumParticles() + particleShift;
-	maxNumParticles = endParticleNumber - startParticleNumber + 1;
+    /* For now, we assume 50 particles on each side of the mean */
+    particleShift = 50;
+    startParticleNumber = max(constants()->initialNumParticles()-particleShift,0);
+    if (startParticleNumber == 0)
+        endParticleNumber = 2*particleShift;
+    else
+        endParticleNumber = constants()->initialNumParticles() + particleShift;
+    maxNumParticles = endParticleNumber - startParticleNumber + 1;
 
-	/* If our number of paticles is too small, we compensate */
-	if ((constants()->initialNumParticles() - particleShift) < 0)
-		particleShift = constants()->initialNumParticles();
+    /* If our number of paticles is too small, we compensate */
+    if ((constants()->initialNumParticles() - particleShift) < 0)
+        particleShift = constants()->initialNumParticles();
 
     initialize(maxNumParticles);
 
-	/* Set estimator name and header */
-	header = str(format("#%15d") % startParticleNumber);
-	for (int n = startParticleNumber+1; n <= endParticleNumber; n++) 
-		header.append(str(format("%16d") % n));
+    /* Set estimator name and header */
+    header = str(format("#%15d") % startParticleNumber);
+    for (int n = startParticleNumber+1; n <= endParticleNumber; n++) 
+        header.append(str(format("%16d") % n));
 }
 
 /*************************************************************************//**
@@ -771,11 +771,11 @@ NumberDistributionEstimator::~NumberDistributionEstimator() {
 ******************************************************************************/
 void NumberDistributionEstimator::accumulate() {
 
-	/* Get the correct particle Number index, and increment the corresponding bin */
-	int index = path.getTrueNumParticles()-constants()->initialNumParticles() 
+    /* Get the correct particle Number index, and increment the corresponding bin */
+    int index = path.getTrueNumParticles()-constants()->initialNumParticles() 
         + particleShift;
-	if (index >= 0 && index < maxNumParticles)
-		estimator(index) += 1.0;
+    if (index >= 0 && index < maxNumParticles)
+        estimator(index) += 1.0;
 }
 
 // ---------------------------------------------------------------------------
@@ -825,8 +825,8 @@ void ParticlePositionEstimator::output() {
     if (endLine)
         (*outFilePtr) << endl;
 
-	/* Now write the running average of the estimator to disk */
-	for (int n = 0; n < numEst; n++) 
+    /* Now write the running average of the estimator to disk */
+    for (int n = 0; n < numEst; n++) 
         (*outFilePtr) << format("%16.8E\n") % 
             (norm(n)*estimator(n)/totNumAccumulated);
 
@@ -870,8 +870,8 @@ BipartitionDensityEstimator::BipartitionDensityEstimator (const Path &_path,
         int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-	/* Set estimator name and header*/
-	header = str(format("#%15s%16s") % "film dens" % "bulk dens");
+    /* Set estimator name and header*/
+    header = str(format("#%15s%16s") % "film dens" % "bulk dens");
     endLine = true;
     initialize(2);
     norm(0) = 1.0/(path.numTimeSlices);
@@ -948,17 +948,17 @@ PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_pat
 
     numGrid = (2*NGRIDSEP)*(2*NGRIDSEP);
 
-	/* The spatial discretization */
+    /* The spatial discretization */
     for (int i = 0; i < NDIM; i++)
         dl[i]  = path.boxPtr->side[i] / (2.0*NGRIDSEP);
 
-	/* This is a diagonal estimator that gets its own file */
-	initialize(numGrid);
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numGrid);
 
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < numGrid; n++) 
-		header.append(str(format("%16.3E") % (1.0*n)));
+    /* The header is the first line which contains the spatial separations */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < numGrid; n++) 
+        header.append(str(format("%16.3E") % (1.0*n)));
 
     /* Compute the area of a grid box */
     double A = 1.0;
@@ -1024,20 +1024,20 @@ SuperfluidFractionEstimator::SuperfluidFractionEstimator (const Path &_path,
         int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-	windMax = 10;
-	/* We compute a bunch of estimators here, the superfluid fraction, the winding
-	 * number in all possible dimensions, and the winding number histograms up to 
-	 * windMax windings. These are all diagonal estimators and we have our own
-	 * output file.*/
+    windMax = 10;
+    /* We compute a bunch of estimators here, the superfluid fraction, the winding
+     * number in all possible dimensions, and the winding number histograms up to 
+     * windMax windings. These are all diagonal estimators and we have our own
+     * output file.*/
     initialize(4 + 2*windMax + 1 + 1);
 
-	header = str(format("#%15s%16s%16s%16s") % "rho_s/rho" % "W^2(x)" % "W^2(y)" % "W^2(z)");
-	for (int w = -windMax; w <= windMax; w++)
-		header += str(format("%11sP(%+1d)") % " " % w);
+    header = str(format("#%15s%16s%16s%16s") % "rho_s/rho" % "W^2(x)" % "W^2(y)" % "W^2(z)");
+    for (int w = -windMax; w <= windMax; w++)
+        header += str(format("%11sP(%+1d)") % " " % w);
     header += str(format("%16s") % "Area_rho_s");
 
-	/* The pre-factor for the superfluid density is always the same */
-	norm(0) = constants()->T() / (2.0 * sum(path.boxPtr->periodic) * constants()->lambda());
+    /* The pre-factor for the superfluid density is always the same */
+    norm(0) = constants()->T() / (2.0 * sum(path.boxPtr->periodic) * constants()->lambda());
 
     /* The pre-factor for the area esimator */
     norm(5+2*windMax) = 0.5*constants()->T()*constants()->numTimeSlices()/constants()->lambda();
@@ -1058,61 +1058,61 @@ SuperfluidFractionEstimator::~SuperfluidFractionEstimator() {
 ******************************************************************************/
 void SuperfluidFractionEstimator::accumulate() {
 
-	int numTimeSlices= path.numTimeSlices;
-	double locW2oN = 0.0;
+    int numTimeSlices= path.numTimeSlices;
+    double locW2oN = 0.0;
 
-	/* Sum up the winding number over all particles */
-	beadLocator beadIndex;
+    /* Sum up the winding number over all particles */
+    beadLocator beadIndex;
     double Az, I;
     dVec pos1,pos2;
 
     Az = I = 0.0;
-	dVec W,vel;
-	W = 0.0;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+    dVec W,vel;
+    W = 0.0;
+    for (int slice = 0; slice < numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
 
             /* The winding number estimator */
-			beadIndex = slice,ptcl;
-			vel = path.getVelocity(beadIndex);
-			W += vel;
+            beadIndex = slice,ptcl;
+            vel = path.getVelocity(beadIndex);
+            W += vel;
 
             /* The area estimator */
-			pos1 = path(beadIndex);
-			pos2 = path(path.next(beadIndex));
-			Az += pos1[0]*pos2[1]-pos2[0]*pos1[1];
+            pos1 = path(beadIndex);
+            pos2 = path(path.next(beadIndex));
+            Az += pos1[0]*pos2[1]-pos2[0]*pos1[1];
             I +=  pos1[0]*pos2[0] + pos1[1]*pos2[1];
 
-		}
-	}
+        }
+    }
 
-	/* Scale by the periodicity of the boundary conditions */
-	W *= path.boxPtr->periodic;
+    /* Scale by the periodicity of the boundary conditions */
+    W *= path.boxPtr->periodic;
 
-	/* Compute the locally scaled W^2/N */
-	locW2oN = dot(W,W)/(1.0*path.getTrueNumParticles());
+    /* Compute the locally scaled W^2/N */
+    locW2oN = dot(W,W)/(1.0*path.getTrueNumParticles());
 
-	/* The average winding number squared */
-	estimator(0) += locW2oN;
+    /* The average winding number squared */
+    estimator(0) += locW2oN;
 
-	/* Scale by the length of the system in each dimension*/
-	W *= path.boxPtr->sideInv;
+    /* Scale by the length of the system in each dimension*/
+    W *= path.boxPtr->sideInv;
 
-	/* The individual winding numbers, we always store 3 values regardless
-	 * of the dimensionality to ensure output file consistency */
-	int i;
-	for (i = 0; i < NDIM; i++)
-		estimator(1+i) += W[i]*W[i];
-	for (int j = i; j < 3; j++)
-		estimator(1+j) += 0.0;
+    /* The individual winding numbers, we always store 3 values regardless
+     * of the dimensionality to ensure output file consistency */
+    int i;
+    for (i = 0; i < NDIM; i++)
+        estimator(1+i) += W[i]*W[i];
+    for (int j = i; j < 3; j++)
+        estimator(1+j) += 0.0;
 
-	/* Calcluate the winding number probablity in the NDIM^th dimension */
-	int n = 0;
-	for (int p = -windMax; p <= windMax; p++) {
-		if (abs(W[NDIM-1]-1.0*p) < 0.2)
-			estimator(4+n) += 1.0;
-		++n;
-	}
+    /* Calcluate the winding number probablity in the NDIM^th dimension */
+    int n = 0;
+    for (int p = -windMax; p <= windMax; p++) {
+        if (abs(W[NDIM-1]-1.0*p) < 0.2)
+            estimator(4+n) += 1.0;
+        ++n;
+    }
 
     /* The Area Estimator */
     estimator(5+2*windMax) += Az*Az/I;
@@ -1139,19 +1139,19 @@ PlaneWindingSuperfluidDensityEstimator::PlaneWindingSuperfluidDensityEstimator
 
     numGrid = (2*NGRIDSEP)*(2*NGRIDSEP);
 
-	/* The spatial discretization */
-	dx  = path.boxPtr->side[0] / (2.0*NGRIDSEP);
-	dy  = path.boxPtr->side[1] / (2.0*NGRIDSEP);
+    /* The spatial discretization */
+    dx  = path.boxPtr->side[0] / (2.0*NGRIDSEP);
+    dy  = path.boxPtr->side[1] / (2.0*NGRIDSEP);
 
-	/* This is a diagonal estimator that gets its own file */
-	initialize(numGrid);
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numGrid);
 
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < numGrid; n++) 
-		header.append(str(format("%16.3E") % (1.0*n)));
+    /* The header is the first line which contains the spatial separations */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < numGrid; n++) 
+        header.append(str(format("%16.3E") % (1.0*n)));
 
-	norm = 0.5 * constants()->T()/(dx*dy*path.boxPtr->side[NDIM-1]*constants()->lambda());
+    norm = 0.5 * constants()->T()/(dx*dy*path.boxPtr->side[NDIM-1]*constants()->lambda());
 
     /* Initialize the local arrays */
     locWz.resize(numGrid);
@@ -1174,35 +1174,35 @@ PlaneWindingSuperfluidDensityEstimator::~PlaneWindingSuperfluidDensityEstimator(
 ******************************************************************************/
 void PlaneWindingSuperfluidDensityEstimator::accumulate() {
 
-	int numTimeSlices = path.numTimeSlices;
+    int numTimeSlices = path.numTimeSlices;
 
-	beadLocator beadIndex;
+    beadLocator beadIndex;
     double Wz;
     dVec pos1,pos2;
-	dVec vel;
+    dVec vel;
 
     Wz = 0.0;
     locWz = 0.0;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+    for (int slice = 0; slice < numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
 
             beadIndex = slice,ptcl;
-			pos1 = path(beadIndex);
-			pos2 = path(path.next(beadIndex));
+            pos1 = path(beadIndex);
+            pos2 = path(path.next(beadIndex));
 
             int i = static_cast<int>(abs(pos1[0] + 0.5*side[0] - EPS ) / (dx + EPS));
             int j = static_cast<int>(abs(pos1[1] + 0.5*side[1] - EPS ) / (dy + EPS));
-			int k = 2*NGRIDSEP*j + i;
+            int k = 2*NGRIDSEP*j + i;
 
             /* The winding number estimator */
-			vel = path.getVelocity(beadIndex)*path.boxPtr->periodic;
-			Wz += vel[NDIM-1];
+            vel = path.getVelocity(beadIndex)*path.boxPtr->periodic;
+            Wz += vel[NDIM-1];
 
             /* The local part of the winding number */
-			if (k < numGrid)
+            if (k < numGrid)
                 locWz(k) += vel[NDIM-1];
-		}
-	}
+        }
+    }
 
     estimator += locWz*Wz;
 }
@@ -1228,19 +1228,19 @@ PlaneAreaSuperfluidDensityEstimator::PlaneAreaSuperfluidDensityEstimator
 
     numGrid = (2*NGRIDSEP)*(2*NGRIDSEP);
 
-	/* The spatial discretization */
-	dx  = path.boxPtr->side[0] / (2.0*NGRIDSEP);
-	dy  = path.boxPtr->side[1] / (2.0*NGRIDSEP);
+    /* The spatial discretization */
+    dx  = path.boxPtr->side[0] / (2.0*NGRIDSEP);
+    dy  = path.boxPtr->side[1] / (2.0*NGRIDSEP);
 
-	/* This is a diagonal estimator that gets its own file */
-	initialize(numGrid);
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numGrid);
 
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < numGrid; n++) 
-		header.append(str(format("%16.3E") % (1.0*n)));
+    /* The header is the first line which contains the spatial separations */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < numGrid; n++) 
+        header.append(str(format("%16.3E") % (1.0*n)));
 
-	norm = 0.5 * constants()->T()/(dx*dy*path.boxPtr->side[NDIM-1]*constants()->lambda());
+    norm = 0.5 * constants()->T()/(dx*dy*path.boxPtr->side[NDIM-1]*constants()->lambda());
 
     /* Initialize the local arrays */
     locAz.resize(numGrid);
@@ -1263,24 +1263,24 @@ PlaneAreaSuperfluidDensityEstimator::~PlaneAreaSuperfluidDensityEstimator() {
 ******************************************************************************/
 void PlaneAreaSuperfluidDensityEstimator::accumulate() {
 
-	int numTimeSlices = path.numTimeSlices;
+    int numTimeSlices = path.numTimeSlices;
 
-	beadLocator beadIndex;
+    beadLocator beadIndex;
     double tAz,Az,rp2;
     dVec pos1,pos2;
 
     Az = 0.0;
     locAz = 0.0;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+    for (int slice = 0; slice < numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
 
             beadIndex = slice,ptcl;
-			pos1 = path(beadIndex);
-			pos2 = path(path.next(beadIndex));
+            pos1 = path(beadIndex);
+            pos2 = path(path.next(beadIndex));
 
             int i = static_cast<int>(abs(pos1[0] + 0.5*side[0] - EPS ) / (dx + EPS));
             int j = static_cast<int>(abs(pos1[1] + 0.5*side[1] - EPS ) / (dy + EPS));
-			int k = 2*NGRIDSEP*j + i;
+            int k = 2*NGRIDSEP*j + i;
 
             /*  The distance from the z-axis squared */
             rp2 = pos1[0]*pos1[0] + pos1[1]*pos1[1];
@@ -1288,16 +1288,16 @@ void PlaneAreaSuperfluidDensityEstimator::accumulate() {
                 rp2 = 0.25*dx*dx;
 
             /* The z-component of the area estimator */
-			tAz = pos1[0]*pos2[1] - pos2[0]*pos1[1];
+            tAz = pos1[0]*pos2[1] - pos2[0]*pos1[1];
 
             /* The total area */
             Az += tAz;
 
             /* The local part of the area */
-			if (k < numGrid)
+            if (k < numGrid)
                 locAz(k) += tAz/rp2;
-		}
-	}
+        }
+    }
 
     estimator += locAz*Az;
 }
@@ -1323,20 +1323,20 @@ RadialWindingSuperfluidDensityEstimator::RadialWindingSuperfluidDensityEstimator
 
     numGrid = NGRIDSEP;
 
-	/* The spatial discretization */
-	dR  = 0.5*path.boxPtr->side[0] / (1.0*numGrid);
+    /* The spatial discretization */
+    dR  = 0.5*path.boxPtr->side[0] / (1.0*numGrid);
 
-	/* This is a diagonal estimator that gets its own file */
-	initialize(numGrid);
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numGrid);
 
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < numGrid; n++) 
-		header.append(str(format("%16.3E") % ((n)*dR)));
+    /* The header is the first line which contains the spatial separations */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < numGrid; n++) 
+        header.append(str(format("%16.3E") % ((n)*dR)));
 
-	norm = 0.5 * constants()->T()/constants()->lambda();
-	for (int n = 0; n < numGrid; n++) 
-		norm(n) /= (M_PI*(2*n+1)*dR*dR*path.boxPtr->side[NDIM-1]);
+    norm = 0.5 * constants()->T()/constants()->lambda();
+    for (int n = 0; n < numGrid; n++) 
+        norm(n) /= (M_PI*(2*n+1)*dR*dR*path.boxPtr->side[NDIM-1]);
 
     /* Initialize the local arrays */
     locWz.resize(numGrid);
@@ -1357,33 +1357,33 @@ RadialWindingSuperfluidDensityEstimator::~RadialWindingSuperfluidDensityEstimato
 ******************************************************************************/
 void RadialWindingSuperfluidDensityEstimator::accumulate() {
 
-	int numTimeSlices = path.numTimeSlices;
+    int numTimeSlices = path.numTimeSlices;
 
-	beadLocator beadIndex;
+    beadLocator beadIndex;
     double Wz;
     dVec pos1,pos2;
-	dVec vel;
+    dVec vel;
 
     Wz = 0.0;
     locWz = 0.0;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+    for (int slice = 0; slice < numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
 
             beadIndex = slice,ptcl;
-			pos1 = path(beadIndex);
-			pos2 = path(path.next(beadIndex));
+            pos1 = path(beadIndex);
+            pos2 = path(path.next(beadIndex));
 
-			int k = int(sqrt(pos1[0]*pos1[0]+pos1[1]*pos1[1])/dR);
+            int k = int(sqrt(pos1[0]*pos1[0]+pos1[1]*pos1[1])/dR);
 
             /* The winding number estimator */
-			vel = path.getVelocity(beadIndex)*path.boxPtr->periodic;
-			Wz += vel[NDIM-1];
+            vel = path.getVelocity(beadIndex)*path.boxPtr->periodic;
+            Wz += vel[NDIM-1];
 
             /* The local part of the winding number */
-			if (k < numGrid)
+            if (k < numGrid)
                 locWz(k) += vel[NDIM-1];
-		}
-	}
+        }
+    }
 
     estimator += locWz*Wz;
 }
@@ -1409,20 +1409,20 @@ RadialAreaSuperfluidDensityEstimator::RadialAreaSuperfluidDensityEstimator
 
     numGrid = NGRIDSEP;
 
-	/* The spatial discretization */
-	dR  = 0.5*path.boxPtr->side[0] / (1.0*numGrid);
+    /* The spatial discretization */
+    dR  = 0.5*path.boxPtr->side[0] / (1.0*numGrid);
 
-	/* This is a diagonal estimator that gets its own file */
-	initialize(numGrid);
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numGrid);
 
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < numGrid; n++) 
-		header.append(str(format("%16.3E") % ((n)*dR)));
+    /* The header is the first line which contains the spatial separations */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < numGrid; n++) 
+        header.append(str(format("%16.3E") % ((n)*dR)));
 
-	norm = 0.5 * constants()->T()/constants()->lambda();
-	for (int n = 0; n < numGrid; n++) 
-		norm(n) /= (M_PI*(2*n+1)*dR*dR*path.boxPtr->side[NDIM-1]);
+    norm = 0.5 * constants()->T()/constants()->lambda();
+    for (int n = 0; n < numGrid; n++) 
+        norm(n) /= (M_PI*(2*n+1)*dR*dR*path.boxPtr->side[NDIM-1]);
 
     /* Initialize the local arrays */
     locAz.resize(numGrid);
@@ -1443,35 +1443,35 @@ RadialAreaSuperfluidDensityEstimator::~RadialAreaSuperfluidDensityEstimator() {
 ******************************************************************************/
 void RadialAreaSuperfluidDensityEstimator::accumulate() {
 
-	int numTimeSlices = path.numTimeSlices;
+    int numTimeSlices = path.numTimeSlices;
 
-	beadLocator beadIndex;
+    beadLocator beadIndex;
     double Az,rp2,tAz;
     dVec pos1,pos2;
 
     Az = 0.0;
     locAz = 0.0;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+    for (int slice = 0; slice < numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
 
             beadIndex = slice,ptcl;
-			pos1 = path(beadIndex);
-			pos2 = path(path.next(beadIndex));
+            pos1 = path(beadIndex);
+            pos2 = path(path.next(beadIndex));
             rp2 = pos1[0]*pos1[0] + pos1[1]*pos1[1];
 
-			int k = int(sqrt(rp2)/dR);
+            int k = int(sqrt(rp2)/dR);
 
             /* The z-component of the area estimator */
-			tAz = pos1[0]*pos2[1] - pos2[0]*pos1[1];
+            tAz = pos1[0]*pos2[1] - pos2[0]*pos1[1];
 
             /* The total area */
             Az += tAz;
 
             /* The local part of the winding number */
-			if (k < numGrid)
+            if (k < numGrid)
                 locAz(k) += tAz/rp2;
-		}
-	}
+        }
+    }
 
     estimator += locAz*Az;
 }
@@ -1549,8 +1549,8 @@ void LocalSuperfluidDensityEstimator::output() {
     if (endLine)
         (*outFilePtr) << endl;
 
-	/* Now write the running average of the estimator to disk */
-	for (int n = 0; n < numGrid; n++) {
+    /* Now write the running average of the estimator to disk */
+    for (int n = 0; n < numGrid; n++) {
         for (int i = 0; i < int(numEst/numGrid); i++)
             (*outFilePtr) << format("%16.8E") % 
                 (norm(n+i*numGrid)*estimator(n+i*numGrid)/totNumAccumulated);
@@ -1569,24 +1569,24 @@ void LocalSuperfluidDensityEstimator::output() {
 ******************************************************************************/
 void LocalSuperfluidDensityEstimator::accumulate() {
 
-	int numTimeSlices = path.numTimeSlices;
+    int numTimeSlices = path.numTimeSlices;
     locAz = 0.0;
     locA2 = 0.0;
     locWz = 0.0;
 
-	beadLocator beadIndex;
+    beadLocator beadIndex;
     double Az,rp2,Wz;
     double tAz;
     dVec pos1,pos2;
-	dVec vel;
+    dVec vel;
 
     Az = Wz = 0.0;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+    for (int slice = 0; slice < numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
 
             beadIndex = slice,ptcl;
-			pos1 = path(beadIndex);
-			pos2 = path(path.next(beadIndex));
+            pos1 = path(beadIndex);
+            pos2 = path(path.next(beadIndex));
             int n = path.boxPtr->gridIndex(pos1);
 
             /*  The distance from the z-axis squared */
@@ -1596,14 +1596,14 @@ void LocalSuperfluidDensityEstimator::accumulate() {
                 rp2 = dR*dR;
 
             /* The winding number estimator */
-			vel = path.getVelocity(beadIndex)*path.boxPtr->periodic;
-			Wz += vel[NDIM-1];
+            vel = path.getVelocity(beadIndex)*path.boxPtr->periodic;
+            Wz += vel[NDIM-1];
 
             /* The local part of the winding number */
             locWz(n) += vel[NDIM-1];
 
             /* The z-component of the area estimator */
-			tAz = pos1[0]*pos2[1] - pos2[0]*pos1[1];
+            tAz = pos1[0]*pos2[1] - pos2[0]*pos1[1];
 
             /* The total area */
             Az += tAz;
@@ -1611,8 +1611,8 @@ void LocalSuperfluidDensityEstimator::accumulate() {
             /* The two local components */
             locA2(n) += tAz; 
             locAz(n) += tAz/rp2;
-		}
-	}
+        }
+    }
 
     locWz *= Wz;
     locAz *= Az;
@@ -1659,8 +1659,8 @@ DiagonalFractionEstimator::~DiagonalFractionEstimator() {
  *  counter.
 ******************************************************************************/
 void DiagonalFractionEstimator::accumulate() {
-	if (path.worm.isConfigDiagonal)
-		estimator(0) += 1.0;
+    if (path.worm.isConfigDiagonal)
+        estimator(0) += 1.0;
 }
 
 /*************************************************************************//**
@@ -1668,7 +1668,7 @@ void DiagonalFractionEstimator::accumulate() {
 ******************************************************************************/
 void DiagonalFractionEstimator::sample() {
 
-	numSampled++;
+    numSampled++;
 
     if (frequency && ((numSampled % frequency) == 0)) {
         totNumAccumulated++;
@@ -1695,13 +1695,13 @@ WormPropertiesEstimator::WormPropertiesEstimator (const Path &_path,
         int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-	/* We measure the average worm length, gap and cost.  It is an off-diagonal
-	 * estimator that is output to its own file */
+    /* We measure the average worm length, gap and cost.  It is an off-diagonal
+     * estimator that is output to its own file */
     initialize(5);
     diagonal = false;
 
-	header = str(format("#%15s%16s%16s%16s%16s") % "rel-worm-len" % 
-			"rel-worm-gap" % "worm-cost" % "head-tail-sep" % "particles");
+    header = str(format("#%15s%16s%16s%16s%16s") % "rel-worm-len" % 
+            "rel-worm-gap" % "worm-cost" % "head-tail-sep" % "particles");
 }
 
 /*************************************************************************//**
@@ -1714,15 +1714,15 @@ WormPropertiesEstimator::~WormPropertiesEstimator() {
  *  Accumulate the length, gap and cost of the current worm.
 ******************************************************************************/
 void WormPropertiesEstimator::accumulate() {
-	estimator(0) += 1.0*path.worm.length / (1.0*path.numTimeSlices);
-	estimator(1) += 1.0*path.worm.gap / (1.0*path.numTimeSlices);
-	double r = dot(path.worm.sep,path.worm.sep);
-	if (path.worm.gap == 0)
-		estimator(2) += 0.0;
-	else
-		estimator(2) += 1.0*r*constants()->fourLambdaTauInv()/(1.0*path.worm.gap);
-	estimator(3) += 1.0*sqrt(r);
-	estimator(4) += 1.0*path.worm.getNumBeadsOn()/(1.0*constants()->numTimeSlices());
+    estimator(0) += 1.0*path.worm.length / (1.0*path.numTimeSlices);
+    estimator(1) += 1.0*path.worm.gap / (1.0*path.numTimeSlices);
+    double r = dot(path.worm.sep,path.worm.sep);
+    if (path.worm.gap == 0)
+        estimator(2) += 0.0;
+    else
+        estimator(2) += 1.0*r*constants()->fourLambdaTauInv()/(1.0*path.worm.gap);
+    estimator(3) += 1.0*sqrt(r);
+    estimator(4) += 1.0*path.worm.getNumBeadsOn()/(1.0*constants()->numTimeSlices());
 }
 
 // ---------------------------------------------------------------------------
@@ -1742,25 +1742,25 @@ PermutationCycleEstimator::PermutationCycleEstimator (const Path &_path,
         int _frequency, string _label)  : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-	/* We just choose arbitrarily to only count cycles including up to 40 particles */
-	maxNumCycles = 40;
-	
-	/* The permutatoin cycle estimator has its own file, and consists of 
-	 * maxNumCycles permutation cycles */
+    /* We just choose arbitrarily to only count cycles including up to 40 particles */
+    maxNumCycles = 40;
+    
+    /* The permutatoin cycle estimator has its own file, and consists of 
+     * maxNumCycles permutation cycles */
     initialize(maxNumCycles);
 
-	/* Set estimator name and header, which contains the permutation cycle
-	 * numbers */
-	header = str(format("#%15d") % 1);
-	for (int n = 2; n <= maxNumCycles; n++) 
-		header.append(str(format("%16d") % n));
+    /* Set estimator name and header, which contains the permutation cycle
+     * numbers */
+    header = str(format("#%15d") % 1);
+    for (int n = 2; n <= maxNumCycles; n++) 
+        header.append(str(format("%16d") % n));
 }
 
 /*************************************************************************//**
  *  Destructor.
 ******************************************************************************/
 PermutationCycleEstimator::~PermutationCycleEstimator() { 
-	doBead.free();
+    doBead.free();
 }
 
 /*************************************************************************//**
@@ -1772,57 +1772,57 @@ PermutationCycleEstimator::~PermutationCycleEstimator() {
 ******************************************************************************/
 void PermutationCycleEstimator::accumulate() {
 
-	/* The start bead for each world line, and the moving index */
-	beadLocator startBead;
-	beadLocator beadIndex;
+    /* The start bead for each world line, and the moving index */
+    beadLocator startBead;
+    beadLocator beadIndex;
 
-	int numParticles = path.getTrueNumParticles();
-	int numWorldlines = path.numBeadsAtSlice(0);
+    int numParticles = path.getTrueNumParticles();
+    int numWorldlines = path.numBeadsAtSlice(0);
 
-	double cycleNorm;
+    double cycleNorm;
 
     if (numParticles > 0)
         cycleNorm = 1.0 / (1.0*numParticles);
     else
         cycleNorm = 0.0;
 
-	/* We create a local vector, which determines whether or not we have
-	 * already included a bead at slice 0*/
-	doBead.resize(numWorldlines);
-	doBead = true;
+    /* We create a local vector, which determines whether or not we have
+     * already included a bead at slice 0*/
+    doBead.resize(numWorldlines);
+    doBead = true;
 
-	/* We go through each particle/worldline */
-	for (int n = 0; n < numWorldlines; n++) {
+    /* We go through each particle/worldline */
+    for (int n = 0; n < numWorldlines; n++) {
 
-		/* The initial bead to be moved */
-		startBead = 0,n;
+        /* The initial bead to be moved */
+        startBead = 0,n;
 
-		/* We make sure we don't try to touch the same worldline twice */
-		if (doBead(n)) {
+        /* We make sure we don't try to touch the same worldline twice */
+        if (doBead(n)) {
 
-			/* Mark the beads as touched and increment the number of worldlines */
-			beadIndex = startBead;
+            /* Mark the beads as touched and increment the number of worldlines */
+            beadIndex = startBead;
 
-			/* The world line length, we simply advance until we have looped back on 
-			 * ourselves. */
-			int wlLength = 0;
-			do {
-				wlLength++;
+            /* The world line length, we simply advance until we have looped back on 
+             * ourselves. */
+            int wlLength = 0;
+            do {
+                wlLength++;
 
-				/* We turn off any zero-slice beads we have touched */
-				if (beadIndex[0]==0)
-					doBead(beadIndex[1]) = false;
+                /* We turn off any zero-slice beads we have touched */
+                if (beadIndex[0]==0)
+                    doBead(beadIndex[1]) = false;
 
-				beadIndex = path.next(beadIndex);
-			} while (!all(beadIndex==startBead));
+                beadIndex = path.next(beadIndex);
+            } while (!all(beadIndex==startBead));
 
-			/* Accumulte the cycle length counter */
-			int cycleNum = int(wlLength / path.numTimeSlices);
-			if ((cycleNum > 0) && (cycleNum <= maxNumCycles)) 
-				estimator(cycleNum-1) += 1.0*cycleNum*cycleNorm;
-		} // doBead
+            /* Accumulte the cycle length counter */
+            int cycleNum = int(wlLength / path.numTimeSlices);
+            if ((cycleNum > 0) && (cycleNum <= maxNumCycles)) 
+                estimator(cycleNum-1) += 1.0*cycleNum*cycleNorm;
+        } // doBead
 
-	} // n
+    } // n
 }
 
 // ---------------------------------------------------------------------------
@@ -1844,17 +1844,17 @@ LocalPermutationEstimator::LocalPermutationEstimator (const Path &_path,
         int _frequency, string _label)  : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-	/* We just choose arbitrarily to only count cycles including up to 40 particles */
-	maxNumCycles = 40;
-	
-	/* The local permutation cycle estimator has its own file, and consists of 
-	 * maxNumCycles permutation cycles */
+    /* We just choose arbitrarily to only count cycles including up to 40 particles */
+    maxNumCycles = 40;
+    
+    /* The local permutation cycle estimator has its own file, and consists of 
+     * maxNumCycles permutation cycles */
     initialize(path.boxPtr->numGrid);
 
     /* vector to hold number of worldlines put into a grid space */
     numBeadInGrid.resize(estimator.size());
 
-	/* Set estimator header */
+    /* Set estimator header */
     header = str(format("#%15d") % NGRIDSEP);
 
 }
@@ -1863,7 +1863,7 @@ LocalPermutationEstimator::LocalPermutationEstimator (const Path &_path,
  *  Destructor.
 ******************************************************************************/
 LocalPermutationEstimator::~LocalPermutationEstimator() { 
-	doBead.free();
+    doBead.free();
 }
 
 /*************************************************************************//**
@@ -1899,44 +1899,44 @@ void LocalPermutationEstimator::output() {
 ******************************************************************************/
 void LocalPermutationEstimator::accumulate() {
 
-	/* The start bead for each world line, and the moving index */
-	beadLocator startBead;
-	beadLocator beadIndex;
+    /* The start bead for each world line, and the moving index */
+    beadLocator startBead;
+    beadLocator beadIndex;
 
-	int numWorldlines = path.numBeadsAtSlice(0);
+    int numWorldlines = path.numBeadsAtSlice(0);
 
-	/* We create a local vector, which determines whether or not we have
-	 * already included a bead at slice 0*/
-	doBead.resize(numWorldlines);
-	doBead = true;
+    /* We create a local vector, which determines whether or not we have
+     * already included a bead at slice 0*/
+    doBead.resize(numWorldlines);
+    doBead = true;
 
-	/* We go through each particle/worldline */
-	for (int n = 0; n < numWorldlines; n++) {
+    /* We go through each particle/worldline */
+    for (int n = 0; n < numWorldlines; n++) {
 
-		/* The initial bead to be moved */
-		startBead = 0,n;
+        /* The initial bead to be moved */
+        startBead = 0,n;
 
-		/* We make sure we don't try to touch the same worldline twice */
-		if (doBead(n)) {
+        /* We make sure we don't try to touch the same worldline twice */
+        if (doBead(n)) {
 
-			/* Mark the beads as touched and increment the number of worldlines */
-			beadIndex = startBead;
+            /* Mark the beads as touched and increment the number of worldlines */
+            beadIndex = startBead;
 
-			/* The world line length, we simply advance until we have looped back on 
-			 * ourselves. */
-			int wlLength = 0;
-			do {
-				wlLength++;
+            /* The world line length, we simply advance until we have looped back on 
+             * ourselves. */
+            int wlLength = 0;
+            do {
+                wlLength++;
 
-				/* We turn off any zero-slice beads we have touched */
-				if (beadIndex[0]==0)
-					doBead(beadIndex[1]) = false;
+                /* We turn off any zero-slice beads we have touched */
+                if (beadIndex[0]==0)
+                    doBead(beadIndex[1]) = false;
 
-				beadIndex = path.next(beadIndex);
-			} while (!all(beadIndex==startBead)); // up to here, we have computed WL length only.
+                beadIndex = path.next(beadIndex);
+            } while (!all(beadIndex==startBead)); // up to here, we have computed WL length only.
 
-			/* Accumulate the cycle length counter */
-			int cycleNum = int(wlLength / path.numTimeSlices);
+            /* Accumulate the cycle length counter */
+            int cycleNum = int(wlLength / path.numTimeSlices);
             
             /* Loop through worldline again, this time binning the appropriate
              * permutation number (- 1) corresponding to its spatial coordinates.*/
@@ -1947,10 +1947,10 @@ void LocalPermutationEstimator::accumulate() {
                     numBeadInGrid(nn) += 1;
                 }
 
-				beadIndex = path.next(beadIndex);
-			} while (!all(beadIndex==startBead));
-		} // doBead
-	} // n
+                beadIndex = path.next(beadIndex);
+            } while (!all(beadIndex==startBead));
+        } // doBead
+    } // n
 
     /* Correct for multiple worldlines being in the same gridpoint
      * and compute normalization factor. */
@@ -1982,25 +1982,25 @@ OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path,
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
         int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
-	lpath(_path)
+    lpath(_path)
 {
 
-	sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
+    sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
 
-	/* We chooose the maximum separation to be sqrt(NDIM)*min(L)/2 */
-	dR = 0.5*sqrt(sum(path.boxPtr->periodic))*(blitz::min(path.boxPtr->side)) / (1.0*NOBDMSEP);
+    /* We chooose the maximum separation to be sqrt(NDIM)*min(L)/2 */
+    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*(blitz::min(path.boxPtr->side)) / (1.0*NOBDMSEP);
 
-	/* This is an off-diagonal estimator*/
+    /* This is an off-diagonal estimator*/
     initialize(NOBDMSEP);
     diagonal = false;
 
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < NOBDMSEP; n++) 
-		header.append(str(format("%16.3E") % (n*dR)));
+    /* The header is the first line which contains the spatial separations */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < NOBDMSEP; n++) 
+        header.append(str(format("%16.3E") % (n*dR)));
 
-	numReps = 5;
-	norm = 1.0 / (1.0*numReps);
+    numReps = 5;
+    norm = 1.0 / (1.0*numReps);
 }
 
 /*************************************************************************//**
@@ -2019,22 +2019,22 @@ OneBodyDensityMatrixEstimator::~OneBodyDensityMatrixEstimator() {
  *  !!NB!! We only measure the OBDM when the tail is on an even time slice
 ******************************************************************************/
 void OneBodyDensityMatrixEstimator::sample() {
-	numSampled++;
-	if ( frequency && 
+    numSampled++;
+    if ( frequency && 
          ((numSampled % frequency) == 0) &&
          (path.worm.isConfigDiagonal == diagonal) &&
          (path.worm.gap > 0) && (path.worm.gap <= constants()->Mbar())  &&
          ( (lpath.worm.tail[0] % 2) == 0) ) {
 
-		/* If we are canonical, we want the closed configuration to be close
-		 * to our ideal one */
-		if ( (!canonical) || 
-			 (abs(path.worm.getNumBeadsOn()+path.worm.gap-numBeads0) <= 2) ) {
-			totNumAccumulated++;
-			numAccumulated++;
-			accumulate();
-		}
-	}
+        /* If we are canonical, we want the closed configuration to be close
+         * to our ideal one */
+        if ( (!canonical) || 
+             (abs(path.worm.getNumBeadsOn()+path.worm.gap-numBeads0) <= 2) ) {
+            totNumAccumulated++;
+            numAccumulated++;
+            accumulate();
+        }
+    }
 }
 
 /*************************************************************************//**
@@ -2045,33 +2045,33 @@ void OneBodyDensityMatrixEstimator::sample() {
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec OneBodyDensityMatrixEstimator::getRandomVector(const double r) {
-	dVec rVec;
-	rVec = 0.0;
+    dVec rVec;
+    rVec = 0.0;
 #if NDIM==1
-	if (random.rand() < 0.5)
-		rVec = r;
-	else
-		rVec = -r;
+    if (random.rand() < 0.5)
+        rVec = r;
+    else
+        rVec = -r;
 #elif NDIM==2
-	double theta = 2.0*M_PI*random.rand();
-	rVec[0] = r*cos(theta);
-	rVec[1] = r*sin(theta);
+    double theta = 2.0*M_PI*random.rand();
+    rVec[0] = r*cos(theta);
+    rVec[1] = r*sin(theta);
 #elif NDIM==3
-	if (lpath.boxPtr->name == "Prism") {
-		double theta = 2.0*M_PI*random.rand();
-		double phi   = M_PI*random.rand();
-		rVec[0] = r*cos(theta)*sin(phi);
-		rVec[1] = r*sin(theta)*sin(phi);
-		rVec[2] = r*cos(phi);
-	} 
-	else {
-		if (random.rand() < 0.5)
-			rVec[NDIM-1] = r;
-		else
-			rVec[NDIM-1] = -r;
-	}
+    if (lpath.boxPtr->name == "Prism") {
+        double theta = 2.0*M_PI*random.rand();
+        double phi   = M_PI*random.rand();
+        rVec[0] = r*cos(theta)*sin(phi);
+        rVec[1] = r*sin(theta)*sin(phi);
+        rVec[2] = r*cos(phi);
+    } 
+    else {
+        if (random.rand() < 0.5)
+            rVec[NDIM-1] = r;
+        else
+            rVec[NDIM-1] = -r;
+    }
 #endif
-	return rVec;
+    return rVec;
 }
 
 /*************************************************************************//**
@@ -2085,24 +2085,24 @@ inline dVec OneBodyDensityMatrixEstimator::getRandomVector(const double r) {
  * @return A NDIM-vector which holds a new random position.
 ******************************************************************************/
 dVec OneBodyDensityMatrixEstimator::newStagingPosition(const beadLocator &neighborIndex, 
-		const beadLocator &endIndex, const int stageLength, const int k) {
+        const beadLocator &endIndex, const int stageLength, const int k) {
 
     /* The rescaled value of lambda used for staging */
     double f1 = 1.0 * (stageLength - k - 1);
     double f2 = 1.0 / (1.0*(stageLength - k));
     double sqrtLambdaKTau = sqrt2LambdaTau * sqrt(f1 * f2);
 
-	/* We find the new 'midpoint' position which exactly samples the kinetic 
-	 * density matrix */
-	neighborPos = lpath(neighborIndex);
-	newRanPos = lpath(endIndex) - neighborPos;
-	lpath.boxPtr->putInBC(newRanPos);
-	newRanPos *= f2;
-	newRanPos += neighborPos;
+    /* We find the new 'midpoint' position which exactly samples the kinetic 
+     * density matrix */
+    neighborPos = lpath(neighborIndex);
+    newRanPos = lpath(endIndex) - neighborPos;
+    lpath.boxPtr->putInBC(newRanPos);
+    newRanPos *= f2;
+    newRanPos += neighborPos;
 
-	/* This is the random kick around that midpoint */
-	for (int i = 0; i < NDIM; i++)
-		newRanPos[i] = random.randNorm(newRanPos[i],sqrtLambdaKTau);
+    /* This is the random kick around that midpoint */
+    for (int i = 0; i < NDIM; i++)
+        newRanPos[i] = random.randNorm(newRanPos[i],sqrtLambdaKTau);
 
     lpath.boxPtr->putInside(newRanPos);
 
@@ -2119,81 +2119,81 @@ dVec OneBodyDensityMatrixEstimator::newStagingPosition(const beadLocator &neighb
 ******************************************************************************/
 void OneBodyDensityMatrixEstimator::accumulate() {
 
-	oldTailPos = lpath(lpath.worm.tail);
-	oldAction = actionPtr->potentialAction(lpath.worm.tail);
+    oldTailPos = lpath(lpath.worm.tail);
+    oldAction = actionPtr->potentialAction(lpath.worm.tail);
 
-	/* We make a list of all the beads involved in the move, adding them
-	 * as we go. */
-	beadLocator beadIndex;
-	beadIndex = lpath.worm.head;
-	dVec pos;
-	pos = 0.0;
-	for (int k = 0; k < (lpath.worm.gap-1); k++) 
-		beadIndex = lpath.addNextBead(beadIndex,pos);
+    /* We make a list of all the beads involved in the move, adding them
+     * as we go. */
+    beadLocator beadIndex;
+    beadIndex = lpath.worm.head;
+    dVec pos;
+    pos = 0.0;
+    for (int k = 0; k < (lpath.worm.gap-1); k++) 
+        beadIndex = lpath.addNextBead(beadIndex,pos);
 
-	/* Perform the final connection to the tail*/
-	lpath.next(beadIndex) = lpath.worm.tail;
-	lpath.prev(lpath.worm.tail) = beadIndex;
+    /* Perform the final connection to the tail*/
+    lpath.next(beadIndex) = lpath.worm.tail;
+    lpath.prev(lpath.worm.tail) = beadIndex;
 
-	for (int p = 0; p < numReps; p++) {
+    for (int p = 0; p < numReps; p++) {
 
-		/* Now we loop through all possible separations, evaluating the potential
-		 * action */
-		for (int n = 0; n < NOBDMSEP; n++) {
+        /* Now we loop through all possible separations, evaluating the potential
+         * action */
+        for (int n = 0; n < NOBDMSEP; n++) {
 
-			newAction = 0.0;
-			++numAttempted;
+            newAction = 0.0;
+            ++numAttempted;
 
-			/* Assign the new displaced tail position */
-			newTailPos = oldTailPos + getRandomVector(n*dR);
-			lpath.boxPtr->putInside(newTailPos);
-			lpath.updateBead(lpath.worm.tail,newTailPos);
+            /* Assign the new displaced tail position */
+            newTailPos = oldTailPos + getRandomVector(n*dR);
+            lpath.boxPtr->putInside(newTailPos);
+            lpath.updateBead(lpath.worm.tail,newTailPos);
 
-			/* Compute the free particle density matrix */
-			rho0Norm = actionPtr->rho0(lpath.worm.head,lpath.worm.tail,lpath.worm.gap);
+            /* Compute the free particle density matrix */
+            rho0Norm = actionPtr->rho0(lpath.worm.head,lpath.worm.tail,lpath.worm.gap);
 
-			/* action shift coming from a finite chemical potential */
-			double muShift = lpath.worm.gap*constants()->mu()*constants()->tau();
+            /* action shift coming from a finite chemical potential */
+            double muShift = lpath.worm.gap*constants()->mu()*constants()->tau();
 
-			/* Starting from the head, we generate new positions for the beads via
-			 * staging, and accumulate the potential action */
-			beadIndex = lpath.worm.head;
-			int k = 0;
-			do {
-				if (!all(beadIndex==lpath.worm.head) && !all(beadIndex==lpath.worm.tail)) {
-					lpath.updateBead(beadIndex,
-							newStagingPosition(path.prev(beadIndex),lpath.worm.tail,lpath.worm.gap,k));
-					++k;
-				}
+            /* Starting from the head, we generate new positions for the beads via
+             * staging, and accumulate the potential action */
+            beadIndex = lpath.worm.head;
+            int k = 0;
+            do {
+                if (!all(beadIndex==lpath.worm.head) && !all(beadIndex==lpath.worm.tail)) {
+                    lpath.updateBead(beadIndex,
+                            newStagingPosition(path.prev(beadIndex),lpath.worm.tail,lpath.worm.gap,k));
+                    ++k;
+                }
 
-				newAction += actionPtr->potentialAction(beadIndex);
+                newAction += actionPtr->potentialAction(beadIndex);
 
-				beadIndex = lpath.next(beadIndex);
-			} while (!all(beadIndex==lpath.next(lpath.worm.tail)));
+                beadIndex = lpath.next(beadIndex);
+            } while (!all(beadIndex==lpath.next(lpath.worm.tail)));
 
-			double expAction = exp(-newAction + oldAction + muShift);
+            double expAction = exp(-newAction + oldAction + muShift);
 
-			estimator(n) += rho0Norm*expAction;
+            estimator(n) += rho0Norm*expAction;
 
-			/* Record the probability of accepting the move */
-			if (random.randExc() < rho0Norm*expAction)
-				++numAccepted;
+            /* Record the probability of accepting the move */
+            if (random.randExc() < rho0Norm*expAction)
+                ++numAccepted;
 
-		} // end for n
+        } // end for n
 
-	} // end for k
+    } // end for k
 
-	/* Now we must undo any damge we have caused by reverting the tail to its previous position,
-	 * and turning off all intermediate beads */
-	lpath.updateBead(lpath.worm.tail,oldTailPos);
+    /* Now we must undo any damge we have caused by reverting the tail to its previous position,
+     * and turning off all intermediate beads */
+    lpath.updateBead(lpath.worm.tail,oldTailPos);
 
-	/* Delete all the beads that were added. */
-	beadIndex = lpath.next(lpath.worm.head);
-	while (!all(beadIndex==lpath.worm.tail)) {
-		beadIndex = lpath.delBeadGetNext(beadIndex);
-	}
-	lpath.next(lpath.worm.head) = XXX;
-	lpath.prev(lpath.worm.tail) = XXX;
+    /* Delete all the beads that were added. */
+    beadIndex = lpath.next(lpath.worm.head);
+    while (!all(beadIndex==lpath.worm.tail)) {
+        beadIndex = lpath.delBeadGetNext(beadIndex);
+    }
+    lpath.next(lpath.worm.head) = XXX;
+    lpath.prev(lpath.worm.tail) = XXX;
 }
 
 /*************************************************************************//**
@@ -2202,8 +2202,8 @@ void OneBodyDensityMatrixEstimator::accumulate() {
 ******************************************************************************/
 void OneBodyDensityMatrixEstimator::outputFooter() {
 
-	(*outFilePtr) << format("# accepted: %16.8E attempted: %16.8E ratio: %16.4E\n") 
-		% (1.0*numAccepted) % (1.0*numAttempted) % (1.0*numAccepted/(1.0*numAttempted));
+    (*outFilePtr) << format("# accepted: %16.8E attempted: %16.8E ratio: %16.4E\n") 
+        % (1.0*numAccepted) % (1.0*numAttempted) % (1.0*numAccepted/(1.0*numAttempted));
 }
 
 // ---------------------------------------------------------------------------
@@ -2224,44 +2224,44 @@ PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path,
         int _frequency, string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
-	/* The spatial discretization */
-	dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
+    /* The spatial discretization */
+    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
 
-	/* This is a diagonal estimator that gets its own file */
-	initialize(NPCFSEP);
+    /* This is a diagonal estimator that gets its own file */
+    initialize(NPCFSEP);
 
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < NPCFSEP; n++) 
-		header.append(str(format("%16.3E") % ((n)*dR)));
+    /* The header is the first line which contains the spatial separations */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < NPCFSEP; n++) 
+        header.append(str(format("%16.3E") % ((n)*dR)));
 
-	/* The normalization factor for the pair correlation function depends 
-	 * on the dimensionality */
-//	TinyVector<double,3> gNorm;
-//	gNorm[0] = 0.5;
-//	gNorm[1] = 1.0/(4.0*M_PI);
-//	gNorm[2] = 1.0/(8.0*M_PI);
-//	norm(0) = 1.0;
-//	for (int n = 1; n < NPCFSEP; n++)
-//		norm(n) = (gNorm[NDIM-1]*path.boxPtr->volume) / (dR*pow(n*dR,NDIM-1));
+    /* The normalization factor for the pair correlation function depends 
+     * on the dimensionality */
+//  TinyVector<double,3> gNorm;
+//  gNorm[0] = 0.5;
+//  gNorm[1] = 1.0/(4.0*M_PI);
+//  gNorm[2] = 1.0/(8.0*M_PI);
+//  norm(0) = 1.0;
+//  for (int n = 1; n < NPCFSEP; n++)
+//      norm(n) = (gNorm[NDIM-1]*path.boxPtr->volume) / (dR*pow(n*dR,NDIM-1));
 
-	/* The normalization factor for the pair correlation function depends 
-	 * on the dimensionality, and container type */
-	if (path.boxPtr->name == "Cylinder") {
-		for (int n = 0; n < NPCFSEP; n++)
-			norm(n) = 0.5*path.boxPtr->side[NDIM-1] / dR;
-	}
-	else {
-		TinyVector<double,3> gNorm;
-		gNorm[0] = 1.0;
-		gNorm[1] = 1.0/(M_PI);
-		gNorm[2] = 3.0/(2.0*M_PI);
-		double dV;
-		for (int n = 0; n < NPCFSEP; n++) {
-			dV = pow((n+1)*dR,NDIM)-pow(n*dR,NDIM);
-			norm(n) = 0.5*(gNorm[NDIM-1]*path.boxPtr->volume) / dV;
-		}
-	}
+    /* The normalization factor for the pair correlation function depends 
+     * on the dimensionality, and container type */
+    if (path.boxPtr->name == "Cylinder") {
+        for (int n = 0; n < NPCFSEP; n++)
+            norm(n) = 0.5*path.boxPtr->side[NDIM-1] / dR;
+    }
+    else {
+        TinyVector<double,3> gNorm;
+        gNorm[0] = 1.0;
+        gNorm[1] = 1.0/(M_PI);
+        gNorm[2] = 3.0/(2.0*M_PI);
+        double dV;
+        for (int n = 0; n < NPCFSEP; n++) {
+            dV = pow((n+1)*dR,NDIM)-pow(n*dR,NDIM);
+            norm(n) = 0.5*(gNorm[NDIM-1]*path.boxPtr->volume) / dV;
+        }
+    }
 }
 
 /*************************************************************************//**
@@ -2277,14 +2277,14 @@ PairCorrelationEstimator::~PairCorrelationEstimator() {
  *  We only compute this for N > 1.
 ******************************************************************************/
 void PairCorrelationEstimator::accumulate() {
-	int numParticles = path.getTrueNumParticles();
-	double lnorm = 1.0*(numParticles-1)/(1.0*numParticles);
-	if (numParticles > 1) {
-		estimator += lnorm*(1.0*actionPtr->sepHist / 
-			(1.0*sum(actionPtr->sepHist)));
-	}
-	else
-		estimator += 0.0;
+    int numParticles = path.getTrueNumParticles();
+    double lnorm = 1.0*(numParticles-1)/(1.0*numParticles);
+    if (numParticles > 1) {
+        estimator += lnorm*(1.0*actionPtr->sepHist / 
+            (1.0*sum(actionPtr->sepHist)));
+    }
+    else
+        estimator += 0.0;
 }
 
 // ---------------------------------------------------------------------------
@@ -2303,20 +2303,20 @@ RadialDensityEstimator::RadialDensityEstimator (const Path &_path,
         int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
-	/* The spatial discretization */
-	dR  = 0.5*path.boxPtr->side[0] / (1.0*NRADSEP);
+    /* The spatial discretization */
+    dR  = 0.5*path.boxPtr->side[0] / (1.0*NRADSEP);
 
-	/* This is a diagonal estimator that gets its own file */
-	initialize(NRADSEP);
+    /* This is a diagonal estimator that gets its own file */
+    initialize(NRADSEP);
 
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < NRADSEP; n++) 
-		header.append(str(format("%16.3E") % ((n)*dR)));
+    /* The header is the first line which contains the spatial separations */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < NRADSEP; n++) 
+        header.append(str(format("%16.3E") % ((n)*dR)));
 
-	norm = 1.0 / (path.boxPtr->side[NDIM-1]*path.numTimeSlices);
-	for (int n = 0; n < NRADSEP; n++) 
-		norm(n) /= (M_PI*(2*n+1)*dR*dR);
+    norm = 1.0 / (path.boxPtr->side[NDIM-1]*path.numTimeSlices);
+    for (int n = 0; n < NRADSEP; n++) 
+        norm(n) /= (M_PI*(2*n+1)*dR*dR);
 }
 
 /*************************************************************************//**
@@ -2330,21 +2330,21 @@ RadialDensityEstimator::~RadialDensityEstimator() {
 ******************************************************************************/
 void RadialDensityEstimator::accumulate() {
 
-	dVec pos;
+    dVec pos;
     double rsq;
-	beadLocator beadIndex;
-	for (int slice = 0; slice < path.numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-			beadIndex = slice,ptcl;
-			pos = path(beadIndex);
+    beadLocator beadIndex;
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
+            pos = path(beadIndex);
             rsq = 0.0;
             for (int i = 0; i < NDIM-1; i++)
                 rsq += pos[i]*pos[i]; 
-			int k = int(sqrt(rsq/dR));
-			if (k < NRADSEP)
-				estimator(k) += 1.0;
-		}
-	}
+            int k = int(sqrt(rsq/dR));
+            if (k < NRADSEP)
+                estimator(k) += 1.0;
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2357,7 +2357,7 @@ void RadialDensityEstimator::accumulate() {
  * Determine if a position is inside the cutoff radius
 ******************************************************************************/
 inline bool include(const dVec &r, double maxR) {
-	return (r[0]*r[0] + r[1]*r[1] < maxR*maxR);
+    return (r[0]*r[0] + r[1]*r[1] < maxR*maxR);
 }
 
 /*************************************************************************//**
@@ -2366,14 +2366,14 @@ inline bool include(const dVec &r, double maxR) {
  * Here we arbitrarily only count slice 0 particles.
 ******************************************************************************/
 int num1DParticles(const Path &path, double maxR) {
-	int tot = 0;
-	dVec r;
-	for (int ptcl = 0; ptcl < path.numBeadsAtSlice(0); ptcl++) {
-		r = path(0,ptcl);
-		if (include(path(0,ptcl),maxR))
-			tot++;
-	}
-	return tot;
+    int tot = 0;
+    dVec r;
+    for (int ptcl = 0; ptcl < path.numBeadsAtSlice(0); ptcl++) {
+        r = path(0,ptcl);
+        if (include(path(0,ptcl),maxR))
+            tot++;
+    }
+    return tot;
 }
 
 // ---------------------------------------------------------------------------
@@ -2394,15 +2394,15 @@ CylinderEnergyEstimator::CylinderEnergyEstimator (const Path &_path,
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
-	/* We compute three diagonal estimators, kinetic, potential and total energy
-	 * per particle */
-	initialize(7);
+    /* We compute three diagonal estimators, kinetic, potential and total energy
+     * per particle */
+    initialize(7);
     endLine = false;
 
-	/* Set estimator header, we will always report the energy
-	 * first, hence the comment symbol*/
-	header = str(format("#%15s%16s%16s%16s%16s%16s%16s") 
-			% "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
+    /* Set estimator header, we will always report the energy
+     * first, hence the comment symbol*/
+    header = str(format("#%15s%16s%16s%16s%16s%16s%16s") 
+            % "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
 }
 
 /*************************************************************************//**
@@ -2420,61 +2420,61 @@ CylinderEnergyEstimator::~CylinderEnergyEstimator() {
 ******************************************************************************/
 void CylinderEnergyEstimator::accumulate() {
 
-	double totK = 0.0;
-	double totV = 0.0;
+    double totK = 0.0;
+    double totV = 0.0;
 
-	int numParticles  = num1DParticles(path,maxR);
-	int numTimeSlices = path.numTimeSlices;
+    int numParticles  = num1DParticles(path,maxR);
+    int numTimeSlices = path.numTimeSlices;
 
-	/* The kinetic normalization factor */
-	double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * numTimeSlices);
+    /* The kinetic normalization factor */
+    double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * numTimeSlices);
 
-	/* The classical contribution to the kinetic energy per particle 
-	 * including the chemical potential */
-	double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
+    /* The classical contribution to the kinetic energy per particle 
+     * including the chemical potential */
+    double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
 
-	/* We first calculate the kinetic energy.  Even though there
-	 * may be multiple mixing and swaps, it doesn't matter as we always
-	 * just advance one time step at a time, as taken care of through the
-	 * linking arrays.  This has been checked! */
-	beadLocator beadIndex;
-	dVec vel;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-			beadIndex = slice,ptcl;
-			if (include(path(beadIndex),maxR)) {
-				vel = path.getVelocity(beadIndex);
-				totK -= dot(vel,vel);
-			}
-		}
-	}
+    /* We first calculate the kinetic energy.  Even though there
+     * may be multiple mixing and swaps, it doesn't matter as we always
+     * just advance one time step at a time, as taken care of through the
+     * linking arrays.  This has been checked! */
+    beadLocator beadIndex;
+    dVec vel;
+    for (int slice = 0; slice < numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
+            if (include(path(beadIndex),maxR)) {
+                vel = path.getVelocity(beadIndex);
+                totK -= dot(vel,vel);
+            }
+        }
+    }
 
-	/* Normalize the accumulated link-action part */
-	totK *= kinNorm;
+    /* Normalize the accumulated link-action part */
+    totK *= kinNorm;
 
-	/* Now we compute the potential and kinetic energy.  We use an operator estimater
-	 * for V and the thermodynamic estimator for K */
-	int eo;
+    /* Now we compute the potential and kinetic energy.  We use an operator estimater
+     * for V and the thermodynamic estimator for K */
+    int eo;
     double t1 = 0.0;
     double t2 = 0.0;
-	for (int slice = 0; slice < numTimeSlices; slice++) {
-		eo = (slice % 2);
+    for (int slice = 0; slice < numTimeSlices; slice++) {
+        eo = (slice % 2);
         t1 += actionPtr->derivPotentialActionLambda(slice,maxR);
         t2 += actionPtr->derivPotentialActionTau(slice,maxR);
-		if (eo==0)
-			totV  += actionPtr->potential(slice,maxR);
-	}
+        if (eo==0)
+            totV  += actionPtr->potential(slice,maxR);
+    }
 
-	/* Normalize the action correction and the total potential*/
+    /* Normalize the action correction and the total potential*/
     t1 *= constants()->lambda()/(constants()->tau()*numTimeSlices);
     t2 /= 1.0*numTimeSlices;
-	totV /= (0.5 * numTimeSlices);
+    totV /= (0.5 * numTimeSlices);
 
-	/* Perform all the normalizations and compute the individual energy terms */
-	totK  += (classicalKinetic + t1);
+    /* Perform all the normalizations and compute the individual energy terms */
+    totK  += (classicalKinetic + t1);
 
-	/* Now we accumulate the average total, kinetic and potential energy, 
-	 * as well as their values per particles, provided we have at least one
+    /* Now we accumulate the average total, kinetic and potential energy, 
+     * as well as their values per particles, provided we have at least one
      * particle in the central region. */
     if (numParticles > 0) {
         estimator(0) += totK;
@@ -2506,12 +2506,12 @@ CylinderNumberParticlesEstimator::CylinderNumberParticlesEstimator (const Path &
         int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
-	/* We compute three diagonal estimators, the total number of particles,
-	 * total number of particles squared and density. */
-	initialize(3);
+    /* We compute three diagonal estimators, the total number of particles,
+     * total number of particles squared and density. */
+    initialize(3);
 
-	/* Set estimator header */
-	header = str(format("%16s%16s%16s") % "N" % "N^2" % "density");
+    /* Set estimator header */
+    header = str(format("%16s%16s%16s") % "N" % "N^2" % "density");
 }
 
 /*************************************************************************//**
@@ -2524,10 +2524,10 @@ CylinderNumberParticlesEstimator::~CylinderNumberParticlesEstimator() {
  * Accumulate the number of particles and density.
 ******************************************************************************/
 void CylinderNumberParticlesEstimator::accumulate() {
-	int numParticles = num1DParticles(path,maxR);
-	estimator(0) += 1.0*numParticles;
-	estimator(1) += 1.0*numParticles*numParticles;
-	estimator(2) += 1.0*numParticles/path.boxPtr->side[NDIM-1];
+    int numParticles = num1DParticles(path,maxR);
+    estimator(0) += 1.0*numParticles;
+    estimator(1) += 1.0*numParticles*numParticles;
+    estimator(2) += 1.0*numParticles/path.boxPtr->side[NDIM-1];
 }
 
 // ---------------------------------------------------------------------------
@@ -2544,19 +2544,19 @@ void CylinderNumberParticlesEstimator::accumulate() {
  *  specified.
 ******************************************************************************/
 CylinderNumberDistributionEstimator::CylinderNumberDistributionEstimator 
-	(const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+    (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
         int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
-	/* For now, we assume a maximum of 200 total particles. */
-	maxNumParticles = 200;
-	initialize(maxNumParticles);
+    /* For now, we assume a maximum of 200 total particles. */
+    maxNumParticles = 200;
+    initialize(maxNumParticles);
 
-	/* Set estimator header */
-	header = str(format("#%15d") % 0);
-	for (int n = 1; n < maxNumParticles; n++) 
-		header.append(str(format("%16d") % n));
+    /* Set estimator header */
+    header = str(format("#%15d") % 0);
+    for (int n = 1; n < maxNumParticles; n++) 
+        header.append(str(format("%16d") % n));
 }
 
 /*************************************************************************//**
@@ -2570,10 +2570,10 @@ CylinderNumberDistributionEstimator::~CylinderNumberDistributionEstimator() {
 ******************************************************************************/
 void CylinderNumberDistributionEstimator::accumulate() {
 
-	/* Get the correct particle Number index, and increment the corresponding bin */
-	int index = num1DParticles(path,maxR);
-	if (index >= 0 && index < maxNumParticles)
-		estimator(index) += 1.0;
+    /* Get the correct particle Number index, and increment the corresponding bin */
+    int index = num1DParticles(path,maxR);
+    if (index >= 0 && index < maxNumParticles)
+        estimator(index) += 1.0;
 }
 
 // ---------------------------------------------------------------------------
@@ -2589,26 +2589,26 @@ void CylinderNumberDistributionEstimator::accumulate() {
  *  pore axis.
 ******************************************************************************/
 CylinderLinearDensityEstimator::CylinderLinearDensityEstimator
-	(const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+    (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
         int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The length of the cylinder */
     Lz = path.boxPtr->side[NDIM-1];
 
-	/* The spatial discretization */
-	dz = Lz / (1.0*NRADSEP);
+    /* The spatial discretization */
+    dz = Lz / (1.0*NRADSEP);
 
-	/* This is a diagonal estimator that gets its own file */
-	initialize(NRADSEP);
+    /* This is a diagonal estimator that gets its own file */
+    initialize(NRADSEP);
 
-	/* The header is the first line which contains the spatial positions */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < NRADSEP; n++) 
-		header.append(str(format("%16.3E") % (n*dz)));
+    /* The header is the first line which contains the spatial positions */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < NRADSEP; n++) 
+        header.append(str(format("%16.3E") % (n*dz)));
 
-	/* The normalization factor for the linear density*/
-	norm = 1.0/(dz * constants()->numTimeSlices());
+    /* The normalization factor for the linear density*/
+    norm = 1.0/(dz * constants()->numTimeSlices());
 }
 
 /*************************************************************************//**
@@ -2622,23 +2622,23 @@ CylinderLinearDensityEstimator::~CylinderLinearDensityEstimator() {
 ******************************************************************************/
 void CylinderLinearDensityEstimator::accumulate() {
 
-	dVec pos;
-	beadLocator beadIndex;
+    dVec pos;
+    beadLocator beadIndex;
     /* visit each bead */
-	for (int slice = 0; slice < path.numTimeSlices; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-			beadIndex = slice,ptcl;
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
             pos = path(beadIndex);
 
             /* If we are inside the cutoff cylinder, accumulate the density 
              * histogram */
-			if (include(pos,maxR)) {
+            if (include(pos,maxR)) {
                 int k = int((0.5*Lz + pos[NDIM-1])/dz);
                 if (k < NRADSEP)
                     estimator(k) += 1.0;
             }
-		}
-	}
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -2661,20 +2661,20 @@ CylinderSuperfluidFractionEstimator::CylinderSuperfluidFractionEstimator (const 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
-	windMax = 10;
-	/* We compute a bunch of estimators here, the superfluid fraction, the winding
-	 * number in all possible dimensions, and the winding number histograms up to 
-	 * windMax windings. These are all diagonal estimators and we have our own
-	 * output file.*/
-	initialize(4+2*windMax+1);
+    windMax = 10;
+    /* We compute a bunch of estimators here, the superfluid fraction, the winding
+     * number in all possible dimensions, and the winding number histograms up to 
+     * windMax windings. These are all diagonal estimators and we have our own
+     * output file.*/
+    initialize(4+2*windMax+1);
 
-	/* Set estimator header */
-	header = str(format("#%15s%16s%16s%16s") % "rho_s/rho" % "W^2(x)" % "W^2(y)" % "W^2(z)");
-	for (int w = -windMax; w <= windMax; w++)
-		header += str(format("%11sP(%+1d)") % " " % w);
+    /* Set estimator header */
+    header = str(format("#%15s%16s%16s%16s") % "rho_s/rho" % "W^2(x)" % "W^2(y)" % "W^2(z)");
+    for (int w = -windMax; w <= windMax; w++)
+        header += str(format("%11sP(%+1d)") % " " % w);
 
-	/* The pre-factor for the superfluid density is always the same */
-	norm(0) = constants()->T() / (2.0 * sum(path.boxPtr->periodic) * constants()->lambda());
+    /* The pre-factor for the superfluid density is always the same */
+    norm(0) = constants()->T() / (2.0 * sum(path.boxPtr->periodic) * constants()->lambda());
 }
 
 /*************************************************************************//**
@@ -2692,96 +2692,96 @@ CylinderSuperfluidFractionEstimator::~CylinderSuperfluidFractionEstimator() {
 ******************************************************************************/
 void CylinderSuperfluidFractionEstimator::accumulate() {
 
-	double locW2oN = 0.0;
+    double locW2oN = 0.0;
 
-	/* Sum up the winding number over all particles */
-	dVec W,locW,vel;
-	W = 0.0;
-	locW = 0.0;
+    /* Sum up the winding number over all particles */
+    dVec W,locW,vel;
+    W = 0.0;
+    locW = 0.0;
 
-	/* The start bead for each world line, and the moving index */
-	beadLocator startBead;
-	beadLocator beadIndex;
+    /* The start bead for each world line, and the moving index */
+    beadLocator startBead;
+    beadLocator beadIndex;
 
-	int numWorldlines = path.numBeadsAtSlice(0);
+    int numWorldlines = path.numBeadsAtSlice(0);
 
-	/* We create a local vector, which determines whether or not we have
-	 * already included a bead at slice 0*/
-	doBead.resize(numWorldlines);
-	doBead = true;
+    /* We create a local vector, which determines whether or not we have
+     * already included a bead at slice 0*/
+    doBead.resize(numWorldlines);
+    doBead = true;
 
-	/* Needed to ensure an included world line */
-	bool includeWorldline = true;
+    /* Needed to ensure an included world line */
+    bool includeWorldline = true;
 
-	/* We go through each particle/worldline */
-	for (int n = 0; n < numWorldlines; n++) {
+    /* We go through each particle/worldline */
+    for (int n = 0; n < numWorldlines; n++) {
 
-		/* The initial bead to be moved */
-		startBead = 0,n;
+        /* The initial bead to be moved */
+        startBead = 0,n;
 
-		/* We make sure we don't try to touch the same worldline twice */
-		if (doBead(n)) {
+        /* We make sure we don't try to touch the same worldline twice */
+        if (doBead(n)) {
 
-			/* Mark the beads as touched and increment the number of worldlines */
-			beadIndex = startBead;
+            /* Mark the beads as touched and increment the number of worldlines */
+            beadIndex = startBead;
 
-			/* Go through all worldlines, summing up the winding number */
-			locW = 0.0;
-			includeWorldline = true;
-			do {
+            /* Go through all worldlines, summing up the winding number */
+            locW = 0.0;
+            includeWorldline = true;
+            do {
 
-				/* We turn off any zero-slice beads we have touched */
-				if (beadIndex[0]==0)
-					doBead(beadIndex[1]) = false;
+                /* We turn off any zero-slice beads we have touched */
+                if (beadIndex[0]==0)
+                    doBead(beadIndex[1]) = false;
 
-				/* If the bead is inside our cutoff radius, include its winding */
-				if (include(path(beadIndex),maxR)) {
-					vel = path.getVelocity(beadIndex);
-					locW += vel;
-				}
-				else
-					includeWorldline = false;
+                /* If the bead is inside our cutoff radius, include its winding */
+                if (include(path(beadIndex),maxR)) {
+                    vel = path.getVelocity(beadIndex);
+                    locW += vel;
+                }
+                else
+                    includeWorldline = false;
 
-				beadIndex = path.next(beadIndex);
-			} while (!all(beadIndex==startBead));
+                beadIndex = path.next(beadIndex);
+            } while (!all(beadIndex==startBead));
 
-			if (includeWorldline)
-				W += locW;
+            if (includeWorldline)
+                W += locW;
 
-		} // doBead
-	} // worldLine
-				
-	/* Scale by the periodicity of the boundary conditions */
-	W *= path.boxPtr->periodic;
+        } // doBead
+    } // worldLine
+                
+    /* Scale by the periodicity of the boundary conditions */
+    W *= path.boxPtr->periodic;
 
-	/* Compute the locally scaled W^2/N */
+    /* Compute the locally scaled W^2/N */
     int numParticles = num1DParticles(path,maxR);
     if (numParticles > 0)
         locW2oN = dot(W,W)/(1.0*numParticles);
     else
         locW2oN = 0.0;
 
-	/* The average winding number squared */
-	estimator(0) += locW2oN;
+    /* The average winding number squared */
+    estimator(0) += locW2oN;
 
-	/* Scale by the length of the system in each dimension*/
-	W *= path.boxPtr->sideInv;
+    /* Scale by the length of the system in each dimension*/
+    W *= path.boxPtr->sideInv;
 
-	/* The individual winding numbers, we always store 3 values regardless
-	 * of the dimensionality to ensure output file consistency */
-	int i;
-	for (i = 0; i < NDIM; i++)
-		estimator(1+i) += W[i]*W[i];
-	for (int j = i; j < 3; j++)
-		estimator(1+j) += 0.0;
+    /* The individual winding numbers, we always store 3 values regardless
+     * of the dimensionality to ensure output file consistency */
+    int i;
+    for (i = 0; i < NDIM; i++)
+        estimator(1+i) += W[i]*W[i];
+    for (int j = i; j < 3; j++)
+        estimator(1+j) += 0.0;
 
-	/* Calcluate the winding number probablity in the NDIM^th dimension */
-	int n = 0;
-	for (int p = -windMax; p <= windMax; p++) {
-		if (abs(W[NDIM-1]-1.0*p) < 0.2)
-			estimator(4+n) += 1.0;
-		++n;
-	}
+    /* Calcluate the winding number probablity in the NDIM^th dimension */
+    int n = 0;
+    for (int p = -windMax; p <= windMax; p++) {
+        if (abs(W[NDIM-1]-1.0*p) < 0.2)
+            estimator(4+n) += 1.0;
+        ++n;
+    }
 }
 
 
@@ -2804,22 +2804,22 @@ CylinderOneBodyDensityMatrixEstimator::CylinderOneBodyDensityMatrixEstimator
       EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
       lpath(_path)
 {
-	sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
+    sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
 
-	/* We chooose the maximum separation to be sqrt(NDIM)*L/2 */
-	dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NOBDMSEP);
+    /* We chooose the maximum separation to be sqrt(NDIM)*L/2 */
+    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NOBDMSEP);
 
-	/* This is an off-diagonal estimator that gets its own file */
-	initialize(NOBDMSEP);
+    /* This is an off-diagonal estimator that gets its own file */
+    initialize(NOBDMSEP);
     diagonal = false;
 
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < NOBDMSEP; n++) 
-		header.append(str(format("%16.3E") % (n*dR)));
+    /* The header is the first line which contains the spatial separations */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < NOBDMSEP; n++) 
+        header.append(str(format("%16.3E") % (n*dR)));
 
-	numReps = 10;
-	norm = 1.0 / (1.0*numReps);
+    numReps = 10;
+    norm = 1.0 / (1.0*numReps);
 }
 
 /*************************************************************************//**
@@ -2836,21 +2836,21 @@ CylinderOneBodyDensityMatrixEstimator::~CylinderOneBodyDensityMatrixEstimator() 
  *  dominated by tiny close probabilities.
 ******************************************************************************/
 void CylinderOneBodyDensityMatrixEstimator::sample() {
-	numSampled++;
-	if ( frequency && 
+    numSampled++;
+    if ( frequency && 
          ((numSampled % frequency) == 0) && 
          (path.worm.isConfigDiagonal == diagonal) &&
          (path.worm.gap > 0) && (path.worm.gap <= constants()->Mbar())  &&
          ( (lpath.worm.tail[0] % 2) == 0) ) {
-		
-		/* We only attempt the partial-close if both the head and tail
-		 * are within the include region. */
-		if ( include(path(path.worm.head),maxR) && include(path(path.worm.tail),maxR) ) {
-			totNumAccumulated++;
-			numAccumulated++;
-			accumulate();
-		}
-	}
+        
+        /* We only attempt the partial-close if both the head and tail
+         * are within the include region. */
+        if ( include(path(path.worm.head),maxR) && include(path(path.worm.tail),maxR) ) {
+            totNumAccumulated++;
+            numAccumulated++;
+            accumulate();
+        }
+    }
 }
 
 /*************************************************************************//**
@@ -2861,14 +2861,14 @@ void CylinderOneBodyDensityMatrixEstimator::sample() {
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec CylinderOneBodyDensityMatrixEstimator::getRandomVector(const double r) {
-	dVec rVec;
-	rVec = 0.0;
-	if (random.rand() < 0.5)
-		rVec[NDIM-1] = r;
-	else
-		rVec[NDIM-1] = -r;
+    dVec rVec;
+    rVec = 0.0;
+    if (random.rand() < 0.5)
+        rVec[NDIM-1] = r;
+    else
+        rVec[NDIM-1] = -r;
 
-	return rVec;
+    return rVec;
 }
 
 /*************************************************************************//**
@@ -2882,24 +2882,24 @@ inline dVec CylinderOneBodyDensityMatrixEstimator::getRandomVector(const double 
  * @return A NDIM-vector which holds a new random position.
 ******************************************************************************/
 dVec CylinderOneBodyDensityMatrixEstimator::newStagingPosition(const beadLocator &neighborIndex, 
-		const beadLocator &endIndex, const int stageLength, const int k) {
+        const beadLocator &endIndex, const int stageLength, const int k) {
 
     /* The rescaled value of lambda used for staging */
     double f1 = 1.0 * (stageLength - k - 1);
     double f2 = 1.0 / (1.0*(stageLength - k));
     double sqrtLambdaKTau = sqrt2LambdaTau * sqrt(f1 * f2);
 
-	/* We find the new 'midpoint' position which exactly samples the kinetic 
-	 * density matrix */
-	neighborPos = lpath(neighborIndex);
-	newRanPos = lpath(endIndex) - neighborPos;
-	lpath.boxPtr->putInBC(newRanPos);
-	newRanPos *= f2;
-	newRanPos += neighborPos;
+    /* We find the new 'midpoint' position which exactly samples the kinetic 
+     * density matrix */
+    neighborPos = lpath(neighborIndex);
+    newRanPos = lpath(endIndex) - neighborPos;
+    lpath.boxPtr->putInBC(newRanPos);
+    newRanPos *= f2;
+    newRanPos += neighborPos;
 
-	/* This is the random kick around that midpoint */
-	for (int i = 0; i < NDIM; i++)
-		newRanPos[i] = random.randNorm(newRanPos[i],sqrtLambdaKTau);
+    /* This is the random kick around that midpoint */
+    for (int i = 0; i < NDIM; i++)
+        newRanPos[i] = random.randNorm(newRanPos[i],sqrtLambdaKTau);
 
     lpath.boxPtr->putInside(newRanPos);
 
@@ -2916,80 +2916,80 @@ dVec CylinderOneBodyDensityMatrixEstimator::newStagingPosition(const beadLocator
 ******************************************************************************/
 void CylinderOneBodyDensityMatrixEstimator::accumulate() {
 
-	oldTailPos = lpath(lpath.worm.tail);
-	oldAction = actionPtr->potentialAction(lpath.worm.tail);
+    oldTailPos = lpath(lpath.worm.tail);
+    oldAction = actionPtr->potentialAction(lpath.worm.tail);
 
-	/* We make a list of all the beads involved in the move, adding them
-	 * as we go. */
-	beadLocator beadIndex;
-	beadIndex = lpath.worm.head;
-	dVec pos;
-	pos = 0.0;
-	for (int k = 0; k < (lpath.worm.gap-1); k++) 
-		beadIndex = lpath.addNextBead(beadIndex,pos);
+    /* We make a list of all the beads involved in the move, adding them
+     * as we go. */
+    beadLocator beadIndex;
+    beadIndex = lpath.worm.head;
+    dVec pos;
+    pos = 0.0;
+    for (int k = 0; k < (lpath.worm.gap-1); k++) 
+        beadIndex = lpath.addNextBead(beadIndex,pos);
 
-	/* Perform the final connection to the tail*/
-	lpath.next(beadIndex) = lpath.worm.tail;
-	lpath.prev(lpath.worm.tail) = beadIndex;
+    /* Perform the final connection to the tail*/
+    lpath.next(beadIndex) = lpath.worm.tail;
+    lpath.prev(lpath.worm.tail) = beadIndex;
 
-	for (int p = 0; p < numReps; p++) {
+    for (int p = 0; p < numReps; p++) {
 
-		/* Now we loop through all possible separations, evaluating the potential
-		 * action */
-		for (int n = 0; n < NOBDMSEP; n++) {
+        /* Now we loop through all possible separations, evaluating the potential
+         * action */
+        for (int n = 0; n < NOBDMSEP; n++) {
 
-			newAction = 0.0;
-			++numAttempted;
+            newAction = 0.0;
+            ++numAttempted;
 
-			/* Assign the new displaced tail position */
-			newTailPos = oldTailPos + getRandomVector(n*dR);
-			lpath.boxPtr->putInside(newTailPos);
-			lpath.updateBead(lpath.worm.tail,newTailPos);
+            /* Assign the new displaced tail position */
+            newTailPos = oldTailPos + getRandomVector(n*dR);
+            lpath.boxPtr->putInside(newTailPos);
+            lpath.updateBead(lpath.worm.tail,newTailPos);
 
-			/* Compute the free particle density matrix */
-			rho0Norm = actionPtr->rho0(lpath.worm.head,lpath.worm.tail,lpath.worm.gap);
+            /* Compute the free particle density matrix */
+            rho0Norm = actionPtr->rho0(lpath.worm.head,lpath.worm.tail,lpath.worm.gap);
 
-			/* action shift coming from a finite chemical potential */
-			double muShift = lpath.worm.gap*constants()->mu()*constants()->tau();
+            /* action shift coming from a finite chemical potential */
+            double muShift = lpath.worm.gap*constants()->mu()*constants()->tau();
 
-			/* Starting from the head, we generate new positions for the beads via
-			 * staging, and accumulate the potential action */
-			beadIndex = lpath.worm.head;
-			int k = 0;
-			do {
-				if (!all(beadIndex==lpath.worm.head) && !all(beadIndex==lpath.worm.tail)) {
-					lpath.updateBead(beadIndex,
-							newStagingPosition(path.prev(beadIndex),lpath.worm.tail,lpath.worm.gap,k));
-					++k;
-				}
+            /* Starting from the head, we generate new positions for the beads via
+             * staging, and accumulate the potential action */
+            beadIndex = lpath.worm.head;
+            int k = 0;
+            do {
+                if (!all(beadIndex==lpath.worm.head) && !all(beadIndex==lpath.worm.tail)) {
+                    lpath.updateBead(beadIndex,
+                            newStagingPosition(path.prev(beadIndex),lpath.worm.tail,lpath.worm.gap,k));
+                    ++k;
+                }
 
-				newAction += actionPtr->potentialAction(beadIndex);
+                newAction += actionPtr->potentialAction(beadIndex);
 
-				beadIndex = lpath.next(beadIndex);
-			} while (!all(beadIndex==lpath.next(lpath.worm.tail)));
+                beadIndex = lpath.next(beadIndex);
+            } while (!all(beadIndex==lpath.next(lpath.worm.tail)));
 
-			double expAction = exp(-newAction + oldAction + muShift);
-			estimator(n) += rho0Norm*expAction;
+            double expAction = exp(-newAction + oldAction + muShift);
+            estimator(n) += rho0Norm*expAction;
 
-			/* Record the probability of accepting the move */
-			if (random.randExc() < expAction)
-				++numAccepted;
+            /* Record the probability of accepting the move */
+            if (random.randExc() < expAction)
+                ++numAccepted;
 
-		} // end for n
+        } // end for n
 
-	} // end for k
+    } // end for k
 
-	/* Now we must undo any damge we have caused by reverting the tail to its previous position,
-	 * and turning off all intermediate beads */
-	lpath.updateBead(lpath.worm.tail,oldTailPos);
+    /* Now we must undo any damge we have caused by reverting the tail to its previous position,
+     * and turning off all intermediate beads */
+    lpath.updateBead(lpath.worm.tail,oldTailPos);
 
-	/* Delete all the beads that were added. */
-	beadIndex = lpath.next(lpath.worm.head);
-	while (!all(beadIndex==lpath.worm.tail)) {
-		beadIndex = lpath.delBeadGetNext(beadIndex);
-	}
-	lpath.next(lpath.worm.head) = XXX;
-	lpath.prev(lpath.worm.tail) = XXX;
+    /* Delete all the beads that were added. */
+    beadIndex = lpath.next(lpath.worm.head);
+    while (!all(beadIndex==lpath.worm.tail)) {
+        beadIndex = lpath.delBeadGetNext(beadIndex);
+    }
+    lpath.next(lpath.worm.head) = XXX;
+    lpath.prev(lpath.worm.tail) = XXX;
 }
 
 // ---------------------------------------------------------------------------
@@ -3010,19 +3010,19 @@ CylinderPairCorrelationEstimator::CylinderPairCorrelationEstimator (const Path &
         int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
-	/* The spatial discretization */
-	dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
+    /* The spatial discretization */
+    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
 
-	/* This is a diagonal estimator that gets its own file */
-	initialize(NPCFSEP);
+    /* This is a diagonal estimator that gets its own file */
+    initialize(NPCFSEP);
 
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < NPCFSEP; n++) 
-		header.append(str(format("%16.3E") % ((n)*dR)));
+    /* The header is the first line which contains the spatial separations */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < NPCFSEP; n++) 
+        header.append(str(format("%16.3E") % ((n)*dR)));
 
-	/* The normalization factor for the pair correlation function */
-	norm = 0.5*path.boxPtr->side[NDIM-1] / dR;
+    /* The normalization factor for the pair correlation function */
+    norm = 0.5*path.boxPtr->side[NDIM-1] / dR;
 }
 
 /*************************************************************************//**
@@ -3038,7 +3038,7 @@ CylinderPairCorrelationEstimator::~CylinderPairCorrelationEstimator() {
  *  We only compute this for N1D > 1.
 ******************************************************************************/
 void CylinderPairCorrelationEstimator::accumulate() {
-	int N1D = num1DParticles(path,maxR);
+    int N1D = num1DParticles(path,maxR);
     if (N1D > 1) {
         double lnorm = 1.0*sum(actionPtr->cylSepHist);
         lnorm /= 1.0*(N1D-1)/(1.0*N1D);
@@ -3082,16 +3082,16 @@ CylinderLinearPotentialEstimator::CylinderLinearPotentialEstimator (const Path &
     /* The length of the cylinder */
     Lz = path.boxPtr->side[NDIM-1];
 
-	/* The spatial discretization */
-	dz = Lz / (1.0*NRADSEP);
+    /* The spatial discretization */
+    dz = Lz / (1.0*NRADSEP);
 
-	/* This is a diagonal estimator that gets its own file */
-	initialize(NRADSEP);
+    /* This is a diagonal estimator that gets its own file */
+    initialize(NRADSEP);
 
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < NRADSEP; n++) 
-		header.append(str(format("%16.3E") % ((n)*dz)));
+    /* The header is the first line which contains the spatial separations */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < NRADSEP; n++) 
+        header.append(str(format("%16.3E") % ((n)*dz)));
 }
 
 /*************************************************************************//**
@@ -3105,47 +3105,47 @@ CylinderLinearPotentialEstimator::~CylinderLinearPotentialEstimator() {
 ******************************************************************************/
 void CylinderLinearPotentialEstimator::accumulate() {
 
-	double totV = 0.0;
-	dVec r1,r2; 		// The two bead positions
+    double totV = 0.0;
+    dVec r1,r2;         // The two bead positions
     r1 = 0.0;
 
-	dVec sep;			// The bead separation
-	beadLocator bead2;	// The bead locator
+    dVec sep;           // The bead separation
+    beadLocator bead2;  // The bead locator
 
-	/* sample all positions along the pore */
-	for (int n = 0; n < NRADSEP; n++) {
+    /* sample all positions along the pore */
+    for (int n = 0; n < NRADSEP; n++) {
 
         r1[NDIM-1] = -0.5*Lz + n*dz;
 
         /* Get the external potential */
-		totV = 0.0;
+        totV = 0.0;
 
-		/* We sum up the interaction energy over all slices*/
+        /* We sum up the interaction energy over all slices*/
         int numBeads = 0;
-		for (int slice = 0; slice < path.numTimeSlices; slice++) {
-			bead2[0] = slice;
+        for (int slice = 0; slice < path.numTimeSlices; slice++) {
+            bead2[0] = slice;
 
-			/* Sum over particles */
-			for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(slice); bead2[1]++) {
+            /* Sum over particles */
+            for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(slice); bead2[1]++) {
 
-				r2 = path(bead2);
-				if (!include(r2,maxR)) {
-					sep = r2 - r1;
-					path.boxPtr->putInBC(sep);
-					totV += actionPtr->interactionPtr->V(sep);
+                r2 = path(bead2);
+                if (!include(r2,maxR)) {
+                    sep = r2 - r1;
+                    path.boxPtr->putInBC(sep);
+                    totV += actionPtr->interactionPtr->V(sep);
                     numBeads++;
 
-				} // bead2 is outside maxR
-			} // bead2
-		} // slice
+                } // bead2 is outside maxR
+            } // bead2
+        } // slice
 
-		totV /= 1.0*numBeads;
+        totV /= 1.0*numBeads;
 
         /* Add the constant piece from the external potential */
-		totV += actionPtr->externalPtr->V(r1);
+        totV += actionPtr->externalPtr->V(r1);
 
-		estimator(n) += totV;
-	} // n
+        estimator(n) += totV;
+    } // n
 }
 
 
@@ -3162,20 +3162,20 @@ void CylinderLinearPotentialEstimator::accumulate() {
  *  external potential felt by the central chain of particles.
 ******************************************************************************/
 CylinderRadialPotentialEstimator::CylinderRadialPotentialEstimator (const Path &_path, 
-		ActionBase *_actionPtr, const MTRand &_random, double _maxR, int _frequency, string _label) : 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
-	/* The spatial discretization */
-	dR  = 0.5*path.boxPtr->side[0] / (1.0*NRADSEP);
+    /* The spatial discretization */
+    dR  = 0.5*path.boxPtr->side[0] / (1.0*NRADSEP);
 
-	/* This is a diagonal estimator that gets its own file */
-	initialize(NRADSEP);
-	radPot.resize(NRADSEP);
+    /* This is a diagonal estimator that gets its own file */
+    initialize(NRADSEP);
+    radPot.resize(NRADSEP);
 
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < NRADSEP; n++) 
-		header.append(str(format("%16.3E") % ((n)*dR)));
+    /* The header is the first line which contains the spatial separations */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < NRADSEP; n++) 
+        header.append(str(format("%16.3E") % ((n)*dR)));
 }
 
 /*************************************************************************//**
@@ -3190,45 +3190,45 @@ CylinderRadialPotentialEstimator::~CylinderRadialPotentialEstimator() {
 ******************************************************************************/
 void CylinderRadialPotentialEstimator::accumulate() {
 
-	double totV = 0.0;
-	dVec r1,r2; 		// The two bead positions
-	dVec sep;			// The bead separation
+    double totV = 0.0;
+    dVec r1,r2;         // The two bead positions
+    dVec sep;           // The bead separation
 
-	beadLocator bead2;	// The bead locator
+    beadLocator bead2;  // The bead locator
 
-	/* Choose a random position */
-	for (int n = 0; n < NRADSEP; n++) {
+    /* Choose a random position */
+    for (int n = 0; n < NRADSEP; n++) {
 
-		totV = 0.0;
+        totV = 0.0;
 
-		double theta = 2.0*M_PI*random.rand();
-		r1[0] = n*dR*cos(theta);
-		r1[1] = n*dR*sin(theta);
-		r1[2] = path.boxPtr->side[2]*(-0.5 + random.randExc());
+        double theta = 2.0*M_PI*random.rand();
+        r1[0] = n*dR*cos(theta);
+        r1[1] = n*dR*sin(theta);
+        r1[2] = path.boxPtr->side[2]*(-0.5 + random.randExc());
 
-		/* We sum up the external and interaction energy over all slices*/
-		for (int slice = 0; slice < path.numTimeSlices; slice++) {
-			bead2[0] = slice;
+        /* We sum up the external and interaction energy over all slices*/
+        for (int slice = 0; slice < path.numTimeSlices; slice++) {
+            bead2[0] = slice;
 
-			int numParticles = path.numBeadsAtSlice(slice);
+            int numParticles = path.numBeadsAtSlice(slice);
 
-			/* Sum over particles */
-			for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
+            /* Sum over particles */
+            for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
-				r2 = path(bead2);
-				if (!include(r2,maxR)) {
-					sep = r2 - r1;
-					path.boxPtr->putInBC(sep);
-					totV += actionPtr->interactionPtr->V(sep);
-				} // bead2 is outside maxR
-			} // bead2
-		} // slice
+                r2 = path(bead2);
+                if (!include(r2,maxR)) {
+                    sep = r2 - r1;
+                    path.boxPtr->putInBC(sep);
+                    totV += actionPtr->interactionPtr->V(sep);
+                } // bead2 is outside maxR
+            } // bead2
+        } // slice
 
-		totV /= 1.0*path.numTimeSlices;
-		totV += actionPtr->externalPtr->V(r1);
+        totV /= 1.0*path.numTimeSlices;
+        totV += actionPtr->externalPtr->V(r1);
 
-		estimator(n) += totV;
-	} // n
+        estimator(n) += totV;
+    } // n
 }
 
 /*************************************************************************//**
@@ -3239,63 +3239,63 @@ void CylinderRadialPotentialEstimator::accumulate() {
 ******************************************************************************/
 void CylinderRadialPotentialEstimator::accumulate1() {
 
-	double totV = 0.0;
-	dVec r1,r2; 		// The two bead positions
-	dVec sep;			// The bead separation
-	double rad1,rad2;	// The two bead radii
-	int nR;				// The bin number
+    double totV = 0.0;
+    dVec r1,r2;         // The two bead positions
+    dVec sep;           // The bead separation
+    double rad1,rad2;   // The two bead radii
+    int nR;             // The bin number
 
-	beadLocator bead1,bead2;	// The bead locators
-	bool found1,found2;			// Are the beads in the central chain
-	found1 = found2 = false;
-	radPot = 0.0;
-	int numFound1 = 0;
+    beadLocator bead1,bead2;    // The bead locators
+    bool found1,found2;         // Are the beads in the central chain
+    found1 = found2 = false;
+    radPot = 0.0;
+    int numFound1 = 0;
 
-	/* We sum up the external and interaction energy over all slices*/
-	for (int slice = 0; slice < path.numTimeSlices; slice++) {
-		bead1[0] = bead2[0] = slice;
+    /* We sum up the external and interaction energy over all slices*/
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+        bead1[0] = bead2[0] = slice;
 
-		int numParticles = path.numBeadsAtSlice(slice);
+        int numParticles = path.numBeadsAtSlice(slice);
 
-		/* Sum over particles */
-		for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
+        /* Sum over particles */
+        for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
 
-			r1 = path(bead1);
-			rad1   = r1[0]*r1[0] + r1[1]*r1[1];
-			found1 = (rad1 < maxR*maxR);
+            r1 = path(bead1);
+            rad1   = r1[0]*r1[0] + r1[1]*r1[1];
+            found1 = (rad1 < maxR*maxR);
 
-			/* If the first particle is in the central chain, looks for its
-			 * interacting partners */
-			if (found1) {
-				totV = actionPtr->externalPtr->V(r1);
-				numFound1 ++;
+            /* If the first particle is in the central chain, looks for its
+             * interacting partners */
+            if (found1) {
+                totV = actionPtr->externalPtr->V(r1);
+                numFound1 ++;
 
-				/* We don't have to worry about double counting here, as
-				 * we never allow two particles in the central chain to 
-				 * interact */
-				for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
+                /* We don't have to worry about double counting here, as
+                 * we never allow two particles in the central chain to 
+                 * interact */
+                for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
-					r2 = path(bead2);
-					rad2   = r2[0]*r2[0] + r2[1]*r2[1];
-					found2 = (rad2 < maxR*maxR);
+                    r2 = path(bead2);
+                    rad2   = r2[0]*r2[0] + r2[1]*r2[1];
+                    found2 = (rad2 < maxR*maxR);
 
-					/* Only accumulate the energy if bead1 is in the central
-					 * chain while bead2 is not */
-					if (!found2) {
-						sep = path.getSeparation(bead2,bead1);
-						totV += actionPtr->interactionPtr->V(sep);
-					} // !found2
-				} // bead2
-				
-				nR = int(sqrt(rad1)/dR);
-				if (nR < NRADSEP)
-					radPot(nR) += totV;
-			} // found1
-		} // bead1
-	} // slice
+                    /* Only accumulate the energy if bead1 is in the central
+                     * chain while bead2 is not */
+                    if (!found2) {
+                        sep = path.getSeparation(bead2,bead1);
+                        totV += actionPtr->interactionPtr->V(sep);
+                    } // !found2
+                } // bead2
+                
+                nR = int(sqrt(rad1)/dR);
+                if (nR < NRADSEP)
+                    radPot(nR) += totV;
+            } // found1
+        } // bead1
+    } // slice
 
-	radPot /= (1.0*numFound1);
-	estimator += radPot;
+    radPot /= (1.0*numFound1);
+    estimator += radPot;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
@@ -3321,9 +3321,9 @@ PotentialEnergyEstimator::PotentialEnergyEstimator (const Path &_path,
     /* We measure on every other time slice */
     initialize( (constants()->numTimeSlices()-1)/2 +1);
 
-	/* Set estimator header */
-	header = str(format("#%15f") % 0.0 );
-	for (int n = 2; n < constants()->numTimeSlices(); n+=2)
+    /* Set estimator header */
+    header = str(format("#%15f") % 0.0 );
+    for (int n = 2; n < constants()->numTimeSlices(); n+=2)
         header.append(str(format("%16f") % (n*constants()->tau()) ));
 }
 
@@ -3340,10 +3340,10 @@ PotentialEnergyEstimator::~PotentialEnergyEstimator() {
 void PotentialEnergyEstimator::accumulate() {
 
     /* The total tail correction */
-	double tailV = (1.0*path.getTrueNumParticles()*path.getTrueNumParticles()
+    double tailV = (1.0*path.getTrueNumParticles()*path.getTrueNumParticles()
                     /path.boxPtr->volume)*actionPtr->interactionPtr->tailV;
     
-	/* We use a simple operator estimator for V. */
+    /* We use a simple operator estimator for V. */
     for (int slice = 0; slice <= path.numTimeSlices; slice+=2)
         estimator(slice/2) += actionPtr->potential(slice) + tailV;
 }
@@ -3368,10 +3368,10 @@ KineticEnergyEstimator::KineticEnergyEstimator (const Path &_path,
     /* We measure on every other time slice */
     initialize( (constants()->numTimeSlices()-1)/2 );
     
-	/* Set estimator header */
-	header = str(format("#%15f") % constants()->tau());
-	for (int n = 2; n < (constants()->numTimeSlices()-1); n+=2)
-		header.append(str(format("%16f") % ((n+1)*constants()->tau()) ));
+    /* Set estimator header */
+    header = str(format("#%15f") % constants()->tau());
+    for (int n = 2; n < (constants()->numTimeSlices()-1); n+=2)
+        header.append(str(format("%16f") % ((n+1)*constants()->tau()) ));
 }
 
 /*************************************************************************//**
@@ -3394,12 +3394,12 @@ void KineticEnergyEstimator::accumulate() {
     double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau()*2.0);
     
     /* The classical contribution to the kinetic energy per particle
-	 * including the chemical potential */
-	double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
+     * including the chemical potential */
+    double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
     
     beadLocator beadIndex;
- 	dVec vel,pos;
- 	for (int slice = 0; slice < (numTimeSlices-1); slice+=2) {
+    dVec vel,pos;
+    for (int slice = 0; slice < (numTimeSlices-1); slice+=2) {
         double K = 0.0;
         for (int eo = 0; eo < 2; eo++){
             for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice+eo); ptcl++) {
@@ -3423,7 +3423,7 @@ void KineticEnergyEstimator::accumulate() {
         K  += (classicalKinetic + t1);
         
         estimator(slice/2) += K;
- 	}
+    }
 }
 
 
@@ -3445,9 +3445,9 @@ PigsEnergyEstimator::PigsEnergyEstimator (const Path &_path,
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
-	/* Set estimator header, we will always report the energy
-	 * first, hence the comment symbol*/
-	header = str(format("#%15s%16s%16s%16s%16s%16s%16s")
+    /* Set estimator header, we will always report the energy
+     * first, hence the comment symbol*/
+    header = str(format("#%15s%16s%16s%16s%16s%16s%16s")
                  % "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
     endLine = false;
     initialize(7);
@@ -3468,44 +3468,44 @@ PigsEnergyEstimator::~PigsEnergyEstimator() {
 ******************************************************************************/
 void PigsEnergyEstimator::accumulate() {
     
-	double totK = 0.0;
-	double totVop = 0.0;
-	double totV = 0.0;
+    double totK = 0.0;
+    double totVop = 0.0;
+    double totV = 0.0;
     
-	int numParticles  = path.getTrueNumParticles();
-	int numTimeSlices = path.numTimeSlices;
+    int numParticles  = path.getTrueNumParticles();
+    int numTimeSlices = path.numTimeSlices;
     
-	/* The total tail correction */
-	double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
+    /* The total tail correction */
+    double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
     * actionPtr->interactionPtr->tailV;
     
-	/* The kinetic normalization factor */
-	double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * 4.0);
+    /* The kinetic normalization factor */
+    double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * 4.0);
     
-	/* The classical contribution to the kinetic energy per particle
-	 * including the chemical potential */
-	double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
+    /* The classical contribution to the kinetic energy per particle
+     * including the chemical potential */
+    double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
     
-	/* We first calculate the kinetic energy.  Even though there
-	 * may be multiple mixing and swaps, it doesn't matter as we always
-	 * just advance one time step at a time, as taken care of through the
-	 * linking arrays.  This has been checked! */
-	beadLocator beadIndex;
-	dVec vel;
+    /* We first calculate the kinetic energy.  Even though there
+     * may be multiple mixing and swaps, it doesn't matter as we always
+     * just advance one time step at a time, as taken care of through the
+     * linking arrays.  This has been checked! */
+    beadLocator beadIndex;
+    dVec vel;
     int midSlice = (numTimeSlices-1)/2;
-	for (int slice = midSlice-2; slice < midSlice+2; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-			beadIndex = slice,ptcl;
-			vel = path.getVelocity(beadIndex);
-			totK -= dot(vel,vel);
-		}
-	}
+    for (int slice = midSlice-2; slice < midSlice+2; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
+            vel = path.getVelocity(beadIndex);
+            totK -= dot(vel,vel);
+        }
+    }
     
-	/* Normalize the accumulated link-action part */
-	totK *= kinNorm;
+    /* Normalize the accumulated link-action part */
+    totK *= kinNorm;
     
-	/* Now we compute the potential and kinetic energy.  We use an operator estimater
-	 * for V and the thermodynamic estimator for K */
+    /* Now we compute the potential and kinetic energy.  We use an operator estimater
+     * for V and the thermodynamic estimator for K */
     double t1 = 0.0;
     double t2 = 0.0;
     for (int slice = midSlice-2; slice < midSlice+2; slice++) {
@@ -3517,26 +3517,26 @@ void PigsEnergyEstimator::accumulate() {
     t1 *= constants()->lambda()/(constants()->tau()*4.0);
     t2 /= 4.0;
     
-	/* Perform all the normalizations and compute the individual energy terms */
-	totK += (classicalKinetic + t1);
+    /* Perform all the normalizations and compute the individual energy terms */
+    totK += (classicalKinetic + t1);
     totV = t2 - t1 + tailV;
     
-	totVop += tailV;
+    totVop += tailV;
     
     totV = totVop;
     
-	/* Now we accumulate the average total, kinetic and potential energy, 
-	 * as well as their values per particles. */
-	estimator(0) += totK;
-	estimator(1) += totV;
-	estimator(2) += totK + totV;
+    /* Now we accumulate the average total, kinetic and potential energy, 
+     * as well as their values per particles. */
+    estimator(0) += totK;
+    estimator(1) += totV;
+    estimator(2) += totK + totV;
     
-	estimator(3) += totK + totV - constants()->mu()*numParticles;
+    estimator(3) += totK + totV - constants()->mu()*numParticles;
     
-	estimator(4) += totK/(1.0*numParticles);
-	estimator(5) += totV/(1.0*numParticles);
+    estimator(4) += totK/(1.0*numParticles);
+    estimator(5) += totV/(1.0*numParticles);
     
-	estimator(6) += (totK + totV)/(1.0*numParticles);
+    estimator(6) += (totK + totV)/(1.0*numParticles);
 }
 
 // ---------------------------------------------------------------------------
@@ -3555,8 +3555,8 @@ PigsThermoEnergyEstimator::PigsThermoEnergyEstimator (const Path &_path,
         int _frequency, string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
-	/* Set estimator name and header, we will always report the energy
-	 * first, hence the comment symbol*/
+    /* Set estimator name and header, we will always report the energy
+     * first, hence the comment symbol*/
     header = str(format("#%15s%16s%16s") % "K" % "V" % "E");
     endLine = true;
     initialize(3);
@@ -3583,43 +3583,43 @@ void PigsThermoEnergyEstimator::accumulate() {
     if( (actionPtr->getActionName() == "gsf")||(actionPtr->getActionName() == "li_broughton") )
         actionPeriod = 2;
     
-	double totK = 0.0;
-	double totV = 0.0;
+    double totK = 0.0;
+    double totV = 0.0;
     
-	int numParticles  = path.getTrueNumParticles();
-	int numTimeSlices = path.numTimeSlices;
+    int numParticles  = path.getTrueNumParticles();
+    int numTimeSlices = path.numTimeSlices;
     
-	/* The total tail correction */
-	double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
+    /* The total tail correction */
+    double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
                         * actionPtr->interactionPtr->tailV;
     
-	/* The kinetic normalization factor */
-	double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * (2.0*actionPeriod));
+    /* The kinetic normalization factor */
+    double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * (2.0*actionPeriod));
     
-	/* The classical contribution to the kinetic energy per particle
-	 * including the chemical potential */
-	double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
+    /* The classical contribution to the kinetic energy per particle
+     * including the chemical potential */
+    double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
     
-	/* We first calculate the kinetic energy.  Even though there
-	 * may be multiple mixing and swaps, it doesn't matter as we always
-	 * just advance one time step at a time, as taken care of through the
-	 * linking arrays.  This has been checked! */
-	beadLocator beadIndex;
-	dVec vel;
+    /* We first calculate the kinetic energy.  Even though there
+     * may be multiple mixing and swaps, it doesn't matter as we always
+     * just advance one time step at a time, as taken care of through the
+     * linking arrays.  This has been checked! */
+    beadLocator beadIndex;
+    dVec vel;
     int midSlice = (numTimeSlices-1)/2;
-	for (int slice = midSlice-actionPeriod; slice < midSlice+actionPeriod; slice++) {
-		for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-			beadIndex = slice,ptcl;
-			vel = path.getVelocity(beadIndex);
-			totK -= dot(vel,vel);
-		}
-	}
+    for (int slice = midSlice-actionPeriod; slice < midSlice+actionPeriod; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
+            vel = path.getVelocity(beadIndex);
+            totK -= dot(vel,vel);
+        }
+    }
     
-	/* Normalize the accumulated link-action part */
-	totK *= kinNorm;
+    /* Normalize the accumulated link-action part */
+    totK *= kinNorm;
     
-	/* Now we compute the potential and kinetic energy.  We use an operator estimator
-	 * for V and the thermodynamic estimator for K */
+    /* Now we compute the potential and kinetic energy.  We use an operator estimator
+     * for V and the thermodynamic estimator for K */
     double t1 = 0.0;
     double t2 = 0.0;
     if(actionPtr->local){
@@ -3641,15 +3641,15 @@ void PigsThermoEnergyEstimator::accumulate() {
     t1 *= constants()->lambda()/(constants()->tau()*(2.0*actionPeriod));
     t2 /= (2.0*actionPeriod);
     
-	/* Perform all the normalizations and compute the individual energy terms */
-	totK += (classicalKinetic + t1);
+    /* Perform all the normalizations and compute the individual energy terms */
+    totK += (classicalKinetic + t1);
     totV = t2 - t1 + tailV;
     
-	/* Now we accumulate the average total, kinetic and potential energy, 
-	 * as well as their values per particles. */
-	estimator(0) += totK;
-	estimator(1) += totV;
-	estimator(2) += totK + totV;
+    /* Now we accumulate the average total, kinetic and potential energy, 
+     * as well as their values per particles. */
+    estimator(0) += totK;
+    estimator(1) += totV;
+    estimator(2) += totK + totV;
     
 }
 
@@ -3673,10 +3673,10 @@ TotalEnergyEstimator::TotalEnergyEstimator (const Path &_path,
     /* We measure on every other time slice */
     initialize( (constants()->numTimeSlices()-1) );
     
-	/* Set estimator header */
-	header = str(format("#%15f") % constants()->tau());
-	for (int n = 1; n < (constants()->numTimeSlices()-1); n++)
-		header.append(str(format("%16f") % (n*constants()->tau()) ));
+    /* Set estimator header */
+    header = str(format("#%15f") % constants()->tau());
+    for (int n = 1; n < (constants()->numTimeSlices()-1); n++)
+        header.append(str(format("%16f") % (n*constants()->tau()) ));
 }
 
 /*************************************************************************//**
@@ -3699,12 +3699,12 @@ void TotalEnergyEstimator::accumulate() {
     double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau());
     
     /* The classical contribution to the kinetic energy per particle
-	 * including the chemical potential */
-	double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
+     * including the chemical potential */
+    double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
     
     beadLocator beadIndex;
- 	dVec vel,pos;
- 	for (int slice = 0; slice < (numTimeSlices-1); slice++) {
+    dVec vel,pos;
+    for (int slice = 0; slice < (numTimeSlices-1); slice++) {
         double K = 0.0;
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
             beadIndex = slice,ptcl;
@@ -3719,7 +3719,7 @@ void TotalEnergyEstimator::accumulate() {
         
         double dUdtau = actionPtr->derivPotentialActionTau(slice);
         estimator(slice) += K+dUdtau;
- 	}
+    }
 }
 
 
@@ -3743,10 +3743,10 @@ ThermoPotentialEnergyEstimator::ThermoPotentialEnergyEstimator  (const Path &_pa
     /* We measure on every other time slice */
     initialize( (constants()->numTimeSlices()-1) );
     
-	/* Set estimator header */
-	header = str(format("#%15f") % constants()->tau());
-	for (int n = 1; n < (constants()->numTimeSlices()-1); n++)
-		header.append(str(format("%16f") % (n*constants()->tau()) ));
+    /* Set estimator header */
+    header = str(format("#%15f") % constants()->tau());
+    for (int n = 1; n < (constants()->numTimeSlices()-1); n++)
+        header.append(str(format("%16f") % (n*constants()->tau()) ));
 }
 
 /*************************************************************************//**
@@ -3763,11 +3763,11 @@ void ThermoPotentialEnergyEstimator::accumulate() {
     
     int numTimeSlices = constants()->numTimeSlices();
     
- 	for (int slice = 0; slice < (numTimeSlices-1); slice++) {        
+    for (int slice = 0; slice < (numTimeSlices-1); slice++) {        
         double dUdtau = actionPtr->derivPotentialActionTau(slice);
         double dUdlam = actionPtr->derivPotentialActionLambda(slice);
         estimator(slice) += dUdtau - (constants()->lambda()/constants()->tau())*dUdlam;
- 	}
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -3790,10 +3790,10 @@ PositionEstimator::PositionEstimator (const Path &_path,
     /* We measure on each time slice */
     initialize(constants()->numTimeSlices());
 
-	/* Set estimator header */
-	header = str(format("#%15d") % 0);
-	for (int n = 1; n < constants()->numTimeSlices(); n++) 
-		header.append(str(format("%16d") % n));
+    /* Set estimator header */
+    header = str(format("#%15d") % 0);
+    for (int n = 1; n < constants()->numTimeSlices(); n++) 
+        header.append(str(format("%16d") % n));
 }
 
 /*************************************************************************//**
@@ -3808,7 +3808,7 @@ PositionEstimator::~PositionEstimator() {
 ******************************************************************************/
 void PositionEstimator::accumulate() {
 
-	/* We use a simple operator estimator for V. */
+    /* We use a simple operator estimator for V. */
     beadLocator beadIndex;
     double x;
     for (beadIndex[0] = 0; beadIndex[0] < path.numTimeSlices; ++beadIndex[0]) {
@@ -3840,11 +3840,11 @@ ParticleResolvedPositionEstimator::ParticleResolvedPositionEstimator(const Path 
     /* We measure on each time slice */
     initialize(constants()->initialNumParticles()*2);
     
-	/* Set estimator header */
-	header = str(format("#%15d") % 0);
+    /* Set estimator header */
+    header = str(format("#%15d") % 0);
     header.append(str(format("%16d") % 0));
-	for (int n = 1; n < constants()->initialNumParticles(); n++){
-		header.append(str(format("%16d") % n));
+    for (int n = 1; n < constants()->initialNumParticles(); n++){
+        header.append(str(format("%16d") % n));
         header.append(str(format("%16d") % n));
     }
 }
@@ -3861,7 +3861,7 @@ ParticleResolvedPositionEstimator::~ParticleResolvedPositionEstimator() {
 ******************************************************************************/
 void ParticleResolvedPositionEstimator::accumulate() {
     
-	/* We use a simple operator estimator for V. */
+    /* We use a simple operator estimator for V. */
     beadLocator beadIndex;
     double x;
     
@@ -3897,10 +3897,10 @@ ParticleCorrelationEstimator::ParticleCorrelationEstimator (const Path &_path,
     /* We measure on each time slice */
     initialize(constants()->initialNumParticles()-1);
     
-	/* Set estimator header */
-	header = str(format("#%15d") % 1);
-	for (int n = 2; n < constants()->initialNumParticles(); n++)
-		header.append(str(format("%16d") % n));
+    /* Set estimator header */
+    header = str(format("#%15d") % 1);
+    for (int n = 2; n < constants()->initialNumParticles(); n++)
+        header.append(str(format("%16d") % n));
 }
 
 /*************************************************************************//**
@@ -3915,7 +3915,7 @@ ParticleCorrelationEstimator::~ParticleCorrelationEstimator() {
 ******************************************************************************/
 void ParticleCorrelationEstimator::accumulate() {
     
-	/* We use a simple operator estimator for V. */
+    /* We use a simple operator estimator for V. */
     beadLocator beadIndex0,beadIndex;
     
     beadIndex0[0] = (path.numTimeSlices-1)/2;
@@ -3954,10 +3954,10 @@ VelocityEstimator::VelocityEstimator (const Path &_path,
     /* We measure on each time slice */
     initialize(constants()->numTimeSlices()-1);
     
-	/* Set estimator header */
-	header = str(format("#%15d") % 0);
-	for (int n = 1; n < constants()->numTimeSlices()-1; n++)
-		header.append(str(format("%16d") % n));
+    /* Set estimator header */
+    header = str(format("#%15d") % 0);
+    for (int n = 1; n < constants()->numTimeSlices()-1; n++)
+        header.append(str(format("%16d") % n));
 }
 
 /*************************************************************************//**
@@ -4009,9 +4009,9 @@ SubregionOccupationEstimator::SubregionOccupationEstimator (const Path &_path,
     /* We measure on each time slice */
     initialize(3);
     
-	/* Set estimator header */
-	header = str(format("#%15s") % "Z");
-	header.append(str(format("%16s") % "pA"));
+    /* Set estimator header */
+    header = str(format("#%15s") % "Z");
+    header.append(str(format("%16s") % "pA"));
     header.append(str(format("%16s") % "pB"));
 }
 
@@ -4073,28 +4073,28 @@ void SubregionOccupationEstimator::accumulate() {
  *  on the type of simulation cell).
 ******************************************************************************/
 PIGSOneBodyDensityMatrixEstimator::PIGSOneBodyDensityMatrixEstimator (Path &_path,
-		ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
         int _frequency, string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
-	lpath(_path)
+    lpath(_path)
 {
 
-	sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
+    sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
 
-	/* We chooose the maximum separation to be sqrt(NDIM)*min(L)/2 */
-	dR = 0.5*sqrt(sum(path.boxPtr->periodic))*(blitz::min(path.boxPtr->side)) / (1.0*NOBDMSEP);
+    /* We chooose the maximum separation to be sqrt(NDIM)*min(L)/2 */
+    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*(blitz::min(path.boxPtr->side)) / (1.0*NOBDMSEP);
 
-	/* This is an off-diagonal estimator*/
+    /* This is an off-diagonal estimator*/
     initialize(NOBDMSEP);
     diagonal = false;
 
-	/* The header is the first line which contains the spatial separations */
-	header = str(format("#%15.3E") % 0.0);
-	for (int n = 1; n < NOBDMSEP; n++)
-		header.append(str(format("%16.3E") % (n*dR)));
+    /* The header is the first line which contains the spatial separations */
+    header = str(format("#%15.3E") % 0.0);
+    for (int n = 1; n < NOBDMSEP; n++)
+        header.append(str(format("%16.3E") % (n*dR)));
 
-	numReps = 5;
-	norm = 1.0 / (1.0*numReps);
+    numReps = 5;
+    norm = 1.0 / (1.0*numReps);
 }
 
 /*************************************************************************//**
@@ -4111,23 +4111,23 @@ PIGSOneBodyDensityMatrixEstimator::~PIGSOneBodyDensityMatrixEstimator() {
  *  dominated by tiny close probabilities.
 ******************************************************************************/
 void PIGSOneBodyDensityMatrixEstimator::sample() {
-	numSampled++;
-	if ( frequency &&
+    numSampled++;
+    if ( frequency &&
          ((numSampled % frequency) == 0)
          //  && (path.worm.isConfigDiagonal == diagonal) &&
          //(path.worm.gap > 0) && (path.worm.gap <= constants()->Mbar())  &&
          //(actionPtr->eFactor[(lpath.worm.tail[0] % 2)] < EPS)
        ){
 
-		/* If we are canonical, we want the closed configuration to be close
-		 * to our ideal one */
-		if ( (!canonical) ||
-			 (abs(path.worm.getNumBeadsOn()+path.worm.gap-numBeads0) <= 2) ) {
-			totNumAccumulated++;
-			numAccumulated++;
-			accumulate();
-		}
-	}
+        /* If we are canonical, we want the closed configuration to be close
+         * to our ideal one */
+        if ( (!canonical) ||
+             (abs(path.worm.getNumBeadsOn()+path.worm.gap-numBeads0) <= 2) ) {
+            totNumAccumulated++;
+            numAccumulated++;
+            accumulate();
+        }
+    }
 }
 
 /*************************************************************************//**
@@ -4138,33 +4138,33 @@ void PIGSOneBodyDensityMatrixEstimator::sample() {
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec PIGSOneBodyDensityMatrixEstimator::getRandomVector(const double r) {
-	dVec rVec;
-	rVec = 0.0;
+    dVec rVec;
+    rVec = 0.0;
 #if NDIM==1
-	if (random.rand() < 0.5)
-		rVec = r;
-	else
-		rVec = -r;
+    if (random.rand() < 0.5)
+        rVec = r;
+    else
+        rVec = -r;
 #elif NDIM==2
-	double theta = 2.0*M_PI*random.rand();
-	rVec[0] = r*cos(theta);
-	rVec[1] = r*sin(theta);
+    double theta = 2.0*M_PI*random.rand();
+    rVec[0] = r*cos(theta);
+    rVec[1] = r*sin(theta);
 #elif NDIM==3
-	if (lpath.boxPtr->name == "Prism") {
-		double theta = 2.0*M_PI*random.rand();
-		double phi   = M_PI*random.rand();
-		rVec[0] = r*cos(theta)*sin(phi);
-		rVec[1] = r*sin(theta)*sin(phi);
-		rVec[2] = r*cos(phi);
-	}
-	else {
-		if (random.rand() < 0.5)
-			rVec[NDIM-1] = r;
-		else
-			rVec[NDIM-1] = -r;
-	}
+    if (lpath.boxPtr->name == "Prism") {
+        double theta = 2.0*M_PI*random.rand();
+        double phi   = M_PI*random.rand();
+        rVec[0] = r*cos(theta)*sin(phi);
+        rVec[1] = r*sin(theta)*sin(phi);
+        rVec[2] = r*cos(phi);
+    }
+    else {
+        if (random.rand() < 0.5)
+            rVec[NDIM-1] = r;
+        else
+            rVec[NDIM-1] = -r;
+    }
 #endif
-	return rVec;
+    return rVec;
 }
 
 /*************************************************************************//**
@@ -4193,51 +4193,51 @@ void PIGSOneBodyDensityMatrixEstimator::accumulate() {
    //lpath.next(beadIndexL) = beadIndexR;
    //lpath.prev(beadIndexR) = beadIndexL;
 
-	//for (int p = 0; p < numReps; p++) {
+    //for (int p = 0; p < numReps; p++) {
 
-		/* Now we loop through all possible separations, evaluating the potential
-		 * action */
-		for (int n = 0; n < NOBDMSEP; n++) {
+        /* Now we loop through all possible separations, evaluating the potential
+         * action */
+        for (int n = 0; n < NOBDMSEP; n++) {
 
-			newAction = 0.0;
-			++numAttempted;
+            newAction = 0.0;
+            ++numAttempted;
 
-			/* Assign the new displaced tail position */
-			newTailPos = oldTailPos + getRandomVector(n*dR);
-			lpath.boxPtr->putInside(newTailPos);
-			lpath.updateBead(beadIndexR,newTailPos);
+            /* Assign the new displaced tail position */
+            newTailPos = oldTailPos + getRandomVector(n*dR);
+            lpath.boxPtr->putInside(newTailPos);
+            lpath.updateBead(beadIndexR,newTailPos);
 
-			/* Compute the free particle density matrix */
+            /* Compute the free particle density matrix */
             
             /* CMH: Need to sample winding sector for general dimension here */
             //double rho0 = actionPtr->rho01D(beadIndexL,beadIndexR,1);
             
             double rho0 = 1.0;
 
-			/* action shift coming from a finite chemical potential */
-			//double muShift = lpath.worm.gap*constants()->mu()*constants()->tau();
+            /* action shift coming from a finite chemical potential */
+            //double muShift = lpath.worm.gap*constants()->mu()*constants()->tau();
 
-			/* Copmute the potential the potential action */
+            /* Copmute the potential the potential action */
             newAction += actionPtr->potentialAction(beadIndexR);
 
-			//double expAction = exp(-newAction + oldAction + muShift);
+            //double expAction = exp(-newAction + oldAction + muShift);
             double expAction = exp(-0.5*newAction + 0.5*oldAction);
             //double expAction = exp(-newAction);
 
-			estimator(n) += rho0*expAction;
+            estimator(n) += rho0*expAction;
 
-			/* Record the probability of accepting the move */
-			if (random.randExc() < rho0*expAction)
-				++numAccepted;
+            /* Record the probability of accepting the move */
+            if (random.randExc() < rho0*expAction)
+                ++numAccepted;
 
-		} // end for n
+        } // end for n
 
-	//} // end for k
+    //} // end for k
 
-	/* Now we must undo any damge we have caused by reverting the tail to its previous position*/
-	lpath.updateBead(beadIndexR,oldTailPos);
-	//lpath.next(beadIndexL) = XXX;
-	//lpath.prev(beadIndexR) = XXX;
+    /* Now we must undo any damge we have caused by reverting the tail to its previous position*/
+    lpath.updateBead(beadIndexR,oldTailPos);
+    //lpath.next(beadIndexL) = XXX;
+    //lpath.prev(beadIndexR) = XXX;
 }
 
 /*************************************************************************//**
@@ -4246,8 +4246,8 @@ void PIGSOneBodyDensityMatrixEstimator::accumulate() {
 ******************************************************************************/
 void PIGSOneBodyDensityMatrixEstimator::outputFooter() {
 
-	(*outFilePtr) << format("# accepted: %16.8E attempted: %16.8E ratio: %16.4E\n")
-		% (1.0*numAccepted) % (1.0*numAttempted) % (1.0*numAccepted/(1.0*numAttempted));
+    (*outFilePtr) << format("# accepted: %16.8E attempted: %16.8E ratio: %16.4E\n")
+        % (1.0*numAccepted) % (1.0*numAttempted) % (1.0*numAccepted/(1.0*numAttempted));
 }
 
 
@@ -4293,7 +4293,7 @@ DoubledEstimator(_path,_path2,_actionPtr,_actionPtr2,_random,_maxR,_frequency,_l
 {
     
     /* Set estimator header */
-	header = str(format("#%15s%16s%16s") % "Z" % "S" % "ZS");
+    header = str(format("#%15s%16s%16s") % "Z" % "S" % "ZS");
     initialize(3);
 }
 
@@ -4502,7 +4502,7 @@ void SwapEstimator::accumulateOpen() {
     //S = rho0Swap*rho0Swap2*exp(-(newPotAction+newPotAction2));
     
     estimator(0) += Z;
-	estimator(1) += S;
+    estimator(1) += S;
     estimator(2) += S*Z;
 }
 
@@ -4513,7 +4513,7 @@ void SwapEstimator::accumulateClosed() {
     
     double S,Z; // Swap and normalization
     
-	/* We assume the broken bead is bead 0 */
+    /* We assume the broken bead is bead 0 */
     int swapSlice = (lpath.numTimeSlices-1)/2-1;
     
     beadLocator beadIndexL,beadIndexR,beadIndexL2,beadIndexR2;
@@ -4571,7 +4571,7 @@ void SwapEstimator::accumulateClosed() {
     S /= lpath.getNumParticles()*lpath2.getNumParticles();
     
     estimator(0) += Z;
-	estimator(1) += S;
+    estimator(1) += S;
 }
 
 // ---------------------------------------------------------------------------
@@ -4595,11 +4595,11 @@ DoubledEstimator(_path,_path2,_actionPtr, _actionPtr2,_random,_maxR,_frequency,_
     stringstream headerSS;
     
     /* Set estimator name and header */
-	header = str(format("#%15s") % "Z" );
+    header = str(format("#%15s") % "Z" );
     for (int n = 1; n < constants()->initialNumParticles(); n++){
         headerSS.str("");
         headerSS << 'Z' << n;
-		header.append(str(format("%16s") % headerSS.str().c_str()));
+        header.append(str(format("%16s") % headerSS.str().c_str()));
         headerSS.str("");
         headerSS << 'S' << n;
         header.append(str(format("%16s") % headerSS.str().c_str()));
