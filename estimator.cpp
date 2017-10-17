@@ -2340,7 +2340,7 @@ void RadialDensityEstimator::accumulate() {
             rsq = 0.0;
             for (int i = 0; i < NDIM-1; i++)
                 rsq += pos[i]*pos[i]; 
-            int k = int(sqrt(rsq/dR));
+            int k = int(sqrt(rsq)/dR);
             if (k < NRADSEP)
                 estimator(k) += 1.0;
         }
