@@ -980,10 +980,6 @@ double LJHourGlassPotential::V(const dVec &r) {
     for (int i = 0; i < NDIM-1; i++)
         x += r[i]*r[i];
 
-    /* int  m = int((r[NDIM-1] + 0.5*L)/dz); */
-    /* double z = m*dz - 0.5*L */
-    /* double Rz = Rlinear(r[NDIM-1]) */
-
     double Rz = Rtanh(r[NDIM-1]);
 
     x = sqrt(x)/Rz;
@@ -1018,7 +1014,7 @@ double LJHourGlassPotential::V(const dVec &r) {
  * @param numParticles The initial number of particles
  * @return An array of classical particle positions
 ******************************************************************************/
-Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr, 
+Array<dVec,1> LJHourGlassPotential::initialConfig1(const Container *boxPtr, 
         MTRand &random, const int numParticles) {
 
     /* The particle configuration */
@@ -1085,9 +1081,45 @@ Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr,
     return initialPos;
 }
 
+/**************************************************************************//**
+ * Return a set of initial positions inside the hourglass.
+ *
+ * @param boxPtr A pointer to the simulation cell
+ * @param random The random number generator
+ * @param numParticles The initial number of particles
+ * @return An array of classical particle positions
+******************************************************************************/
+Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr, 
+        MTRand &random, const int numParticles) {
 
+	/* The particle configuration */
+	Array<dVec,1> initialPos(numParticles);
+	initialPos = 0.0;
 
+	dVec pos;
+    pos = 0.0;
 
+    /* We randomly place the particles inside the cylinder taking acount of the 
+     * pinched radius. 
+     * @see http://mathworld.wolfram.com/DiskPointPicking.html
+     */
+	for (int n = 0; n < numParticles; n++) {
+
+        pos[NDIM-1] = L*(-0.5 + random.rand());
+        double theta = 2.0*M_PI*random.rand();
+
+        double r = (Rtanh(pos[NDIM-1]) - sigma)*sqrt(random.rand());
+
+        pos[0] = r*cos(theta);
+        pos[1] = r*sin(theta);
+
+		boxPtr->putInside(pos);
+
+        initialPos(n) = pos;
+    }
+
+	return initialPos;
+}
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

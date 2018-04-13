@@ -545,6 +545,7 @@ class LJHourGlassPotential : public PotentialBase {
 
         /** Initial configuration corresponding to the LJ cylinder potential */
         Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+        Array<dVec,1> initialConfig1(const Container*, MTRand &, const int); 
 
     private:
         /* All the parameters needed for the LJ wall potential */
@@ -557,12 +558,9 @@ class LJHourGlassPotential : public PotentialBase {
 
         /* double minV; // The minimum value of the potential */
 
-        double dz;      // The length discretization
         double L;       // The legnth of the pore
         double invd;    // The inverse of the variation length scale
         double R0;      // A constant used in the tanh radius function
-
-        int M;          // How many slices we discretize in the z-direction
 
         /* Different functional forms for the hourglass radius */
         double Rlinear(double z) {

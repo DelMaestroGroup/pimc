@@ -94,8 +94,8 @@ int main (int argc, char *argv[]) {
         externalPotentialPtr->initialConfig(boxPtr,random,constants()->initialNumParticles());
 
     /* Perform a classical canonical pre-equilibration to obtain a suitable
-     * initial state */
-    if (!constants()->restart()) {
+     * initial state if N > 0*/
+    if (!constants()->restart() && (constants()->initialNumParticles() > 0) ) {
        ClassicalMonteCarlo CMC(externalPotentialPtr,interactionPotentialPtr,random,boxPtr,
                initialPos);
        CMC.run(constants()->numEqSteps(),0);

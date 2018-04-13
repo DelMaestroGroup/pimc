@@ -275,7 +275,8 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
     else {
 
         /* How many updates should we perform? We always try atleast 1 */
-        numUpdates = max(1,int(ceil(path.worm.getNumBeadsOn()/(1.0*constants()->Mbar()))));
+        /* numUpdates = max(1,int(ceil(path.worm.getNumBeadsOn()/(1.0*constants()->Mbar())))); */
+        numUpdates = 1;
 
 
         /* Increment the number of off-diagonal steps */
@@ -388,8 +389,9 @@ void PathIntegralMonteCarlo::step() {
     /* AGD FIX FIX FIX
      * This should be numUpdates = 1 if you could have zero particles in the
      * simulation */
-    numUpdates = int(ceil(constants()->initialNumParticles()*constants()->numTimeSlices()/
-                (1.0*constants()->Mbar())));
+    /* numUpdates = int(ceil(constants()->initialNumParticles()*constants()->numTimeSlices()/ */
+    /*             (1.0*constants()->Mbar()))); */
+    numUpdates = 1;
 
     for (uint32 pIdx=0; pIdx<Npaths; pIdx++) {
 
