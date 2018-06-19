@@ -243,7 +243,6 @@ double ActionBase::potentialAction (const beadLocator &startBead,
         totU += potentialAction(beadIndex);
         beadIndex = path.next(beadIndex);
     } while (!all(beadIndex==path.next(endBead)));
-
     return totU;
 }
 

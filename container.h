@@ -62,11 +62,12 @@ class Container {
 
         /** Place a vector in boundary conditions. */
         /* Not sure if I need this, more testing is needed */
+        // FIXME && periodic[i] hack to make cylinder work
         void putInBC(dVec & r) const {
             for (int i = 0; i < NDIM; ++i) {
-                while (r[i] >= 0.5*side[i])
+                while (r[i] >= 0.5*side[i] && periodic[i])
                     r[i] -= pSide[i];
-                while (r[i] < -0.5*side[i])
+                while (r[i] < -0.5*side[i] && periodic[i])
                     r[i] += pSide[i];
             }
         }
