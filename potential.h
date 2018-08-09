@@ -667,6 +667,7 @@ inline double AzizPotential::grad2V(const dVec &r) {
     g2V = direct(lookupd2Vdr2,extd2Vdr2,rnorm);
     return g2V;
 }
+
 // ========================================================================  
 // FixedAzizPotential Class
 // ========================================================================  
@@ -703,6 +704,38 @@ class FixedAzizPotential : public PotentialBase  {
         double rc2;                         // A local copy of the potential cutoff squared
 
 };
+
+// ========================================================================  
+// FixedPositionLJPotential Class
+// ========================================================================  
+/** 
+ * @brief Returns Lennard-Jones potential between adatoms and fixed postions in FILENAME.
+ *
+ * Author: Nathan Nichols
+ * Returns the potential energy resulting from interaction between adatom and fixed positions
+ * given in FILENAME.
+ */
+class FixedPositionLJPotential: public PotentialBase  {
+
+    public:
+        FixedPositionLJPotential(const double, const double, const Container*);
+        ~FixedPositionLJPotential();
+
+        /* Return the sum of the Lennard-Jones potential between the supplied
+         * particle and the fixed positions found in FILENAME. */
+        double V(const dVec &r);
+
+    private:
+        const Container *boxPtr;
+        double sigma;
+        double epsilon;
+        double Lz;
+        
+        Array <dVec,1> fixedParticles;      // The location of the fixed particles
+        int numFixedParticles;              // The total number of fixed particles
+};
+
+
 
 // ========================================================================  
 // Excluded Volume Class (volume excluded w/ large potential)

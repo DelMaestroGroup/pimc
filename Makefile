@@ -75,13 +75,13 @@ DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
 
 ifeq ($(opts), basic)
-OPTS = -std=c++11 -Wall -O3 -mtune=native -Wno-deprecated-declarations #-Wshadow  #-DNDEBUG
+OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations #-Wshadow  #-DNDEBUG
 else ifeq ($(opts), strict)
 # OPTS = -std=c++11 -Wall -g -W -Wextra -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template 
-OPTS = -std=c++11 -Wall -Wextra -g -pedantic
+OPTS = -std=c++14 -Wall -Wextra -g -pedantic
 endif #basic, elseif strict
 
-BOOSTVER ?= -gcc54-mt-1_61
+BOOSTVER ?= -gcc55-mt-x64-1_67 
 LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
 
 #intel
@@ -97,15 +97,15 @@ LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem
 else ifeq ($(TOOLSET), clang)
 DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
-BOOSTVER ?= -clang-darwin42-mt-1_61
+BOOSTVER ?= -xgcc42-mt-x64-1_67
 
 ifeq ($(opts), basic)
-OPTS = -std=c++11 -stdlib=libc++ -Wall -O3 -Wno-deprecated-register -Wshadow
+OPTS = -std=c++14 -stdlib=libc++ -Wall -O3 -Wno-deprecated-register -Wshadow
 else ifeq ($(opts), strict)
 # OPTS = -Wall -std=c++11 -stdlib=libc++ -O3 -W -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -ferror-limit=1000 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template
-OPTS = -std=c++11 -stdlib=libc++ -W -Wall -Wextra -g -pedantic
+OPTS = -std=c++14 -stdlib=libc++ -W -Wall -Wextra -g -pedantic
 else ifeq ($(opts),debug)
-OPTS = -std=c++11 -stdlib=libc++ -Wall -Wno-deprecated-register
+OPTS = -std=c++14 -stdlib=libc++ -Wall -Wno-deprecated-register
 endif #basic, elseif strict
 #-fsanitize=address -fno-omit-frame-pointer
 #-Wconversion
@@ -157,13 +157,14 @@ else ifeq ($(OVERRIDE), macbook)
 CODEDIR = /usr/local
 DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
-CXX = g++-mp-4.8
-BOOSTVER = -gcc48-mt-1_55
+CXX = /opt/local/bin/g++-mp-5
+BOOSTVER = -gcc55-mt-x64-1_67 
 
 ifeq ($(opts), basic)
-OPTS = -Wall -O3 -std=c++11 -mtune=native  -Wno-unused-local-typedefs
+OPTS = -Wall -O3 -std=c++14 -mtune=native  -Wno-unused-local-typedefs
 else ifeq ($(opts), strict)
-OPTS = -Wall -O3 -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
+# OPTS = -std=c++14 -Wall -g -W -Wextra -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template 
+OPTS = -std=c++14 -Wall -Wextra -g -pedantic
 endif #basic, elseif strict
 
 CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include #$(DEBUG)

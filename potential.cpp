@@ -651,6 +651,95 @@ Array<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, MTRand 
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
+// FixedPositionLJPotential Class---------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+ * Constructor.
+******************************************************************************/
+FixedPositionLJPotential::FixedPositionLJPotential (double _sigma, double _epsilon, 
+        const Container *_boxPtr) : PotentialBase() {
+
+    boxPtr = _boxPtr;
+    sigma = _sigma;
+    epsilon = _epsilon;
+
+    Lz = boxPtr->side[NDIM-1];
+
+    /* Fixed positions of FILENAME */
+    dVec pos;               // The loaded position
+
+    /* We start with an array of size 500 */
+    fixedParticles.resize(500);
+
+    /* Here we load both the number and location of fixed positions from disk. */
+    numFixedParticles = 0;
+    int n = 0;
+    while (!communicate()->file("fixed")->stream().eof()) {
+        if (communicate()->file("fixed")->stream().peek() == '#') {
+            communicate()->file("fixed")->stream().ignore(512,'\n');
+        }
+        else {
+            for (int i = 0; i < NDIM; i++) 
+                communicate()->file("fixed")->stream() >> pos[i];
+            numFixedParticles++;
+            if (numFixedParticles >= int(fixedParticles.size()))
+                fixedParticles.resizeAndPreserve(numFixedParticles);
+            fixedParticles(n) = pos;
+            n++;
+            communicate()->file("fixed")->stream().ignore();
+        }
+    }
+    fixedParticles.resizeAndPreserve(numFixedParticles);
+}
+
+
+/**************************************************************************//**
+ * Destructor.
+******************************************************************************/
+FixedPositionLJPotential::~FixedPositionLJPotential() {
+    fixedParticles.free();
+}
+
+/**************************************************************************//**
+ *  Return the value of the van der Waals' interaction between a graphene sheet
+ *  and a helium adatom at a position, r, above the sheet. 
+
+ *  @param r the position of a helium particle
+ *  @return the van der Waals' potential for graphene-helium
+******************************************************************************/
+double FixedPositionLJPotential::V(const dVec &r) {
+
+    /* Notes: for now I hard-code the potential at 1.5 \AA and a LJ-cutoff of
+     * 20 \AA */
+    
+    if (r[NDIM-1] < (-0.5*Lz + 1.5) )
+        return 87292.0;
+
+    else if (r[NDIM-1] > 0.0)
+        return 0.0;
+
+    double v = 0.0;
+    double sor = 0.0;
+    double x = 0.0;
+    dVec sep;
+    for (int i = 0; i < numFixedParticles; i++) { 
+        sep[0] = fixedParticles(i)[0] - r[0];
+        sep[1] = fixedParticles(i)[1] - r[1];
+        boxPtr->putInBC(sep);
+        sep[2] = fixedParticles(i)[2] - r[2];
+        x = sqrt(dot(sep,sep));
+        if (x < 20.0) {
+            sor = sigma/x;
+            v += pow(sor,12)-pow(sor,6);
+        }
+    }
+    return 4.0*epsilon*v;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // HARD CYLINDER POTENTIAL CLASS ---------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

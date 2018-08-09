@@ -275,7 +275,7 @@ Setup::Setup() :
 
     /* Define the allowed external  potential names */
     externalPotentialName = {"free", "harmonic", "osc_tube", "lj_tube", 
-        "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "graphene"};
+        "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "graphene", "fixed_lj"};
     externalNames = getList(externalPotentialName);
 
     /* Define the allowed action names */
@@ -346,8 +346,8 @@ void Setup::initParameters() {
     params.add<double>("delta_strength,c","delta function potential integrated strength",oClass,10.0);
     params.add<double>("interaction_strength,g","interaction parameter",oClass,1.0);
     params.add<double>("omega","harmonic interaction potential frequency",oClass,1.0);
-    params.add<double>("lj_sigma","Lennard-Jones hard-core radius [angstroms]",oClass,2.556);
-    params.add<double>("lj_epsilon","Lennard-Jones energy scale [kelvin]",oClass,10.216);
+    params.add<double>("lj_sigma","Lennard-Jones hard-core radius [angstroms]",oClass,2.74);
+    params.add<double>("lj_epsilon","Lennard-Jones energy scale [kelvin]",oClass,16.2463);
     params.add<double>("hourglass_radius","differential radius for hourglass potential [angstroms]",oClass,0.0);
     params.add<double>("hourglass_width","constriction width for hourglass potential [angstroms]",oClass,0.0);
     params.add<string>("fixed,f","input file name for fixed atomic positions.",oClass,"");
@@ -1070,6 +1070,9 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
                 params["lj_sigma"].as<double>(),
                 params["lj_epsilon"].as<double>()
                                 );
+    else if (constants()->extPotentialType() == "fixed_lj") 
+        externalPotentialPtr = new FixedPositionLJPotential(params["lj_sigma"].as<double>(), 
+                params["lj_epsilon"].as<double>(),boxPtr);
 
     return externalPotentialPtr;
 }

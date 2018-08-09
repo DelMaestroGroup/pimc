@@ -47,9 +47,14 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     /* We keep simulating until we have stored a certain number of measurements */
     numStoredBins = 0;
     
-    /* Initialize the number of sweeps and updates per sweep to zero */
+    /* Initialize the number of sweeps and updates per sweep*/
     numSteps = 0;
-    numUpdates = 0;
+
+    /* This is required in case we have zero particles in the simulation */
+    numUpdates = int(ceil(max(constants()->initialNumParticles(),1)*constants()->numTimeSlices() / 
+                (1.0*constants()->Mbar())));
+    if (numUpdates < 100)
+        numUpdates = 100;
     
     /* Calculate the number of sweeps to make sure we touch every bead */
     numImagTimeSweeps = int(ceil((1.0*constants()->numTimeSlices()/(1.0*constants()->Mbar()))));
@@ -274,11 +279,6 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
     /* Start the 2/3 off diagonal portion of the equilibration */
     else {
 
-        /* How many updates should we perform? We always try atleast 1 */
-        /* numUpdates = max(1,int(ceil(path.worm.getNumBeadsOn()/(1.0*constants()->Mbar())))); */
-        numUpdates = 1;
-
-
         /* Increment the number of off-diagonal steps */
         numSteps++;
 
@@ -386,18 +386,8 @@ void PathIntegralMonteCarlo::step() {
 
     string moveName;
 
-    /* AGD FIX FIX FIX
-     * This should be numUpdates = 1 if you could have zero particles in the
-     * simulation */
-    /* numUpdates = int(ceil(constants()->initialNumParticles()*constants()->numTimeSlices()/ */
-    /*             (1.0*constants()->Mbar()))); */
-    numUpdates = 1;
-
+    /* perform updates on each set of paths */
     for (uint32 pIdx=0; pIdx<Npaths; pIdx++) {
-
-        /* numUpdates = max(int(ceil(constants()->numTimeSlices()/(1.0*constants()->Mbar()))), */
-        /*         int(ceil(pathPtrVec[pIdx].worm.getNumBeadsOn()/(1.0*constants()->Mbar())))); */
-
 
         /* We run through all moves, making sure that we could have touched each bead at least once */
         for (int n = 0; n < numUpdates ; n++) 

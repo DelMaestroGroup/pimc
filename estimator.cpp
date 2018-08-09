@@ -55,6 +55,8 @@ REGISTER_ESTIMATOR("permutation cycle",PermutationCycleEstimator);
 REGISTER_ESTIMATOR("local permutation",LocalPermutationEstimator);
 REGISTER_ESTIMATOR("one body density matrix",OneBodyDensityMatrixEstimator);
 REGISTER_ESTIMATOR("pair correlation function",PairCorrelationEstimator);
+REGISTER_ESTIMATOR("static structure factor",StaticStructureFactorEstimator);
+REGISTER_ESTIMATOR("intermediate scattering function",IntermediateScatteringFunctionEstimator);
 REGISTER_ESTIMATOR("radial density",RadialDensityEstimator);
 REGISTER_ESTIMATOR("cylinder energy",CylinderEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder number particles",CylinderNumberParticlesEstimator);
@@ -2285,6 +2287,189 @@ void PairCorrelationEstimator::accumulate() {
     }
     else
         estimator += 0.0;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// STATIC STRUCTURE FACTOR ESTIMATOR CLASS -----------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  Compute the static structure factor for a fixed set of q vectors.
+ *  N.B. BROKEN: Doesn't work in general dimensions. 
+******************************************************************************/
+StaticStructureFactorEstimator::StaticStructureFactorEstimator(
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
+        double _maxR, int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
+
+    numq = 10;
+    q.resize(numq);
+    for (int n = 0; n < numq; n++)
+        q(n) = (2.0*M_PI/path.boxPtr->side[0])*n;
+
+    /* Initialize the accumulator intermediate scattering function*/
+    sf.resize(numq);
+    sf = 0.0;
+
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numq);
+
+    /* The magnitude of q */
+    header = str(format("#%15.6E") % 0.0);
+    for (int n = 1; n < numq; n++) 
+        header.append(str(format("%16.6E") % q(n)));
+
+    /* Utilize imaginary time translational symmetry */
+    norm = 1.0/constants()->numTimeSlices();
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+StaticStructureFactorEstimator::~StaticStructureFactorEstimator() { 
+}
+
+/*************************************************************************//**
+ *  measure the intermediate scattering function for each value of the 
+ *  imaginary time separation tau.
+ *
+ *  We only compute this for N > 1 due to the normalization.
+******************************************************************************/
+void StaticStructureFactorEstimator::accumulate() {
+
+    int numParticles = path.getTrueNumParticles();
+    int numTimeSlices = constants()->numTimeSlices();
+
+    beadLocator bead1,bead2;  // The bead locator
+    sf = 0.0; // initialize
+
+    dVec pos1,pos2;      // The two bead positions
+    dVec lq;             // The value of the wave-vector
+    lq = 0.0;
+    
+    for (int nq = 0; nq < numq; nq++) {
+        lq[0] = q(nq);
+
+        /* Average over all initial time slices */
+        for (int slice = 0; slice < numTimeSlices; slice++) {
+
+            bead1[0] = bead2[0] = slice;
+
+            for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(slice); bead1[1]++) {
+
+                pos1 = path(bead1);
+                double lq1 = dot(lq,pos1);
+
+                for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(slice); bead2[1]++) {
+
+                    pos2 = path(bead2);
+                    double lq2 = dot(lq,pos2);
+
+                    sf(nq) += cos(lq1)*cos(lq2) + sin(lq1)*sin(lq2);
+
+                } // bead2[1]
+            } // bead1[1]
+        } //slice
+    } // nq
+
+    estimator += sf/numParticles; 
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// INTERMEDIATE SCATTERING FUNCTION ESTIMATOR CLASS --------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  Measure the intermediate scattering function at a hardcoded wavevector
+ *  N.B. BROKEN: Doesn't work in general dimensions. 
+******************************************************************************/
+IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator(
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
+        double _maxR, int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
+
+    int numTimeSlices = constants()->numTimeSlices();
+
+    /* Initialize the accumulator intermediate scattering function*/
+    isf.resize(numTimeSlices);
+    isf = 0.0;
+
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numTimeSlices);
+
+    /* The imaginary time values */
+    header = str(format("#%15.6E") % 0.0);
+    for (int n = 1; n < numTimeSlices; n++) 
+        header.append(str(format("%16.6E") % (constants()->tau()*n)));
+
+    /* utilize imaginary time translational symmetry */
+    for (int n = 0; n < numTimeSlices; n++) 
+        norm(n) = 1.0/numTimeSlices;
+
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+IntermediateScatteringFunctionEstimator::~IntermediateScatteringFunctionEstimator() { 
+}
+
+/*************************************************************************//**
+ *  measure the intermediate scattering function for each value of the 
+ *  imaginary time separation tau.
+ *
+ *  We only compute this for N > 1 due to the normalization.
+******************************************************************************/
+void IntermediateScatteringFunctionEstimator::accumulate() {
+
+    int numParticles = path.getTrueNumParticles();
+    int numTimeSlices = constants()->numTimeSlices();
+
+    double lside = path.boxPtr->side[0];
+
+    beadLocator bead1,bead2;  // The bead locator
+    isf = 0.0; // initialize
+    dVec pos1,pos2;         // The two bead positions
+    dVec q;             // The value of the wave-vector
+    q = 0.0;
+    q[0] = 4.0*M_PI/lside;
+    q[1] = 4.0*M_PI/lside;
+
+    /* Average over all initial time slices */
+    for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
+
+        /* compute for each tau separation */
+        for (int tausep = 0;  tausep < numTimeSlices; tausep++){
+
+            bead2[0] = (bead1[0] + tausep) % numTimeSlices;
+
+            for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(bead1[0]); bead1[1]++) {
+
+                pos1 = path(bead1);
+                double lq1 = dot(q,pos1);
+
+                for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
+
+                    pos2 = path(bead2);
+                    double lq2 = dot(q,pos2);
+
+                    isf(tausep) += cos(lq1)*cos(lq2) + sin(lq1)*sin(lq2);
+                } // bead2[1]
+            } // bead1[1]
+        } //tausep   
+    } //bead1[0]
+
+    estimator += isf/numParticles;
 }
 
 // ---------------------------------------------------------------------------

@@ -631,6 +631,50 @@ class PairCorrelationEstimator: public EstimatorBase {
 };
 
 // ========================================================================  
+// Static Structure Factor Estimator Class
+// ========================================================================  
+/** 
+ * Compute the static structure factor S(q)
+ */
+class StaticStructureFactorEstimator: public EstimatorBase {
+
+    public:
+        StaticStructureFactorEstimator(const Path &, ActionBase *, 
+                const MTRand &, double, int _frequency=1, string _label="ssf");
+        ~StaticStructureFactorEstimator();
+    
+        static const string name;
+        string getName() {return name;}
+
+    private:
+        void accumulate();              // Accumulate values
+        Array <double,1> sf;            // structure factor
+        Array <double,1> q;             // the q values
+        int numq;                       // number of q values
+};
+
+// ========================================================================  
+// Intermediate Scattering Function Estimator Class
+// ========================================================================  
+/** 
+ * Compute the intermediate scattering function F(q,\tau)
+ */
+class IntermediateScatteringFunctionEstimator: public EstimatorBase {
+
+    public:
+        IntermediateScatteringFunctionEstimator(const Path &, ActionBase *, 
+                const MTRand &, double, int _frequency=1, string _label="isf");
+        ~IntermediateScatteringFunctionEstimator();
+    
+        static const string name;
+        string getName() {return name;}
+
+    private:
+        void accumulate();              // Accumulate values
+        Array <double,1> isf;           // local intermediate scattering function
+};
+
+// ========================================================================  
 // Radial Density Estimator Class
 // ========================================================================  
 /** 

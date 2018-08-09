@@ -180,7 +180,8 @@ void ConstantParameters::initConstants(po::variables_map &params) {
 
     if (abs(totProb - 1.0) > EPS) {
         cout << "Close + AdvanceHead + RecedeHead + AdvanceTail + RecedeTail + Remove + SwapHead " 
-             << "+ Diagonal + CoM Probability != 1" << endl;
+             << "+ SwapTail + Diagonal + CoM Probability != 1" << endl;
+        cout << totProb << endl;
         exit(EXIT_FAILURE);
     }
     PIMC_ASSERT(totProb-1.0 < EPS);
@@ -191,6 +192,7 @@ void ConstantParameters::initConstants(po::variables_map &params) {
     
     if (abs(totProb - 1.0) > EPS) {
         cout << "Open + Insert + Diagonal + CoM Probability != 1" << endl;
+        cout << totProb << endl;
         exit(EXIT_FAILURE);
     }
     PIMC_ASSERT(totProb-1.0 < EPS);

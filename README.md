@@ -96,24 +96,32 @@ to the top of the files `funcs.h` and `mathfunc.h` and save.
 
 ### Boost ###
 
-For detailed instructions on installing boost with compiled libraries please see <a
-href="http://www.boost.org/doc/libs/1_55_0/more/getting_started/unix-variants.html#or-build-custom-binaries">Section 5.2</a> 
-of the official Boost documentation.
+For detailed instructions on installing boost with compiled libraries please see <a href="https://www.boost.org/more/getting_started/index.html">Section 5.2</a> of the official Boost documentation.
 
 1. Download and decompress boost into `$HOME/local/src/`
-2. Change to the directory `tools/build/` inside the boost source directory
+2. Change to the boost source directory 
 3. Execute
 ~~~
 ./bootstrap.sh --with-toolset=gcc
 ~~~
-4. Move up to the top level of the boost source directory
+4. Open `project-config.jam` and make the section:
+~~~
+if ! gcc in [ feature.values <toolset> ]
+{
+    using gcc : 5.5.0 : /opt/local/bin/g++-mp-5 ;
+}
+
+project : default-build <toolset>gcc ;
+
+~~~
+includes all the correct details and location of your gcc compiler, see [here](https://solarianprogrammer.com/2016/03/06/compiling-boost-gcc-5-clang-mac-os-x/) for more details
 5. Execute
 ~~~
-tools/build/v2/b2 install --prefix=PREFIX --toolset=gcc cxxflags=-std=c++11 linkflags=-std=c++11 --with-program_options --with-filesystem 
+./b2 install --prefix=PREFIX --toolset=gcc cxxflags=-std=c++14 linkflags=-std=c++14 --with-program_options --with-filesystem 
 ~~~
 or if you are using the clang compiler
 ~~~
-./b2 install --prefix=PREFIX --toolset=clang --with-program_options --with-filesystem cxxflags="-std=c++11 -stdlib=libc++" linkflags="-std=c++11 -stdlib=libc++" --layout=versioned
+./b2 install --prefix=PREFIX --toolset=clang --with-program_options --with-filesystem cxxflags="-std=c++14 -stdlib=libc++" linkflags="-std=c++14 -stdlib=libc++" --layout=versioned
 ~~~
 The `b2` executable may also be in `tools/build/bin/` depending on your
 machine's configuration.  If you would like to compile boost with different
