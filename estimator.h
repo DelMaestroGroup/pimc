@@ -672,6 +672,8 @@ class IntermediateScatteringFunctionEstimator: public EstimatorBase {
     private:
         void accumulate();              // Accumulate values
         Array <double,1> isf;           // local intermediate scattering function
+        Array <dVec,1> q;               // The q-vectors to be considered
+        int numq;                       // the number of q-vectors
 };
 
 // ========================================================================  

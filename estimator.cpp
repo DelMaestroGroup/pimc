@@ -2399,23 +2399,44 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
 {
 
     int numTimeSlices = constants()->numTimeSlices();
+    double lside = path.boxPtr->side[0];
 
-    /* Initialize the accumulator intermediate scattering function*/
-    isf.resize(numTimeSlices);
+
+    /* these are the hard-coded q-vectors for now */
+    numq = 3;
+    q.resize(numq);
+    q = 0.0;
+    q(0)[0] = 2.0*M_PI/lside;
+    q(1)[0] = q(1)[1] = 4.0*M_PI/lside;
+    q(2)[0] = 8.0*M_PI/lside;
+    q(2)[1] = 4.0*M_PI/lside;
+
+    /* Initialize the accumulator for the intermediate scattering function*/
+    /* N.B. for now we hard-code three wave-vectors */
+    isf.resize(numq*numTimeSlices);
     isf = 0.0;
 
     /* This is a diagonal estimator that gets its own file */
-    initialize(numTimeSlices);
+    initialize(numq*numTimeSlices);
+
+    /* the q-values */
+    header = str(format("#%15.6E") % sqrt(dot(q(0),q(0))));
+    for (int n = 1; n < numq; n++)
+        header.append(str(format("%16.6E") % sqrt(dot(q(n),q(n)))));
+    header.append("\n");
 
     /* The imaginary time values */
-    header = str(format("#%15.6E") % 0.0);
+    header.append(str(format("#%15.6E") % 0.0));
     for (int n = 1; n < numTimeSlices; n++) 
         header.append(str(format("%16.6E") % (constants()->tau()*n)));
 
-    /* utilize imaginary time translational symmetry */
-    for (int n = 0; n < numTimeSlices; n++) 
-        norm(n) = 1.0/numTimeSlices;
+    for (int nq = 1; nq < numq; nq++) {
+        for (int n = 0; n < numTimeSlices; n++) 
+            header.append(str(format("%16.6E") % (constants()->tau()*n)));
+    }
 
+    /* utilize imaginary time translational symmetry */
+    norm = 1.0/numTimeSlices;
 }
 
 /*************************************************************************//**
@@ -2435,39 +2456,37 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
     int numParticles = path.getTrueNumParticles();
     int numTimeSlices = constants()->numTimeSlices();
 
-    double lside = path.boxPtr->side[0];
-
     beadLocator bead1,bead2;  // The bead locator
     isf = 0.0; // initialize
     dVec pos1,pos2;         // The two bead positions
-    dVec q;             // The value of the wave-vector
-    q = 0.0;
-    q[0] = 4.0*M_PI/lside;
-    q[1] = 4.0*M_PI/lside;
 
-    /* Average over all initial time slices */
-    for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
+    /* q-values */
+    for (int nq = 0; nq < numq; nq++) {
 
-        /* compute for each tau separation */
-        for (int tausep = 0;  tausep < numTimeSlices; tausep++){
+        /* Average over all initial time slices */
+        for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
 
-            bead2[0] = (bead1[0] + tausep) % numTimeSlices;
+            /* compute for each tau separation */
+            for (int tausep = 0;  tausep < numTimeSlices; tausep++){
 
-            for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(bead1[0]); bead1[1]++) {
+                bead2[0] = (bead1[0] + tausep) % numTimeSlices;
 
-                pos1 = path(bead1);
-                double lq1 = dot(q,pos1);
+                for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(bead1[0]); bead1[1]++) {
 
-                for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
+                    pos1 = path(bead1);
+                    double lq1 = dot(q(nq),pos1);
 
-                    pos2 = path(bead2);
-                    double lq2 = dot(q,pos2);
+                    for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
 
-                    isf(tausep) += cos(lq1)*cos(lq2) + sin(lq1)*sin(lq2);
-                } // bead2[1]
-            } // bead1[1]
-        } //tausep   
-    } //bead1[0]
+                        pos2 = path(bead2);
+                        double lq2 = dot(q(nq),pos2);
+
+                        isf(nq*numTimeSlices + tausep) += cos(lq1)*cos(lq2) + sin(lq1)*sin(lq2);
+                    } // bead2[1]
+                } // bead1[1]
+            } //tausep   
+        } //bead1[0]
+    } //nq
 
     estimator += isf/numParticles;
 }
