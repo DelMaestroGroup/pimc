@@ -1181,11 +1181,11 @@ Array<dVec,1> LJHourGlassPotential::initialConfig1(const Container *boxPtr,
 Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr, 
         MTRand &random, const int numParticles) {
 
-	/* The particle configuration */
-	Array<dVec,1> initialPos(numParticles);
-	initialPos = 0.0;
+    /* The particle configuration */
+    Array<dVec,1> initialPos(numParticles);
+    initialPos = 0.0;
 
-	dVec pos;
+    dVec pos;
     pos = 0.0;
 
     /* We randomly place the particles inside the cylinder taking acount of the 
@@ -1194,17 +1194,19 @@ Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr,
      */
 	for (int n = 0; n < numParticles; n++) {
 
-        pos[NDIM-1] = L*(-0.5 + random.rand());
-        double theta = 2.0*M_PI*random.rand();
+            /* Uniform position along the pore */
+            pos[NDIM-1] = L*(-0.5 + random.rand());
 
-        double r = (Rtanh(pos[NDIM-1]) - sigma)*sqrt(random.rand());
+            /* Uniform position in a disk of z-dependent radius*/
+            double theta = 2.0*M_PI*random.rand();
+            double r = (Rtanh(pos[NDIM-1]) - sigma)*sqrt(random.rand());
 
-        pos[0] = r*cos(theta);
-        pos[1] = r*sin(theta);
+            pos[0] = r*cos(theta);
+            pos[1] = r*sin(theta);
 
-		boxPtr->putInside(pos);
+            boxPtr->putInside(pos);
 
-        initialPos(n) = pos;
+            initialPos(n) = pos;
     }
 
 	return initialPos;
