@@ -692,6 +692,21 @@ FixedPositionLJPotential::FixedPositionLJPotential (double _sigma, double _epsil
         }
     }
     fixedParticles.resizeAndPreserve(numFixedParticles);
+
+    /* print out the potential to disk */
+    /* int numPoints = 200; */
+    /* double dx = _boxPtr->side[0]/numPoints; */
+    /* double dy = _boxPtr->side[1]/numPoints; */
+    /* pos[2] = -0.5*_boxPtr->side[2] + 2.635; */
+    /* for (int i = 0; i < numPoints; i++) { */
+    /*     pos[0] = -0.5*_boxPtr->side[0] + i*dx; */
+    /*     for (int j = 0; j < numPoints; j++) { */
+    /*         pos[1] = -0.5*_boxPtr->side[1] + j*dy; */
+    /*         communicate()->file("debug")->stream() << format("%24.16e %24.16e %24.16e\n") % pos[0] % pos[1] % V(pos); */
+    /*     } */
+    /* } */
+
+    /* exit(-1); */
 }
 
 
@@ -2043,7 +2058,7 @@ double GraphenePotential::V(const dVec &r) {
 
     double x = r[0];
     double y = r[1];
-    double z = r[2]+EPS;
+    double z = r[2]+(constants()->L()/2);
     double g = 0.;
     double gdotb1 = 0.;
     double gdotb2 = 0.;
@@ -2156,6 +2171,284 @@ Array<dVec,1> GraphenePotential::initialConfig(const Container *boxPtr, MTRand &
             initialPos(n) = pos;
         else 
             break;
+    }
+    return initialPos;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// GrapheneLUTPotential Class----------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+ * Constructor.
+******************************************************************************/
+#include <boost/math/special_functions/bessel.hpp>
+GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, double _a0, 
+        double _sigma, double _epsilon, const Container *_boxPtr) : PotentialBase() {
+
+    double strain = _strain;
+    double poisson = _poisson;
+    double a0 = _a0;
+    sigma = _sigma;
+    epsilon = _epsilon;
+
+    /* get a local copy of the system size */
+    Lzo2 = 0.5*_boxPtr->side[NDIM-1];
+
+    /* Lookup Tables */
+    tableLength = int((zmax - zmin)/dr);
+    
+    karr.resize(2*gnum+1,2*gnum+1);
+    karr = 0;
+
+    vg.resize(gtot, tableLength);
+    gradvg.resize(gtot, tableLength);
+
+    /* Lattice vectors */
+    a1x = (sqrt(3.)*a0/8.)*(4.+strain-(3.*strain*poisson));
+    a1y = (3.*a0/8.)*(4.+(3.*strain)-(strain*poisson));
+    a2x = -a1x;
+    a2y = a1y;
+
+    /* reciprocal lattice vectors */
+    g1x = 8.*M_PI*sqrt(3.)*(4. + (3.*strain) - (strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
+    g1y = 8.*M_PI*(4. + strain - (3.*strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
+    g2x = -g1x;
+    g2y = g1y;
+
+    /* basis vectors */
+    b1x = a2x;
+    b1y = -0.5 * (1. + strain) * a0;
+    b2x = 0.;
+    b2y = -.5*(1. + strain) * a0-(a1x/sqrt(3.));
+
+    /* area of unit cell */
+    A = fabs((a1x*a2y) - (a1y*a2x));
+    
+    double g = 0.0;
+    double prefactor = epsilon*sigma*sigma*2.*M_PI/A;
+    double k5term = 0.0;
+    double k2term = 0.0;
+    double dk1term = 0.0;
+    double dk2term = 0.0;
+    double dk3term = 0.0;
+    double dk4term = 0.0;
+    double dk5term = 0.0;
+    double dk6term = 0.0;
+    double z = 0.0;
+    
+    /* Create lookup table */
+    int ii = 0;
+    for (int m = 0; m < gnum+1; m++) {
+        for (int n = -m; n < m+1; n++) {
+            if ((m != 0) or (n != 0)) {
+                g = sqrt(pow((m*g1x + n*g2x),2) + pow((m*g1y + n*g2y),2));
+                garr[ii] = g;
+                for (int k = 0; k < tableLength; k++){
+                    z = zmin + (k*dr);
+                    k5term = pow((g*sigma*sigma/2./z),5)*boost::math::cyl_bessel_k(5, g*z)/30.;
+                    k2term = 2.*pow((g*sigma*sigma/2./z),2)*boost::math::cyl_bessel_k(2, g*z);
+                    vg(ii,k) = prefactor*(k5term-k2term);
+                    dk1term = -480.*g*z*z*z*z*boost::math::cyl_bessel_k(1, g*z);
+                    dk2term = -1920.*z*z*z*boost::math::cyl_bessel_k(2, g*z);
+                    dk3term = -480.*g*z*z*z*z*boost::math::cyl_bessel_k(3, g*z);
+                    dk4term = g*g*g*g*z*sigma*sigma*sigma*sigma*sigma*sigma*boost::math::cyl_bessel_k(4, g*z);
+                    dk5term = 10.*g*g*g*sigma*sigma*sigma*sigma*sigma*sigma*boost::math::cyl_bessel_k(5, g*z);
+                    dk6term = g*g*g*g*z*sigma*sigma*sigma*sigma*sigma*sigma*boost::math::cyl_bessel_k(6, g*z);
+                    gradvg(ii,k)= prefactor * (-g * g * sigma * sigma * sigma * sigma / 1920. / pow(z,6)) * (dk1term + dk2term + dk3term + dk4term + dk5term + dk6term);
+
+                }
+            }
+            else {
+                garr[ii] = 0.0;
+                for (int k = 0; k < tableLength; k++){
+                    z = zmin + (k*dr);
+                    vg(ii,k) = q*prefactor*( ((2./5.)*pow((sigma/z),10)) - pow((sigma/z),4) );
+                    gradvg(ii,k) = q * prefactor * 4. * (pow(sigma/z,4) - pow(sigma/z,10)) / z;
+                }
+            }
+            ii+=1;
+        }
+    }
+    std::vector<int> kindarr(gtot);
+    std::size_t nn(0);
+    std::generate(std::begin(kindarr), std::end(kindarr), [&]{ return nn++; });
+
+    std::sort( std::begin(kindarr), std::end(kindarr), [&](int i1, int i2) { return garr[i1] < garr[i2]; });
+    std::sort( std::begin(garr), std::end(garr));
+
+    // fill k array
+    int k = 0;
+    for (int m = -gnum; m < gnum+1; m++) {
+        for (int n = -gnum; n < gnum+1; n++) {
+            g = sqrt(pow((m*g1x + n*g2x),2) + pow((m*g1y + n*g2y),2));
+            k = lower_bound(std::begin(garr), std::end(garr), g)-std::begin(garr);
+            karr(m+gnum,n+gnum) = kindarr[k];
+        }
+    }
+
+    /* print out the potential to disk */
+    /* int numPoints = 500; */
+    /* double dx = _boxPtr->side[0]/numPoints; */
+    /* double dy = _boxPtr->side[1]/numPoints; */
+    /* dVec pos; */
+    /* pos[2] = -0.5*_boxPtr->side[2] + 10.635; */
+    /* for (int i = 0; i < numPoints; i++) { */
+    /*     pos[0] = -0.5*_boxPtr->side[0] + i*dx; */
+    /*     for (int j = 0; j < numPoints; j++) { */
+    /*         pos[1] = -0.5*_boxPtr->side[1] + j*dy; */
+    /*         communicate()->file("debug")->stream() << format("%24.16e %24.16e %24.16e\n") % pos[0] % pos[1] % V(pos); */
+    /*     } */
+    /* } */
+}
+
+
+/**************************************************************************//**
+ * Destructor.
+******************************************************************************/
+GrapheneLUTPotential::~GrapheneLUTPotential() {
+    karr.free();
+    vg.free();
+    gradvg.free();
+}
+
+/**************************************************************************//**
+ *  Return the value of the van der Waals' interaction between a graphene sheet
+ *  and a helium adatom at a position, r, above the sheet. 
+
+ *  @param r the position of a helium particle
+ *  @return the van der Waals' potential for graphene-helium
+******************************************************************************/
+double GrapheneLUTPotential::V(const dVec &r) {
+    
+    double z = r[2]+(Lzo2);
+    int zindex = int((z-zmin)/dr);
+    if (z < zmin) 
+        return 400000.;
+    
+    if (zindex >= tableLength)
+        return q*(epsilon*sigma*sigma*2.*M_PI/A)*( ((2./5.)*pow((sigma/z),10)) - pow((sigma/z),4) );
+
+    double x1 = r[0]+b1x;
+    double x2 = r[0]+b2x;
+    double y1 = r[1]+b1y;
+    double y2 = r[1]+b2y;
+
+    double mx,my;
+    
+    /* We correct for double counting the k=0 term */
+    double v = -vg(0,zindex);
+    for (int m = -gnum; m < gnum+1; m++) {
+        mx = m*g1x;
+        my = m*g1y;
+        for (int n = -gnum; n < gnum+1; n++) {
+            v += (cos((mx + n*g2x)*x1 + (my + n*g2y)*y1) + 
+                  cos((mx + n*g2x)*x2 + (my + n*g2y)*y2)) * vg(karr(m+gnum,n+gnum),zindex);
+        }
+    }
+
+    return v;
+}
+
+/**************************************************************************//**
+ *  Return the gradient of the van der Waals' interaction between a graphene sheet
+ *  and a helium adatom at a position, r, above the sheet. 
+
+ *  @param r the position of a helium particle
+ *  @return the gradient of the van der Waals' potential for graphene-helium
+******************************************************************************/
+dVec GrapheneLUTPotential::gradV(const dVec &r) {
+
+    return 0.0;
+
+    double x = r[0];
+    double y = r[1];
+    double z = r[NDIM-1]+(Lzo2);
+    int zindex = int((z-zmin)/dr);
+    dVec dv = 0.0;
+    
+    if (z < zmin) 
+        return dv;
+
+    if (zindex >= tableLength) {
+        dv[NDIM-1] += q*(epsilon*sigma*sigma*2.*M_PI/A)* 4. * (pow(sigma/z,4) - pow(sigma/z,10)) / z;
+        return dv;
+    }
+    
+    dv[NDIM-1] = gradvg(0,zindex);
+    double gdotb1 = 0.;
+    double gdotb2 = 0.;
+
+    int k = 0;
+    
+    /* NB: this has not been optimized!!! */
+    for (int m = -gnum; m < gnum+1; m++) {
+        for (int n = -gnum; n < gnum+1; n++) {
+            k = karr(m+gnum,n+gnum);
+            if((m != 0) or (n != 0)) {
+                gdotb1 = ((m*g1x + n*g2x)*(b1x+x)) + ((m*g1y + n*g2y)*(b1y+y));
+                gdotb2 = ((m*g1x + n*g2x)*(b2x+x)) + ((m*g1y + n*g2y)*(b2y+y));
+                
+                dv[0] += -(g1x*m+g2x*n) * (sin(gdotb1) + sin(gdotb2))*vg(k,zindex);
+                dv[1] += -(g1y*m+g2y*n) * (sin(gdotb1) + sin(gdotb2))*vg(k,zindex);
+                dv[NDIM-1] += (cos(gdotb1)+cos(gdotb2))*gradvg(k,zindex);
+            }
+        }
+    }
+    return dv;
+}
+
+/**************************************************************************//**
+ * Return an initial particle configuration.
+ *
+ * We create particles at random locations above the graphene sheet.
+******************************************************************************/
+Array<dVec,1> GrapheneLUTPotential::initialConfig(const Container *boxPtr, MTRand &random,
+        const int numParticles) {
+    /* The particle configuration */
+    Array<dVec,1> initialPos(numParticles);
+    initialPos = 0.0;
+    
+    int Nlayer = round(boxPtr->side[0]*boxPtr->side[1]/a1x/a1y/4);
+    int numX = round(boxPtr->side[0]/a1x/2);
+    int numY = round(boxPtr->side[1]/a1y/2);
+    double gridX = boxPtr->side[0]/numX;
+    double gridY = boxPtr->side[1]/numY;
+    int gridSize = 0;
+    if (3*Nlayer < numParticles){
+        gridSize = numParticles - 3*Nlayer;
+    }
+    int numInLayers = numParticles - gridSize;
+    int layerNum = 0;
+    int iShifted = 0;
+    dVec pos;
+    for (int i = 0; i < numInLayers; i++){
+        layerNum = i/Nlayer;
+        iShifted = i - (layerNum*Nlayer);
+        pos[0] = ((iShifted % numX) + 0.5)*gridX - (boxPtr->side[0]/2);
+        pos[1] = ((iShifted / numX) + 0.5)*gridY - (boxPtr->side[1]/2);
+        pos[NDIM-1] = ((layerNum+1)*3.0)-(boxPtr->side[NDIM-1]/2);
+        boxPtr->putInside (pos);
+        initialPos(i) = pos;
+    }
+    if (gridSize) {
+        int initCubePart = ceil(pow(1.0*gridSize,1.0/(1.0*NDIM)));
+        dVec initSide;
+        for (int i = 0; i < NDIM - 1; i++) {
+            initSide[i] = boxPtr->side[i]/initCubePart;
+        }
+
+        initSide[NDIM-1] = (boxPtr->side[NDIM-1] - 12.0)/initCubePart;
+    
+        for (int n = 0; n < gridSize; n++) {
+            pos[0] = (((n % initCubePart) + 0.5) * initSide[0]) - (boxPtr->side[0]/2);
+            pos[1] = (((n / initCubePart) + 0.5) * initSide[1]) - (boxPtr->side[1]/2);
+            pos[NDIM-1] = (((n / initCubePart / initCubePart) + 0.5) * initSide[NDIM-1]) - (boxPtr->side[NDIM-1]/2) + 12.0;
+            boxPtr->putInside (pos);
+            initialPos(n + numInLayers) = pos;
+        }
     }
     return initialPos;
 }

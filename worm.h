@@ -45,8 +45,9 @@ class Worm {
         /* Get the state of a bead */
         beadState getState (const beadLocator &) const;
 
-        /* The worm-trajectory factor */
+        /* The worm-trajectory factor for interactions and external potentials*/
         double factor(const beadState, const beadLocator&) const;
+        double factor(const beadState state1) const { return 1.0 - 0.5*(state1 != NONE);};
 
         /* Safely add/delete beads */
         inline void delBead(int,int);

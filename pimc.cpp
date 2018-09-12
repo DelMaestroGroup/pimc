@@ -390,8 +390,10 @@ void PathIntegralMonteCarlo::step() {
     for (uint32 pIdx=0; pIdx<Npaths; pIdx++) {
 
         /* We run through all moves, making sure that we could have touched each bead at least once */
-        for (int n = 0; n < numUpdates ; n++) 
+        for (int n = 0; n < numUpdates ; n++)  {
             moveName = update(random.rand(),n,pIdx);
+            /* cout << path.worm.isConfigDiagonal << " " << moveName << endl; */
+        }
 
         /* Perform all measurements */
         for (auto& est : estimatorPtrVec[pIdx])
@@ -403,6 +405,7 @@ void PathIntegralMonteCarlo::step() {
             if (estimatorPtrVec[pIdx].front().getNumAccumulated() >= binSize) {
 
                 for (auto& est : estimatorPtrVec[pIdx]) {
+                    /* cout << est.getNumAccumulated() << endl; */
                     if (est.getNumAccumulated() >= binSize)
                         est.output();
                 }

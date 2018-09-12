@@ -531,15 +531,16 @@ double LocalAction::V(const beadLocator &bead1) {
     if (path.worm.beadOn(bead1)) {
 
         bead2[0] = bead1[0];
+
+        /* Get the state of bead 1 */
+        beadState state1 = path.worm.getState(bead1);
         
         /* Calculate the total external potential */
-        double totVext = externalPtr->V(path(bead1));
+        double totVext = path.worm.factor(state1)*externalPtr->V(path(bead1));
 
         /* Now calculate the total interation potential, neglecting self-interactions */
         double totVint = 0.0;
 
-        /* Get the state of bead 1 */
-        beadState state1 = path.worm.getState(bead1);
         
         for (bead2[1]= 0; bead2[1] < path.numBeadsAtSlice(bead1[0]); bead2[1]++) {
 
@@ -590,7 +591,7 @@ double LocalAction::V(const int slice) {
             beadState state1 = path.worm.getState(bead1);
 
             /* Evaluate the external potential */
-            totVext += externalPtr->V(path(bead1));
+            totVext += path.worm.factor(state1)*externalPtr->V(path(bead1));
 
             /* The loop over all other particles, to find the total interaction
              * potential */
@@ -685,11 +686,11 @@ double LocalAction::Vnn(const beadLocator &bead1) {
         /* Fill up th nearest neighbor list */
         lookup.updateInteractionList(path,bead1);
 
-        /* Evaluate the external potential */
-        totVext = externalPtr->V(path(bead1));
-
         /* Get the state of bead 1 */
         beadState state1 = path.worm.getState(bead1);
+
+        /* Evaluate the external potential */
+        totVext = path.worm.factor(state1)*externalPtr->V(path(bead1));
 
         /* Sum the interaction potential over all NN beads */
         for (int n = 0; n < lookup.numBeads; n++) {
@@ -728,15 +729,15 @@ double LocalAction::Vnn(const int slice) {
 
         doParticles(bead1[1]) = false;
 
+        /* Get the state of bead 1 */
+        beadState state1 = path.worm.getState(bead1);
+
         /* Accumulate the external potential */
         pos = path(bead1);
-        totVext += externalPtr->V(pos);
+        totVext += path.worm.factor(state1)*externalPtr->V(pos);
 
         /* Get the interaction list */
         lookup.updateInteractionList(path,bead1);
-
-        /* Get the state of bead 1 */
-        beadState state1 = path.worm.getState(bead1);
 
         /* Sum the interaction potential over all NN beads */
         for (int n = 0; n < lookup.numBeads; n++) {

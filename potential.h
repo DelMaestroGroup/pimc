@@ -963,4 +963,73 @@ class GraphenePotential: public PotentialBase  {
         double A;
 
 };
+
+// ========================================================================  
+// GrapheneLUTPotential Class
+// ========================================================================  
+/** 
+ * \brief Returns van der Waals' potential between a helium adatom and a graphene sheet using summation in reciprocal space.
+ *
+ * Author: Nathan Nichols & Adrian Del Maestro
+ * Returns the potential energy resulting from a van der Waals' interaction
+ * between a helium adatom and a fixed infinite graphene lattice
+ */
+class GrapheneLUTPotential: public PotentialBase  {
+
+    public:
+        GrapheneLUTPotential(const double, const double, const double, const double, const double, const Container*);
+        ~GrapheneLUTPotential();
+
+        /* Return the sum of the van der Waals' interaction energy between the supplied
+         * particle and the fixed graphene lattice. */
+        double V(const dVec &r);
+
+        /* Return the gradient of the sum of the van der Waals' interaction energy between the supplied
+         * particle and the fixed graphene lattice. */
+        dVec gradV(const dVec &r);
+        
+        /** Initial configuration corresponding to graphene-helium vdW potential */
+        Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+
+    private:
+        double sigma;
+        double epsilon;
+
+        double a1x;
+        double a1y;
+        double a2x;
+        double a2y;
+
+        double g1x;
+        double g1y;
+        double g2x;
+        double g2y;
+
+        double b1x;
+        double b1y;
+        double b2x;
+        double b2y;
+
+        double A;
+
+        double Lzo2;    // half the system size in the z-direction
+        
+        double q = 2.0; // number of basis vectors
+        
+        static const int gnum = 3;
+        static const int gtot = 16; //pow(gnum + 1,2);
+
+        double dr = 1.0E-5;
+        double zmin = 1.5;
+        double zmax = 10.0;
+        int tableLength;
+        double garr [gtot];
+        
+        /* The lookup tables */
+        Array<int,2> karr;
+        Array<double,2> vg;
+        Array<double,2> gradvg;
+};
+
+
 #endif

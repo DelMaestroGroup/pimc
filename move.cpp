@@ -91,6 +91,9 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
     maxWind = constants()->maxWind();
     numWind = ipow(2*maxWind + 1,NDIM);
 
+    /* initialize the cumulative probability distribution */
+    cumrho0.resize(numWind);
+
     /* For each integer labelling a winding sector, we construct the winding
      * vector and append to a matrix */
     iVec wind;
@@ -367,35 +370,29 @@ iVec MoveBase::sampleWindingSector(const beadLocator &startBead, const beadLocat
     dVec vel,velW;
     vel = path(endBead) - path(startBead);
 
+    /* If we aren't sampling winding sectors we always
+     * get the min sector. */
+    /* path.boxPtr->putInBC(vecl); */
+
     /* Initialize the probability and cumulative probabilities */
-    cumrho0.clear();
-    cumrho0.push_back(actionPtr->rho0(vel,stageLength));
+    /* fill(cumrho0.begin(), cumrho0.end(), 0); */
+    cumrho0[0] = actionPtr->rho0(vel,stageLength);
     totalrho0 = cumrho0[0];
-    /* double maxrho0 = totalrho0; */
-    
+
     /* Sample the free density matrix for different winding sectors */
     for (int n = 1; n < numWind; n++) {
         velW = vel + winding.at(n)*path.boxPtr->side;
         double crho0 = actionPtr->rho0(velW,stageLength);
         totalrho0 += crho0;
-        cumrho0.push_back(cumrho0[n-1] + crho0);
-
-        /* If we are still in the lowest winding sectors, find the maximum
-         * probability */
-        /* if (n < windingSector[1])  { */
-        /*     if (crho0 > maxrho0) */
-        /*         maxrho0 = crho0; */
-        /* } */
-        /* /1* Otherwise, test if we can exit *1/ */
-        /* else { */
-        /*     if (abs(crho0/maxrho0) < tolerance) */ 
-        /*         break; */
-        /* } */
+        cumrho0[n] = cumrho0[n-1] + crho0;
     }
 
     /* Normalize the cumulative probability */
-    for (uint32 n = 0; n < cumrho0.size(); ++n)
-       cumrho0[n] /= totalrho0;
+    for (auto& crho0 : cumrho0)
+        crho0 /= totalrho0;
+
+    /* for (uint32 n = 0; n < cumrho0.size(); ++n) */
+    /*    cumrho0[n] /= totalrho0; */
 
     /* Perform tower sampling to select the winding vector */
     int index;
@@ -712,7 +709,7 @@ bool EndStagingMove::attemptMove() {
             while( !all(path.next(brokenBead)==XXX) ){
                 brokenBead = path.next(brokenBead);
                 if ( brokenBead[0] == path.breakSlice ){
-                    if ( all(path.next(brokenBead)==XXX ) )
+                    if ( all(path.next(brokenBead)==XXX ) ){
                         leftMoving = false;
                         rightBead = brokenBead;
                 }
@@ -721,7 +718,7 @@ bool EndStagingMove::attemptMove() {
             while( !all(path.prev(brokenBead)==XXX) ){
                 brokenBead = path.prev(brokenBead);
                 if ( brokenBead[0] == path.breakSlice+1 ){
-                    if ( all(path.prev(brokenBead)==XXX ) )
+                    if ( all(path.prev(brokenBead)==XXX ) ){
                         leftMoving = true;
                         leftBead = brokenBead;
                 }
@@ -1301,6 +1298,9 @@ StagingMove::StagingMove (Path &_path, ActionBase *_actionPtr,
 
     /* Resize the original position array */
     originalPos.resize(constants()->Mbar()-1);
+
+    /* The maximum length of a staging move */
+    stageLength = constants()->Mbar();
 }
 
 /*************************************************************************//**
@@ -1333,10 +1333,11 @@ bool StagingMove::attemptMove() {
         return false;
 
     /* Randomly select the start bead of the stage */
-    if (PIGS)
-        startBead[0] = random.randInt((path.numTimeSlices-1)-constants()->Mbar());
-    else
-        startBead[0] = random.randInt(path.numTimeSlices-1);
+#if PIGS
+    startBead[0] = random.randInt((path.numTimeSlices-1)-constants()->Mbar());
+#else
+    startBead[0] = random.randInt(path.numTimeSlices-1);
+#endif
 
     /* We need to worry about the possibility of an empty slice for small
      * numbers of particles. */
@@ -1344,11 +1345,15 @@ bool StagingMove::attemptMove() {
         return false;
     startBead[1] = random.randInt(path.numBeadsAtSlice(startBead[0])-1);
 
+    /* Do we perform varialble length staging updates? */
+    if (constants()->varUpdates())
+        stageLength = 2 + random.randInt(constants()->Mbar()-2);
+
     /* Now we have to make sure that we are moving an active trajectory, 
      * otherwise we exit immediatly */
     beadLocator beadIndex;
     beadIndex = startBead;
-    for (int k = 0; k < (constants()->Mbar()); k++) {
+    for (int k = 0; k < (stageLength); k++) {
         if (!path.worm.beadOn(beadIndex) || all(path.next(beadIndex)==XXX))
             return false;
         beadIndex = path.next(beadIndex);
@@ -1363,7 +1368,7 @@ bool StagingMove::attemptMove() {
 
     double totalrho0;
     iVec wind;
-    wind = sampleWindingSector(startBead,endBead,constants()->Mbar(),totalrho0);
+    wind = sampleWindingSector(startBead,endBead,stageLength,totalrho0);
 
     /* Get the current action for the path segment to be updated */
     oldAction = actionPtr->potentialAction(startBead,path.prev(endBead));
@@ -1378,7 +1383,7 @@ bool StagingMove::attemptMove() {
         beadIndex = path.next(beadIndex);
         originalPos(k) = path(beadIndex);
         path.updateBead(beadIndex,
-                newStagingPosition(path.prev(beadIndex),endBead,constants()->Mbar(),k,wind));
+                newStagingPosition(path.prev(beadIndex),endBead,stageLength,k,wind));
         if (!movedIntoSubRegionA){
             movedIntoSubRegionA = path.inSubregionA(beadIndex);
         }
@@ -1492,6 +1497,12 @@ bool BisectionMove::attemptMove() {
     /* We cannot perform this move at present when using a pair product action */
     if (constants()->actionType() == "pair_product")
         return false;
+
+    /* Do we perform varialble length bisection updates? */
+    if (constants()->varUpdates()) {
+        numLevels = 1+random.randInt(constants()->b()-1);
+        numActiveBeads = ipow(2,numLevels)-1;
+    }
 
     /* Only do bisections when we have at least one particle */
     if (path.getTrueNumParticles()==0)

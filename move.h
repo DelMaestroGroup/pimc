@@ -283,6 +283,8 @@ class StagingMove: public MoveBase {
         beadLocator startBead,endBead;      // The start and end of the stage
 
         void undoMove();                    // Undo the move
+
+        int stageLength;                    // The length of the stage
 };
 
 // ========================================================================  

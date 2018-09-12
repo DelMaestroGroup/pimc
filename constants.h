@@ -87,6 +87,7 @@ class ConstantParameters
         int windowWidth() const { return windowWidth_;}                     ///< Get window 1/2 width
         bool gaussianEnsemble() const { return gaussianEnsemble_;}          ///< Get enesemble weight on/off
         double gaussianEnsembleSD() const { return gaussianEnsembleSD_;}    ///< Get enesemble weight standard dev.
+        bool varUpdates() const {return varUpdates_;}                       ///< Fixed or variable length diagonal updates
 
         int Mbar() {return Mbar_;}                      ///< Get Mbar
         int b() {return b_;}                            ///< Get bisection level
@@ -169,6 +170,7 @@ class ConstantParameters
         int windowWidth_;           // Half width of particle number window
         bool gaussianEnsemble_;     // Are we using gaussian ensemble weight?
         double gaussianEnsembleSD_; // Standard deviation of ensemble weight
+        bool varUpdates_;           // Perform variable length diagonal updates
 
         string intPotentialType_;   // The type of interaction potential
         string extPotentialType_;   // The type of external potential

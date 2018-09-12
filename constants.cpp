@@ -62,6 +62,9 @@ void ConstantParameters::initConstants(po::variables_map &params) {
 
     /* Are we saving a state file every bin? */
     saveStateFiles_ = params["no_save_state"].empty();
+
+    /* Do we want variable length diagonal updates? */
+    varUpdates_ = params["var_updates"].empty();
     
     /* Set the particle number window */
     if (params["window"].empty()) {

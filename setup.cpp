@@ -275,7 +275,7 @@ Setup::Setup() :
 
     /* Define the allowed external  potential names */
     externalPotentialName = {"free", "harmonic", "osc_tube", "lj_tube", 
-        "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "graphene", "fixed_lj"};
+        "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "graphene", "fixed_lj", "graphenelut"};
     externalNames = getList(externalPotentialName);
 
     /* Define the allowed action names */
@@ -390,6 +390,7 @@ void Setup::initParameters() {
     params.add<int>("update_length,M", "non-local update length, (Mbar), -1 sets maximal value",oClass);
     params.add<string>("action", str(format("action type:\n%s") % actionNames).c_str(),oClass,"gsf");
     params.add<bool>("full_updates", "perform full staging updates",oClass);
+    params.add<bool>("var_updates", "perform variable length diagonal updates",oClass);
     params.add<bool>("staging", "perform staging instead of bisection for the diagonal update",oClass);
     params.add<int>("max_winding", "the maximum winding number to sample",oClass,1);
 
@@ -1070,6 +1071,14 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
                 params["lj_sigma"].as<double>(),
                 params["lj_epsilon"].as<double>()
                                 );
+    else if (constants()->extPotentialType() == "graphenelut") 
+        externalPotentialPtr = new GrapheneLUTPotential(params["strain"].as<double>(),
+                params["poisson"].as<double>(),
+                params["carbon_carbon_dist"].as<double>(),
+                params["lj_sigma"].as<double>(),
+                params["lj_epsilon"].as<double>(),
+                boxPtr
+                                );
     else if (constants()->extPotentialType() == "fixed_lj") 
         externalPotentialPtr = new FixedPositionLJPotential(params["lj_sigma"].as<double>(), 
                 params["lj_epsilon"].as<double>(),boxPtr);
@@ -1347,7 +1356,7 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
             outputd = true;
             n++;
         }
-        else if (checkOption(arg,"estimator")) {
+        else if (checkOption(arg,"estimator") or checkOption(arg,"-e")) {
             outputEstimator = true;
             n++;
         }
