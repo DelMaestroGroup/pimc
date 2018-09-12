@@ -701,10 +701,10 @@ bool EndStagingMove::attemptMove() {
     }
     
     /* If path is broken, select which end to move */
-    if ( (path.breakSlice > 0 )
-                && (random.rand() < 0.5) ){
+    if ( (path.breakSlice > 0 ) && (random.rand() < 0.5) ){
         /* Check if worldline is broken */
         beadLocator brokenBead = beadIndex;
+
         if ( beadIndex[0] == 0){
             while( !all(path.next(brokenBead)==XXX) ){
                 brokenBead = path.next(brokenBead);
@@ -712,15 +712,18 @@ bool EndStagingMove::attemptMove() {
                     if ( all(path.next(brokenBead)==XXX ) ){
                         leftMoving = false;
                         rightBead = brokenBead;
+                    }
                 }
             }
-        }else{
+        }
+        else {
             while( !all(path.prev(brokenBead)==XXX) ){
                 brokenBead = path.prev(brokenBead);
                 if ( brokenBead[0] == path.breakSlice+1 ){
                     if ( all(path.prev(brokenBead)==XXX ) ){
                         leftMoving = true;
                         leftBead = brokenBead;
+                    }
                 }
             }
         }
