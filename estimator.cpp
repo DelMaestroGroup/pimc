@@ -2401,7 +2401,6 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
     int numTimeSlices = constants()->numTimeSlices();
     double lside = path.boxPtr->side[0];
 
-
     /* these are the hard-coded q-vectors for now */
     numq = 3;
     q.resize(numq);

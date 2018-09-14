@@ -1023,10 +1023,13 @@ class GrapheneLUTPotential: public PotentialBase  {
         double zmin = 1.5;
         double zmax = 10.0;
         int tableLength;
-        double garr [gtot];
+
+        /* Array<int,2> karr; */
+        /* double garr [gtot]; */
+
+        Array<int,1> gMagID;    // g-magnitude lookup index
         
         /* The lookup tables */
-        Array<int,2> karr;
         Array<double,2> vg;
         Array<double,2> gradvg;
 };

@@ -2203,7 +2203,7 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
     karr.resize(2*gnum+1,2*gnum+1);
     karr = 0;
 
-    vg.resize(gtot, tableLength);
+    /* vg.resize(gtot, tableLength); */
     gradvg.resize(gtot, tableLength);
 
     /* Lattice vectors */
@@ -2231,70 +2231,127 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
     double prefactor = epsilon*sigma*sigma*2.*M_PI/A;
     double k5term = 0.0;
     double k2term = 0.0;
-    double dk1term = 0.0;
-    double dk2term = 0.0;
-    double dk3term = 0.0;
-    double dk4term = 0.0;
-    double dk5term = 0.0;
-    double dk6term = 0.0;
+    /* double dk1term = 0.0; */
+    /* double dk2term = 0.0; */
+    /* double dk3term = 0.0; */
+    /* double dk4term = 0.0; */
+    /* double dk5term = 0.0; */
+    /* double dk6term = 0.0; */
     double z = 0.0;
-    
-    /* Create lookup table */
-    int ii = 0;
-    for (int m = 0; m < gnum+1; m++) {
-        for (int n = -m; n < m+1; n++) {
-            if ((m != 0) or (n != 0)) {
-                g = sqrt(pow((m*g1x + n*g2x),2) + pow((m*g1y + n*g2y),2));
-                garr[ii] = g;
-                for (int k = 0; k < tableLength; k++){
-                    z = zmin + (k*dr);
-                    k5term = pow((g*sigma*sigma/2./z),5)*boost::math::cyl_bessel_k(5, g*z)/30.;
-                    k2term = 2.*pow((g*sigma*sigma/2./z),2)*boost::math::cyl_bessel_k(2, g*z);
-                    vg(ii,k) = prefactor*(k5term-k2term);
-                    dk1term = -480.*g*z*z*z*z*boost::math::cyl_bessel_k(1, g*z);
-                    dk2term = -1920.*z*z*z*boost::math::cyl_bessel_k(2, g*z);
-                    dk3term = -480.*g*z*z*z*z*boost::math::cyl_bessel_k(3, g*z);
-                    dk4term = g*g*g*g*z*sigma*sigma*sigma*sigma*sigma*sigma*boost::math::cyl_bessel_k(4, g*z);
-                    dk5term = 10.*g*g*g*sigma*sigma*sigma*sigma*sigma*sigma*boost::math::cyl_bessel_k(5, g*z);
-                    dk6term = g*g*g*g*z*sigma*sigma*sigma*sigma*sigma*sigma*boost::math::cyl_bessel_k(6, g*z);
-                    gradvg(ii,k)= prefactor * (-g * g * sigma * sigma * sigma * sigma / 1920. / pow(z,6)) * (dk1term + dk2term + dk3term + dk4term + dk5term + dk6term);
 
-                }
-            }
-            else {
-                garr[ii] = 0.0;
-                for (int k = 0; k < tableLength; k++){
-                    z = zmin + (k*dr);
-                    vg(ii,k) = q*prefactor*( ((2./5.)*pow((sigma/z),10)) - pow((sigma/z),4) );
-                    gradvg(ii,k) = q * prefactor * 4. * (pow(sigma/z,4) - pow(sigma/z,10)) / z;
-                }
-            }
-            ii+=1;
-        }
-    }
-    std::vector<int> kindarr(gtot);
-    std::size_t nn(0);
-    std::generate(std::begin(kindarr), std::end(kindarr), [&]{ return nn++; });
+    /* Create a unique list of all g-vector magnitudes */
+    set<double> uniquegMag;
 
-    std::sort( std::begin(kindarr), std::end(kindarr), [&](int i1, int i2) { return garr[i1] < garr[i2]; });
-    std::sort( std::begin(garr), std::end(garr));
-
-    // fill k array
-    int k = 0;
-    for (int m = -gnum; m < gnum+1; m++) {
-        for (int n = -gnum; n < gnum+1; n++) {
+    /* This gives us the upper half-plane */
+    uniquegMag.insert(0.0);
+    for (int m = -gnum; m <= gnum; m++) {
+        for (int n = 1; n <= gnum; n++) {
             g = sqrt(pow((m*g1x + n*g2x),2) + pow((m*g1y + n*g2y),2));
-            k = lower_bound(std::begin(garr), std::end(garr), g)-std::begin(garr);
-            karr(m+gnum,n+gnum) = kindarr[k];
+            uniquegMag.insert(g);
         }
     }
+    for (int m=1; m <= gnum; m++) {
+        g = sqrt(pow(m*g1x,2) + pow(m*g1y,2));
+        uniquegMag.insert(g);
+    }
+
+    /* Convert the set to a vector and sort */
+    std::vector<double> gMag(uniquegMag.begin(), uniquegMag.end());
+    sort(gMag.begin(),gMag.end());
+
+    /* Create the mapping from g-vectors to g-magnitudes */
+    gMagID.resize(2*(gnum+1)*gnum+1);
+    gMagID(0) = 0;
+
+    int ig = 1;
+    for (int m = -gnum; m <= gnum; m++) {
+        for (int n = 1; n <= gnum; n++) {
+            g = sqrt(pow((m*g1x + n*g2x),2) + pow((m*g1y + n*g2y),2));
+            gMagID(ig) = distance(gMag.begin(), find(gMag.begin(), gMag.end(),g));
+            ig++;
+        }
+    }
+    for (int m=1; m <= gnum; m++){
+        g = sqrt(pow(m*g1x,2) + pow(m*g1y,2));
+        gMagID(ig) = distance(gMag.begin(), find(gMag.begin(), gMag.end(),g));
+        ig++;
+    }
+
+    /* Fill up the lookup table based on g-magnitudes only */
+    vg.resize(gMag.size(), tableLength);
+
+    ig = 0;
+    for (auto cg : gMag) {
+        for (int iz = 0; iz < tableLength; iz++) {
+            z = zmin + iz*dr;
+            if (ig == 0)
+                vg(ig,iz) = q*prefactor*( ((2./5.)*pow((sigma/z),10)) - pow((sigma/z),4) );
+            else {
+                k5term = pow((cg*sigma*sigma/2./z),5)*boost::math::cyl_bessel_k(5, cg*z)/30.;
+                k2term = 2.*pow((cg*sigma*sigma/2./z),2)*boost::math::cyl_bessel_k(2, cg*z);
+                vg(ig,iz) = prefactor*(k5term-k2term);
+            }
+        }
+        ig++;
+    }
+            
+    
+    /* /1* Create lookup table *1/ */
+    /* int ii = 0; */
+    /* for (int m = 0; m < gnum+1; m++) { */
+    /*     for (int n = -m; n < m+1; n++) { */
+    /*         if ((m != 0) or (n != 0)) { */
+    /*             g = sqrt(pow((m*g1x + n*g2x),2) + pow((m*g1y + n*g2y),2)); */
+    /*             garr[ii] = g; */
+    /*             for (int k = 0; k < tableLength; k++){ */
+    /*                 z = zmin + (k*dr); */
+    /*                 k5term = pow((g*sigma*sigma/2./z),5)*boost::math::cyl_bessel_k(5, g*z)/30.; */
+    /*                 k2term = 2.*pow((g*sigma*sigma/2./z),2)*boost::math::cyl_bessel_k(2, g*z); */
+    /*                 vg(ii,k) = prefactor*(k5term-k2term); */
+    /*                 dk1term = -480.*g*z*z*z*z*boost::math::cyl_bessel_k(1, g*z); */
+    /*                 dk2term = -1920.*z*z*z*boost::math::cyl_bessel_k(2, g*z); */
+    /*                 dk3term = -480.*g*z*z*z*z*boost::math::cyl_bessel_k(3, g*z); */
+    /*                 dk4term = g*g*g*g*z*sigma*sigma*sigma*sigma*sigma*sigma*boost::math::cyl_bessel_k(4, g*z); */
+    /*                 dk5term = 10.*g*g*g*sigma*sigma*sigma*sigma*sigma*sigma*boost::math::cyl_bessel_k(5, g*z); */
+    /*                 dk6term = g*g*g*g*z*sigma*sigma*sigma*sigma*sigma*sigma*boost::math::cyl_bessel_k(6, g*z); */
+    /*                 gradvg(ii,k)= prefactor * (-g * g * sigma * sigma * sigma * sigma / 1920. / pow(z,6)) * (dk1term + dk2term + dk3term + dk4term + dk5term + dk6term); */
+
+    /*             } */
+    /*         } */
+    /*         else { */
+    /*             garr[ii] = 0.0; */
+    /*             for (int k = 0; k < tableLength; k++){ */
+    /*                 z = zmin + (k*dr); */
+    /*                 vg(ii,k) = q*prefactor*( ((2./5.)*pow((sigma/z),10)) - pow((sigma/z),4) ); */
+    /*                 gradvg(ii,k) = q * prefactor * 4. * (pow(sigma/z,4) - pow(sigma/z,10)) / z; */
+    /*             } */
+    /*         } */
+    /*         ii+=1; */
+    /*     } */
+    /* } */
+    /* std::vector<int> kindarr(gtot); */
+    /* std::size_t nn(0); */
+    /* std::generate(std::begin(kindarr), std::end(kindarr), [&]{ return nn++; }); */
+
+    /* std::sort( std::begin(kindarr), std::end(kindarr), [&](int i1, int i2) { return garr[i1] < garr[i2]; }); */
+    /* std::sort( std::begin(garr), std::end(garr)); */
+
+    /* // fill k array */
+    /* int k = 0; */
+    /* for (int m = -gnum; m < gnum+1; m++) { */
+    /*     for (int n = -gnum; n < gnum+1; n++) { */
+    /*         g = sqrt(pow((m*g1x + n*g2x),2) + pow((m*g1y + n*g2y),2)); */
+    /*         k = lower_bound(std::begin(garr), std::end(garr), g)-std::begin(garr); */
+    /*         karr(m+gnum,n+gnum) = kindarr[k]; */
+    /*     } */
+    /* } */
 
     /* print out the potential to disk */
     /* int numPoints = 500; */
     /* double dx = _boxPtr->side[0]/numPoints; */
     /* double dy = _boxPtr->side[1]/numPoints; */
     /* dVec pos; */
-    /* pos[2] = -0.5*_boxPtr->side[2] + 10.635; */
+    /* pos[2] = -0.5*_boxPtr->side[2] + 2.635; */
     /* for (int i = 0; i < numPoints; i++) { */
     /*     pos[0] = -0.5*_boxPtr->side[0] + i*dx; */
     /*     for (int j = 0; j < numPoints; j++) { */
@@ -2302,6 +2359,8 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
     /*         communicate()->file("debug")->stream() << format("%24.16e %24.16e %24.16e\n") % pos[0] % pos[1] % V(pos); */
     /*     } */
     /* } */
+
+    /* exit(-1); */
 }
 
 
@@ -2309,7 +2368,7 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
  * Destructor.
 ******************************************************************************/
 GrapheneLUTPotential::~GrapheneLUTPotential() {
-    karr.free();
+    gMagID.free();
     vg.free();
     gradvg.free();
 }
@@ -2337,17 +2396,37 @@ double GrapheneLUTPotential::V(const dVec &r) {
     double y2 = r[1]+b2y;
 
     double mx,my;
-    
-    /* We correct for double counting the k=0 term */
-    double v = -vg(0,zindex);
-    for (int m = -gnum; m < gnum+1; m++) {
+    double v = vg(0,zindex);
+
+    int ig = 1;
+    for (int m = -gnum; m <= gnum; m++) {
         mx = m*g1x;
         my = m*g1y;
-        for (int n = -gnum; n < gnum+1; n++) {
-            v += (cos((mx + n*g2x)*x1 + (my + n*g2y)*y1) + 
-                  cos((mx + n*g2x)*x2 + (my + n*g2y)*y2)) * vg(karr(m+gnum,n+gnum),zindex);
+        for (int n = 1; n <= gnum; n++) {
+            v += 2.0*(cos((mx + n*g2x)*x1 + (my + n*g2y)*y1) + 
+                      cos((mx + n*g2x)*x2 + (my + n*g2y)*y2)) * vg(gMagID(ig),zindex);
+            ig++;
         }
     }
+
+    for (int m=1; m <= gnum; m++){
+        mx = m*g1x;
+        my = m*g1y;
+        v += 2.0*(cos(mx*x1 + my*y1) + cos(mx*x2 + my*y2)) * vg(gMagID(ig),zindex);
+        ig++;
+    }
+
+    
+    /* We correct for double counting the k=0 term */
+    /* double v = -vg(0,zindex); */
+    /* for (int m = -gnum; m < gnum+1; m++) { */
+    /*     mx = m*g1x; */
+    /*     my = m*g1y; */
+    /*     for (int n = -gnum; n < gnum+1; n++) { */
+    /*         v += (cos((mx + n*g2x)*x1 + (my + n*g2y)*y1) + */ 
+    /*               cos((mx + n*g2x)*x2 + (my + n*g2y)*y2)) * vg(karr(m+gnum,n+gnum),zindex); */
+    /*     } */
+    /* } */
 
     return v;
 }
