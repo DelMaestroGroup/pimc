@@ -62,11 +62,17 @@ class EstimatorBase {
         /** Get the name of the estimator */
         virtual string getName() { return "base"; }
 
-        /* Prepare the estimator for i/o */
+        /** Prepare the estimator for i/o */
         void prepare();
+
+        /** Add a carriage return to estimator files */
+        void addEndLine() {endLine = true;}; 
     
-        /* Append to default label */
+        /** Append to default label */
         void appendLabel(string append);
+
+        /** Get the estimator label */
+        string getLabel(){return label;};
 
     protected:
         const Path &path;               ///< A constant reference to the paths

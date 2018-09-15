@@ -2200,11 +2200,7 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
     /* Lookup Tables */
     tableLength = int((zmax - zmin)/dr);
     
-    karr.resize(2*gnum+1,2*gnum+1);
-    karr = 0;
-
-    /* vg.resize(gtot, tableLength); */
-    gradvg.resize(gtot, tableLength);
+    /* gradvg.resize(gtot, tableLength); */
 
     /* Lattice vectors */
     a1x = (sqrt(3.)*a0/8.)*(4.+strain-(3.*strain*poisson));
@@ -2238,6 +2234,38 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
     /* double dk5term = 0.0; */
     /* double dk6term = 0.0; */
     double z = 0.0;
+
+    /* FULL LOOKUP TABLE OFFERS NO SPEED BENEFITS */
+    /* vg.resize(2*(gnum+1)*gnum+1,tableLength); */
+
+    /* for (int iz = 0; iz < tableLength; iz++) { */
+    /*     z = zmin + iz*dr; */
+    /*     vg(0,iz) = q*prefactor*( ((2./5.)*pow((sigma/z),10)) - pow((sigma/z),4) ); */
+    /* } */
+
+    /* int ig = 1; */
+    /* for (int m = -gnum; m <= gnum; m++) { */
+    /*     for (int n = 1; n <= gnum; n++) { */
+    /*         g = sqrt(pow((m*g1x + n*g2x),2) + pow((m*g1y + n*g2y),2)); */
+    /*         for (int iz = 0; iz < tableLength; iz++) { */
+    /*             z = zmin + iz*dr; */
+    /*             k5term = pow((g*sigma*sigma/2./z),5)*boost::math::cyl_bessel_k(5, g*z)/30.; */
+    /*             k2term = 2.*pow((g*sigma*sigma/2./z),2)*boost::math::cyl_bessel_k(2, g*z); */
+    /*             vg(ig,iz) = prefactor*(k5term-k2term); */
+    /*         } */
+    /*         ig++; */
+    /*     } */
+    /* } */
+    /* for (int m=1; m <= gnum; m++) { */
+    /*     g = sqrt(pow(m*g1x,2) + pow(m*g1y,2)); */
+    /*     for (int iz = 0; iz < tableLength; iz++) { */
+    /*         z = zmin + iz*dr; */
+    /*         k5term = pow((g*sigma*sigma/2./z),5)*boost::math::cyl_bessel_k(5, g*z)/30.; */
+    /*         k2term = 2.*pow((g*sigma*sigma/2./z),2)*boost::math::cyl_bessel_k(2, g*z); */
+    /*         vg(ig,iz) = prefactor*(k5term-k2term); */
+    /*     } */
+    /*     ig++; */
+    /* } */
 
     /* Create a unique list of all g-vector magnitudes */
     set<double> uniquegMag;
@@ -2294,57 +2322,6 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
         }
         ig++;
     }
-            
-    
-    /* /1* Create lookup table *1/ */
-    /* int ii = 0; */
-    /* for (int m = 0; m < gnum+1; m++) { */
-    /*     for (int n = -m; n < m+1; n++) { */
-    /*         if ((m != 0) or (n != 0)) { */
-    /*             g = sqrt(pow((m*g1x + n*g2x),2) + pow((m*g1y + n*g2y),2)); */
-    /*             garr[ii] = g; */
-    /*             for (int k = 0; k < tableLength; k++){ */
-    /*                 z = zmin + (k*dr); */
-    /*                 k5term = pow((g*sigma*sigma/2./z),5)*boost::math::cyl_bessel_k(5, g*z)/30.; */
-    /*                 k2term = 2.*pow((g*sigma*sigma/2./z),2)*boost::math::cyl_bessel_k(2, g*z); */
-    /*                 vg(ii,k) = prefactor*(k5term-k2term); */
-    /*                 dk1term = -480.*g*z*z*z*z*boost::math::cyl_bessel_k(1, g*z); */
-    /*                 dk2term = -1920.*z*z*z*boost::math::cyl_bessel_k(2, g*z); */
-    /*                 dk3term = -480.*g*z*z*z*z*boost::math::cyl_bessel_k(3, g*z); */
-    /*                 dk4term = g*g*g*g*z*sigma*sigma*sigma*sigma*sigma*sigma*boost::math::cyl_bessel_k(4, g*z); */
-    /*                 dk5term = 10.*g*g*g*sigma*sigma*sigma*sigma*sigma*sigma*boost::math::cyl_bessel_k(5, g*z); */
-    /*                 dk6term = g*g*g*g*z*sigma*sigma*sigma*sigma*sigma*sigma*boost::math::cyl_bessel_k(6, g*z); */
-    /*                 gradvg(ii,k)= prefactor * (-g * g * sigma * sigma * sigma * sigma / 1920. / pow(z,6)) * (dk1term + dk2term + dk3term + dk4term + dk5term + dk6term); */
-
-    /*             } */
-    /*         } */
-    /*         else { */
-    /*             garr[ii] = 0.0; */
-    /*             for (int k = 0; k < tableLength; k++){ */
-    /*                 z = zmin + (k*dr); */
-    /*                 vg(ii,k) = q*prefactor*( ((2./5.)*pow((sigma/z),10)) - pow((sigma/z),4) ); */
-    /*                 gradvg(ii,k) = q * prefactor * 4. * (pow(sigma/z,4) - pow(sigma/z,10)) / z; */
-    /*             } */
-    /*         } */
-    /*         ii+=1; */
-    /*     } */
-    /* } */
-    /* std::vector<int> kindarr(gtot); */
-    /* std::size_t nn(0); */
-    /* std::generate(std::begin(kindarr), std::end(kindarr), [&]{ return nn++; }); */
-
-    /* std::sort( std::begin(kindarr), std::end(kindarr), [&](int i1, int i2) { return garr[i1] < garr[i2]; }); */
-    /* std::sort( std::begin(garr), std::end(garr)); */
-
-    /* // fill k array */
-    /* int k = 0; */
-    /* for (int m = -gnum; m < gnum+1; m++) { */
-    /*     for (int n = -gnum; n < gnum+1; n++) { */
-    /*         g = sqrt(pow((m*g1x + n*g2x),2) + pow((m*g1y + n*g2y),2)); */
-    /*         k = lower_bound(std::begin(garr), std::end(garr), g)-std::begin(garr); */
-    /*         karr(m+gnum,n+gnum) = kindarr[k]; */
-    /*     } */
-    /* } */
 
     /* print out the potential to disk */
     /* int numPoints = 500; */
@@ -2404,7 +2381,7 @@ double GrapheneLUTPotential::V(const dVec &r) {
         my = m*g1y;
         for (int n = 1; n <= gnum; n++) {
             v += 2.0*(cos((mx + n*g2x)*x1 + (my + n*g2y)*y1) + 
-                      cos((mx + n*g2x)*x2 + (my + n*g2y)*y2)) * vg(gMagID(ig),zindex);
+                      cos((mx + n*g2x)*x2 + (my + n*g2y)*y2)) * vg(gMagID(ig),zindex); 
             ig++;
         }
     }
@@ -2415,18 +2392,6 @@ double GrapheneLUTPotential::V(const dVec &r) {
         v += 2.0*(cos(mx*x1 + my*y1) + cos(mx*x2 + my*y2)) * vg(gMagID(ig),zindex);
         ig++;
     }
-
-    
-    /* We correct for double counting the k=0 term */
-    /* double v = -vg(0,zindex); */
-    /* for (int m = -gnum; m < gnum+1; m++) { */
-    /*     mx = m*g1x; */
-    /*     my = m*g1y; */
-    /*     for (int n = -gnum; n < gnum+1; n++) { */
-    /*         v += (cos((mx + n*g2x)*x1 + (my + n*g2y)*y1) + */ 
-    /*               cos((mx + n*g2x)*x2 + (my + n*g2y)*y2)) * vg(karr(m+gnum,n+gnum),zindex); */
-    /*     } */
-    /* } */
 
     return v;
 }
@@ -2442,41 +2407,41 @@ dVec GrapheneLUTPotential::gradV(const dVec &r) {
 
     return 0.0;
 
-    double x = r[0];
-    double y = r[1];
-    double z = r[NDIM-1]+(Lzo2);
-    int zindex = int((z-zmin)/dr);
-    dVec dv = 0.0;
+    /* double x = r[0]; */
+    /* double y = r[1]; */
+    /* double z = r[NDIM-1]+(Lzo2); */
+    /* int zindex = int((z-zmin)/dr); */
+    /* dVec dv = 0.0; */
     
-    if (z < zmin) 
-        return dv;
+    /* if (z < zmin) */ 
+    /*     return dv; */
 
-    if (zindex >= tableLength) {
-        dv[NDIM-1] += q*(epsilon*sigma*sigma*2.*M_PI/A)* 4. * (pow(sigma/z,4) - pow(sigma/z,10)) / z;
-        return dv;
-    }
+    /* if (zindex >= tableLength) { */
+    /*     dv[NDIM-1] += q*(epsilon*sigma*sigma*2.*M_PI/A)* 4. * (pow(sigma/z,4) - pow(sigma/z,10)) / z; */
+    /*     return dv; */
+    /* } */
     
-    dv[NDIM-1] = gradvg(0,zindex);
-    double gdotb1 = 0.;
-    double gdotb2 = 0.;
+    /* dv[NDIM-1] = gradvg(0,zindex); */
+    /* double gdotb1 = 0.; */
+    /* double gdotb2 = 0.; */
 
-    int k = 0;
+    /* int k = 0; */
     
-    /* NB: this has not been optimized!!! */
-    for (int m = -gnum; m < gnum+1; m++) {
-        for (int n = -gnum; n < gnum+1; n++) {
-            k = karr(m+gnum,n+gnum);
-            if((m != 0) or (n != 0)) {
-                gdotb1 = ((m*g1x + n*g2x)*(b1x+x)) + ((m*g1y + n*g2y)*(b1y+y));
-                gdotb2 = ((m*g1x + n*g2x)*(b2x+x)) + ((m*g1y + n*g2y)*(b2y+y));
+    /* /1* NB: this has not been optimized!!! *1/ */
+    /* for (int m = -gnum; m < gnum+1; m++) { */
+    /*     for (int n = -gnum; n < gnum+1; n++) { */
+    /*         k = karr(m+gnum,n+gnum); */
+    /*         if((m != 0) or (n != 0)) { */
+    /*             gdotb1 = ((m*g1x + n*g2x)*(b1x+x)) + ((m*g1y + n*g2y)*(b1y+y)); */
+    /*             gdotb2 = ((m*g1x + n*g2x)*(b2x+x)) + ((m*g1y + n*g2y)*(b2y+y)); */
                 
-                dv[0] += -(g1x*m+g2x*n) * (sin(gdotb1) + sin(gdotb2))*vg(k,zindex);
-                dv[1] += -(g1y*m+g2y*n) * (sin(gdotb1) + sin(gdotb2))*vg(k,zindex);
-                dv[NDIM-1] += (cos(gdotb1)+cos(gdotb2))*gradvg(k,zindex);
-            }
-        }
-    }
-    return dv;
+    /*             dv[0] += -(g1x*m+g2x*n) * (sin(gdotb1) + sin(gdotb2))*vg(k,zindex); */
+    /*             dv[1] += -(g1y*m+g2y*n) * (sin(gdotb1) + sin(gdotb2))*vg(k,zindex); */
+    /*             dv[NDIM-1] += (cos(gdotb1)+cos(gdotb2))*gradvg(k,zindex); */
+    /*         } */
+    /*     } */
+    /* } */
+    /* return dv; */
 }
 
 /**************************************************************************//**

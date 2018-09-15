@@ -408,13 +408,13 @@ void Setup::initParameters() {
     vector<string> estimatorsToMeasure;
     vector<string> movesToPerform;
     if (PIGS) {
-        estimatorsToMeasure = {PigsEnergyEstimator::name, TimeEstimator::name, NullEstimator::name};
+        estimatorsToMeasure = {PigsEnergyEstimator::name, TimeEstimator::name};
         movesToPerform = {CenterOfMassMove::name, StagingMove::name, EndStagingMove::name,
             DisplaceMove::name};         
     }
     else {
         estimatorsToMeasure = {EnergyEstimator::name, NumberParticlesEstimator::name,
-            TimeEstimator::name, DiagonalFractionEstimator::name, NullEstimator::name};
+            TimeEstimator::name, DiagonalFractionEstimator::name};
 
         movesToPerform = {CenterOfMassMove::name, BisectionMove::name, OpenMove::name,
             CloseMove::name, InsertMove::name, RemoveMove::name, AdvanceHeadMove::name, 
@@ -700,7 +700,6 @@ bool Setup::parseOptions() {
     else {
         for (string name : params["estimator"].as<vector<string> >()) {
             bool foundPIGSEstimator = (name.find("pigs") != string::npos)
-                || (name.find("null") != string::npos)
                 || (name.find("time") != string::npos);
 
             if (!foundPIGSEstimator) {
@@ -1235,6 +1234,7 @@ boost::ptr_vector<MoveBase>* Setup::moves(Path &path, ActionBase *actionPtr,
 /*************************************************************************//**
  * Create a list of estimators to be measured
  *
+ * @see https://stackoverflow.com/questions/39165432/find-last-element-in-stdvector-which-satisfies-a-condition
  * @param path A reference to the paths
  * @param actionPtr The action in use
  * @param random The random number generator 
@@ -1253,6 +1253,16 @@ boost::ptr_vector<EstimatorBase> * Setup::estimators(Path &path,
             estimatorPtr->push_back(estimatorFactory()->Create(name,path,
                         actionPtr,random,params["estimator_radius"].as<double>()));
     }
+
+    /* We determine where a line break is needed for all estimators writing to
+     * a common estimator file */
+    for (const auto & common : {"estimator","cyl_estimator"}) {
+        auto ePtr = find_if(estimatorPtr->rbegin(), estimatorPtr->rend(), 
+                [common](EstimatorBase &e) { return e.getLabel() == common; });
+        if (ePtr != estimatorPtr->rend())
+            ePtr->addEndLine();
+    }
+
 
     return estimatorPtr;
 }

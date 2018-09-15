@@ -116,6 +116,15 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     if (startWithState || constants()->restart())
         loadState();
 
+    /* for (auto &estPtr : estimatorPtrVec) { */
+    /*     cout << find_if(estPtr.rbegin(), estPtr.rend(), [](EstimatorBase& e) { return e.getLabel() == "estimator"; })->getName() << endl; */
+        
+    /*     /1* for (auto &est : estPtr) { *1/ */
+    /*     /1*     cout << "est label = " << est.getLabel() << endl; *1/ */
+    /*     /1* } *1/ */
+    /* } */
+    /* exit(-1); */
+
     /* Setup all the estimators for measurement i/o */
     for (boost::ptr_vector<estimator_vector>::iterator estimatorPtrVecItr = estimatorPtrVec.begin();
          estimatorPtrVecItr != estimatorPtrVec.end(); ++estimatorPtrVecItr) {

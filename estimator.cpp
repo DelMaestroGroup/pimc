@@ -283,7 +283,7 @@ NullEstimator::NullEstimator (const Path &_path, ActionBase *_actionPtr,
     /* Set estimator name and header, we will always report the energy
      * first, hence the comment symbol*/
     header = "";
-    endLine = true;
+    endLine = false;
     initialize(1);
 }
 
