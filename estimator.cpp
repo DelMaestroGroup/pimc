@@ -38,7 +38,6 @@ REGISTER_ESTIMATOR("energy",EnergyEstimator);
 REGISTER_ESTIMATOR("virial",VirialEnergyEstimator);
 REGISTER_ESTIMATOR("number particles",NumberParticlesEstimator);
 REGISTER_ESTIMATOR("number distribution",NumberDistributionEstimator);
-REGISTER_ESTIMATOR("null",NullEstimator);
 REGISTER_ESTIMATOR("time",TimeEstimator);
 REGISTER_ESTIMATOR("particle position",ParticlePositionEstimator);
 REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
@@ -263,42 +262,6 @@ void EstimatorBase::output() {
 ******************************************************************************/
 void EstimatorBase::appendLabel(string append) {
     label = label + append;
-}
-
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// NULL ESTIMATOR CLASS ------------------------------------------------------
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-
-/*************************************************************************//**
- *  Constructor.
- * 
- * Used to add a newline character.
-******************************************************************************/
-NullEstimator::NullEstimator (const Path &_path, ActionBase *_actionPtr,
-        const MTRand &_random, double _maxR, int _frequency, string _label) : 
-    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
-
-    /* Set estimator name and header, we will always report the energy
-     * first, hence the comment symbol*/
-    header = "";
-    endLine = false;
-    initialize(1);
-}
-
-/*************************************************************************//**
- *  Constructor.
- * 
- * Used to add a newline character.
-******************************************************************************/
-void NullEstimator::output() {
-
-    /* add the new line */
-    (*outFilePtr) << endl;
-
-    /* Reset all values */
-    reset();
 }
 
 // ---------------------------------------------------------------------------

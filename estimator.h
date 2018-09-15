@@ -108,31 +108,6 @@ class EstimatorBase {
 };
 
 // ========================================================================  
-// Null Estimator Class
-// ========================================================================  
-/** 
- * A dummy estimator that inserts a new line character at the end of 
- * a line in a file of scalar estimators.
- *
- */
-class NullEstimator : public EstimatorBase {
-
-    public:
-        NullEstimator(const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="estimator");
-        ~NullEstimator() {};
-
-        static const string name;
-        string getName() {return name;}
-
-        void output();              // overload the output
-    
-    private:
-        void accumulate() {};       // Accumulate null value 
-
-};
-
-// ========================================================================  
 // Time Estimator Class
 // ========================================================================  
 /** 
