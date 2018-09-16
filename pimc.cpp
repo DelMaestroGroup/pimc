@@ -693,7 +693,7 @@ void PathIntegralMonteCarlo::loadState() {
             cmove.resetAccept();
 
         /* Reset estimator sampling information */
-        for (auto &cestimator : estimatorPtrVec[pidx])
+        for (auto &cestimator : estimatorPtrVec[pIdx])
             cestimator.restart(0,0);
 
         /* We first read the former total number of world lines */

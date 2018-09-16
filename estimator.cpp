@@ -2362,16 +2362,57 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
 {
 
     int numTimeSlices = constants()->numTimeSlices();
-    double lside = path.boxPtr->side[0];
 
     /* these are the hard-coded q-vectors for now */
     numq = 3;
-    q.resize(numq);
-    q = 0.0;
-    q(0)[0] = 2.0*M_PI/lside;
-    q(1)[0] = q(1)[1] = 4.0*M_PI/lside;
-    q(2)[0] = 8.0*M_PI/lside;
-    q(2)[1] = 4.0*M_PI/lside;
+    Array <double, 1> qMag(numq);         // the q-vector magnitudes
+    /* qMag.resize(numq); */
+    qMag = 0.761,1.75,1.81;
+
+    /* initialize the number of vectors with each magnitude */
+    numqVecs.resize(numq);               
+    numqVecs = 0;
+
+    /* The allowable error in the q-vector magnitude */
+    double eps = 2.0*M_PI/min(path.boxPtr->side)/sqrt(NDIM);
+    eps *= eps;
+
+    /* Determine the set of q-vectors that have these magintudes */
+    for (int nq = 0; nq < numq; nq++)
+    {
+        double cq = qMag(nq);
+        vector <dVec> qvecs;
+
+        int maxComp = ceil(cq*blitz::min(path.boxPtr->side)/(2.0*M_PI))+1;
+        int maxNumQ = ipow(2*maxComp + 1,NDIM);
+        
+        iVec qi;
+        for (int n = 0; n < maxNumQ; n++) {
+            for (int i = 0; i < NDIM; i++) {
+                int scale = 1;
+                for (int j = i+1; j < NDIM; j++) 
+                    scale *= (2*maxComp + 1);
+                qi[i] = (n/scale) % (2*maxComp + 1);
+
+                /* Wrap into the appropriate winding sector */
+                qi[i] -= (qi[i] > maxComp)*(2*maxComp + 1);
+            }
+            dVec qd = 2.0*M_PI*qi/path.boxPtr->side;
+
+            /* Store the winding number */
+            if (abs(dot(qd,qd)-cq*cq) < eps) {
+                qvecs.push_back(qd);
+                numqVecs(nq)++;
+            }
+        }
+        q.push_back(qvecs);
+    }
+
+    /* get more accurate q-magnitudes */
+    for (int nq = 0; nq < numq; nq++) {
+        qMag[nq] = sqrt(dot(q[nq][0],q[nq][0]));
+        cout << numqVecs(nq) << endl;
+    }
 
     /* Initialize the accumulator for the intermediate scattering function*/
     /* N.B. for now we hard-code three wave-vectors */
@@ -2382,9 +2423,9 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
     initialize(numq*numTimeSlices);
 
     /* the q-values */
-    header = str(format("#%15.6E") % sqrt(dot(q(0),q(0))));
+    header = str(format("#%15.6E") % qMag(0));
     for (int n = 1; n < numq; n++)
-        header.append(str(format("%16.6E") % sqrt(dot(q(n),q(n)))));
+        header.append(str(format("%16.6E") % qMag(n)));
     header.append("\n");
 
     /* The imaginary time values */
@@ -2422,33 +2463,37 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
     isf = 0.0; // initialize
     dVec pos1,pos2;         // The two bead positions
 
-    /* q-values */
+    /* q-magnitudes */
     for (int nq = 0; nq < numq; nq++) {
 
-        /* Average over all initial time slices */
-        for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
+        /* q-vectors */
+        for (const auto &cqvec : q[nq]) {
 
-            /* compute for each tau separation */
-            for (int tausep = 0;  tausep < numTimeSlices; tausep++){
+            /* Average over all initial time slices */
+            for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
 
-                bead2[0] = (bead1[0] + tausep) % numTimeSlices;
+                /* compute for each tau separation */
+                for (int tausep = 0;  tausep < numTimeSlices; tausep++){
 
-                for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(bead1[0]); bead1[1]++) {
+                    bead2[0] = (bead1[0] + tausep) % numTimeSlices;
 
-                    pos1 = path(bead1);
-                    double lq1 = dot(q(nq),pos1);
+                    for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(bead1[0]); bead1[1]++) {
 
-                    for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
+                        pos1 = path(bead1);
+                        double lq1 = dot(cqvec,pos1);
 
-                        pos2 = path(bead2);
-                        double lq2 = dot(q(nq),pos2);
+                        for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
 
-                        isf(nq*numTimeSlices + tausep) += cos(lq1)*cos(lq2) + sin(lq1)*sin(lq2);
-                    } // bead2[1]
-                } // bead1[1]
-            } //tausep   
-        } //bead1[0]
-    } //nq
+                            pos2 = path(bead2);
+                            double lq2 = dot(cqvec,pos2);
+
+                            isf(nq*numTimeSlices + tausep) += (cos(lq1)*cos(lq2) + sin(lq1)*sin(lq2))/numqVecs(nq);
+                        } // bead2[1]
+                    } // bead1[1]
+                } //tausep   
+            } //bead1[0]
+        } //q-vectors
+    } //q-magnitudes
 
     estimator += isf/numParticles;
 }
