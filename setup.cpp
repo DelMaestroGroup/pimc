@@ -1044,7 +1044,7 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
     PotentialBase *externalPotentialPtr = NULL;
 
     if (constants()->extPotentialType() == "harmonic")
-        externalPotentialPtr = new HarmonicPotential();
+        externalPotentialPtr = new HarmonicPotential(params["omega"].as<double>());
     else if (constants()->extPotentialType() == "free")
         externalPotentialPtr = new FreePotential();
     else if (constants()->extPotentialType() == "osc_tube")

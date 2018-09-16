@@ -2409,10 +2409,8 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
     }
 
     /* get more accurate q-magnitudes */
-    for (int nq = 0; nq < numq; nq++) {
+    for (int nq = 0; nq < numq; nq++) 
         qMag[nq] = sqrt(dot(q[nq][0],q[nq][0]));
-        cout << numqVecs(nq) << endl;
-    }
 
     /* Initialize the accumulator for the intermediate scattering function*/
     /* N.B. for now we hard-code three wave-vectors */
