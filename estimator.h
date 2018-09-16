@@ -51,16 +51,16 @@ class EstimatorBase {
         bool baseSample();
 
         /** Get the total number of accumulated measurments */
-        uint32 getTotNumAccumulated() { return totNumAccumulated; }
+        uint32 getTotNumAccumulated() const { return totNumAccumulated; }
 
         /** Get the number of accumulated measurements since the last reset */
-        uint32 getNumAccumulated() { return numAccumulated; }
+        uint32 getNumAccumulated() const { return numAccumulated; }
 
         /** Get the number of samples since the last reset */
-        uint32 getNumSampled() { return numSampled; }
+        uint32 getNumSampled() const { return numSampled; }
 
         /** Get the name of the estimator */
-        virtual string getName() { return "base"; }
+        virtual string getName() const { return "base"; }
 
         /** Prepare the estimator for i/o */
         void prepare();
@@ -72,7 +72,7 @@ class EstimatorBase {
         void appendLabel(string append);
 
         /** Get the estimator label */
-        string getLabel(){return label;};
+        string getLabel() const {return label;};
 
     protected:
         const Path &path;               ///< A constant reference to the paths
@@ -125,7 +125,7 @@ class TimeEstimator : public EstimatorBase {
         void sample();          // Overload to always-on sampling
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
         void output();              // overload the output
 
@@ -157,7 +157,7 @@ class EnergyEstimator: public EstimatorBase {
         ~EnergyEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
     
     private:
         void accumulate();      // Accumulate values
@@ -194,7 +194,7 @@ class VirialEnergyEstimator: public EstimatorBase {
         ~VirialEnergyEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -215,7 +215,7 @@ class NumberParticlesEstimator: public EstimatorBase {
         ~NumberParticlesEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
     
     private:
         void accumulate();          // Accumulate values
@@ -236,7 +236,7 @@ class ParticlePositionEstimator: public EstimatorBase {
         ~ParticlePositionEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
     
         void output();              // overload the output
 
@@ -259,7 +259,7 @@ class BipartitionDensityEstimator: public EstimatorBase {
         ~BipartitionDensityEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -280,7 +280,7 @@ class PlaneParticlePositionEstimator: public EstimatorBase {
         ~PlaneParticlePositionEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         int numGrid;                // The number of grid points
@@ -304,7 +304,7 @@ class NumberDistributionEstimator: public EstimatorBase {
         ~NumberDistributionEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         int startParticleNumber;    // The smallest number of particles
@@ -330,7 +330,7 @@ class SuperfluidFractionEstimator: public EstimatorBase {
         ~SuperfluidFractionEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         int windMax;            // The maximum winding number considered
@@ -355,7 +355,7 @@ class LocalSuperfluidDensityEstimator: public EstimatorBase {
         void output();           ///< overload the output
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         int numGrid;            // The number of grid points
@@ -382,7 +382,7 @@ class PlaneWindingSuperfluidDensityEstimator: public EstimatorBase {
         ~PlaneWindingSuperfluidDensityEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         dVec side;              // A local copy of the dimensions
@@ -408,7 +408,7 @@ class PlaneAreaSuperfluidDensityEstimator: public EstimatorBase {
         ~PlaneAreaSuperfluidDensityEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         dVec side;              // A local copy of the dimensions
@@ -434,7 +434,7 @@ class RadialWindingSuperfluidDensityEstimator: public EstimatorBase {
         ~RadialWindingSuperfluidDensityEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         double dR;              // The size of the radial bin
@@ -458,7 +458,7 @@ class RadialAreaSuperfluidDensityEstimator: public EstimatorBase {
         ~RadialAreaSuperfluidDensityEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         double dR;              // The size of the radial bin
@@ -484,7 +484,7 @@ class DiagonalFractionEstimator: public EstimatorBase {
         void sample();          // Overload to always-on sampling
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -504,7 +504,7 @@ class PermutationCycleEstimator: public EstimatorBase {
         ~PermutationCycleEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         Array <bool,1> doBead;      // Used for ensuring we don't double count beads
@@ -529,7 +529,7 @@ class LocalPermutationEstimator: public EstimatorBase {
         void output();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         Array <int, 1> numBeadInGrid;
@@ -561,7 +561,7 @@ class OneBodyDensityMatrixEstimator: public EstimatorBase {
         void outputFooter();        // Output the acceptance footer to disk
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         Path &lpath;                    // A non-constant local reference to the path
@@ -604,7 +604,7 @@ class PairCorrelationEstimator: public EstimatorBase {
         ~PairCorrelationEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();              // Accumulate values
@@ -625,7 +625,7 @@ class StaticStructureFactorEstimator: public EstimatorBase {
         ~StaticStructureFactorEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();              // Accumulate values
@@ -648,7 +648,7 @@ class IntermediateScatteringFunctionEstimator: public EstimatorBase {
         ~IntermediateScatteringFunctionEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();              // Accumulate values
@@ -671,7 +671,7 @@ class RadialDensityEstimator: public EstimatorBase {
         ~RadialDensityEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();              // Accumulate values
@@ -692,7 +692,7 @@ class WormPropertiesEstimator: public EstimatorBase {
         ~WormPropertiesEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         dVec sep;                       // head-tail separation
@@ -725,7 +725,7 @@ class CylinderEnergyEstimator: public EstimatorBase {
         ~CylinderEnergyEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
 
@@ -747,7 +747,7 @@ class CylinderNumberParticlesEstimator: public EstimatorBase {
         ~CylinderNumberParticlesEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -767,7 +767,7 @@ class CylinderNumberDistributionEstimator: public EstimatorBase {
         ~CylinderNumberDistributionEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         int maxNumParticles;        // The maximum number considered
@@ -789,7 +789,7 @@ class CylinderLinearDensityEstimator: public EstimatorBase {
         ~CylinderLinearDensityEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         double dz;                  // The bin-size in the z-direction
@@ -813,7 +813,7 @@ class CylinderSuperfluidFractionEstimator: public EstimatorBase {
         ~CylinderSuperfluidFractionEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         Array <bool,1> doBead;  // Used for ensuring we don't double count beads
@@ -844,7 +844,7 @@ class CylinderOneBodyDensityMatrixEstimator: public EstimatorBase {
         void sample();              // Sample the estimator
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         Path &lpath;                    // A non-constant local reference to the path
@@ -889,7 +889,7 @@ class CylinderPairCorrelationEstimator: public EstimatorBase {
         void sample();              // Sample the estimator
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();              // Accumulate values
@@ -910,7 +910,7 @@ class CylinderLinearPotentialEstimator: public EstimatorBase {
         ~CylinderLinearPotentialEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         
@@ -934,7 +934,7 @@ class CylinderRadialPotentialEstimator: public EstimatorBase {
         ~CylinderRadialPotentialEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         
@@ -964,7 +964,7 @@ class PotentialEnergyEstimator: public EstimatorBase {
         ~PotentialEnergyEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -985,7 +985,7 @@ class KineticEnergyEstimator: public EstimatorBase {
         ~KineticEnergyEstimator();
     
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1012,7 +1012,7 @@ class PigsEnergyEstimator: public EstimatorBase {
         ~PigsEnergyEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
     
     private:
         void accumulate();      // Accumulate values
@@ -1039,7 +1039,7 @@ public:
     ~PigsThermoEnergyEstimator();
 
     static const string name;
-    string getName() {return name;}
+    string getName() const {return name;}
     
 private:
     void accumulate();      // Accumulate values
@@ -1061,7 +1061,7 @@ class TotalEnergyEstimator: public EstimatorBase {
         ~TotalEnergyEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1082,7 +1082,7 @@ class ThermoPotentialEnergyEstimator: public EstimatorBase {
         ~ThermoPotentialEnergyEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1104,7 +1104,7 @@ class PositionEstimator: public EstimatorBase {
         ~PositionEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1126,7 +1126,7 @@ class ParticleResolvedPositionEstimator: public EstimatorBase {
         ~ParticleResolvedPositionEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1149,7 +1149,7 @@ class ParticleCorrelationEstimator: public EstimatorBase {
         ~ParticleCorrelationEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
 
     private:
@@ -1173,7 +1173,7 @@ class VelocityEstimator: public EstimatorBase {
         ~VelocityEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1195,7 +1195,7 @@ class SubregionOccupationEstimator: public EstimatorBase {
         ~SubregionOccupationEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1223,7 +1223,7 @@ class PIGSOneBodyDensityMatrixEstimator: public EstimatorBase {
         void outputFooter();        // Output the acceptance footer to disk
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         Path &lpath;                    // A non-constant local reference to the path
@@ -1261,7 +1261,7 @@ class DoubledEstimator: public EstimatorBase {
                 const MTRand &, double, int _frequency=1, string _label="");
         ~DoubledEstimator();
 
-        string getName() {return "doubled base";}
+        string getName() const {return "doubled base";}
 
     protected:
         const Path &path2;              ///< A constant reference to the paths
@@ -1286,7 +1286,7 @@ class SwapEstimator: public DoubledEstimator {
         ~SwapEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         Path &lpath;                    // A non-constant local reference to path 1
@@ -1314,7 +1314,7 @@ class EntPartEstimator: public DoubledEstimator {
         ~EntPartEstimator();
 
         static const string name;
-        string getName() {return name;}
+        string getName() const {return name;}
 
     private:
         Path &lpath;                    // A non-constant local reference to path 1

@@ -80,7 +80,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     double cumOffDiagProb = 0.0;
     string moveName;
 
-    for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
+    for (auto movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
 
         /* Get the namne of the move and check if it is the generic diagonal
          * move */
@@ -116,26 +116,14 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     if (startWithState || constants()->restart())
         loadState();
 
-    /* for (auto &estPtr : estimatorPtrVec) { */
-    /*     cout << find_if(estPtr.rbegin(), estPtr.rend(), [](EstimatorBase& e) { return e.getLabel() == "estimator"; })->getName() << endl; */
-        
-    /*     /1* for (auto &est : estPtr) { *1/ */
-    /*     /1*     cout << "est label = " << est.getLabel() << endl; *1/ */
-    /*     /1* } *1/ */
-    /* } */
-    /* exit(-1); */
-
     /* Setup all the estimators for measurement i/o */
-    for (boost::ptr_vector<estimator_vector>::iterator estimatorPtrVecItr = estimatorPtrVec.begin();
-         estimatorPtrVecItr != estimatorPtrVec.end(); ++estimatorPtrVecItr) {
-        for (estimator_vector::iterator estimatorPtr = estimatorPtrVecItr->begin();
-             estimatorPtr != estimatorPtrVecItr->end(); ++estimatorPtr)
-            estimatorPtr->prepare();
+    for (auto &estPtr : estimatorPtrVec) {
+        for (auto &est : estPtr)
+            est.prepare();
     }
 
     /* Make a list of estimator names for the 0th estimator */
-    for (estimator_vector::iterator estimatorPtr = estimator.begin();
-            estimatorPtr != estimator.end(); ++estimatorPtr) 
+    for (auto estimatorPtr = estimator.begin(); estimatorPtr != estimator.end(); ++estimatorPtr) 
         estimatorIndex[estimatorPtr->getName()] = std::distance(estimator.begin(), estimatorPtr);
 }
 
@@ -201,13 +189,12 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
              * optimization of simulation parameters */
             if (x < constants()->attemptProb("center of mass")) {
 
-                /* Get the move index for the center of mass */
+                /* index for the center of mass */
                 int index = moveIndex["center of mass"];
 
-                for( boost::ptr_vector<move_vector>::iterator movePtrVecItr=movePtrVec.begin();
-                    movePtrVecItr!=movePtrVec.end();++movePtrVecItr){
-                    movePtrVecItr->at(index).attemptMove();
-                }
+                /* perform the CoM move */
+                for (auto & cmove : movePtrVec)
+                    cmove.at(index).attemptMove();
 
                 /* We check how many CoM moves we have tried.  Every 200 moves, we see if we need
                  * to adjust comDelta, provided we are in the pre-equilibration diagonal state. */
@@ -241,10 +228,8 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
             else if (x < constants()->attemptProb("center of mass") + constants()->attemptProb("displace")) {
 
                 int index = moveIndex["displace"];
-                for( boost::ptr_vector<move_vector>::iterator movePtrVecItr=movePtrVec.begin();
-                    movePtrVecItr!=movePtrVec.end();++movePtrVecItr){
-                    movePtrVecItr->at(index).attemptMove();
-                }
+                for (auto & cmove : movePtrVec)
+                    cmove.at(index).attemptMove();
 
                 /* We check how many displace moves we have tried.  Every numDisplaceAttempted moves, we see if we need
                  * to adjust delta, provided we are in the pre-equilibration diagonal state. */
@@ -274,10 +259,8 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
             else {
                 /* Attemp a diagonal path update*/
                 for (int sweep = 0; sweep < numImagTimeSweeps; sweep++){
-                    for( boost::ptr_vector<move_vector>::iterator movePtrVecItr=movePtrVec.begin();
-                        movePtrVecItr!=movePtrVec.end();++movePtrVecItr){
-                        movePtrVecItr->at(moveIndex["diagonal"]).attemptMove();
-                    }
+                    for (auto &cmove : movePtrVec)
+                        cmove.at(moveIndex["diagonal"]).attemptMove();
                 }
             }
 
@@ -470,21 +453,22 @@ void PathIntegralMonteCarlo::finalOutput() {
 
     /* Ouptut all the move acceptance information to disk */
     string moveName;
-    for (move_vector::iterator movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
-        moveName = movePtr->getName();
+    for (auto &cmove : move){
+
+        moveName = cmove.getName();
 
         /* We only output levels for those moves which have a variable size */
-        if (movePtr->variableLength) {
+        if (cmove.variableLength) {
             for (int n = 0; n <= constants()->b(); n++) {
                 communicate()->file("log")->stream() << format("%-12s Level %-10d\t:\t%7.5f\t(%d/%d)\n") 
-                    % moveName % n % movePtr->getAcceptanceRatioLevel(n) 
-                    % movePtr->numAcceptedLevel(n) % movePtr->numAttemptedLevel(n);
+                    % moveName % n % cmove.getAcceptanceRatioLevel(n) 
+                    % cmove.numAcceptedLevel(n) % cmove.numAttemptedLevel(n);
             }
         }
         communicate()->file("log")->stream() << format("%-29s\t:\t%7.5f\t(%d/%d)\n") % moveName
-            % movePtr->getAcceptanceRatio() % movePtr->numAccepted
-            % movePtr->numAttempted;
+            % cmove.getAcceptanceRatio() % cmove.numAccepted % cmove.numAttempted;
         communicate()->file("log")->stream() << endl;
+    
     }
     communicate()->file("log")->stream() << "---------- End Acceptance Data -----------------" << endl;
 
@@ -494,11 +478,10 @@ void PathIntegralMonteCarlo::finalOutput() {
     /* Output the estimator statistics to the log file */
     communicate()->file("log")->stream() << "---------- Begin Estimator Data ----------------" << endl;
     communicate()->file("log")->stream() << endl;
-    for (estimator_vector::iterator estimatorPtr = estimator.begin();
-            estimatorPtr != estimator.end(); ++estimatorPtr) {
-        communicate()->file("log")->stream() << format("%-29s\t:\t%16d\t%16d\n") % estimatorPtr->getName()
-            % estimatorPtr->getNumSampled() % estimatorPtr->getTotNumAccumulated();
-
+    for (auto &cestimator : estimator) {
+        communicate()->file("log")->stream() << format("%-29s\t:\t%16d\t%16d\n") % cestimator.getName()
+            % cestimator.getNumSampled() % cestimator.getTotNumAccumulated();
+    
     }
     communicate()->file("log")->stream() << endl;
     communicate()->file("log")->stream() << "---------- End Estimator Data ------------------" << endl;
@@ -532,17 +515,13 @@ void PathIntegralMonteCarlo::saveState(const int finalSave) {
 
             /* Now record the individual move acceptance information,
              * first for the diagonal, then off-diagonal*/
-            for (move_vector::iterator movePtr = movePtrVec[pIdx].begin(); movePtr != movePtrVec[pIdx].end(); ++movePtr) {
-                stateStrStrm << format("%16d\t%16d\n")
-                    % movePtr->numAccepted % movePtr->numAttempted;
-            }
+            for (const auto &cmove : movePtrVec[pIdx])
+                stateStrStrm << format("%16d\t%16d\n") % cmove.numAccepted % cmove.numAttempted;
 
             /* Output the estimator sampling information */
-            for (estimator_vector::iterator estimatorPtr = estimatorPtrVec[pIdx].begin();
-                    estimatorPtr != estimatorPtrVec[pIdx].end(); ++estimatorPtr) {
-                stateStrStrm << format("%16d\t%16d\n") % estimatorPtr->getTotNumAccumulated()
-                    % estimatorPtr->getNumSampled();
-            }
+            for (const auto &cestimator : estimatorPtrVec[pIdx])
+                stateStrStrm << format("%16d\t%16d\n") % cestimator.getTotNumAccumulated()
+                    % cestimator.getNumSampled();
 
             /* Now we output the actual path and worldline data */
             stateStrStrm << setprecision(16) << pathPtrVec[pIdx].beads << endl;
@@ -710,15 +689,12 @@ void PathIntegralMonteCarlo::loadState() {
         movePtrVec[pIdx].front().resetTotAccept();
 
         /* Reset all the individual move acceptance information */
-        for (move_vector::iterator movePtr = movePtrVec[pIdx].begin(); movePtr != movePtrVec[pIdx].end(); ++movePtr) {
-            movePtr->resetAccept();
-        }
+        for (auto &cmove : movePtrVec[pIdx])
+            cmove.resetAccept();
 
         /* Reset estimator sampling information */
-        for (estimator_vector::iterator estimatorPtr = estimatorPtrVec[pIdx].begin();
-                estimatorPtr != estimatorPtrVec[pIdx].end(); ++estimatorPtr) {
-            estimatorPtr->restart(0,0);
-        }
+        for (auto &cestimator : estimatorPtrVec[pidx])
+            cestimator.restart(0,0);
 
         /* We first read the former total number of world lines */
         int numWorldLines;
