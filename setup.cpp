@@ -1259,10 +1259,9 @@ boost::ptr_vector<EstimatorBase> * Setup::estimators(Path &path,
     for (const auto & common : {"estimator","cyl_estimator"}) {
         auto ePtr = find_if(estimatorPtr->rbegin(), estimatorPtr->rend(), 
                 [common](EstimatorBase &e) { return e.getLabel() == common; });
-        if (ePtr != estimatorPtr->rend())
+        if (ePtr != estimatorPtr->rend()) 
             ePtr->addEndLine();
     }
-
 
     return estimatorPtr;
 }

@@ -117,10 +117,9 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
         loadState();
 
     /* Setup all the estimators for measurement i/o */
-    for (auto &estPtr : estimatorPtrVec) {
+    for (auto &&estPtr : estimatorPtrVec) 
         for (auto &est : estPtr)
             est.prepare();
-    }
 
     /* Make a list of estimator names for the 0th estimator */
     for (auto estimatorPtr = estimator.begin(); estimatorPtr != estimator.end(); ++estimatorPtr) 
