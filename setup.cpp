@@ -16,7 +16,6 @@
 #include "move.h"
 #include "estimator.h"
 
-
 /**************************************************************************//**
  * Create a comma separated list from a vector of strings
  *
@@ -1296,22 +1295,99 @@ boost::ptr_vector<EstimatorBase> * Setup::estimators(
 /*************************************************************************//**
  * Compare a char array with an option name
  *
- * @param argv The commmand line string
+ * @param option The commmand line string
  * @param target The target option name
 ******************************************************************************/
 bool Setup::checkOption(const string option, const string target) {
 
+    /* Determine if we have a long or short option */
+    auto num_dashes = std::count(option.begin(), option.end(), '-');
+
     /* check short options first  */
-    if (option[0] == '-' && option[1] != '-')
+    if (num_dashes == 1)
         return (option == target);
 
-    /* Now test for a long option, making sure to ignore any short
-     * option targets */
-    else if (target[0] != '-')
+    else if (num_dashes == 2) 
         return (option.find(target) != string::npos);
 
     /* otherwise return false */
     return false;
+}
+
+/*************************************************************************//**
+ * Compare a char array with an option name
+ *
+ * @param option The commmand line string
+ * @param target The target option name
+******************************************************************************/
+void Setup::cleanCommandLineOptions(int argc, char*argv[], vector<string> &cmdArg,
+        vector<string> &cmdSep, vector<string> &cmdVal) {
+
+    /* Get the program name */
+    cmdArg.push_back(argv[0]);
+    cmdSep.push_back("");
+    cmdVal.push_back("");
+
+    for (int n = 1; n < argc; n++) {
+
+        string carg(argv[n]);
+
+        /* Determine if we have a long or short option */
+        auto numDashes = std::count(carg.begin(), carg.end(), '-');
+
+        /* Short option */
+        if (numDashes == 1) {
+            if (carg.length() <= 2) {
+                cmdArg.push_back(carg);
+                cmdSep.push_back(" ");
+                cmdVal.push_back(string(argv[n+1]));
+                ++n;
+            }
+            else {
+                cmdArg.push_back(carg.substr(0,2));
+                cmdSep.push_back(" ");
+                cmdVal.push_back(carg.substr(2,carg.length()-2));
+            }
+        }
+        /* Long option */
+        else if (numDashes == 2) {
+
+            /* Do we have an equal sign? */
+            auto posEqual = carg.find("="); 
+            if (posEqual != string::npos) {
+                cmdArg.push_back(carg.substr(0,posEqual));
+                cmdSep.push_back("=");
+                string nextArg(carg.substr(posEqual+1));
+
+                /* Do we have a space in our value? */
+                if (nextArg.find(" ") != string::npos)  
+                    cmdVal.push_back(string("\"") + nextArg + string("\""));
+                else
+                    cmdVal.push_back(nextArg);
+            }
+            else {
+                cmdArg.push_back(carg);
+                string nextArg(argv[n+1]);
+
+                /* is this option a boolean switch? */
+                if (nextArg.find('-') == string::npos) {
+
+                    cmdSep.push_back(" ");
+
+                    /* Do we have a space in our value? */
+                    if (nextArg.find(" ") != string::npos)  
+                        cmdVal.push_back(string("\"") + nextArg + string("\""));
+                    else
+                        cmdVal.push_back(nextArg);
+                    ++n;
+                }
+                else {
+                    cmdSep.push_back("");
+                    cmdVal.push_back("");
+                }
+            }
+        }
+    }
 }
 
 /*************************************************************************//**
@@ -1329,6 +1405,11 @@ bool Setup::checkOption(const string option, const string target) {
 void Setup::outputOptions(int argc, char *argv[], const uint32 _seed, 
         const Container *boxPtr, const iVec &nnGrid) {
 
+    /* Pre-process the command line options to make them suitable for log
+     * output */
+    vector<string> cmdArg, cmdSep, cmdVal;
+    cleanCommandLineOptions(argc,argv,cmdArg,cmdSep,cmdVal);
+
     communicate()->file("log")->stream() << endl << "# ";
 
     /* Construct the command that would be required to restart the simulation */
@@ -1338,12 +1419,11 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
     bool outputEstimator = false;
     bool outputUpdate = false;
 
-    for (int n = 0; n < argc; n++) {
+    for (int n = 0; n < cmdArg.size(); ++n) {
 
-        /* convert the argument to a string */
-        string arg(argv[n]);
+        auto arg = cmdArg[n];
 
-        if (checkOption(arg,"-s") || checkOption(arg,"start_with_state") ) {
+        if (checkOption(arg,"-s") || checkOption(arg,"--start_with_state") ) {
             n++;
         }
         else if ( checkOption(arg,"-C") || checkOption(arg,"worm_constant") ) {
@@ -1351,32 +1431,30 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
             n++;
             outputC0 = true;
         }
-        else if (checkOption(arg,"-p") || checkOption(arg,"process")) {
+        else if (checkOption(arg,"-p") || checkOption(arg,"--process")) {
             communicate()->file("log")->stream() << format("-p %03d ") % params["process"].as<uint32>();
             n++;
         }
-        else if (checkOption(arg,"-D") || checkOption(arg,"com_delta")) {
+        else if (checkOption(arg,"-D") || checkOption(arg,"--com_delta")) {
             communicate()->file("log")->stream() << format("-D %21.15e ") % constants()->comDelta();
             outputD = true;
             n++;
         }
-        else if (checkOption(arg,"-d") || checkOption(arg,"displace_delta")) {
+        else if (checkOption(arg,"-d") || checkOption(arg,"--displace_delta")) {
             communicate()->file("log")->stream() << format("-d %21.15e ") % constants()->displaceDelta();
             outputd = true;
             n++;
         }
-        else if (checkOption(arg,"estimator") or checkOption(arg,"-e")) {
+        else if (checkOption(arg,"--estimator") or checkOption(arg,"-e")) {
             outputEstimator = true;
             n++;
         }
-        else if (checkOption(arg,"update")) {
+        else if (checkOption(arg,"--update")) {
             outputUpdate = false;
             n++;
         }
-        else {
-            communicate()->file("log")->stream() << arg << " ";
-        }
-
+        else 
+            communicate()->file("log")->stream() << arg << cmdSep[n] << cmdVal[n] << " ";
     }
 
     /* Output the restart flag */
@@ -1395,18 +1473,27 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
         communicate()->file("log")->stream() << format("-d %21.15e ") % constants()->displaceDelta();
 
     /* If we specified estimators, add them to the restart string */
-    if (outputEstimator)
+    if (outputEstimator) {
         for (string estName : params["estimator"].as<vector<string>>()) 
-            communicate()->file("log")->stream() << format("--estimator='%s' ") % estName;
+            communicate()->file("log")->stream() << "--estimator=\"" <<  estName << "\" ";
+    }
 
     /* If we specified updates, add them to the restart string */
     if (outputUpdate)
         for (string mvName : params["updates"].as<vector<string>>()) 
-            communicate()->file("log")->stream() << format("--update='%s' ") % mvName;
+            communicate()->file("log")->stream() << "--update=\"" << mvName << "\" ";
 
     communicate()->file("log")->stream() << endl << endl;
     communicate()->file("log")->stream() << "---------- Begin Simulation Parameters ----------" << endl;
     communicate()->file("log")->stream() << endl;
+
+    /* record the full command line string */
+    communicate()->file("log")->stream() << format("%-24s\t:\t") % "Command String";
+
+    for (int n = 0; n < cmdArg.size(); n++)
+        communicate()->file("log")->stream() << cmdArg[n] << cmdSep[n] << cmdVal[n] << " ";
+    communicate()->file("log")->stream() << endl; 
+
     if (constants()->canonical())
         communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Ensenble" % "canonical";
     else

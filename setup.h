@@ -328,12 +328,16 @@ class Setup {
         po::options_description cmdLineOptions;     ///< All options combined
 
         bool checkOption(const string, const string);    // check an option string
+        void cleanCommandLineOptions(int, char*[], vector<string> &, vector<string> &,
+                vector<string>&);
+        void update(int,char*[],po::options_description&);
 
         /** Initialize all possible parameters*/
         void initParameters();
 
         /* Get a formatted list of xml options */
         string getXMLOptionList(const vector<string> &, const string);  
+
 };
 
 #endif
