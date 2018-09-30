@@ -1454,7 +1454,7 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
             n++;
         }
         else 
-            communicate()->file("log")->stream() << arg << cmdSep[n] << cmdVal[n] << " ";
+            communicate()->file("log")->stream() << cmdArg[n] << cmdSep[n] << cmdVal[n] << " ";
     }
 
     /* Output the restart flag */
