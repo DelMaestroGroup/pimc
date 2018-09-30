@@ -2406,6 +2406,15 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
                 numqVecs(nq)++;
             }
         }
+
+        /* Make sure we have some q-vectors */
+        if (qvecs.size() < 1) {
+            cerr << "\nERROR: Intermediate Scattering function: "
+                 << "No valid q-vectors were added to the list for measurment." 
+                 << endl << "Action: modify q-magintudes." << endl;
+            exit(0);
+        }
+        
         q.push_back(qvecs);
     }
 
@@ -4136,9 +4145,10 @@ void ParticleCorrelationEstimator::accumulate() {
     beadIndex0[1]=0;
     for (beadIndex[1] = 1; beadIndex[1] <path.numBeadsAtSlice(beadIndex[0]);
          ++beadIndex[1]){
-        if ( beadIndex[1] < constants()->initialNumParticles())
+        if ( beadIndex[1] < constants()->initialNumParticles()) {
             r = path.getSeparation(beadIndex0,beadIndex);
             estimator(beadIndex[1]-1) += dot(r,r);
+        }
     }
 }
 

@@ -1339,8 +1339,15 @@ void Setup::cleanCommandLineOptions(int argc, char*argv[], vector<string> &cmdAr
         if (numDashes == 1) {
             if (carg.length() <= 2) {
                 cmdArg.push_back(carg);
-                cmdSep.push_back(" ");
-                cmdVal.push_back(string(argv[n+1]));
+                /* make sure we aren't at the end of the list */
+                if ((n+1) < argc) {
+                    cmdSep.push_back(" ");
+                    cmdVal.push_back(string(argv[n+1]));
+                }
+                else {
+                    cmdSep.push_back("");
+                    cmdVal.push_back("");
+                }
                 ++n;
             }
             else {
@@ -1367,19 +1374,27 @@ void Setup::cleanCommandLineOptions(int argc, char*argv[], vector<string> &cmdAr
             }
             else {
                 cmdArg.push_back(carg);
-                string nextArg(argv[n+1]);
 
-                /* is this option a boolean switch? */
-                if (nextArg.find('-') == string::npos) {
+                /* make sure we aren't at the end of the list */
+                if ((n+1) < argc) {
+                    string nextArg(argv[n+1]);
 
-                    cmdSep.push_back(" ");
+                    /* is this option a boolean switch? */
+                    if (nextArg.find('-') == string::npos) {
 
-                    /* Do we have a space in our value? */
-                    if (nextArg.find(" ") != string::npos)  
-                        cmdVal.push_back(string("\"") + nextArg + string("\""));
-                    else
-                        cmdVal.push_back(nextArg);
-                    ++n;
+                        cmdSep.push_back(" ");
+
+                        /* Do we have a space in our value? */
+                        if (nextArg.find(" ") != string::npos)  
+                            cmdVal.push_back(string("\"") + nextArg + string("\""));
+                        else
+                            cmdVal.push_back(nextArg);
+                        ++n;
+                    }
+                    else {
+                        cmdSep.push_back("");
+                        cmdVal.push_back("");
+                    }
                 }
                 else {
                     cmdSep.push_back("");
