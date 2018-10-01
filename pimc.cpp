@@ -478,7 +478,7 @@ void PathIntegralMonteCarlo::finalOutput() {
     communicate()->file("log")->stream() << "---------- Begin Estimator Data ----------------" << endl;
     communicate()->file("log")->stream() << endl;
     for (auto &cestimator : estimator) {
-        communicate()->file("log")->stream() << format("%-29s\t:\t%16d\t%16d\n") % cestimator.getName()
+        communicate()->file("log")->stream() << format("%-33s\t:\t%16d\t%16d\n") % cestimator.getName()
             % cestimator.getNumSampled() % cestimator.getTotNumAccumulated();
     
     }

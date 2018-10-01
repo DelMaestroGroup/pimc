@@ -1434,39 +1434,33 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
     bool outputEstimator = false;
     bool outputUpdate = false;
 
-    for (int n = 0; n < cmdArg.size(); ++n) {
+    for (uint32 n = 0; n < cmdArg.size(); ++n) {
 
         auto arg = cmdArg[n];
 
         if (checkOption(arg,"-s") || checkOption(arg,"--start_with_state") ) {
-            n++;
+            /* do nothing */
         }
         else if ( checkOption(arg,"-C") || checkOption(arg,"worm_constant") ) {
             communicate()->file("log")->stream() << format("-C %21.15e ") % constants()->C0();
-            n++;
             outputC0 = true;
         }
         else if (checkOption(arg,"-p") || checkOption(arg,"--process")) {
             communicate()->file("log")->stream() << format("-p %03d ") % params["process"].as<uint32>();
-            n++;
         }
         else if (checkOption(arg,"-D") || checkOption(arg,"--com_delta")) {
             communicate()->file("log")->stream() << format("-D %21.15e ") % constants()->comDelta();
             outputD = true;
-            n++;
         }
         else if (checkOption(arg,"-d") || checkOption(arg,"--displace_delta")) {
             communicate()->file("log")->stream() << format("-d %21.15e ") % constants()->displaceDelta();
             outputd = true;
-            n++;
         }
         else if (checkOption(arg,"--estimator") or checkOption(arg,"-e")) {
             outputEstimator = true;
-            n++;
         }
         else if (checkOption(arg,"--update")) {
             outputUpdate = false;
-            n++;
         }
         else 
             communicate()->file("log")->stream() << cmdArg[n] << cmdSep[n] << cmdVal[n] << " ";
@@ -1489,14 +1483,23 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 
     /* If we specified estimators, add them to the restart string */
     if (outputEstimator) {
-        for (string estName : params["estimator"].as<vector<string>>()) 
-            communicate()->file("log")->stream() << "--estimator=\"" <<  estName << "\" ";
+        for (const auto &estName : params["estimator"].as<vector<string>>()) {
+            string wrapper("");
+            if (estName.find(" ") != string::npos)  
+                wrapper = "\"";
+            communicate()->file("log")->stream() << "--estimator=" << wrapper << estName << wrapper << " ";
+        }
     }
 
     /* If we specified updates, add them to the restart string */
-    if (outputUpdate)
-        for (string mvName : params["updates"].as<vector<string>>()) 
-            communicate()->file("log")->stream() << "--update=\"" << mvName << "\" ";
+    if (outputUpdate) {
+        for (const auto &mvName : params["updates"].as<vector<string>>())  {
+            string wrapper("");
+            if (mvName.find(" ") != string::npos)  
+                wrapper = "\"";
+            communicate()->file("log")->stream() << "--update=" << wrapper << mvName << wrapper << " ";
+        }
+    }
 
     communicate()->file("log")->stream() << endl << endl;
     communicate()->file("log")->stream() << "---------- Begin Simulation Parameters ----------" << endl;
@@ -1505,7 +1508,7 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
     /* record the full command line string */
     communicate()->file("log")->stream() << format("%-24s\t:\t") % "Command String";
 
-    for (int n = 0; n < cmdArg.size(); n++)
+    for (uint32 n = 0; n < cmdArg.size(); n++)
         communicate()->file("log")->stream() << cmdArg[n] << cmdSep[n] << cmdVal[n] << " ";
     communicate()->file("log")->stream() << endl; 
 
