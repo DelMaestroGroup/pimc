@@ -8,13 +8,13 @@ This webpage contains the details of a worm algorithm path integral quantum
 Monte Carlo (WA-PIMC) code actively developed in c++ since 2008 in the [Del Maestro
 group](http://delmaestro.org/adrian) based on:
 
-- T>0: [M. Boninsegni, N. V. Prokofiev, and B. Svistunov, Phys. Rev. E <b>74</b>, 036701 (2006)](http://link.aps.org/doi/10.1103/PhysRevE.74.036701)
-- T=0: [A. Sarsa, K.E. Schmidt and W. R. Magro, J. Chem. Phys. <b>113</b>, 1366 (2000)] (http://aip.scitation.org/doi/abs/10.1063/1.481926)
+- T > 0: [M. Boninsegni, N. V. Prokofiev, and B. Svistunov, Phys. Rev. E <b>74</b>, 036701 (2006)](http://link.aps.org/doi/10.1103/PhysRevE.74.036701)
+- T = 0: [A. Sarsa, K.E. Schmidt and W. R. Magro, J. Chem. Phys. <b>113</b>, 1366 (2000)] (http://aip.scitation.org/doi/abs/10.1063/1.481926)
 
 It can be used to simulate indistinguishable bosons with various types of
 realistic interactions in one, two and three spatial dimensions. As written, it
 takes a large number of command line options and allows for the measurement of
-essentially any physical observable of interest. 
+essentially any physical observable of interest.
 
 The design philosophy included the goal of abstracting the actual
 implementation of the WA-PIMC method to a kernel that will never need to be
@@ -43,16 +43,15 @@ Dependencies {#dependencies}
 ------------
 
 The code is written in c++ and makes use of both the <a
-href="http://sourceforge.net/projects/blitz/">blitz++</a> and <a
+href="https://github.com/blitzpp/blitz">blitz++</a> and <a
 href="http://www.boost.org/">boost</a> libraries.  You should be able to
-download `blitz-0.10` and compile from source via the instructions below.
+grab `blitz` from github and compile from source via the instructions below.
 
 We use many of the boost header-only libraries, but two libraries will need to
 be compiled: boost_program_options and boost_filesystem libraries.  Let us
 assume that you will be installing both blitz and boost in the folder
 `$HOME/local` using the GNU C++ compiler.  For icpc or clang, the changes
-should be obvious, and in particular for the Intel compiler you will need to use
-`intel-linux` as the toolset.
+should be obvious, and in particular for the Intel compiler you will need to use `intel-linux` as the toolset.
 
 If you don't have a `$HOME/local` you should create this directory now via
 
@@ -68,15 +67,16 @@ doesn't take very long to compile one can proceed as follows:
 
 1. Move into your source directory (create if necessary).
 ~~~
-cd $HOME/local/src 
+cd $HOME/local/src
 ~~~
-2. Get the latest version of blitz++ from the sourceforge <a
-href="http://sourceforge.net/projects/blitz/">website</a>
+2. Clone the latest version of blitz++ from  <a
+href="https://github.com/blitzpp/blitz">github</a> into `$HOME/local/src`
 3. Move into the blitz source directory
 4. Read the instructions in the `INSTALL` file to determine if there is
 anything special you need to do on your system.
 5. Execute
 ~~~
+autoreconf -fiv
 ./configure cxx=g++ --prefix=PREFIX
 make lib
 make install
@@ -84,22 +84,22 @@ make install
 where `PREFIX` is the location you want to install the libraries, we suggest
 `$HOME/local` where `$HOME` is your expanded home directory.
 
-*Note:* If attempting to compile the old version of blitz-0.9 with gcc version 4.3 or later you may encounter errors
+<!-- *Note:* If attempting to compile the old version of blitz-0.9 with gcc version 4.3 or later you may encounter errors
 when attempting to build blitz++.  To fix this, before issuing `make lib` and/or
 `make install` one needs to add headers to a couple of files.  Move to
 `$HOME/local/src/blitz-0.9/blitz` (or similarly, `PREFIX/src/blitz-0.9/blitz`) and
-add the line 
+add the line
 
     #include <cstdlib>
 
-to the top of the files `funcs.h` and `mathfunc.h` and save. 
+to the top of the files `funcs.h` and `mathfunc.h` and save.  -->
 
 ### Boost ###
 
 For detailed instructions on installing boost with compiled libraries please see <a href="https://www.boost.org/more/getting_started/index.html">Section 5.2</a> of the official Boost documentation.
 
 1. Download and decompress boost into `$HOME/local/src/`
-2. Change to the boost source directory 
+2. Change to the boost source directory
 3. Execute
 ~~~
 ./bootstrap.sh --with-toolset=gcc
@@ -117,7 +117,7 @@ project : default-build <toolset>gcc ;
 includes all the correct details and location of your gcc compiler, see [here](https://solarianprogrammer.com/2016/03/06/compiling-boost-gcc-5-clang-mac-os-x/) for more details
 5. Execute
 ~~~
-./b2 install --prefix=PREFIX --toolset=gcc cxxflags=-std=c++14 linkflags=-std=c++14 --with-program_options --with-filesystem 
+./b2 install --prefix=PREFIX --toolset=gcc cxxflags=-std=c++14 linkflags=-std=c++14 --with-program_options --with-filesystem
 ~~~
 or if you are using the clang compiler
 ~~~
@@ -126,7 +126,7 @@ or if you are using the clang compiler
 The `b2` executable may also be in `tools/build/bin/` depending on your
 machine's configuration.  If you would like to compile boost with different
 compilers on your machine and would like to enforce a detailed labelling scheme
-for the libraries include `--layout=versioned` when calling `b2` above. See 
+for the libraries include `--layout=versioned` when calling `b2` above. See
 [here](http://stackoverflow.com/questions/8940249/boost-how-bjam-constructs-a-library-name "Versioned Library Layout")
 for more detail.   You may also need to add `-stdlib=libc++`  to the linkflags when compiling for clang.
 6.  You should now have a `PREFIX/include` directory containing the header files
@@ -137,7 +137,7 @@ libblitz.a   libboost_filesystem.a      libboost_program_options.a libboost_syst
 libblitz.la  libboost_filesystem.dylib  libboost_program_options.dylib libboost_system.dylib
 ~~~
 7. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on Mac OS X) variable
-inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` eg.  
+inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` eg.
 ~~~
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:PREFIX/lib
 ~~~
@@ -182,7 +182,7 @@ explicitly link to the blitz library with `-lblitz` added to `LDFLAGS` above.
    libraries.  This is most easily done by updating the `BOOSTVAR` variable in your
    Makefile: `BOOSTVER = -gcc42-mt-1_49` where here we have compiled boost
    v1.49 with gcc v4.2.  This will need to be updated for your particular
-   configuration.  
+   configuration.
 5. The make process will then take three options:
  - `debug=1` turn on debugging options
  - `ndim=1,2,3` the number of spatial dimensions
@@ -202,7 +202,7 @@ Usage       {#usage}
 
 In order to get a quick idea of the options which the code accepts type:
 
-    pimc.e --help 
+    pimc.e --help
 
 The code requires various combinations of these options to run, and the help message should give
 you an idea about which ones are mandatory.
@@ -227,18 +227,18 @@ the `PIMCID`.  The options used in this demo include a subset of all the possibl
 |`t`     |  the imaginary time step tau |
 |`M`     |  number of time slices involved in a bisection move |
 |`C`     |  worm prefactor constant |
-|`I`     |  interaction potential | 
-|`X`     |  external potential | 
+|`I`     |  interaction potential |
+|`X`     |  external potential |
 |`E`     |  number of equilibration steps |
 |`S`     |  number of production bins to output |
-|`l`     |  potential cutoff length in &Aring; | 
-|`u`     |  chemical potential in kelvin | 
+|`l`     |  potential cutoff length in &Aring; |
+|`u`     |  chemical potential in kelvin |
 |`relax` |  adjust the worm constant to ensure we are in the diagonal ensemble ~75% of the simulation |
-|`o`     |  the number of configurations to be stored to disk| 
-|`p`     |  process or cpu number| 
-|`R`     |  restart the simulation with a PIMCID| 
-|`W`     |  the wall clock run limit in hours| 
-|`s`     |  supply a gce-state-* file to start the simulation from| 
+|`o`     |  the number of configurations to be stored to disk|
+|`p`     |  process or cpu number|
+|`R`     |  restart the simulation with a PIMCID|
+|`W`     |  the wall clock run limit in hours|
+|`s`     |  supply a gce-state-* file to start the simulation from|
 |`P`     |  number of imaginary time slices|
 |`D`     |  size of the center of mass move in &Aring;|
 |`d`     |  size of the single slice displace move in &Aring;|
@@ -314,7 +314,7 @@ directory which can be obtained via:
 
 Which will place them in a folder `pimcscripts` in your `$HOME/local/`
 directory.  Many of these depend on some general utility modules that should be
-added to this directory on your local machine.   
+added to this directory on your local machine.
 
 1. Move in to the `pimcsripts` directory
 2. Download the relevant scripts (replacing `svnID` with your svn username)
@@ -328,7 +328,7 @@ this folder to your `.bashrc` as you will use these scripts extensively.  In
 order to take advantage of many of the plotting options you will need to have
 various python libraries installed such as
 [Matplotlib](http://matplotlib.sourceforge.net/).  For the extra color options
-you will need to download and install the gradient files from 
+you will need to download and install the gradient files from
 [CPT-City](http://soliton.vm.bytemark.co.uk/pub/cpt-city/pkg/)
 
 After this has been completed, you can analyze the results of your run via
@@ -379,7 +379,7 @@ are:
 |`gce-estimator-T-L-u-t-PIMCID.dat` |  The main estimator file.  Includes binned averages of various non-vector estimators like the energy and density of particles.|
 |`gce-log-T-L-u-t-PIMCID.dat` |  The log file, which includes all the details of the simulation (including the command needed to restart it) and details on acceptance and output. |
 |`gce-number-T-L-u-t-PIMCID.dat` |  The number probability distribution |
-|`gce-obdm-T-L-u-t-PIMCID.dat` |  The one body density matrix | 
+|`gce-obdm-T-L-u-t-PIMCID.dat` |  The one body density matrix |
 |`gce-pair-T-L-u-t-PIMCID.dat` | The pair correlation function |
 |`gce-pcycle-T-L-u-t-PIMCID.dat` | The permutation cycle distribution |
 |`gce-radial-T-L-u-t-PIMCID.dat` | The radial density |
@@ -421,7 +421,7 @@ the program, of type PathIntegralMonteCarlo is created, which requires both the
 Path and the [Action](@ref ActionBase).  This object performs the actual
 simulation via a series of [Moves](@ref MoveBase), all of which generate trial
 world line configurations that exactly sample the kinetic part of the density
-matrix.  All measurements are made via specific [Estimators](@ref EstimatorBase) 
+matrix.  All measurements are made via specific [Estimators](@ref EstimatorBase)
 with the results being output to disk.
 
 The main kernel of this program should remain relatively untouched, as it has
@@ -429,7 +429,7 @@ been extensively tested and optimized.  Generality can come from modifying just
 a few things.  For example, in order to implement a new type of measurement,
 one would need to write a derived [Estimator](@ref EstimatorBase) class along
 with modifying the Communicator class to define an output path.  New types of
-particles and external environments can be added by adding new 
+particles and external environments can be added by adding new
 [Potential](@ref PotentialBase) then updating Setup to allow for their
 specification at the command line.  Finally, radically different systems can be
 studied by modifying the [Container](@ref Container) class.
