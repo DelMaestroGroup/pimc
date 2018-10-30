@@ -99,9 +99,6 @@ class Communicator
 
         boost::ptr_map<string,File> file_; // The file map
 
-        /* Makes sure we have a unique PIMCID */
-        void getUniqueID(const double);
-
         /* Initialize a input/output file */
         void initFile(string);
 };

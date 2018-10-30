@@ -319,7 +319,7 @@ void Setup::initParameters() {
     params.add<bool>("dimension","output currently compiled dimension",oClass);
     params.add<int>("output_config,o","number of output configurations",oClass,0);
     params.add<uint32>("process,p","process or cpu number",oClass,0);
-    params.add<uint32>("restart,R","restart running simulation with PIMCID",oClass);
+    params.add<string>("restart,R","restart running simulation with PIMCID",oClass);
     params.add<double>("wall_clock,W","set wall clock limit in hours",oClass);
     params.add<string>("start_with_state,s", "start simulation with a supplied state file.",oClass,"");
     params.add<bool>("no_save_state","Only save a state file at the end of a simulation",oClass);
@@ -1473,7 +1473,7 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
     }
 
     /* Output the restart flag */
-    communicate()->file("log")->stream() << format("-R %09d ") % constants()->id();
+    communicate()->file("log")->stream() << format("-R %s ") % constants()->id();
 
     /* If we haven't specified the worm constant, output it now */
     if (!outputC0)

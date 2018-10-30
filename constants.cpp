@@ -25,21 +25,19 @@ ConstantParameters::ConstantParameters()
 /**************************************************************************//**
  *  Initialize all constants from command line, XMl and defaults. 
  *
- *  We initialize all constant parameters used in the simulation.  The ID is
- *  computed as the number of seconds since January 01, 2009.  The value of
+ *  We initialize all constant parameters used in the simulation.  The value of
  *  lambda = hbar^2/2 m k_B is computed in units where lenghts are measured in 
  *  angstroms and energies in kelvin.
 ******************************************************************************/
 void ConstantParameters::initConstants(po::variables_map &params) {
 
-    /* The simulation ID is the number of seconds since January 1 2009 */
+    /* We use boost to generate a UUID for the simulation */
     if (params["restart"].empty()) {
-        time_t seconds = (time(NULL) - 39*365*24*60*60);
-        id_ = uint32(seconds + params["process"].as<uint32>());
+        id_ = boost::uuids::to_string(boost::uuids::random_generator()());
         restart_ = false;
     }
     else {
-        id_ = params["restart"].as<uint32>();
+        id_ = params["restart"].as<string>();
         restart_ = true;
     }
 

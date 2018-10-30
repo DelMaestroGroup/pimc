@@ -125,45 +125,6 @@ void File::rename() {
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
-
-/**************************************************************************//**
- *  Make sure that the current PIMCID doesn't already exist.
- *  
- *  We use boost::filesystem to make sure that the current ID doesn't yet
- *  exist.  If it does, we increment the ID until we have a unique one.
-******************************************************************************/
-void Communicator::getUniqueID(const double _tau) {
-
-    /* Create a test name (we use the log file here) and see if there are any
-     * matches. */
-    string logName;
-    logName = str(format("OUTPUT/%s-log-%s.dat") % ensemble % dataName);
-    boost::filesystem::path logPath(logName);
-
-    while(boost::filesystem::exists(logPath)) {
-
-        /* Increment the ID */
-        constants()->incid();
-
-        /* Try again */
-        logName = str(format("OUTPUT/%s-log-%s.dat") % ensemble % dataName);
-        logPath = boost::filesystem::path(logName);
-
-    }
-
-    /* Now we need to update the dataName variable to reflect the new PIMCID */
-    if (!constants()->canonical()) {
-        dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%09u") % constants()->T() 
-                % constants()->L() % constants()->mu() % _tau % constants()->id());
-    }
-    else {
-        dataName = str(format("%06.3f-%04d-%06.3f-%7.5f-%09d") % constants()->T()
-                % constants()->initialNumParticles() 
-                % (1.0*constants()->initialNumParticles()/constants()->V()) 
-                % _tau % constants()->id());
-    }
-}
-
 /**************************************************************************//**
  *  Initialize all input/output files.
  *  
@@ -183,12 +144,12 @@ void Communicator::init(double _tau, bool outputWorldline, string _initName,
     /* Determine the ensemble and unique parameter file string or dataname */
     if (!constants()->canonical()) {
         ensemble = "gce";
-        dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%09u") % constants()->T() 
+        dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%s") % constants()->T() 
                 % constants()->L() % constants()->mu() % _tau % constants()->id());
     }
     else {
         ensemble = "ce";
-        dataName = str(format("%06.3f-%04d-%06.3f-%7.5f-%09d") % constants()->T()
+        dataName = str(format("%06.3f-%04d-%06.3f-%7.5f-%s") % constants()->T()
                 % constants()->initialNumParticles() 
                 % (1.0*constants()->initialNumParticles()/constants()->V()) 
                 % _tau % constants()->id());
@@ -214,11 +175,8 @@ void Communicator::init(double _tau, bool outputWorldline, string _initName,
     else {
         mode = ios::out;
 
-        /* Make sure we have a unique PIMCID using the log file */
-        getUniqueID(_tau);
-
-        /* Update the header line */
-        header =  str(format("# PIMCID: %09d\n") % constants()->id());
+        /* Get the header line */
+        header =  str(format("# PIMCID: %s\n") % constants()->id());
     }
 }
 

@@ -162,7 +162,7 @@ int main (int argc, char *argv[]) {
     if (!constants()->restart()) {
 
         /* Equilibrate */
-        cout << format("[PIMCID: %09d] - Equilibration Stage.") % constants()->id() << endl;
+        cout << format("[PIMCID: %s] - Equilibration Stage.") % constants()->id() << endl;
         for (uint32 n = 0; n < constants()->numEqSteps(); n++) 
             pimc.equilStep(n,setup.params("relax"),setup.params("relaxmu"));
 
@@ -170,7 +170,7 @@ int main (int argc, char *argv[]) {
         setup.outputOptions(argc,argv,seed,boxPtr,lookupPtrVec.front().getNumNNGrid());
     }
 
-    cout << format("[PIMCID: %09d] - Measurement Stage.") % constants()->id() << endl;
+    cout << format("[PIMCID: %s] - Measurement Stage.") % constants()->id() << endl;
 
     /* Sample */
     int oldNumStored = 0;
@@ -181,7 +181,7 @@ int main (int argc, char *argv[]) {
         pimc.step();
         if (pimc.numStoredBins > oldNumStored) {
             oldNumStored = pimc.numStoredBins;
-            cout << format("[PIMCID: %09d] - Bin #%4d stored to disk.") % constants()->id() 
+            cout << format("[PIMCID: %s] - Bin #%4d stored to disk.") % constants()->id() 
                 % oldNumStored << endl;
         }
         n++;
@@ -202,9 +202,9 @@ int main (int argc, char *argv[]) {
         }
     } while (pimc.numStoredBins < setup.params["number_bins_stored"].as<int>());
     if (wallClockReached)
-        cout << format("[PIMCID: %09d] - Wall clock limit reached.") % constants()->id() << endl;
+        cout << format("[PIMCID: %s] - Wall clock limit reached.") % constants()->id() << endl;
     else
-        cout << format("[PIMCID: %09d] - Measurement complete.") % constants()->id() << endl;
+        cout << format("[PIMCID: %s] - Measurement complete.") % constants()->id() << endl;
 
     /* Output Results */
     if (!constants()->saveStateFiles())

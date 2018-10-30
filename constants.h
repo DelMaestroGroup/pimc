@@ -12,6 +12,11 @@
 #include "common.h"
 #include <boost/program_options.hpp>
 
+/* For generating a unique GUID */
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 namespace po = boost::program_options;
 
 // ========================================================================  
@@ -94,7 +99,7 @@ class ConstantParameters
         int numTimeSlices() {return numTimeSlices_;}    ///< Get number of time slices
         int initialNumParticles() { return initialNumParticles_;}   ///< Get initial number of particles
         int maxWind() { return maxWind_;}               ///< Get the maximum winding number sampled
-        uint32 id() {return id_;}                       ///< Get simulation ID
+        string id() {return id_;}                       ///< Get simulation UUID
         uint32 numEqSteps() {return numEqSteps_;}   ///< Get the number of equilibration steps
         int numBroken() {return numBroken_;}            //< Get number of broken paths
         double spatialSubregion() {return spatialSubregion_;}          //< Get size of subregion
@@ -122,7 +127,6 @@ class ConstantParameters
         void shiftCoMDelta(double frac) {comDelta_ += frac*comDelta_; }     ///< Shift the CoM move size
         void shiftDisplaceDelta(double frac) {displaceDelta_ += frac*displaceDelta_; }      ///< Shift the displace move size
         void shiftmu (double frac) { mu_ += frac; }                     ///< Shift the chemical potential
-        void incid() {++id_;}                                               ///< Increment the PIMCID by 1
 
         bool saveStateFiles() { return saveStateFiles_;}                              ///< Are we saving states every MC bin?
 
@@ -158,7 +162,6 @@ class ConstantParameters
         bool spatialSubregionOn_;     // True if using a spatial subregion for EE
         int Npaths_;                // Number of paths used
 
-        uint32 id_;             // The unique simulation ID
         uint32 numEqSteps_;     // Number of equilibration steps
 
         bool restart_;              // Are we restarting the simulation
@@ -172,6 +175,7 @@ class ConstantParameters
         double gaussianEnsembleSD_; // Standard deviation of ensemble weight
         bool varUpdates_;           // Perform variable length diagonal updates
 
+        string  id_;                // The unique simulation UUID
         string intPotentialType_;   // The type of interaction potential
         string extPotentialType_;   // The type of external potential
         string waveFunctionType_;   // The type of trial wave function
