@@ -10,6 +10,9 @@
 #include "lookuptable.h"
 #include "communicator.h"
 
+#include <boost/math/special_functions/ellint_1.hpp>
+#include <boost/math/special_functions/ellint_2.hpp>
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // POTENTIAL BASE CLASS ------------------------------------------------------
@@ -774,6 +777,227 @@ HardCylinderPotential::HardCylinderPotential(const double radius) :
 HardCylinderPotential::~HardCylinderPotential() {
 }
 
+
+/**************************************************************************//**
+ *  Constructor.
+ *
+ *  We create a nested Lennard-Jones cylinder, which uses a lookup table to hold the
+ *  value of the integrated 6-12 potential for helium atoms interacting
+ *  with the walls of a nanpore pre-plated with an adsorbed gas.
+ *  @param radius The radius of the cylinder
+******************************************************************************/
+PlatedLJCylinderPotential::PlatedLJCylinderPotential(const double Ro_, const double Rw, 
+        const double sigmaPlated_, const double epsilonPlated_, const double densityPlated_) : 
+    PotentialBase(),
+    TabulatedPotential()
+{
+    /* The outer radius of the tube */
+    Ro = Ro_;
+
+    /* Plating substrates */
+    densityPlated = densityPlated_; //0.207; // atoms / angstrom^3
+    epsilonPlated = densityPlated_; //36.13613;    // Kelvin
+    sigmaPlated   = sigmaPlated_; //3.0225;    // angstroms
+    Ri = Ro-Rw; //3.5; 
+
+    // Neon Values
+    /* densityPlated = 0.207; // atoms / angstrom^3 FIXME */
+    /* epsilonPlated = 20.161242;    // Kelvin */
+    /* sigmaPlated   = 2.711;    // angstroms */
+    /* Ri = Ro-(1.52*2); //FIXME Fix hardcoded R2 */
+
+    /* Substrate parameters for MCM-41 obtained by fitting 
+     * @see https://nano.delmaestro.org/index.php?title=Effective_external_potential_(nanopores) 
+     */
+    density = 1.000;    // atoms / angstrom^3
+    epsilon = 1.59;    // Kelvin
+    sigma   = 3.44;    // angstroms
+    
+    /* We choose a mesh consisting of 10^6 points, and create the lookup table */
+    dR = (1.0E-6)*Ri;
+    initLookupTable(dR,Ri);
+    
+    /* Find the minimun of the potential */
+    minV = 1.0E5;
+    for (int n = 0; n < tableLength; n++) {
+        if (lookupV(n) < minV)
+            minV = lookupV(n);
+    }
+
+    /* The extremal values for the lookup table */
+    extV = valueV(0.0),valueV(Ri);
+    extdVdr = valuedVdr(0.0),valuedVdr(Ri);
+}
+
+/**************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+PlatedLJCylinderPotential::~PlatedLJCylinderPotential() {
+}
+
+/**************************************************************************//**
+ *  Return the actual value of the LJ Cylinder potential, for a distance r 
+ *  from the surface of the wall.
+ *
+ *  Checked and working with Mathematica.
+******************************************************************************/
+double PlatedLJCylinderPotential::V_(const double r, const double R, 
+                                   const double sig, const double eps, const double dens) 
+{
+    double x = (r - (r>=R)*EPS) / R;
+
+    double x2 = x*x;
+    double x4 = x2*x2;
+    double x6 = x2*x4;
+    double x8 = x4*x4;
+    double f1 = 1.0 / (1.0 - x2);
+    double sigoR3 = pow(sig/R,3.0);
+    double sigoR9 = sigoR3*sigoR3*sigoR3;
+
+    double Kx2 = boost::math::ellint_1(x);
+    double Ex2 = boost::math::ellint_2(x);
+
+    double v9 = (1.0*pow(f1,9.0)/(240.0)) * (
+            (1091.0 + 11156*x2 + 16434*x4 + 4052*x6 + 35*x8)*Ex2 - 
+            8.0*(1.0 - x2)*(1.0 + 7*x2)*(97.0 + 134*x2 + 25*x4)*Kx2);
+    double v3 = 2.0*pow(f1,3.0) * ((7.0 + x2)*Ex2 - 4.0*(1.0-x2)*Kx2);
+
+    return ((M_PI*eps*sig*sig*sig*dens/3.0)*(sigoR9*v9 - sigoR3*v3));
+}
+
+/**************************************************************************//**
+ *  Return the r-derivative of the LJ Cylinder potential for separation r.
+ *
+ *  Checked and working with Mathematica.
+******************************************************************************/
+double PlatedLJCylinderPotential::dVdr_(const double r, const double R, 
+                                   const double sig, const double eps, const double dens) 
+{
+    double x = (r - (r>=R)*EPS) / R;
+
+    /* dV/dr */
+    if (x < EPS)
+        return (1.28121E8/pow(R,11.0) - 102245.0/pow(R,5.0))*x;
+    else {
+        double x2 = x*x;
+        double x4 = x2*x2;
+        double x6 = x2*x4;
+        double x8 = x4*x4;
+        double f1 = 1.0 / (1.0 - x2);
+        double sigoR3 = pow(sig/R,3.0);
+        double sigoR9 = sigoR3*sigoR3*sigoR3;
+
+        double Kx2 = boost::math::ellint_1(x);
+        double Ex2 = boost::math::ellint_2(x);
+
+        double dv9dx =(3.0*pow(f1,10.0)/(80.0*x)) *
+            ( (1.0 + x2)*(35.0 + 5108*x2 + 22482*x4 + 5108*x6 + 35*x8)*Ex2 -
+              (1.0 - x2)*(35.0 + 3428*x2 + 15234*x4 + 12356*x6 +1715*x8)*Kx2 );
+        double dv3dx = (6.0*pow(f1,4.0)/x) *
+            ( (1.0 + 14*x2 + x4)*Ex2 - (1.0 + 6*x2 - 7*x4)*Kx2 );
+        return ((M_PI*eps*sig*sig*sig*dens/(3.0*R))*(sigoR9*dv9dx - sigoR3*dv3dx));
+    }
+}
+
+/**************************************************************************//**
+ *  Return the actual value of the pre-plated cylinder potential, for a 
+ *  distance r from the surface of the wall.
+******************************************************************************/
+double PlatedLJCylinderPotential::valueV(const double r) {
+
+    return V_(r,Ri,sigmaPlated,epsilonPlated,densityPlated) - 
+           V_(r,Ro,sigmaPlated,epsilonPlated,densityPlated) +
+           V_(r,Ro,sigma,epsilon,density);
+}
+
+/**************************************************************************//**
+ *  Return the r-derivative of the LJ Cylinder potential for separation r.
+ *
+ *  Checked and working with Mathematica.
+******************************************************************************/
+double PlatedLJCylinderPotential::valuedVdr(const double r) {
+    return dVdr_(r,Ri,sigmaPlated,epsilonPlated,densityPlated) - 
+           dVdr_(r,Ro,sigmaPlated,epsilonPlated,densityPlated) +
+           dVdr_(r,Ro,sigma,epsilon,density);
+}
+
+/**************************************************************************//**
+ * N.B. Need to add this if we want to use the virial estimator.
+ *
+******************************************************************************/
+double PlatedLJCylinderPotential::valued2Vdr2(const double r) {
+    return 0.0;
+}
+
+/**************************************************************************//**
+ * Return an initial particle configuration.
+ *
+ * Return a set of initial positions inside the cylinder.
+******************************************************************************/
+Array<dVec,1> PlatedLJCylinderPotential::initialConfig(const Container *boxPtr, MTRand &random,
+        const int numParticles) {
+
+    /* The particle configuration */
+    Array<dVec,1> initialPos(numParticles);
+    initialPos = 0.0;
+
+    /* We shift the radius inward to account for the excluded volume from the
+     * hard wall.  This represents the largest prism that can be put
+     * inside a cylinder. */
+    dVec lside;
+    lside[0] = lside[1] = sqrt(2.0)*(Ri-sigmaPlated);
+    lside[2] = boxPtr->side[NDIM-1];
+
+    /* Get the linear size per particle */
+    double initSide = pow((1.0*numParticles/product(lside)),-1.0/(1.0*NDIM));
+
+    /* We determine the number of initial grid boxes there are in 
+     * in each dimension and compute their size */
+    int totNumGridBoxes = 1;
+    iVec numNNGrid;
+    dVec sizeNNGrid;
+
+    for (int i = 0; i < NDIM; i++) {
+        numNNGrid[i] = static_cast<int>(ceil((lside[i] / initSide) - EPS));
+
+        /* Make sure we have at least one grid box */
+        if (numNNGrid[i] < 1)
+            numNNGrid[i] = 1;
+
+        /* Compute the actual size of the grid */
+        sizeNNGrid[i] = lside[i] / (1.0 * numNNGrid[i]);
+
+        /* Determine the total number of grid boxes */
+        totNumGridBoxes *= numNNGrid[i];
+    }
+
+    /* Now, we place the particles at the middle of each box */
+    PIMC_ASSERT(totNumGridBoxes>=numParticles);
+    dVec pos;
+    for (int n = 0; n < totNumGridBoxes; n++) {
+
+        iVec gridIndex;
+        for (int i = 0; i < NDIM; i++) {
+            int scale = 1;
+            for (int j = i+1; j < NDIM; j++) 
+                scale *= numNNGrid[j];
+            gridIndex[i] = (n/scale) % numNNGrid[i];
+        }
+
+        for (int i = 0; i < NDIM; i++) 
+            pos[i] = (gridIndex[i]+0.5)*sizeNNGrid[i] - 0.5*lside[i];
+
+        boxPtr->putInside(pos);
+
+        if (n < numParticles)
+            initialPos(n) = pos;
+        else 
+            break;
+    }
+
+    return initialPos;
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // LJ CYLINDER POTENTIAL CLASS -----------------------------------------------
@@ -842,8 +1066,6 @@ LJCylinderPotential::LJCylinderPotential(const double radius) :
 LJCylinderPotential::~LJCylinderPotential() {
 }
 
-#include <boost/math/special_functions/ellint_1.hpp>
-#include <boost/math/special_functions/ellint_2.hpp>
 /**************************************************************************//**
  *  Return the actual value of the LJ Cylinder potential, for a distance r 
  *  from the surface of the wall.

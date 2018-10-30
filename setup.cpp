@@ -273,7 +273,7 @@ Setup::Setup() :
     interactionNames = getList(interactionPotentialName);
 
     /* Define the allowed external  potential names */
-    externalPotentialName = {"free", "harmonic", "osc_tube", "lj_tube", 
+    externalPotentialName = {"free", "harmonic", "osc_tube", "lj_tube", "plated_lj_tube",
         "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "graphene", "fixed_lj", "graphenelut"};
     externalNames = getList(externalPotentialName);
 
@@ -347,6 +347,8 @@ void Setup::initParameters() {
     params.add<double>("omega","harmonic interaction potential frequency",oClass,1.0);
     params.add<double>("lj_sigma","Lennard-Jones hard-core radius [angstroms]",oClass,2.74);
     params.add<double>("lj_epsilon","Lennard-Jones energy scale [kelvin]",oClass,16.2463);
+    params.add<double>("lj_width","Radial with of LJ plated cylinder material [angstroms]",oClass);
+    params.add<double>("lj_density","Density LJ plated cylinder material [angstroms^(-3)]",oClass);
     params.add<double>("hourglass_radius","differential radius for hourglass potential [angstroms]",oClass,0.0);
     params.add<double>("hourglass_width","constriction width for hourglass potential [angstroms]",oClass,0.0);
     params.add<string>("fixed,f","input file name for fixed atomic positions.",oClass,"");
@@ -1051,6 +1053,10 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
     else if (constants()->extPotentialType() == "hg_tube")
         externalPotentialPtr = new LJHourGlassPotential(params["radius"].as<double>(),
                 params["hourglass_radius"].as<double>(), params["hourglass_width"].as<double>());
+    else if (constants()->extPotentialType() == "plated_lj_tube")
+        externalPotentialPtr = new PlatedLJCylinderPotential(params["radius"].as<double>(),
+                params["lj_width"].as<double>(), params["lj_sigma"].as<double>(),
+                params["lj_epsilon"].as<double>(), params["lj_density"].as<double>());
     else if (constants()->extPotentialType() == "lj_tube")
         externalPotentialPtr = new LJCylinderPotential(params["radius"].as<double>());
     else if (constants()->extPotentialType() == "hard_tube") 
@@ -1577,6 +1583,18 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
             % "Graphene-Carbon LJ Sigma" % params["lj_sigma"].as<double>();
         communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
             % "Graphene-Carbon LJ Epsilon" % params["lj_epsilon"].as<double>();
+    }
+
+    /* output possible paramters of the plated LJ cylinder potential */
+    if (params["external"].as<string>().find("plated") != string::npos) {
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-12.5e\n") 
+            % "Plating Radial Width" % params["lj_width"].as<double>();
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-12.5e\n") 
+            % "Plating LJ Sigma" % params["lj_sigma"].as<double>();
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-12.5e\n") 
+            % "Plating LJ Epsilon" % params["lj_epsilon"].as<double>();
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-12.5e\n") 
+            % "Plating LJ Density" % params["lj_density"].as<double>();
     }
 
     if (PIGS) {

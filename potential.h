@@ -431,6 +431,101 @@ class HardCylinderPotential : public PotentialBase {
 };
 
 // ========================================================================  
+// Plated LJ Cylinder Potential Class
+// ========================================================================  
+/** 
+ * Computes the value of the external wall potential for a plated cylindrical 
+ * cavity. 
+ */
+class PlatedLJCylinderPotential : public PotentialBase, public TabulatedPotential {
+    public:
+        PlatedLJCylinderPotential (const double, const double, const double, const double, const double);
+        ~PlatedLJCylinderPotential ();
+
+        /** The integrated LJ Wall potential. */
+        double V(const dVec &r) {
+            int k = static_cast<int>(sqrt(r[0]*r[0] + r[1]*r[1])/dR);
+            if (k >= tableLength)
+                return extV[1];
+            else
+                return lookupV(k);
+        }
+
+        /* The gradient of the LJ Wall potential */
+        dVec gradV(const dVec &);
+
+        /* Laplacian of the LJ Wall potential */
+        double grad2V(const dVec &);
+
+        /** Initial configuration corresponding to the LJ cylinder potential */
+        Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+
+    private:
+        /** local methods for computing the potential of a LJ cylinder */
+        double V_ (const double, const double, const double, const double, const double);
+        double dVdr_ (const double, const double, const double, const double, const double);
+
+        /* All the parameters needed for the LJ wall potential */
+        double densityPlated;
+        double sigmaPlated;
+        double epsilonPlated;
+        double density;
+        double sigma;
+        double epsilon;
+
+        double Ri;      // Inner radius of the tube
+        double Ro;      // Outer radius of the tube
+        double dR;      // Discretization for the lookup table
+
+        double minV;    // The minimum value of the potential
+
+        /* Used to construct the lookup tables */
+        double valueV (const double);               
+        double valuedVdr (const double);                
+        double valued2Vdr2 (const double);
+};
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+// INLINE FUNCTION DEFINITIONS
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+/** 
+ * Return the gradient of aziz potential for separation r using a 
+ * lookup table. 
+ */
+inline dVec PlatedLJCylinderPotential::gradV(const dVec &r) {
+    double rnorm = sqrt(r[0]*r[0] + r[1]*r[1]);
+    dVec tempr;
+    tempr = r;
+    tempr[2] = 0.0;
+    int k = static_cast<int>(rnorm/dR);
+    dVec gV;
+    if (k >= tableLength)
+        gV = (extdVdr[1]/rnorm)*tempr;
+    else
+        gV = (lookupdVdr(k)/rnorm)*tempr;
+    return gV;
+}
+
+/** 
+ * Return the Laplacian of aziz potential for separation r using a 
+ * lookup table. 
+ */
+inline double PlatedLJCylinderPotential::grad2V(const dVec &r) {
+    double rnorm = sqrt(r[0]*r[0] + r[1]*r[1]);
+    dVec tempr;
+    tempr = r;
+    tempr[2] = 0.0; // PBC in z-direction
+    int k = static_cast<int>(rnorm/dR);
+    double g2V;
+    if (k >= tableLength)
+        g2V = extd2Vdr2[1];
+    else
+        g2V = lookupd2Vdr2(k);
+    return g2V;
+}
+
+// ========================================================================  
 // LJ Cylinder Potential Class
 // ========================================================================  
 /** 

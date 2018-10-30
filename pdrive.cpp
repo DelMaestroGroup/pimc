@@ -19,7 +19,6 @@
 #include "cmc.h"
 #include "move.h"
 
-
 /**
  * Main driver.
  * Read in all program options from the user using boost::program_options and setup the simulation
@@ -149,6 +148,15 @@ int main (int argc, char *argv[]) {
     PathIntegralMonteCarlo pimc(pathPtrVec,random,movesPtrVec,estimatorsPtrVec,
                                 !setup.params["start_with_state"].as<string>().empty(),
                                 setup.params["bin_size"].as<int>());
+
+    /* A silly banner */
+    const char *banner = "  _____    _____   __  __    _____\n"
+                         " |  __ \\  |_   _| |  \\/  |  / ____|\n"
+                         " | |__) |   | |   | \\  / | | |     \n"
+                         " |  ___/    | |   | |\\/| | | |     \n"
+                         " | |       _| |_  | |  | | | |____ \n"
+                         " |_|      |_____| |_|  |_|  \\_____|\n";
+    cout << endl << banner << endl;
 
     /* If this is a fresh run, we equilibrate and output simulation parameters to disk */
     if (!constants()->restart()) {
