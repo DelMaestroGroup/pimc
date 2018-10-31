@@ -809,7 +809,7 @@ PlatedLJCylinderPotential::PlatedLJCylinderPotential(const double Ro_, const dou
     /* Substrate parameters for MCM-41 obtained by fitting 
      * @see https://nano.delmaestro.org/index.php?title=Effective_external_potential_(nanopores) 
      */
-    density = 1.000;    // atoms / angstrom^3
+    density = 1.000;   // atoms / angstrom^3
     epsilon = 1.59;    // Kelvin
     sigma   = 3.44;    // angstroms
     

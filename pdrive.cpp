@@ -150,12 +150,21 @@ int main (int argc, char *argv[]) {
                                 setup.params["bin_size"].as<int>());
 
     /* A silly banner */
-    const char *banner = "  _____    _____   __  __    _____\n"
-                         " |  __ \\  |_   _| |  \\/  |  / ____|\n"
-                         " | |__) |   | |   | \\  / | | |     \n"
-                         " |  ___/    | |   | |\\/| | | |     \n"
-                         " | |       _| |_  | |  | | | |____ \n"
-                         " |_|      |_____| |_|  |_|  \\_____|\n";
+    const char *banner;
+    if (PIGS)
+        *banner = " _____    _____    _____    _____\n" 
+                  "|  __ \\  |_   _|  / ____|  / ____|\n"
+                  "| |__) |   | |   | |  __  | (___\n" 
+                  "|  ___/    | |   | | |_ |  \\___ \\\n"
+                  "| |       _| |_  | |__| |  ____) |\n"
+                  "|_|      |_____|  \\_____| |_____/\n";  
+    else 
+        *banner = "  _____    _____   __  __    _____\n"
+                  " |  __ \\  |_   _| |  \\/  |  / ____|\n"
+                  " | |__) |   | |   | \\  / | | |     \n"
+                  " |  ___/    | |   | |\\/| | | |     \n"
+                  " | |       _| |_  | |  | | | |____ \n"
+                  " |_|      |_____| |_|  |_|  \\_____|\n";
     cout << endl << banner << endl;
 
     /* If this is a fresh run, we equilibrate and output simulation parameters to disk */
