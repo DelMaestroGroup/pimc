@@ -777,7 +777,6 @@ HardCylinderPotential::HardCylinderPotential(const double radius) :
 HardCylinderPotential::~HardCylinderPotential() {
 }
 
-
 /**************************************************************************//**
  *  Constructor.
  *
@@ -796,7 +795,7 @@ PlatedLJCylinderPotential::PlatedLJCylinderPotential(const double Ro_, const dou
 
     /* Plating substrates */
     densityPlated = densityPlated_; //0.207; // atoms / angstrom^3
-    epsilonPlated = densityPlated_; //36.13613;    // Kelvin
+    epsilonPlated = epsilonPlated_; //36.13613;    // Kelvin
     sigmaPlated   = sigmaPlated_; //3.0225;    // angstroms
     Ri = Ro-Rw; //3.5; 
 
@@ -812,7 +811,7 @@ PlatedLJCylinderPotential::PlatedLJCylinderPotential(const double Ro_, const dou
     density = 1.000;   // atoms / angstrom^3
     epsilon = 1.59;    // Kelvin
     sigma   = 3.44;    // angstroms
-    
+
     /* We choose a mesh consisting of 10^6 points, and create the lookup table */
     dR = (1.0E-6)*Ri;
     initLookupTable(dR,Ri);
