@@ -42,28 +42,28 @@ class Container {
         dVec gridSize;                      ///< The grid size in each dimension
 
         /** Place a vector in boundary conditions. */
-        /** COME BACK TO THIS
-         * SEE: Z. Phys. Chem. 227 (2013) 345–352
+        /** Algorithm C4 from 
+         * @see: Z. Phys. Chem. 227 (2013) 345–352
          */
-        /* void putInBC(dVec & r) const { */
+        void putInBC(dVec & r) const {
+            r -= pSide*blitz::floor(r*sideInv + 0.5);
             /* int k; */
-        /*  for (int i = 0; i < NDIM; ++i) { */
-                /* k = (int) r[i] * sideInv2[i]; */
-                /* r[i] -= k*side[i]; */
-        /*  } */
-        /* } */
-
-        void putInBC1(dVec & r) const {
-            for (int i = 0; i < NDIM; ++i) {
-                r[i] -= (r[i] >= 0.5*side[i])*pSide[i];
-                r[i] += (r[i] < -0.5*side[i])*pSide[i];
-            }
+            /* for (int i = 0; i < NDIM; ++i) { */
+            /*     k = int(r[i]*sideInv[i] + ((r[i]>=0.0)?0.5:-0.5)); */
+            /*     r[i] -= k*pSide[i]; */
+            /* } */
         }
 
-        /** Place a vector in boundary conditions. */
-        /* Not sure if I need this, more testing is needed */
-        // FIXME && periodic[i] hack to make cylinder work
-        void putInBC(dVec & r) const {
+        /* An old version */
+        /* void putInBC1(dVec & r) const { */
+        /*     for (int i = 0; i < NDIM; ++i) { */
+        /*         r[i] -= (r[i] >= 0.5*side[i])*pSide[i]; */
+        /*         r[i] += (r[i] < -0.5*side[i])*pSide[i]; */
+        /*     } */
+        /* } */
+
+        /* Place a vector in boundary conditions. */
+        void putInBC1(dVec & r) const {
             for (int i = 0; i < NDIM; ++i) {
                 while (r[i] >= 0.5*side[i] && periodic[i])
                     r[i] -= pSide[i];
