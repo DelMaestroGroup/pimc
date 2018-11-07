@@ -1297,29 +1297,6 @@ boost::ptr_vector<EstimatorBase> * Setup::estimators(
     return multiEstimatorPtr;
 }
 
-
-/*************************************************************************//**
- * Compare a char array with an option name
- *
- * @param option The commmand line string
- * @param target The target option name
-******************************************************************************/
-bool Setup::checkOption(const string option, const string target) {
-
-    /* Determine if we have a long or short option */
-    auto num_dashes = std::count(option.begin(), option.end(), '-');
-
-    /* check short options first  */
-    if (num_dashes == 1)
-        return (option == target);
-
-    else if (num_dashes == 2) 
-        return (option.find(target) != string::npos);
-
-    /* otherwise return false */
-    return false;
-}
-
 /*************************************************************************//**
  * Compare a char array with an option name
  *
@@ -1444,28 +1421,28 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 
         auto arg = cmdArg[n];
 
-        if (checkOption(arg,"-s") || checkOption(arg,"--start_with_state") ) {
+        if ( (arg == "-s") || (arg == "--start_with_state") )  {
             /* do nothing */
         }
-        else if ( checkOption(arg,"-C") || checkOption(arg,"worm_constant") ) {
+        else if ( (arg == "-C") || (arg == "worm_constant") ) {
             communicate()->file("log")->stream() << format("-C %21.15e ") % constants()->C0();
             outputC0 = true;
         }
-        else if (checkOption(arg,"-p") || checkOption(arg,"--process")) {
+        else if ((arg == "-p") || (arg == "--process")) {
             communicate()->file("log")->stream() << format("-p %03d ") % params["process"].as<uint32>();
         }
-        else if (checkOption(arg,"-D") || checkOption(arg,"--com_delta")) {
+        else if ((arg == "-D") || (arg == "--com_delta")) {
             communicate()->file("log")->stream() << format("-D %21.15e ") % constants()->comDelta();
             outputD = true;
         }
-        else if (checkOption(arg,"-d") || checkOption(arg,"--displace_delta")) {
+        else if ((arg == "-d") || (arg == "--displace_delta")) {
             communicate()->file("log")->stream() << format("-d %21.15e ") % constants()->displaceDelta();
             outputd = true;
         }
-        else if (checkOption(arg,"--estimator") or checkOption(arg,"-e")) {
+        else if ((arg == "--estimator") || (arg == "-e")) {
             outputEstimator = true;
         }
-        else if (checkOption(arg,"--update")) {
+        else if (arg == "--update") {
             outputUpdate = false;
         }
         else 

@@ -327,7 +327,7 @@ class Setup {
         boost::ptr_map<string,po::options_description> optionClasses; ///< A map of different option types
         po::options_description cmdLineOptions;     ///< All options combined
 
-        bool checkOption(const string, const string);    // check an option string
+        /** process and clean up the command line options */
         void cleanCommandLineOptions(int, char*[], vector<string> &, vector<string> &,
                 vector<string>&);
         void update(int,char*[],po::options_description&);
