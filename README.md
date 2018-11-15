@@ -4,54 +4,32 @@ Documentation  {#mainpage}
 Introduction {#introduction}
 ============
 
-This webpage contains the details of a worm algorithm path integral quantum
-Monte Carlo (WA-PIMC) code actively developed in c++ since 2008 in the [Del Maestro
-group](http://delmaestro.org/adrian) based on:
+This webpage contains the details of a worm algorithm path integral quantum Monte Carlo (WA-PIMC) code actively developed in c++ since 2008 in the [Del Maestro group](http://delmaestro.org/adrian) based on:
 
 - T > 0: [M. Boninsegni, N. V. Prokofiev, and B. Svistunov, Phys. Rev. E <b>74</b>, 036701 (2006)](http://link.aps.org/doi/10.1103/PhysRevE.74.036701)
 - T = 0: [A. Sarsa, K.E. Schmidt and W. R. Magro, J. Chem. Phys. <b>113</b>, 1366 (2000)] (http://aip.scitation.org/doi/abs/10.1063/1.481926)
 
-It can be used to simulate indistinguishable bosons with various types of
-realistic interactions in one, two and three spatial dimensions. As written, it
-takes a large number of command line options and allows for the measurement of
-essentially any physical observable of interest.
+It can be used to simulate indistinguishable bosons with various types of realistic interactions in one, two and three spatial dimensions. As written, it takes a large number of command line options and allows for the measurement of essentially any physical observable of interest.
 
-The design philosophy included the goal of abstracting the actual
-implementation of the WA-PIMC method to a kernel that will never need to be
-touched by the end user.  The code can be easily extended to study a wide
-variety of situations by including new types of containers, potentials
-estimators and communicators.
+The design philosophy included the goal of abstracting the actual implementation of the WA-PIMC method to a kernel that will never need to be touched by the end user.  The code can be easily extended to study a wide variety of situations by including new types of containers, potentials estimators and communicators.
 
-If you have questions, bug reports or plan to use this code for scientific
-research, please contact me at Adrian.DelMaestro@uvm.edu.
+If you have questions, bug reports or plan to use this code for scientific research, please contact me at Adrian.DelMaestro@uvm.edu.
 
-Since July 2016, the development and maintenance of this code base has been
-supported in part by the National Science Foundation under Award No.
-DMR-1553991.
+The development and maintenance of this code base has been supported in part by the National Science Foundation under Award Nos.  DMR-1553991 and DMR-DMR-1808440.
 
-![NSF](https://www.nsf.gov/images/logos/nsf1.gif)
+![NSF](https://www.nsf.gov/images/logos/NSF_4-Color_bitmap_Logo.png)
 
 Installation {#installation}
 ============
 
-This program has been successfully compiled and run on both Intel and AMD systems using
-g++, pathscale and icpc. Before installing, one needs to ensure that all
-dependencies are met.  We recommend that the required libraries (boost and
-blitz) are installed in a `local` folder inside your home directory: `~/local`.
+This program has been successfully compiled and run on both Intel and AMD systems using clang, g++, pathscale and icpc. Before installing, one needs to ensure that all dependencies are met.  We recommend that the required libraries (boost and blitz) are installed in a `local` folder inside your home directory: `$HOME/local`.
 
 Dependencies {#dependencies}
 ------------
 
-The code is written in c++ and makes use of both the <a
-href="https://github.com/blitzpp/blitz">blitz++</a> and <a
-href="http://www.boost.org/">boost</a> libraries.  You should be able to
-grab `blitz` from github and compile from source via the instructions below.
+The code is written in c++ and makes use of both the <a href="https://github.com/blitzpp/blitz">blitz++</a> and <a href="http://www.boost.org/">boost</a> libraries.  You should be able to grab `blitz` from github and compile from source via the instructions below.
 
-We use many of the boost header-only libraries, but two libraries will need to
-be compiled: boost_program_options and boost_filesystem libraries.  Let us
-assume that you will be installing both blitz and boost in the folder
-`$HOME/local` using the GNU C++ compiler.  For icpc or clang, the changes
-should be obvious, and in particular for the Intel compiler you will need to use `intel-linux` as the toolset.
+We use many of the boost header-only libraries, but two libraries will need to be compiled: boost_program_options and boost_filesystem libraries.  Let us assume that you will be installing both blitz and boost in the folder `$HOME/local` using the GNU C++ compiler.  For icpc or clang, the changes should be obvious, and in particular for the Intel compiler you will need to use `intel-linux` as the toolset while for clang you will use `darwin`.
 
 If you don't have a `$HOME/local` you should create this directory now via
 
@@ -59,11 +37,7 @@ If you don't have a `$HOME/local` you should create this directory now via
 
 ### Blitz ###
 
-Unless you need to use the blitz++'s internal debug functionality initiated
-through \#`define BZ_DEBUG` which is set by including `debug=1` when compiling
-the path integral code, blitz can be used as a 'header only' library and does
-not need to be compiled.  This is the most common use case.  However, as it
-doesn't take very long to compile one can proceed as follows:
+Unless you need to use the blitz++'s internal debug functionality initiated through \#`define BZ_DEBUG` which is set by including `debug=1` when compiling, blitz can be used as a 'header only' library and does not need to be compiled.  This is the most common use case.  However, as it doesn't take very long to compile one can proceed as follows:
 
 1. Move into your source directory (create if necessary).
 ~~~
@@ -104,31 +78,49 @@ For detailed instructions on installing boost with compiled libraries please see
 ~~~
 ./bootstrap.sh --with-toolset=gcc
 ~~~
-4. Open `project-config.jam` and make the section:
+4. Open `project-config.jam` and replace with the following text
 ~~~
+import option ;
+import feature ;
+
+# Compiler configuration. 
 if ! gcc in [ feature.values <toolset> ]
 {
-    using gcc : 5.5.0 : /opt/local/bin/g++-mp-5 ;
+    using gcc : 6.5.0 : /opt/local/bin/g++-mp-6 : <cxxflags>"-std=c++14" ;
 }
 
 project : default-build <toolset>gcc ;
 
+libraries =  --with-program_options --with-filesystem ;
+
+option.set prefix : $HOME/local ;
+option.set exec-prefix : $HOME/local ;
+option.set libdir : $HOME/local/lib ;
+option.set includedir : $HOME/local/include ;
+
+# Stop on first error
+option.set keep-going : false ;
 ~~~
-includes all the correct details and location of your gcc compiler, see [here](https://solarianprogrammer.com/2016/03/06/compiling-boost-gcc-5-clang-mac-os-x/) for more details
+where you will need to make sure to include all the correct details and location of your gcc compiler, see [here](https://solarianprogrammer.com/2016/03/06/compiling-boost-gcc-5-clang-mac-os-x/) for more details. If you are using clang on Mac OS X, the compiler part will read:
+~~~
+if ! darwin in [ feature.values <toolset> ]
+{
+    using darwin ; 
+}
+
+project : default-build <toolset>darwin ;
+~~~
+but the rest should be the same.
 5. Execute
 ~~~
-./b2 install --prefix=PREFIX --toolset=gcc cxxflags=-std=c++14 linkflags=-std=c++14 --with-program_options --with-filesystem
+./b2 install 
 ~~~
 or if you are using the clang compiler
 ~~~
 ./b2 install --prefix=PREFIX --toolset=clang --with-program_options --with-filesystem cxxflags="-std=c++14 -stdlib=libc++" linkflags="-std=c++14 -stdlib=libc++" --layout=versioned
 ~~~
-The `b2` executable may also be in `tools/build/bin/` depending on your
-machine's configuration.  If you would like to compile boost with different
-compilers on your machine and would like to enforce a detailed labelling scheme
-for the libraries include `--layout=versioned` when calling `b2` above. See
-[here](http://stackoverflow.com/questions/8940249/boost-how-bjam-constructs-a-library-name "Versioned Library Layout")
-for more detail.   You may also need to add `-stdlib=libc++`  to the linkflags when compiling for clang.
+If you want to use multiple compilers on the same system, add
+`option.set layout : versioned ;` to your `project-config.jam`.  Note: you may have to rename the `$HOME/include/blitz_VER` directory to remove the version number.
 6.  You should now have a `PREFIX/include` directory containing the header files
 for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will
 contain the following files (the `.dylib` files will only appear on Mac OS X)

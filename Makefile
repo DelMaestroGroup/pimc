@@ -66,7 +66,8 @@ endif #gcc, elseif intel
 #OS X
 else ifeq ($(UNAME),Darwin)
 
-codedir = /usr/local
+#codedir = /usr/local
+codedir = $$HOME/local
 CODEDIR = $(codedir)
 
 #gcc
@@ -97,10 +98,10 @@ LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem
 else ifeq ($(TOOLSET), clang)
 DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
-BOOSTVER ?= -xgcc42-mt-x64-1_67
+BOOSTVER ?= -xgcc42-mt-x64-1_68
 
 ifeq ($(opts), basic)
-OPTS = -std=c++14 -stdlib=libc++ -Wall -O3 -Wno-deprecated-register -Wshadow
+OPTS = -std=c++14 -stdlib=libc++ -Wall -O3 -Wno-deprecated-register -Wshadow -Wno-parentheses
 else ifeq ($(opts), strict)
 # OPTS = -Wall -std=c++11 -stdlib=libc++ -O3 -W -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -ferror-limit=1000 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template
 OPTS = -std=c++14 -stdlib=libc++ -W -Wall -Wextra -g -pedantic
@@ -154,21 +155,22 @@ LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_sy
 # System g++ macbook 
 else ifeq ($(OVERRIDE), macbook)
 
-CODEDIR = /usr/local
+CODEDIR = $$HOME/local
 DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
-CXX = /opt/local/bin/g++-mp-5
-BOOSTVER = -gcc55-mt-x64-1_67 
+CXX = /opt/local/bin/g++-mp-6
+BOOSTVER = 1_68 
+BOOSTCOMP = gcc65-mt-x64
 
 ifeq ($(opts), basic)
-OPTS = -Wall -O3 -std=c++14 -mtune=native  -Wno-unused-local-typedefs
+OPTS = -Wall -O3 -std=c++14 -mtune=native -Wno-unused-local-typedefs
 else ifeq ($(opts), strict)
 # OPTS = -std=c++14 -Wall -g -W -Wextra -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template 
 OPTS = -std=c++14 -Wall -Wextra -g -pedantic
 endif #basic, elseif strict
 
 CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include #$(DEBUG)
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options-$(BOOSTCOMP)-$(BOOSTVER) -lboost_filesystem-$(BOOSTCOMP)-$(BOOSTVER) -lboost_system-$(BOOSTCOMP)-$(BOOSTVER)
 #macbook end
 ######################################################
 
