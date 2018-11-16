@@ -165,16 +165,9 @@ endif
 where `target` is replaced with a unique identifier for your machine.
 If you want to run blitz in debug mode you will need to
 explicitly link to the blitz library with `-lblitz` added to `LDFLAGS` above.
-2. Edit the `CODEDIR` variable to point to the location where you have
-   installed blitz and boost above.  We suggest `$HOME/local`
+2. Edit the `CODEDIR` variable to point to the location where you have installed blitz and boost above.  We suggest `$HOME/local` 
 3. Edit the `OPT` variable to reflect yoru local compile options.
-4. If you installed boost with the `--layout=versioned` command above and you
-   have multiple versions installed on your machine, you may need to append
-   the particular version you want to link to in the names of the boost
-   libraries.  This is most easily done by updating the `BOOSTVAR` variable in your
-   Makefile: `BOOSTVER = -gcc42-mt-1_49` where here we have compiled boost
-   v1.49 with gcc v4.2.  This will need to be updated for your particular
-   configuration.
+4. If you installed boost with the `--layout=versioned` command above and you have multiple versions installed on your machine, you may need to append the particular version you want to link to in the names of the boost libraries.  This is most easily done by updating the `BOOSTVAR` variable in your Makefile: e.g. `BOOSTVER = -gcc42-mt-1_49` where here we have compiled boost v1.49 with gcc v4.2.  This will need to be updated for your particular configuration.
 5. The make process will then take three options:
  - `debug=1` turn on debugging options
  - `ndim=1,2,3` the number of spatial dimensions
@@ -426,7 +419,9 @@ particles and external environments can be added by adding new
 specification at the command line.  Finally, radically different systems can be
 studied by modifying the [Container](@ref Container) class.
 
+<!--
 Python Script User Guide {#scripts}
 =========================
 
 [PIMC Scripts User Guide](sphinx/index.html)
+-->
