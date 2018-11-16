@@ -15,7 +15,7 @@ The design philosophy included the goal of abstracting the actual implementation
 
 If you have questions, bug reports or plan to use this code for scientific research, please contact me at Adrian.DelMaestro@uvm.edu.
 
-The development and maintenance of this code base has been supported in part by the National Science Foundation under Award Nos.  DMR-1553991 and DMR-DMR-1808440.
+The development and maintenance of this code base has been supported in part by the National Science Foundation under Award Nos. [DMR-1553991](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1553991) and [DMR-1808440](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1808440).
 
 <img width="100px" alt="NSF Logo" src="https://www.nsf.gov/images/logos/NSF_4-Color_bitmap_Logo.png">
 
