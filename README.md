@@ -17,7 +17,7 @@ If you have questions, bug reports or plan to use this code for scientific resea
 
 The development and maintenance of this code base has been supported in part by the National Science Foundation under Award Nos.  DMR-1553991 and DMR-DMR-1808440.
 
-![NSF](https://www.nsf.gov/images/logos/NSF_4-Color_bitmap_Logo.png)
+<img width="100px" alt="NSF Logo" src="https://www.nsf.gov/images/logos/NSF_4-Color_bitmap_Logo.png">
 
 Installation {#installation}
 ============
