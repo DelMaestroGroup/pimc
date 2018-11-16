@@ -107,7 +107,6 @@ if ! darwin in [ feature.values <toolset> ]
 {
     using darwin ; 
 }
-
 project : default-build <toolset>darwin ;
 ~~~
 but the rest should be the same.
