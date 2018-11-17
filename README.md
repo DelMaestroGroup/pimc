@@ -21,7 +21,6 @@ The development and maintenance of this code base has been supported in part by 
 
 Installation {#installation}
 ============
-
 This program has been successfully compiled and run on both Intel and AMD systems using clang, g++, pathscale and icpc. Before installing, one needs to ensure that all dependencies are met.  We recommend that the required libraries (boost and blitz) are installed in a `local` folder inside your home directory: `$HOME/local`.
 
 Dependencies {#dependencies}
