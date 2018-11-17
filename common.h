@@ -136,3 +136,4 @@ template<typename Ttype>
 inline Ttype& max(Ttype& x, Ttype& y) { return (x > y ? x : y); } 
 
 #endif
+
