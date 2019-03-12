@@ -117,7 +117,7 @@ but the rest should be the same.
 ~~~
 or if you are using the clang compiler
 ~~~
-./b2 install --prefix=PREFIX --toolset=clang --with-program_options --with-filesystem cxxflags="-std=c++14 -stdlib=libc++" linkflags="-std=c++14 -stdlib=libc++" --layout=versioned
+./b2 install --prefix=PREFIX --toolset=darwin --with-program_options --with-filesystem cxxflags="-std=c++14 -stdlib=libc++" linkflags="-std=c++14 -stdlib=libc++" --layout=versioned
 ~~~
 If you want to use multiple compilers on the same system, add `option.set layout : versioned ;` to your `project-config.jam`.  Note: you may have to rename the `$HOME/include/blitz_VER` directory to remove the version number.
 6.  You should now have a `PREFIX/include` directory containing the header files for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain the following files (the `.dylib` files will only appear on Mac OS X)

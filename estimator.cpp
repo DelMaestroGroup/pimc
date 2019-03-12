@@ -2746,7 +2746,7 @@ void CylinderNumberParticlesEstimator::accumulate() {
     int numParticles = num1DParticles(path,maxR);
     estimator(0) += 1.0*numParticles;
     estimator(1) += 1.0*numParticles*numParticles;
-    estimator(2) += 1.0*numParticles/path.boxPtr->side[NDIM-1];
+    estimator(2) += 1.0*numParticles/(M_PI*maxR*maxR*path.boxPtr->side[NDIM-1]);
 }
 
 // ---------------------------------------------------------------------------

@@ -2559,6 +2559,20 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
     /* } */
 
     /* exit(-1); */
+
+    /* print out the potential to disk */
+    /* int numPoints = 500000; */
+    /* double dz = 2*_boxPtr->side[2]/numPoints; */
+    /* dVec pos; */
+    /* pos[0] = 0.0; */
+    /* pos[1] = 0.0; */
+    /* for (int i = 0; i < numPoints; i++) { */
+    /*     pos[2] = -0.5*_boxPtr->side[2] + 2.0 + i*dz; */
+    /*     double cz = pos[2] + 0.5*_boxPtr->side[2]; */
+    /*     communicate()->file("debug")->stream() << format("%24.16e %24.16e\n") % cz % V(pos); */
+    /* } */
+
+    /* exit(-1); */
 }
 
 
