@@ -50,8 +50,7 @@ href="https://github.com/blitzpp/blitz">github</a> into `$HOME/local/src`
 anything special you need to do on your system.
 5. Execute
 ~~~
-autoreconf -fiv
-./configure cxx=g++ --prefix=PREFIX
+cmake -DCMAKE_INSTALL_PREFIX=PREFIX .
 make lib
 make install
 ~~~

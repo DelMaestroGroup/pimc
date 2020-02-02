@@ -285,6 +285,10 @@ Setup::Setup() :
     waveFunctionName = {"constant", "sech", "jastrow", "lieb", "sutherland"};
     waveFunctionNames = getList(waveFunctionName);
 
+    /* Define the allowed random number generator names */
+    randomGeneratorName = {"boost_mt19937","std_mt19937", "pimc_mt19937"};
+    randomGeneratorNames = getList(randomGeneratorName);
+
     /* Get the allowed estimator names */
     estimatorName = estimatorFactory()->getNames();
     vector<string> multiEstimatorName = multiEstimatorFactory()->getNames();
@@ -325,6 +329,7 @@ void Setup::initParameters() {
     params.add<bool>("no_save_state","Only save a state file at the end of a simulation",oClass);
     params.add<bool>("estimator_list","Output a list of estimators in xml format.",oClass);
     params.add<bool>("update_list","Output a list of updates in xml format.",oClass);
+    params.add<string>("rng,G",str(format("random number generator type:\n%s") % randomGeneratorNames).c_str(),oClass,"pimc_mt19937");
     params.add<string>("param_file","a valid path to the parameters input xml file.",oClass);
 
     /* Initialize the cell options */

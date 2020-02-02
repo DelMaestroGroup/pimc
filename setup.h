@@ -305,6 +305,7 @@ class Setup {
         vector<string> interactionPotentialName;    ///< The allowed interaction potential names
         vector<string> externalPotentialName;       ///< The allowed external potential names
         vector<string> waveFunctionName;            ///< The allowed trial wave function names
+        vector<string> randomGeneratorName;         ///< The allowed random number generator names
         vector<string> actionName;                  ///< The allowed action names
         vector<string> estimatorName;               ///< The allowed estimator names
         vector<string> moveName;                    ///< The allowed move names
@@ -313,6 +314,7 @@ class Setup {
         string interactionNames;                    ///< The interaction output list
         string externalNames;                       ///< The external output list
         string waveFunctionNames;                   ///< The wavefunction output list
+        string randomGeneratorNames;                ///< The random number generator output list
         string actionNames;                         ///< The action output list
         string estimatorNames;                      ///< The estimator list
         string moveNames;                           ///< The move list

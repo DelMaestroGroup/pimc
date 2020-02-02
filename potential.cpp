@@ -1,4 +1,5 @@
-/**
+
+**
  * @file potential.cpp
  * @author Adrian Del Maestro
  *
@@ -106,7 +107,7 @@ Array<dVec,1> PotentialBase::initialConfig(const Container *boxPtr, MTRand &rand
 void PotentialBase::output(const double maxSep) {
     dVec sep;
     sep = 0.0;
-    for (double d = 0; d < maxSep; d+= (maxSep/1000000.0)) {
+    for (double d = 0; d < maxSep; d+= (maxSep/1.0E6)) {
         sep[0] = d;
         communicate()->file("debug")->stream() 
             << format("%16.12E\t%16.12E\n") % d % V(sep);
