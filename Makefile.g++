@@ -22,17 +22,18 @@ LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -l
 endif
 
 ifdef osx
+BOOSTVER=
 ifdef strict
 OPT = -Wall -O3 -fno-math-errno -W -Wshadow -fno-common -ansi -pedantic -Wconversion -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums
 else
-OPT = -Wall -O3 -ftree-vectorize -fno-math-errno -funroll-loops 
+OPTS = -std=c++14 -stdlib=libc++ -Wall -O3 -Wno-deprecated-register -Wshadow -Wno-parentheses
 endif
 ifdef debug
 OPT = -Wall
 endif
-CODEDIR = /opt/local
+CODEDIR = $$HOME/local
 CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lblitz -lboost_program_options -lboost_filesystem -lboost_system
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
 endif
 
 ifdef sask
@@ -61,9 +62,9 @@ endif
 RM      = /bin/rm -f
 
 PROG    = pimc.e
-SOURCE  = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp
+SOURCE =  pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp wavefunction.cpp cmc.cpp
 OBJS    = $(SOURCE:.cpp=.o)
-HEADERS = common.h pimc.h constants.h container.h path.h worm.h action.h potential.h move.h estimator.h lookuptable.h communicator.h setup.h factory.h
+HEADERS = common.h pimc.h constants.h container.h path.h worm.h action.h potential.h move.h estimator.h lookuptable.h communicator.h setup.h factory.h wavefunction.h cmc.h
 
 # -------------------------------------------------------------------------------
 all: $(PROG)
