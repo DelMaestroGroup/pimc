@@ -137,45 +137,47 @@ Path Integral Monte Carlo {#pimc}
 -------------------------
 
 After successfully installing blitz and boost you are now ready to compile the
-main pimc program on your system.  There are currently four makefiles
-available: `Makefile`, `makefile.g++`, `makefile.icc` and `Makefile.path`.  We only include
-details of compiling with `g++` here.  For other machines, clusters or
-architectures, please read the details in the makefiles.
+main pimc program on your system.  You should inspect the `Makefile`, which has configurations for various systems and compilers that you should be able to generalize to your specific case.  You can use the `preset` variable to specify a `local_target` that you have modified for your particular configuration.  A sample is included already in the `Makefile`:
+~~~
+###################################################################
+# System local_target
+else ifeq ($(preset), local_target)
 
-In order to compile with g++:
-1. Open up `Makefile.g++`, find the comment:
-~~~
-Edit below to include details on your specific host
-~~~
-and copy and paste the following:
-~~~
-ifdef target
-OPT = -Wall -O3 -fno-math-errno
-BOOSTVER =
 CODEDIR = $$HOME/local
-CFLAGS  = $(OPT) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib $(LDEBUG) -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
-endif
+DEBUG  = -D PIMC_DEBUG -g
+LDEBUG = -lblitz
+BOOSTVER = 
+
+ifeq ($(opts), basic)
+OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations
+else ifeq ($(opts), strict)
+OPTS = -std=c++14 -Wall -Wextra -g -pedantic
+endif #basic, elseif strict
+
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) 
+#local_target end
+######################################################
 ~~~
-where `target` is replaced with a unique identifier for your machine.
-If you want to run blitz in debug mode you will need to
-explicitly link to the blitz library with `-lblitz` added to `LDFLAGS` above.
-2. Edit the `CODEDIR` variable to point to the location where you have installed blitz and boost above.  We suggest `$HOME/local` 
-3. Edit the `OPT` variable to reflect yoru local compile options.
-4. If you installed boost with the `--layout=versioned` command above and you have multiple versions installed on your machine, you may need to append the particular version you want to link to in the names of the boost libraries.  This is most easily done by updating the `BOOSTVAR` variable in your Makefile: e.g. `BOOSTVER = -gcc42-mt-1_49` where here we have compiled boost v1.49 with gcc v4.2.  This will need to be updated for your particular configuration.
+which assumes you haven't versioned your libraries. You could:
+1. Edit the `CODEDIR` variable to point to the location where you have installed blitz and boost above.  We suggest `$HOME/local` 
+2. Edit the `OPTS` variable to reflect any local compile options.
+4. If you installed boost with the `--layout=versioned` command above and you have multiple versions installed on your machine, you may need to append the particular version you want to link to in the names of the boost libraries.  This is most easily done by updating the `BOOSTVER` variable above: e.g. `BOOSTVER = -gcc42-mt-1_49` where here we have compiled boost v1.49 with gcc v4.2.  This will need to be updated for your particular configuration.
 5. The make process will then take three options:
- - `debug=1` turn on debugging options
+ - `opts=debug,basic,strict` turn on different compiling and linking options
  - `ndim=1,2,3` the number of spatial dimensions
- - `target=1` compile for host `target`
-5. To compile for bulk (3D) helium in production mode on host target:
+ - `prest=local_target` compile for host `local_target`
+6. Target modes are `all, release, debug, pigs and pigs_debug` where the first two are default and don't need to be included.
+7. To compile (in parallel) for bulk (3D) helium in production mode on host target:
 ~~~
-make -f Makefile.g++ ndim=3 target=1
+make -j ndim=3 preset=local_target
 ~~~
 which will produce the executable `pimc.e`
 
+
 If you run into problems, failures with linking etc., common errors may include
 not properly setting your `LD_LIBRARY_PATH` or not starting from a clean build
-directory (issue `make -f Makefile.g++ clean`).
+directory (issue `make clean`).
 
 Usage       {#usage}
 =====
@@ -243,52 +245,57 @@ the `PIMCID`.  The options used in this demo include a subset of all the possibl
 All options, including lists of possible values and default values can be seen
 by using the `--help flag`.
 
-The output of the above command should yield:
+The output of the above command should yield something like:
+~~~
+  _____    _____   __  __    _____
+ |  __ \  |_   _| |  \/  |  / ____|
+ | |__) |   | |   | \  / | | |
+ |  ___/    | |   | |\/| | | |
+ | |       _| |_  | |  | | | |____
+ |_|      |_____| |_|  |_|  \_____|
 
-    [PIMCID: XXXXXXXXX] - Equilibration Stage.
-    0.66     1.00000         0.95000           16   0.021980
-    0.53     0.95000         0.85500           12   0.016485
-    0.56     0.85500         0.76950           14   0.019233
-    0.69     0.76950         0.73102           15   0.020606
-    0.63     0.73102         0.69447           15   0.020606
-    0.69     0.69447         0.65975           17   0.023354
-    0.82     0.65975         0.65975           18   0.024728
-    0.85     0.65975         0.69274           18   0.024728
-    0.75     0.69274         0.65810           16   0.021980
-    0.65     0.65810         0.62520           16   0.021980
-    0.62     0.62520         0.59394           15   0.020606
-    0.63     0.59394         0.56424           14   0.019233
-    0.70     0.56424         0.53603           17   0.023354
-    0.76     0.53603         0.53603           18   0.024728
-    0.75     0.53603         0.50923           16   0.021980
-    0.78     0.50923         0.50923           18   0.024728
-    [PIMCID: XXXXXXXXX] - Measurement Stage.
-    [PIMCID: XXXXXXXXX] - Bin #   1 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #   2 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #   3 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #   4 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #   5 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #   6 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #   7 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #   8 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #   9 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #  10 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #  11 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #  12 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #  13 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #  14 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #  15 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #  16 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #  17 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #  18 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #  19 stored to disk.
-    [PIMCID: XXXXXXXXX] - Bin #  20 stored to disk.
-    [PIMCID: XXXXXXXXX] - Measurement complete.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Equilibration Stage.
+0.72	 1.00000	 0.95000	   19	0.026101
+0.72	 0.95000	 0.90250	   18	0.024728
+0.59	 0.90250	 0.81225	   18	0.024728
+0.60	 0.81225	 0.73102	   19	0.026101
+0.75	 0.73102	 0.69447	   16	0.021980
+0.63	 0.69447	 0.65975	   17	0.023354
+0.74	 0.65975	 0.62676	   20	0.027475
+0.81	 0.62676	 0.62676	   18	0.024728
+0.72	 0.62676	 0.59542	   17	0.023354
+0.77	 0.59542	 0.59542	   18	0.024728
+0.74	 0.59542	 0.56565	   17	0.023354
+0.79	 0.56565	 0.56565	   19	0.026101
+0.72	 0.56565	 0.53737	   13	0.017859
+0.73	 0.53737	 0.51050	   17	0.023354
+0.75	 0.51050	 0.51050	   15	0.020606
+0.74	 0.51050	 0.48498	   17	0.023354
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Measurement Stage.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   1 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   2 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   3 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   4 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   5 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   6 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   7 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   8 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   9 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  10 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  11 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  12 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  13 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  14 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  15 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  16 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  17 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  18 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  19 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  20 stored to disk.
+[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Measurement complete.
+~~~
 
-during the relaxation process where `PIMCID` will be replaced with an integer
-and 20 measurements will be output to disk.  To analyze the results the code,
-you will need to obtain a number of python programs located in a `SCRIPTS`
-directory which can be obtained via:
+during the relaxation process where `PIMCID` is a uuid, and 20 measurements will be output to disk.  To analyze the results the code, you will need to obtain a number of python programs located in a `SCRIPTS` directory which can be obtained via:
 
     svn checkout --username=SVNID http://svn.delmaestro.org/projects/SCRIPTS/ $HOME/local/pimcscripts
 
@@ -313,24 +320,27 @@ you will need to download and install the gradient files from
 
 After this has been completed, you can analyze the results of your run via
 
-    python $HOME/local/pimcsripts/pimcave.py OUTPUT/gce-estimator-05.000-008.996-+000.020-0.01000-XXXXXXXXX.dat
+    python $HOME/local/pimcsripts/pimcave.py OUTPUT/gce-estimator-05.000-008.996-+000.020-0.01000-c5555b0b-a259-49bd-a4b1-7a12b8214fd4.dat
 
-where `XXXXXXXXX` needs to be replaced with the unique identifier generated on
-your machine.  The results should yield something like:
+where `c5555b0b-a259-49bd-a4b1-7a12b8214fd4` needs to be replaced with the unique identifier generated on your machine.  The results should yield something like:
 
-    # PIMCID: XXXXXXXXX
-    # Number Samples     20
-    K                  332.92686	    15.77642
-    V                 -438.56116	    19.73930
-    E                 -105.63430	    14.58256
-    E_mu              -105.97187	    14.58693
-    K/N                 19.65034	     0.70454
-    V/N                -25.71091	     0.67103
-    E/N                 -6.06056	     0.80983
-    N                   16.87850	     0.34935
-    N^2                287.46950	    11.62243
-    density              0.02319	     0.00048
-    diagonal             0.77904	     0.01467
+~~~
+# PIMCID c5555b0b-a259-49bd-a4b1-7a12b8214fd4
+# Number Samples     20
+K                  342.70210	    16.30687	 4.76
+V                 -480.38334	    17.01402	 3.54
+E                 -137.68124	    11.58631	 8.42
+E_mu              -138.03494	    11.58918	 8.40
+K/N                 19.18999	     0.72609	 3.78
+V/N                -26.93371	     0.53264	 1.98
+E/N                 -7.74372	     0.58986	 7.62
+N                   17.68500	     0.32215	 1.82
+N^2                315.36300	    10.87876	 3.45
+density              0.02429	     0.00044	 1.82
+us                1178.62311	    23.20618	 1.97
+mcsteps            127.30000	     2.28738	 1.80
+diagonal             0.79007	     0.01326	 1.68
+~~~
 
 The basic idea of running the program is that one needs to setup the simulation
 cell, by defining either its specific geometry via the size (`L`) flag, or by a
@@ -348,11 +358,7 @@ driver file `pdrive.cpp`.
 Output      {#output}
 ======
 
-The results of running the code are a number of data, state and log files that reside in the
-`OUTPUT` directory.  If the code is run for the cylinder geometry, there will be an additional
-copy of the files in `OUTPUT/CYLINDER` which contain measurements that have been restricted to
-some cutoff radius indicated by including the `w` flag when running.  The generic output files
-are:
+The results of running the code are a number of data, state and log files that reside in the `OUTPUT` directory.  If the code is run for the cylinder geometry, there will be an additional copy of the files in `OUTPUT/CYLINDER` which contain measurements that have been restricted to some cutoff radius indicated by including the `w` flag when running.  The generic output files are:
 
 | Output File | Description |
 | ----------- | ----------- |
@@ -367,9 +373,7 @@ are:
 |`gce-super-T-L-u-t-PIMCID.dat` |  Contains all superfluid estimators |
 |`gce-worm-T-L-u-t-PIMCID.dat` | Contains details on the worm |
 
-Each line in either the scalar or vector estimator files contains a bin which is the average of
-some measurement over a certain number of Monte Carlo steps.  By averaging bins, one can get the
-final result along with its uncertainty via the variance.
+Each line in either the scalar or vector estimator files contains a bin which is the average of some measurement over a certain number of Monte Carlo steps.  By averaging bins, one can get the final result along with its uncertainty via the variance.
 
 General Description     {#description}
 ===================

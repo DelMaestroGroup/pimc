@@ -1,8 +1,8 @@
 #PIMC Makefile
 
-#$(info $$CXX is [${CXX}])
+$(info System compiler $$CXX is set to ${CXX})
 
-CXX     ?= g++
+CXX     ?= c++
 LD      = $(CXX)
 UNAME   = $(shell uname -s)
 
@@ -16,6 +16,8 @@ else ifeq ($(findstring c++,$(CXX)), c++)
 TOOLSET = clang
 endif
 
+$(info System $$TOOLSET is set to ${TOOLSET})
+
 
 #Number of dimensions to compile for
 ndim = 3
@@ -26,8 +28,11 @@ opts ?= basic
 
 #If a user wants to override variables often, they can create
 #there own section and declare a preset
-preset   = none
-OVERRIDE = $(preset)
+preset  ?= none
+
+ifeq (,$(findstring none,$(preset)))
+$(info You have specified $$preset ${preset})
+endif
 
 # Get the svn version number into the executable
 SVNDEV := -D'SVN_VERSION="$(shell svnversion -n .)"'
@@ -49,7 +54,7 @@ DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
 OPTS   = -Wall -fno-math-errno -O3 -std=c++11
 
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_system
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem
 
 #icpc
 else ifeq ($(TOOLSET), intel)
@@ -57,7 +62,7 @@ DEBUG  = -D PIMC_DEBUG -debug -g
 LDEBUG = -lblitz
 OPTS   = -Wall -fast -fno-math-errno
 
-LDFLAGS = -limf -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_system
+LDFLAGS = -limf -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem
 
 endif #gcc, elseif intel
 #Linux end#########################################################
@@ -83,7 +88,7 @@ OPTS = -std=c++14 -Wall -Wextra -g -pedantic
 endif #basic, elseif strict
 
 BOOSTVER ?= -gcc55-mt-x64-1_67 
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER)
 
 #intel
 else ifeq ($(TOOLSET), intel)
@@ -92,7 +97,7 @@ LDEBUG = -lblitz -lboost
 OPTS   = -Wall -fast -fno-math-errno
 
 BOOSTVER ?= -il-mt-1_49
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER)
 
 #clang
 else ifeq ($(TOOLSET), clang)
@@ -111,7 +116,7 @@ endif #basic, elseif strict
 #-fsanitize=address -fno-omit-frame-pointer
 #-Wconversion
 
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER)
 endif #gcc, elseif intel elseif clang
 #OS X end##########################################################
 
@@ -123,11 +128,11 @@ CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
 ####################################################################
 ####################################################################
 ##Overrides
-ifeq ($(OVERRIDE), none)# skips remaining ifelse statements
+ifeq ($(preset), none)# skips remaining ifelse statements
 
 ###################################################################
 #System Sharcnet
-else ifeq ($(OVERRIDE), sharcnet)
+else ifeq ($(preset), sharcnet)
 OPTS = -Wall -TENV:simd_zmask=OFF -TENV:simd_imask=OFF -TENV:simd_omask=OFF -O3 -fno-math-errno
 CODEDIR = /work/agdelma/local
 
@@ -137,23 +142,23 @@ OPTS += -vec-report0 -wd981
 endif
 
 CXXFLAGS  = $(OPTS) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_system
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem
 #Sharcnet end######################################################
 
 ###################################################################
 #Westgrid
-else ifeq ($(OVERRIDE), westgrid)
+else ifeq ($(preset), westgrid)
 CXX = icpc
 LD = icpc
 OPTS = -O3 -ipo -axSSE4.1,axAVX  #-w -vec-report0 -opt-report0
 CODEDIR = $$HOME/local
 CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include # $(DEBUG)
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_system -limf
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -limf
 #Westgrid end######################################################
 
 ###################################################################
-# System g++ macbook 
-else ifeq ($(OVERRIDE), macbook)
+# System g++ 801 macbook 
+else ifeq ($(preset), 801)
 
 CODEDIR = $$HOME/local
 DEBUG  = -D PIMC_DEBUG -g
@@ -169,14 +174,34 @@ else ifeq ($(opts), strict)
 OPTS = -std=c++14 -Wall -Wextra -g -pedantic
 endif #basic, elseif strict
 
-CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include #$(DEBUG)
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options-$(BOOSTCOMP)-$(BOOSTVER) -lboost_filesystem-$(BOOSTCOMP)-$(BOOSTVER) -lboost_system-$(BOOSTCOMP)-$(BOOSTVER)
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options-$(BOOSTCOMP)-$(BOOSTVER) -lboost_filesystem-$(BOOSTCOMP)-$(BOOSTVER) 
+#macbook end
+######################################################
+
+###################################################################
+# System g++ 801p macbook 
+else ifeq ($(preset), 801p)
+
+CODEDIR = $$HOME/local
+DEBUG  = -D PIMC_DEBUG -g
+LDEBUG = -lblitz
+BOOSTVER = 
+
+ifeq ($(opts), basic)
+OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations
+else ifeq ($(opts), strict)
+OPTS = -std=c++14 -Wall -Wextra -g -pedantic
+endif #basic, elseif strict
+
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) 
 #macbook end
 ######################################################
 
 ###################################################################
 # System VACC
-else ifeq ($(OVERRIDE), vacc)
+else ifeq ($(preset), vacc)
 
 CODEDIR = $$HOME/local
 
@@ -186,8 +211,8 @@ BOOSTVER ?= -gcc54-mt-1_61
 DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
 
-CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include #$(DEBUG)
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER)
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include 
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER)
 #VACC end
 ######################################################
 
