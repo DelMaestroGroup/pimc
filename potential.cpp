@@ -1,5 +1,4 @@
-
-**
+/**
  * @file potential.cpp
  * @author Adrian Del Maestro
  *
