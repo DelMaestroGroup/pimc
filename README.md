@@ -166,7 +166,7 @@ which assumes you haven't versioned your libraries. You could:
 5. The make process will then take three options:
  - `opts=debug,basic,strict` turn on different compiling and linking options
  - `ndim=1,2,3` the number of spatial dimensions
- - `prest=local_target` compile for host `local_target`
+ - `preset=local_target` compile for host `local_target`
 6. Target modes are `all, release, debug, pigs and pigs_debug` where the first two are default and don't need to be included.
 7. To compile (in parallel) for bulk (3D) helium in production mode on host target:
 ~~~
