@@ -200,6 +200,26 @@ LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem
 ######################################################
 
 ###################################################################
+# System g++ local_target
+else ifeq ($(preset), local_target)
+
+CODEDIR = $$HOME/local
+DEBUG  = -D PIMC_DEBUG -g
+LDEBUG = -lblitz
+BOOSTVER = 
+
+ifeq ($(opts), basic)
+OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations
+else ifeq ($(opts), strict)
+OPTS = -std=c++14 -Wall -Wextra -g -pedantic
+endif #basic, elseif strict
+
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) 
+#local_target end
+######################################################
+
+###################################################################
 # System VACC
 else ifeq ($(preset), vacc)
 

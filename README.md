@@ -43,19 +43,16 @@ Unless you need to use the blitz++'s internal debug functionality initiated thro
 ~~~
 cd $HOME/local/src
 ~~~
-2. Clone the latest version of blitz++ from  <a
-href="https://github.com/blitzpp/blitz">github</a> into `$HOME/local/src`
+2. Clone the latest version of blitz++ from  [github](https://github.com/blitzpp/blitz) into `$HOME/local/src`
 3. Move into the blitz source directory
-4. Read the instructions in the `INSTALL` file to determine if there is
-anything special you need to do on your system.
+4. Read the instructions in the `INSTALL` file to determine if there is anything special you need to do on your system.
 5. Execute
 ~~~
 cmake -DCMAKE_INSTALL_PREFIX=PREFIX .
 make lib
 make install
 ~~~
-where `PREFIX` is the location you want to install the libraries, we suggest
-`$HOME/local` where `$HOME` is your expanded home directory.
+where `PREFIX` is the location you want to install the libraries, we suggest `$HOME/local` where `$HOME` is your expanded home directory.
 
 <!-- *Note:* If attempting to compile the old version of blitz-0.9 with gcc version 4.3 or later you may encounter errors
 when attempting to build blitz++.  To fix this, before issuing `make lib` and/or
@@ -75,9 +72,10 @@ For detailed instructions on installing boost with compiled libraries please see
 2. Change to the boost source directory
 3. Execute
 ~~~
-./bootstrap.sh --with-toolset=gcc
+./bootstrap.sh 
 ~~~
-4. Open `project-config.jam` and replace with the following text
+If you want to compile for a specific toolset you could add `--with-toolset=gcc`.  Now you are ready to install.
+<!-- 4. Open `project-config.jam` it might look something like the text below where I'm using gcc version 6.5.0.  You can add the 
 ~~~
 import option ;
 import feature ;
@@ -109,26 +107,26 @@ if ! darwin in [ feature.values <toolset> ]
 
 project : default-build <toolset>darwin ;
 ~~~
-but the rest should be the same.
+but the rest should be the same. -->
 5. Execute
 ~~~
-./b2 install 
+./b2 install --prefix=PREFIX --toolset=darwin --with-program_options --with-filesystem cxxflags="-std=c++14" linkflags="-std=c++14"
 ~~~
 or if you are using the clang compiler
 ~~~
 ./b2 install --prefix=PREFIX --toolset=darwin --with-program_options --with-filesystem cxxflags="-std=c++14 -stdlib=libc++" linkflags="-std=c++14 -stdlib=libc++" --layout=versioned
 ~~~
-If you want to use multiple compilers on the same system, add `option.set layout : versioned ;` to your `project-config.jam`.  Note: you may have to rename the `$HOME/include/blitz_VER` directory to remove the version number.
-6.  You should now have a `PREFIX/include` directory containing the header files for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain the following files (the `.dylib` files will only appear on Mac OS X)
+6. If you want to have multiple versions of the library compiled with different compilers you can use the `--layout=versioned` flag above, or you could add `option.set layout : versioned ;` to your `project-config.jam`.  Note: you may have to rename the `$HOME/include/blitz_VER` directory to remove the version number.
+7.  You should now have a `PREFIX/include` directory containing the header files for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain the following files (the `.dylib` files will only appear on Mac OS X)
 ~~~
 libblitz.a   libboost_filesystem.a      libboost_program_options.a libboost_system.a
 libblitz.la  libboost_filesystem.dylib  libboost_program_options.dylib libboost_system.dylib
 ~~~
-7. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on Mac OS X) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` e.g.  
+8. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on Mac OS X) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` e.g.  
 ~~~
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:PREFIX/lib
 ~~~
-8. Source your `.bashrc` or `.bash_profile`.
+9. Source your `.bashrc` or `.bash_profile`.
 ~~~
 source ~/.bashrc
 ~~~
@@ -140,7 +138,7 @@ After successfully installing blitz and boost you are now ready to compile the
 main pimc program on your system.  You should inspect the `Makefile`, which has configurations for various systems and compilers that you should be able to generalize to your specific case.  You can use the `preset` variable to specify a `local_target` that you have modified for your particular configuration.  A sample is included already in the `Makefile`:
 ~~~
 ###################################################################
-# System local_target
+# System g++ local_target
 else ifeq ($(preset), local_target)
 
 CODEDIR = $$HOME/local
