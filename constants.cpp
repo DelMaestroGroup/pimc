@@ -65,17 +65,14 @@ void ConstantParameters::initConstants(po::variables_map &params) {
     varUpdates_ = params["var_updates"].empty();
     
     /* Set the particle number window */
-    if (params["window"].empty()) {
-        window_ = false;
-        windowWidth_ = 0;
-    }
-    else {
-        window_ = true;
+    window_ = canonical_ && !params["window"].empty() 
+    if (window_)
         windowWidth_ = params["window"].as<int>();
-    }
+    else;
+        windowWidth_ = 0;
     
     /* Set the ensemble weight */
-    gaussianEnsemble_ = !params["gaussian_window_width"].empty();
+    gaussianEnsemble_ = canonical_ && !params["gaussian_window_width"].empty();
     if (gaussianEnsemble_)
         gaussianEnsembleSD_ = params["gaussian_window_width"].as<double>();
     else
