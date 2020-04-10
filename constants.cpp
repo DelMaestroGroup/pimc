@@ -65,10 +65,10 @@ void ConstantParameters::initConstants(po::variables_map &params) {
     varUpdates_ = params["var_updates"].empty();
     
     /* Set the particle number window */
-    window_ = canonical_ && !params["window"].empty() 
+    window_ = canonical_ && !params["window"].empty(); 
     if (window_)
         windowWidth_ = params["window"].as<int>();
-    else;
+    else
         windowWidth_ = 0;
     
     /* Set the ensemble weight */

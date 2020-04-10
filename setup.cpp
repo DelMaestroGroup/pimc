@@ -946,7 +946,7 @@ bool Setup::worldlines() {
         cerr << Mbar << " " << numTimeSlices << endl;
         cerr << endl << "ERROR: Update length > number time slices!" << endl << endl;
         cerr << "Action: Increase number_time_slices (P) OR" <<  endl;
-        cerr << "        Increase update_length (M) OR"  << endl;
+        cerr << "        Decrease update_length (M) OR"  << endl;
         cerr << "        Decrease imaginary_time_step (t) OR" << endl; 
         cerr << "        Increase imaginary_time_length" << endl; 
         return true;
