@@ -3688,6 +3688,11 @@ PigsEnergyEstimator::~PigsEnergyEstimator() {
 *  made due to a tail correction.
 ******************************************************************************/
 void PigsEnergyEstimator::accumulate() {
+
+    /* Set the period of the action */
+    int actionPeriod = 1;
+    if( (actionPtr->getActionName() == "gsf")||(actionPtr->getActionName() == "li_broughton") )
+        actionPeriod = 2;
     
     double totK = 0.0;
     double totVop = 0.0;
@@ -3698,10 +3703,10 @@ void PigsEnergyEstimator::accumulate() {
     
     /* The total tail correction */
     double tailV = (1.0*numParticles*numParticles/path.boxPtr->volume)
-    * actionPtr->interactionPtr->tailV;
+                       * actionPtr->interactionPtr->tailV;
     
     /* The kinetic normalization factor */
-    double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * 4.0);
+    double kinNorm = constants()->fourLambdaTauInv() / (constants()->tau() * 2.0 * actionPeriod);
     
     /* The classical contribution to the kinetic energy per particle
      * including the chemical potential */
@@ -3714,7 +3719,7 @@ void PigsEnergyEstimator::accumulate() {
     beadLocator beadIndex;
     dVec vel;
     int midSlice = (numTimeSlices-1)/2;
-    for (int slice = midSlice-2; slice < midSlice+2; slice++) {
+    for (int slice = midSlice-actionPeriod; slice < midSlice+actionPeriod; slice++) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
             beadIndex = slice,ptcl;
             vel = path.getVelocity(beadIndex);
@@ -3729,31 +3734,42 @@ void PigsEnergyEstimator::accumulate() {
      * for V and the thermodynamic estimator for K */
     double t1 = 0.0;
     double t2 = 0.0;
-    for (int slice = midSlice-2; slice < midSlice+2; slice++) {
-        t1 += actionPtr->derivPotentialActionLambda(slice);
-        t2 += actionPtr->derivPotentialActionTau(slice);
+
+    if(actionPtr->local){
+        t1 += (0.5)*actionPtr->derivPotentialActionLambda(midSlice-actionPeriod);
+        t2 += (0.5)*actionPtr->derivPotentialActionTau(midSlice-actionPeriod);
+        for (int slice = midSlice-actionPeriod+1; slice < midSlice+actionPeriod; slice++) {
+            t1 += actionPtr->derivPotentialActionLambda(slice);
+            t2 += actionPtr->derivPotentialActionTau(slice);
+        }
+        t1 += (0.5)*actionPtr->derivPotentialActionLambda(midSlice+actionPeriod);
+        t2 += (0.5)*actionPtr->derivPotentialActionTau(midSlice+actionPeriod);
+    }else{
+        for (int slice = midSlice-actionPeriod; slice < midSlice+actionPeriod; slice++) {
+            t1 += actionPtr->derivPotentialActionLambda(slice);
+            t2 += actionPtr->derivPotentialActionTau(slice);
+        }
     }
     totVop  += actionPtr->potential(midSlice);
+
+    t1 *= constants()->lambda()/(constants()->tau()*(2.0*actionPeriod));
+    t2 /= (2.0*actionPeriod);
     
-    t1 *= constants()->lambda()/(constants()->tau()*4.0);
-    t2 /= 4.0;
     
     /* Perform all the normalizations and compute the individual energy terms */
     totK += (classicalKinetic + t1);
     totV = t2 - t1 + tailV;
-    
     totVop += tailV;
     
-    totV = totVop;
+    /* totV = totVop; */
     
     /* Now we accumulate the average total, kinetic and potential energy, 
      * as well as their values per particles. */
     estimator(0) += totK;
     estimator(1) += totV;
     estimator(2) += totK + totV;
-    
+
     estimator(3) += totK + totV - constants()->mu()*numParticles;
-    
     estimator(4) += totK/(1.0*numParticles);
     estimator(5) += totV/(1.0*numParticles);
     
