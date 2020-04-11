@@ -903,7 +903,7 @@ void BipartitionDensityEstimator::accumulate() {
 /*************************************************************************//**
  *  Constructor.
  * 
- *  A full NDIM-dimensional particle density hisgram.
+ *  A 2-dimensional particle density hisgram.
  *
  *  @note Only tested for cubic boxes
 ******************************************************************************/
@@ -921,8 +921,10 @@ PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_pat
     /* This is a diagonal estimator that gets its own file */
     initialize(numGrid);
 
-    /* The header is the first line which contains the spatial separations */
-    header = str(format("#%15.3E") % 0.0);
+    /* The header contains information about the grid  */
+    header = str(format("# ESTINF: dx = %12.6E dy = %12.6E NGRIDSEP = %d\n") 
+            % dl[0] % dl[1] % (2*NGRIDSEP) );
+    header += str(format("#%15.3E") % 0.0);
     for (int n = 1; n < numGrid; n++) 
         header.append(str(format("%16.3E") % (1.0*n)));
 
