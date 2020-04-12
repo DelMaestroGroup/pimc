@@ -41,6 +41,7 @@ REGISTER_ESTIMATOR("number distribution",NumberDistributionEstimator);
 REGISTER_ESTIMATOR("time",TimeEstimator);
 REGISTER_ESTIMATOR("particle position",ParticlePositionEstimator);
 REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
+REGISTER_ESTIMATOR("linear density rho",LinearParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density rho",PlaneParticlePositionEstimator);
 REGISTER_ESTIMATOR("superfluid fraction",SuperfluidFractionEstimator);
 REGISTER_ESTIMATOR("planar winding rhos/rho",PlaneWindingSuperfluidDensityEstimator);
@@ -764,8 +765,16 @@ ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path,
 
     initialize(path.boxPtr->numGrid);
 
-    /* Set estimator name and header. */
-    header = str(format("#%15d\n#%15s") % NGRIDSEP % "density");
+    /* Setup estimator name and header. We include the PIMCID as we 
+     * replace the file on every output.*/
+    diffLabels = {"dx","dy","dz"};
+
+    header =  str(format("# PIMCID: %s\n") % constants()->id());
+    header += "# ESTINF:" ;
+    for (int i = 0; i < NDIM; i++) 
+        header += str(format(" %s = %12.6E") % diffLabels[i] % path.boxPtr->gridSize[i]);
+    header += str(format(" NGRIDSEP = %d\n") % NGRIDSEP);
+    header += str(format("#%15s") % "density");
 
     /* The normalization: 1/(dV*M) */
     for (int n = 0; n < numEst; n++)
@@ -894,6 +903,82 @@ void BipartitionDensityEstimator::accumulate() {
     estimator(0) += 1.0*filmNum/(1.0*filmArea);
     estimator(1) += 1.0*bulkNum/(1.0*bulkVol);
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// LINEAR PARTICLE DENSITY ESTIMATOR CLASS ------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  A 1-dimensional particle density hisgram.
+ *
+ *  @note Only tested for cubic boxes
+******************************************************************************/
+LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_path, 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
+
+    numGrid = (4*NGRIDSEP);
+
+    /* The spatial discretization */
+    dl = path.boxPtr->side[NDIM-1] / numGrid;
+
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numGrid);
+
+    /* A local copy of the box size */
+    side = path.boxPtr->side;
+
+    /* The header contains information about the grid  */
+    header = str(format("# ESTINF: dz = %12.6E NGRIDSEP = %d\n") % dl % numGrid);
+    header += str(format("#%15.6E") % (-0.5*side[NDIM-1]));
+    for (int n = 1; n < numGrid; n++) 
+        header.append(str(format("%16.6E") % (n*dl - 0.5*side[NDIM-1])));
+
+    double A = 1.0;
+    for (int i = 0; i < NDIM-1; i++)
+        A *= side[i];
+
+    norm = 1.0/(1.0*path.numTimeSlices*A*dl);
+}
+
+/*************************************************************************//**
+ *  Destructor
+******************************************************************************/
+LinearParticlePositionEstimator::~LinearParticlePositionEstimator() { 
+}
+
+
+/*************************************************************************//**
+ *  Accumulate a histogram of all particle positions, with output 
+ *  being the running average of the density per grid space.
+******************************************************************************/
+void LinearParticlePositionEstimator::accumulate() {
+
+    beadLocator beadIndex;
+    dVec pos;
+    int index;
+
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
+            pos = path(beadIndex);
+
+            /* Get the z-index */
+            index = static_cast<int>(abs(pos[NDIM-1] + 0.5*side[NDIM-1] - EPS ) / (dl + EPS));
+
+            /* update our particle position histogram */
+            if (index < numGrid)
+                estimator(index) += 1.0;
+        }
+    }
+}
+
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // PLANE PARTICLE DENSITY ESTIMATOR CLASS ------------------------------------

@@ -242,6 +242,7 @@ class ParticlePositionEstimator: public EstimatorBase {
 
     private:
         void accumulate();          // Accumulate values
+        vector<string> diffLabels;  ///< The axis differential labels
 };
 
 // ========================================================================  
@@ -263,6 +264,30 @@ class BipartitionDensityEstimator: public EstimatorBase {
 
     private:
         void accumulate();      // Accumulate values
+};
+
+// ========================================================================  
+// Linear Particle Density Estimator Class 
+// ========================================================================  
+/**
+ * Create a 1d histogram of particle positions in the z-direction.
+ * 
+ */
+class LinearParticlePositionEstimator: public EstimatorBase {
+
+    public:
+        LinearParticlePositionEstimator(const Path &, ActionBase *, const MTRand &, double,
+                int _frequency=1, string _label="lineardensity");
+        ~LinearParticlePositionEstimator();
+
+        static const string name;
+        string getName() const {return name;}
+
+    private:
+        int numGrid;                // The number of grid points
+        double dl;                  // The size of each spatial bin
+        void accumulate();          // Accumulate values
+        dVec side;                  // Local copy of container geometry
 };
 
 // ========================================================================  
