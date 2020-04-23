@@ -110,9 +110,9 @@ project : default-build <toolset>darwin ;
 but the rest should be the same. -->
 5. Execute
 ~~~
-./b2 install --prefix=PREFIX --toolset=darwin --with-program_options --with-filesystem cxxflags="-std=c++14" linkflags="-std=c++14"
+./b2 install --prefix=PREFIX --with-program_options --with-filesystem cxxflags="-std=c++14" linkflags="-std=c++14"
 ~~~
-or if you are using the clang compiler
+or if you are using the clang compiler on mac os
 ~~~
 ./b2 install --prefix=PREFIX --toolset=darwin --with-program_options --with-filesystem cxxflags="-std=c++14 -stdlib=libc++" linkflags="-std=c++14 -stdlib=libc++" --layout=versioned
 ~~~
@@ -122,7 +122,7 @@ or if you are using the clang compiler
 libblitz.a   libboost_filesystem.a      libboost_program_options.a libboost_system.a
 libblitz.la  libboost_filesystem.dylib  libboost_program_options.dylib libboost_system.dylib
 ~~~
-8. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on Mac OS X) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` e.g.  
+8. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on mac os) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` e.g.  
 ~~~
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:PREFIX/lib
 ~~~

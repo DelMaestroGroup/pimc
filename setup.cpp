@@ -268,7 +268,7 @@ Setup::Setup() :
         "measurement"};
 
     /* Define the allowed interaction potential names */
-    interactionPotentialName = {"aziz", "delta", "lorentzian", "sutherland", 
+    interactionPotentialName = {"aziz", "szalewicz", "delta", "lorentzian", "sutherland", 
         "hard_sphere", "hard_rod", "free", "delta1D", "harmonic", "dipole"};
     interactionNames = getList(interactionPotentialName);
 
@@ -1031,6 +1031,8 @@ PotentialBase * Setup::interactionPotential() {
                 params["delta_strength"].as<double>());
     else if (constants()->intPotentialType() == "aziz")
         interactionPotentialPtr = new AzizPotential(params["side"].as<dVec>());
+    else if (constants()->intPotentialType() == "szalewicz")
+        interactionPotentialPtr = new SzalewiczPotential(params["side"].as<dVec>());
     else if (constants()->intPotentialType() == "harmonic")
         interactionPotentialPtr = new HarmonicPotential(params["omega"].as<double>());
     else if (constants()->intPotentialType() == "dipole")
@@ -1501,9 +1503,9 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
     communicate()->file("log")->stream() << endl; 
 
     if (constants()->canonical())
-        communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Ensenble" % "canonical";
+        communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Ensemble" % "canonical";
     else
-        communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Ensenble" % "grand canonical";
+        communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Ensemble" % "grand canonical";
 
     if (PIGS)
         communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Simulation Type" % "PIGS";

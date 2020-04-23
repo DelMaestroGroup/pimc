@@ -1600,6 +1600,239 @@ double AzizPotential::valued2Vdr2(const double r) {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
+// SZALEWICZ POTENTIAL CLASS ------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+ *  Constructor.
+ * 
+ *  Create the Szalewicz interaction potential.  We use the standard 1979 values.
+ *  @see PAPER REF.
+******************************************************************************/
+SzalewiczPotential::SzalewiczPotential(const dVec &side) : PotentialBase(), TabulatedPotential()
+{
+    /* Define all variables for the Szalewicz potential */
+    // FIXME Fix comments
+    rm      = 2.9262186279335958;   // Angstrom (scipy.optimize.minimize())
+    /* The extremal values are all zero here */
+    extV = 0.0;
+    extdVdr = 0.0;
+    extd2Vdr2 = 0.0;
+
+    /* We take the maximum possible separation */
+    double L = max(side); // FIXME this is not true
+
+
+    // FIXME Get rid of this stuff or put it somwhere else
+    /*
+    double zz = L;
+    double dr = 1.0e-5;
+    double zmax = 1000.0;
+    double tot = int((zmax-L)/dr);
+    std::vector<double> outv2;
+    for (int iii = 0; iii < tot; iii++) {
+        double vv = valueV(zz);
+        outv2.push_back(vv);
+        zz += dr;
+    }
+    
+    
+    std::cout << L << std::endl;
+    std::cout << outv2.size() << std::endl;
+    std::ofstream output_file2("./SzalewiczTail2.txt");
+    //std::ostream_iterator<double> output_iterator2(output_file2, "\n");
+    //std::copy(outv2.begin(), outv2.end(), output_iterator2);
+    write_container(outv2,output_file2);
+    output_file2.close();
+    exit(0);
+    */
+    
+    /* Create the potential lookup tables */
+    // initLookupTable(0.00005*rm,L);
+    initLookupTable((1.0E-6)*rm,L);
+    
+    // FIXME fix the tail correction
+    /* Now we compute the tail correction */
+    /*
+    L *= 1.8897261254578281; // Convert L to Bohr
+    double t1 = 0.0;
+    
+    t1 -= exp(-a * L)*((pow(a,2)*Pn[0])+(a*(1+(a*L))*Pn[1])+((2+((a*L)*(2+(a*L))))*Pn[2]))/(pow(a,3));
+    t1 += exp(-b*L)*L*((2*Qn[0])+(L*Qn[1]))/2;
+
+    double t2 = 0.0;
+    double eL = eta*L;
+    for (int n = 3; n < 17; n++){
+            t2 += exp(- eL) * pow(L,-n) * ((pow(eL,n)*(eL+1)) + (exp(eL)*eL*fn(eL,n)*factorials[n])) * Cn[n]/((n-1)*eta*factorials[n]);
+    }
+    
+    tailV = -t1 - t2;
+    tailV *= 315774.65;
+    cout << tailV << endl;
+    cout << t1*315774.65 << endl;
+    cout << t2*315774.65 << endl;
+
+    exit(0);
+    */
+}
+
+/**************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+SzalewiczPotential::~SzalewiczPotential() {
+}
+
+/**************************************************************************//**
+ *  Return the actual value of the Szalewicz potential, used to construct a lookup
+ *  table.
+ *
+******************************************************************************/
+double SzalewiczPotential::valueV(const double _r) {
+    double r = _r * 1.8897261254578281; // convert from angtrom to bohr
+    double x = _r / rm;
+
+    /* No self interactions */
+    if (x < EPS) 
+        return 0.0;
+    else {
+        double t1 = exp(-a*r);
+        double t1m = 0.00;
+        for (int i = 0; i < 3; i++){
+            t1m += Pn[i]*pow(r,i);
+        }
+        t1 *= t1m;
+        
+        double t2 = exp(-b*r);
+        double t2m = 0.00;
+        for (int i = 0; i < 2; i++){
+            t2m += Qn[i]*pow(r,i);
+        }
+        t2 *= t2m;
+        double t3 = 0.0;
+        
+    /* Hard core limit not reached */
+        if (x > 0.10){
+            for (int i = 0; i < 17; i++){
+                t3 += fn(eta*r,i)*Cn[i]/pow(r,i);
+            }
+        }    
+        else {
+            for (int i = 0; i < 17; i++){
+                t3 += fn2(eta*r,i)*Cn[i]/pow(r,i);
+            }
+        }
+        return (t1 + t2 - t3)*315774.65;
+    }
+}
+
+/**************************************************************************//**
+ *  Return the r-derivative of the Szalewicz potential for separation r.
+ *
+ *  Checked and working with Mathematica.
+******************************************************************************/
+double SzalewiczPotential::valuedVdr(const double _r) {
+    double r = _r * 1.8897261254578281; // convert from angtrom to bohr
+    double x = _r / rm;
+
+    /* No self interactions */
+    if (x < EPS) 
+        return 0.0;
+    else {
+        double t1 = exp(-a*r);
+        double t1m = 0.00;
+        for (int i = 0; i < 3; i++){
+            t1m += Pn[i]*pow(r,i);
+        }
+        t1 *= ((Pn[1]+(2*r*Pn[2]))-(a*t1m));
+        
+        double t2 = exp(-b*r);
+        double t2m = 0.00;
+        for (int i = 0; i < 2; i++){
+            t2m += Qn[i]*pow(r,i);
+        }
+        t2 *= Qn[1]-b*t2m;
+        
+        double t3 = 0.0;
+        double t4 = 0.0;
+        
+    /* Hard core limit not reached */
+        if (x > 0.10){
+        
+            for (int i = 0; i < 16; i++){
+                t3 += (i+1)*fn(eta*r,i+1)*Cn[i+1]/pow(r,(i+2));
+            }
+
+            for (int i = 0; i < 17; i++){
+                t4 += eta*dfn(eta*r,i)*Cn[i]/pow(r,i);
+            }
+            
+        }    
+        else {
+        
+            for (int i = 0; i < 16; i++){
+                t3 += (i+1)*fn2(eta*r,i+1)*Cn[i+1]/pow(r,(i+2));
+            }
+
+            for (int i = 0; i < 17; i++){
+                t4 += eta*dfn(eta*r,i)*Cn[i]/pow(r,i);
+            }
+        }
+        return (t1 + t2 + t3 - t4)*315774.65;
+    }
+}
+
+/**************************************************************************//**
+ *  Return the second r-derivative of the Szalewicz potential for separation r.
+ *
+ *  Double checked and working with Mathematica. -MTG
+******************************************************************************/
+double SzalewiczPotential::valued2Vdr2(const double _r) {
+    double r = _r * 1.8897261254578281; // convert from angtrom to bohr
+    double x = _r / rm;
+
+    /* No self interactions */
+    if (x < EPS) 
+        return 0.0;
+    else {
+        double t1 = exp(-a*r);
+        double t1m = 0.00;
+        for (int i = 0; i < 3; i++){
+            t1m += Pn[i]*pow(r,i);
+        }
+        t1 *= (2*Pn[2]-(2*a*(Pn[1]+(2*r*Pn[2])))+(a*a*t1m));
+        
+        double t2 = exp(-b*r);
+        double t2m = 0.00;
+        for (int i = 0; i < 2; i++){
+            t2m += Qn[i]*pow(r,i);
+        }
+        t2 *= (b*b*t2m) - (2*b*Qn[1]);
+        
+        double t3 = 0.0;
+        double t4 = 0.0;
+        double t5 = 0.0;
+        
+        for (int i = 0; i < 15; i++){
+            t3 += (i+1)*(i+2)*fn2(eta*r,i+1)*Cn[i+1]/pow(r,(i+3));
+        }
+        
+        for (int i = 0; i < 16; i++){
+            t4 += 2*(i+1)*eta*dfn(eta*r,i+1)*Cn[i+1]/pow(r,(i+2));
+        }
+        
+        for (int i = 0; i < 17; i++){
+            t5 += eta*eta*d2fn(eta*r,i)*Cn[i]/pow(r,i);
+        }
+        
+        return (t1 + t2 - t3 + t4 - t5)*315774.65;
+    }
+}
+
+
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // EXCLUDED VOLUME CLASS -----------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

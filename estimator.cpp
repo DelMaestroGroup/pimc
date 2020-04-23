@@ -922,10 +922,9 @@ LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_p
         int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-    numGrid = (4*NGRIDSEP);
-
-    /* The spatial discretization */
-    dl = path.boxPtr->side[NDIM-1] / numGrid;
+    /* The spatial discretization is fixed at 0.05 Å */
+    dl = 0.05;
+    numGrid = int(path.boxPtr->side[NDIM-1]/dl);
 
     /* This is a diagonal estimator that gets its own file */
     initialize(numGrid);

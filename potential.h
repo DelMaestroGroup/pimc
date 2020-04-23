@@ -763,6 +763,161 @@ inline double AzizPotential::grad2V(const dVec &r) {
     return g2V;
 }
 
+
+// ========================================================================  
+// Szalewicz Potential Class
+// ========================================================================  
+/** 
+ * Computes the value of the semi-empircal Szalewicz potential that is known
+ * to be accurate for He-4.
+ */
+class SzalewiczPotential : public PotentialBase, public TabulatedPotential {
+    public:
+        SzalewiczPotential (const dVec &);
+        ~SzalewiczPotential ();
+
+        /* The Szalewicz HFDHE2 Potential */
+        double V(const dVec &);
+
+        /* The gradient of the Szalewicz potential */
+        dVec gradV(const dVec &);
+
+        /* The Laplacian of the Szalewicz potential */
+        double grad2V(const dVec &);
+
+    private:
+        /* All the parameters of the Szalewicz potential */
+        double rm = 2.9262186279335958;
+        double Cn[17] = {   0.0,
+                            0.0,
+                            0.0,
+                            0.000000577235,
+                            -0.000035322,
+                            0.000001377841,
+                            1.461830,
+                            0.0,
+                            14.12350,
+                            0.0,
+                            183.7497,
+                            -0.7674e2,
+                            0.3372e4,
+                            -0.3806e4,
+                            0.8534e5,
+                            -0.1707e6,
+                            0.286e7
+                            };
+        double a = 3.64890303652830;
+        double b = 2.36824871743591;
+        double eta = 4.09423805117871;
+        double Pn[3] = {-25.4701669416621, 269.244425630616, -56.3879970402079};
+        double Qn[2] = {38.7957487310071, -2.76577136772754};
+        long int factorials[17] = {     1,
+                                        1,
+                                        2,
+                                        6,
+                                        24,
+                                        120,
+                                        720,
+                                        5040,
+                                        40320,
+                                        362880,
+                                        3628800,
+                                        39916800,
+                                        479001600,
+                                        6227020800,
+                                        87178291200,
+                                        1307674368000,
+                                        20922789888000};
+        /* Used to construct the lookup tables */
+        double valueV (const double);               
+        double valuedVdr (const double);                    
+        double valued2Vdr2 (const double);
+
+        /* The Tang-Toennies damping function needed for the Szalewicz potential */
+        /* Can be described as upper incomplete gamma function.*/
+        double fn(const double x, const int n) {
+            double s1 = 0.0;
+            for (int i = 0; i < n + 1; i++) {
+            s1 += pow(x,i)/factorials[i];           
+            }
+            return 1.0 - (exp(-x)*s1);
+        }
+
+        /* The derivative of the Tang-Toennies damping function needed for the Szalewicz potential */
+        double dfn(const double x, const int n) {
+            return (exp(-x)*pow(x,n)/factorials[n]);
+        }   
+     
+        /* The 2nd derivative of the Tang-Toennies needed for the Szalewicz potential*/
+        double d2fn(const double x, const int n) {
+            return (exp(-x)*(n-x)*pow(x,(n-1))/factorials[n]);
+        }
+
+        /* The Tang-Toennies damping function expanded for small r */
+        /* needed for the Szalewicz potential */
+        /* Can be described as upper incomplete gamma function. */
+        double fn2(const double x, const int n) {
+        
+            double s1 = 0.0;
+            for (int i = 0; i < 17; i++) {
+                s1 += (pow(-1,i)*pow(x,(i+1)))/(factorials[i]*(n+i+1));         
+            }
+            s1 *= pow(x,n)/factorials[n];
+            return s1;
+        }
+
+};
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+// INLINE FUNCTION DEFINITIONS
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+/** 
+ * Return the Szalewicz potential for separation r using a lookup table. 
+ */
+inline double SzalewiczPotential::V(const dVec &r) {
+    //double rnorm = sqrt(dot(r,r));
+    //return newtonGregory(lookupV,extV,rnorm);
+    return direct(lookupV,extV,sqrt(dot(r,r)));
+}
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+/** 
+ * Return the gradient of Szalewicz potential for separation r using a 
+ * lookup table. 
+ */
+inline dVec SzalewiczPotential::gradV(const dVec &r) {
+    double rnorm = sqrt(dot(r,r));
+    dVec gV;
+    //gV = (newtonGregory(lookupdVdr,extdVdr,rnorm)/rnorm)*r;
+    gV = (direct(lookupdVdr,extdVdr,rnorm)/rnorm)*r;
+    return gV;
+}
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+/** 
+ * Return the Laplacian of Szalewicz potential for separation r using a 
+ * lookup table. 
+ */
+
+inline double SzalewiczPotential::grad2V(const dVec &r) {
+    double rnorm = sqrt(dot(r,r));
+    double g2V;
+    //g2V = (newtonGregory(lookupd2Vdr2,extd2Vdr2,rnorm)/rnorm)*r;
+    //g2V = (direct(lookupd2Vdr2,extd2Vdr2,rnorm)/rnorm)*r;
+    g2V = direct(lookupd2Vdr2,extd2Vdr2,rnorm);
+    return g2V;
+}
+
+
+
+
+
+
+
+
 // ========================================================================  
 // FixedAzizPotential Class
 // ========================================================================  
