@@ -1603,6 +1603,8 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
     communicate()->file("log")->stream() << 
         format("%-24s\t:\t%d\n") % "Number Time Slices" % constants()->numTimeSlices();
     communicate()->file("log")->stream() << 
+        format("%-24s\t:\t%7.5f\n") % "Specified Imaginary Time Step" % params["imaginary_time_step"].as<double>();
+    communicate()->file("log")->stream() << 
         format("%-24s\t:\t%7.5f\n") % "Imaginary Time Step" % constants()->tau();
     communicate()->file("log")->stream() << 
         format("%-24s\t:\t%7.5f\n") % "Imaginary Time Length" % constants()->imagTimeLength();

@@ -308,7 +308,8 @@ class PlaneParticlePositionEstimator: public EstimatorBase {
         string getName() const {return name;}
 
     private:
-        int numGrid;                // The number of grid points
+        int numGrid;                // The total number of grid boxes
+        int numLinearGrid;          // The linear number of grid boxes
         dVec dl;                    // The linear size of each spatial bin
         void accumulate();          // Accumulate values
         dVec side;                  // Local copy of container geometry

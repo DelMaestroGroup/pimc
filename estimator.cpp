@@ -924,7 +924,13 @@ LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_p
 
     /* The spatial discretization is fixed at 0.05 Å */
     dl = 0.05;
+
+    /* Make sure we have a bin centered at 0.0 */
     numGrid = int(path.boxPtr->side[NDIM-1]/dl);
+    if (numGrid % 2 == 0) {
+        numGrid += 1;
+        dl = path.boxPtr->side[NDIM-1] / numGrid;
+    }
 
     /* This is a diagonal estimator that gets its own file */
     initialize(numGrid);
@@ -996,18 +1002,22 @@ PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_pat
         int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-    numGrid = (2*NGRIDSEP)*(2*NGRIDSEP);
+
+    /* We choose an odd number to make sure (0,0) is the central 
+     * grid box. */
+    numLinearGrid = 4*NGRIDSEP+1;
+    numGrid = numLinearGrid*numLinearGrid;
 
     /* The spatial discretization */
     for (int i = 0; i < NDIM; i++)
-        dl[i]  = path.boxPtr->side[i] / (2.0*NGRIDSEP);
+        dl[i]  = path.boxPtr->side[i] / numLinearGrid;
 
     /* This is a diagonal estimator that gets its own file */
     initialize(numGrid);
 
     /* The header contains information about the grid  */
     header = str(format("# ESTINF: dx = %12.6E dy = %12.6E NGRIDSEP = %d\n") 
-            % dl[0] % dl[1] % (2*NGRIDSEP) );
+            % dl[0] % dl[1] % numLinearGrid);
     header += str(format("#%15.3E") % 0.0);
     for (int n = 1; n < numGrid; n++) 
         header.append(str(format("%16.3E") % (1.0*n)));
@@ -1046,7 +1056,7 @@ void PlaneParticlePositionEstimator::accumulate() {
             for (int i = 0; i < NDIM-1; i++) {  
                 int scale = 1;
                 for (int j = i+1; j < NDIM-1; j++) 
-                    scale *= 2*NGRIDSEP;
+                    scale *= numLinearGrid;
                 index += scale*static_cast<int>(abs(pos[i] + 0.5*side[i] - EPS ) / (dl[i] + EPS));
             }
 
