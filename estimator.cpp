@@ -12,10 +12,11 @@
 #include "communicator.h"
 #include "factory.h"
 
-bool init(vector<string>& names, string name) {
-    names.push_back(name);
-    return true;
-}
+/* This is were we setup the names inside the estimator factory */
+/* bool init(vector<string>& names, string name) { */
+/*     /1* names.push_back(name); *1/ */
+/*     return true; */
+/* } */
 
 /**************************************************************************//**
  * Setup the estimator factory.
@@ -23,8 +24,8 @@ bool init(vector<string>& names, string name) {
 EstimatorFactory estimatorFactory;
 #define REGISTER_ESTIMATOR(NAME,TYPE) \
     const string TYPE::name = NAME;\
-    bool reg ## TYPE = estimatorFactory()->Register<TYPE>(TYPE::name);\
-    bool init ## TYPE = init(EstimatorFactory::names,TYPE::name);
+    bool reg ## TYPE = estimatorFactory()->Register<TYPE>(TYPE::name); 
+    /* bool init ## TYPE = init(EstimatorFactory::names,TYPE::name); */
 
 /**************************************************************************//**
  * Estimator naming conventions:
@@ -87,11 +88,11 @@ REGISTER_ESTIMATOR("pigs one body density matrix",PIGSOneBodyDensityMatrixEstima
 MultiEstimatorFactory multiEstimatorFactory;
 const string SwapEstimator::name = "pigs multi swap";
 bool regSwap = multiEstimatorFactory()->Register<SwapEstimator>(SwapEstimator::name);
-bool initSwap = init(MultiEstimatorFactory::names,SwapEstimator::name);
+/* bool initSwap = init(MultiEstimatorFactory::names,SwapEstimator::name); */
 
 const string EntPartEstimator::name = "pigs multi entanglement of particles";
 bool regEntPart = multiEstimatorFactory()->Register<EntPartEstimator>(EntPartEstimator::name);
-bool initEntPart = init(MultiEstimatorFactory::names,EntPartEstimator::name);
+/* bool initEntPart = init(MultiEstimatorFactory::names,EntPartEstimator::name); */
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -474,7 +475,6 @@ VirialEnergyEstimator::VirialEnergyEstimator (const Path &_path, ActionBase *_ac
             % "K_op" % "K_cv" % "V_op" % "V_cv" % "E" % "E_mu" % "K_op/N" % "K_cv/N" % "V_op/N"
             % " V_cv/N" % "E/N" % "EEcv*Beta^2"% "Ecv*Beta" % "dEdB" % "CvCov1"
             % "CvCov2" % "CvCov3" % "E_th" % "P");
-    endLine = false;
     initialize(19);
 }
 

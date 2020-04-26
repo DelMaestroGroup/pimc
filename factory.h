@@ -67,7 +67,9 @@ class Factory<BaseType (ParamType...)>
                 _create[name] = &createObj<DerivedType>;
 
                 // Add the name to the list
-                /* names.push_back(name); */
+                // NB: this had been commented out with an external init
+                // function but this seems to be working now.
+                names.push_back(name);
                 return true;
             }
 

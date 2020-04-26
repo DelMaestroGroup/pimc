@@ -190,7 +190,7 @@ class VirialEnergyEstimator: public EstimatorBase {
 
     public:
         VirialEnergyEstimator (const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="estimator");
+                int _frequency=1, string _label="virial");
         ~VirialEnergyEstimator();
 
         static const string name;
