@@ -12,11 +12,6 @@
 #include "communicator.h"
 #include "factory.h"
 
-/* This is were we setup the names inside the estimator factory */
-/* bool init(vector<string>& names, string name) { */
-/*     /1* names.push_back(name); *1/ */
-/*     return true; */
-/* } */
 
 /**************************************************************************//**
  * Setup the estimator factory.
@@ -25,7 +20,6 @@ EstimatorFactory estimatorFactory;
 #define REGISTER_ESTIMATOR(NAME,TYPE) \
     const string TYPE::name = NAME;\
     bool reg ## TYPE = estimatorFactory()->Register<TYPE>(TYPE::name); 
-    /* bool init ## TYPE = init(EstimatorFactory::names,TYPE::name); */
 
 /**************************************************************************//**
  * Estimator naming conventions:
@@ -88,11 +82,9 @@ REGISTER_ESTIMATOR("pigs one body density matrix",PIGSOneBodyDensityMatrixEstima
 MultiEstimatorFactory multiEstimatorFactory;
 const string SwapEstimator::name = "pigs multi swap";
 bool regSwap = multiEstimatorFactory()->Register<SwapEstimator>(SwapEstimator::name);
-/* bool initSwap = init(MultiEstimatorFactory::names,SwapEstimator::name); */
 
 const string EntPartEstimator::name = "pigs multi entanglement of particles";
 bool regEntPart = multiEstimatorFactory()->Register<EntPartEstimator>(EntPartEstimator::name);
-/* bool initEntPart = init(MultiEstimatorFactory::names,EntPartEstimator::name); */
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

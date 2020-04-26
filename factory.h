@@ -31,10 +31,14 @@ class Factory<BaseType (ParamType...)>
         using CreateObjectFunc = BaseType (*)(ParamType...);
 
     public:
-        /** The names of all objects instatiated by the factory */
-        static vector<string> names;
 
-        vector<string> getNames() const {return names;};
+        /** The names of all objects instatiated by the factory */
+        vector<string> getNames() const {
+            std::vector<string> names;
+            for(auto const& createIter: _create)
+                names.push_back(createIter.first);
+            return names;
+        }
 
         /** Singleton access */
         Factory<BaseType (ParamType...)> *Instance()
@@ -65,11 +69,6 @@ class Factory<BaseType (ParamType...)>
             bool Register(string name)
             {
                 _create[name] = &createObj<DerivedType>;
-
-                // Add the name to the list
-                // NB: this had been commented out with an external init
-                // function but this seems to be working now.
-                names.push_back(name);
                 return true;
             }
 
@@ -82,10 +81,6 @@ class Factory<BaseType (ParamType...)>
             { return new DerivedType(param...);}
 
 };
-
-template<class BaseType, class ...ParamType>
-vector<string> Factory<BaseType (ParamType...)>::names;
-
 
 class EstimatorBase;
 class MoveBase;
