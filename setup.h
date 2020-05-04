@@ -74,7 +74,7 @@ class Parameters {
         /** print out the parameter map */
         void print();
 
-        /** Parmaters() returns the full map */
+        /** Parameters() returns the full map */
         const po::variables_map& operator()() const {return params;}
         po::variables_map& operator()() { return params;}
 

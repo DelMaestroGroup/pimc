@@ -360,8 +360,8 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
 
     } // 2/3 off-diagonal equilibration
 
-    /* Save a state every binsize equilibrium steps */
-    if ((iStep > 0) && (iStep % binSize) == 0) 
+    /* Save a state every binsize equilibrium steps provided we are diagonal*/
+    if ( path.worm.isConfigDiagonal && (iStep > 0) && (iStep % binSize) == 0) 
         saveState();
 }
 
