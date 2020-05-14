@@ -52,7 +52,7 @@ CODEDIR = $(codedir)
 ifeq ($(TOOLSET), gcc)
 DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
-OPTS   = -Wall -fno-math-errno -O3 -std=c++11
+OPTS   = -Wall -fno-math-errno -O3 -std=c++14
 
 LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem
 
@@ -225,14 +225,14 @@ else ifeq ($(preset), vacc)
 
 CODEDIR = $$HOME/local
 
-OPTS = -std=c++11 -Wall -O3 -mtune=native -Wno-deprecated-declarations 
+OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations 
 
-BOOSTVER ?= -gcc54-mt-1_61
-DEBUG  = -D PIMC_DEBUG -g
+BOOSTVER = -gcc73-mt-x64-1_68
+DEBUG = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
 
-CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include 
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER)
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER)  -lboost_system$(BOOSTVER) 
 #VACC end
 ######################################################
 
