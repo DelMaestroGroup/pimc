@@ -2102,6 +2102,11 @@ bool InsertMove::attemptMove() {
     /* Weight for ensemble */
     norm *= actionPtr->ensembleWeight(wormLength);
 
+    /* If we are trying to insert a worm when it is not possible due to a 
+     * canonical constraint don't perform the update */
+    if (norm < DBL_EPS)
+        return false;
+
     /* We pick a random tail slice, and add a new bead */
     int slice = 2*(random.randInt(constants()->numTimeSlices()/2-1));
 
@@ -2284,6 +2289,11 @@ bool RemoveMove::attemptMove() {
 
     /* Weight for ensemble */
     norm *= actionPtr->ensembleWeight(-path.worm.length);
+
+    /* If we are trying to remove a worm when it is not possible due to a 
+     * canonical constraint don't perform the update */
+    if (norm < DBL_EPS)
+        return false;
 
     /* If we have a local action, perform a single slice rejection move */
     if (actionPtr->local) {

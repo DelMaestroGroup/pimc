@@ -2471,12 +2471,18 @@ GraphenePotential::GraphenePotential (double _strain, double _poisson, double _a
     epsilon = _epsilon;
 
     /* Lattice vectors */
-    a1x = (sqrt(3.)*a0/8.)*(4.+strain-(3.*strain*poisson));
-    a1y = (3.*a0/8.)*(4.+(3.*strain)-(strain*poisson));
+    /* @see: https://wiki.cmt.w3.uvm.edu/index.php?title=Bose_Hubbard_model_treatment_for_Helium_absorbed_on_graphene#strain */
+    a1x = sqrt(3.0)*a0*0.5*(1-strain*poisson);
+    a1y = 3.0*a0*0.5*(1+strain);
     a2x = -a1x;
     a2y = a1y;
 
     /* reciprocal lattice vectors */
+    /* g1x = 2*M_PI/(sqrt(3.0)*a0*(1-strain*poisson)); */
+    /* g1y = 2*M_PI/(3.0*a0*(1+strain)); */
+
+
+    /* THESE ARE WRONG */
     g1x = 8.*M_PI*sqrt(3.)*(4. + (3.*strain) - (strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
     g1y = 8.*M_PI*(4. + strain - (3.*strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
     g2x = -g1x;

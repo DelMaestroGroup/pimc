@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <sstream>
 #include <chrono>
+#include <limits>
 
 #include <blitz/array.h>
 #include <boost/format.hpp>
@@ -83,6 +84,7 @@
 #define NRADSEP 200     ///< Spatial separations to be used in the radial density
 #define NGRIDSEP 50     ///< Spatial separations to be used in each dimension of the particle position grid
 #define EPS 1.0E-7      ///< A small number
+#define DBL_EPS std::numeric_limits<double>::epsilon() //< Smallest double
 #define BIG 1.0E30      ///< A big number
 #define LBIG 69.07755279 ///< The log of a big number
 #define XXX -1          ///< Used to refer to a nonsense beadIndex

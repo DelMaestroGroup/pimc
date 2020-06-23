@@ -39,6 +39,108 @@ SVNDEV := -D'SVN_VERSION="$(shell svnversion -n .)"'
 
 ####################################################################
 ####################################################################
+## Preset Overrides
+ifneq ($(preset), none) # skips remaining ifelse statements
+
+###################################################################
+#Westgrid
+ifeq ($(preset), westgrid)
+CXX = icpc
+LD = icpc
+OPTS = -O3 -ipo -axSSE4.1,axAVX  #-w -vec-report0 -opt-report0
+CODEDIR = $$HOME/local
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include # $(DEBUG)
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -limf
+endif # westgrid
+#Westgrid end######################################################
+
+###################################################################
+# System g++ 801 macbook 
+ifeq ($(preset), 801)
+CODEDIR = $$HOME/local
+DEBUG  = -D PIMC_DEBUG -g
+LDEBUG = -lblitz
+CXX = /opt/local/bin/g++-mp-6
+BOOSTVER = 1_68 
+BOOSTCOMP = gcc65-mt-x64
+
+ifeq ($(opts), basic)
+OPTS = -Wall -O3 -std=c++14 -mtune=native -Wno-unused-local-typedefs
+else ifeq ($(opts), strict)
+# OPTS = -std=c++14 -Wall -g -W -Wextra -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template 
+OPTS = -std=c++14 -Wall -Wextra -g -pedantic
+endif #basic, elseif strict
+
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options-$(BOOSTCOMP)-$(BOOSTVER) -lboost_filesystem-$(BOOSTCOMP)-$(BOOSTVER) 
+endif # 801 macbook end
+######################################################
+
+###################################################################
+# System c++ 801p macbook 
+ifeq ($(preset), 801p)
+
+CODEDIR = $$HOME/local
+DEBUG  = -D PIMC_DEBUG -g
+LDEBUG = -lblitz
+BOOSTVER = 
+
+ifeq ($(opts), basic)
+OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations
+else ifeq ($(opts), strict)
+OPTS = -std=c++14 -Wall -Wextra -g -pedantic
+endif #basic, elseif strict
+
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) 
+endif # 801p macbook 
+######################################################
+
+###################################################################
+# System g++ local_target
+ifeq ($(preset), local_target)
+
+CODEDIR = $$HOME/local
+DEBUG  = -D PIMC_DEBUG -g
+LDEBUG = -lblitz
+BOOSTVER = 
+
+ifeq ($(opts), basic)
+OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations
+else ifeq ($(opts), strict)
+OPTS = -std=c++14 -Wall -Wextra -g -pedantic
+endif #basic, elseif strict
+
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) 
+endif # local_target 
+######################################################
+
+###################################################################
+# System VACC
+ifeq ($(preset), vacc)
+
+CODEDIR = $$HOME/local
+
+OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations 
+
+BOOSTVER = -gcc73-mt-x64-1_68
+DEBUG = -D PIMC_DEBUG -g
+LDEBUG = -lblitz
+
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER)  -lboost_system$(BOOSTVER) 
+endif # vacc
+######################################################
+
+##User Overrides end################################################
+
+else
+
+####################################################################
+# Here we try to guess values based on some enironment variables
+####################################################################
+
 ##OS Variables
 
 ###################################################################
@@ -63,7 +165,6 @@ LDEBUG = -lblitz
 OPTS   = -Wall -fast -fno-math-errno
 
 LDFLAGS = -limf -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem
-
 endif #gcc, elseif intel
 #Linux end#########################################################
 
@@ -71,7 +172,6 @@ endif #gcc, elseif intel
 #OS X
 else ifeq ($(UNAME),Darwin)
 
-#codedir = /usr/local
 codedir = $$HOME/local
 CODEDIR = $(codedir)
 
@@ -125,119 +225,8 @@ endif #linux, elseif osx
 
 CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
 
-####################################################################
-####################################################################
-##Overrides
-ifeq ($(preset), none)# skips remaining ifelse statements
+endif # preset else
 
-###################################################################
-#System Sharcnet
-else ifeq ($(preset), sharcnet)
-OPTS = -Wall -TENV:simd_zmask=OFF -TENV:simd_imask=OFF -TENV:simd_omask=OFF -O3 -fno-math-errno
-CODEDIR = /work/agdelma/local
-
-ifeq ($(TOOLSET), intel)
-LDFLAGS += -limf
-OPTS += -vec-report0 -wd981
-endif
-
-CXXFLAGS  = $(OPTS) $(DIM) $(DEBUG) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem
-#Sharcnet end######################################################
-
-###################################################################
-#Westgrid
-else ifeq ($(preset), westgrid)
-CXX = icpc
-LD = icpc
-OPTS = -O3 -ipo -axSSE4.1,axAVX  #-w -vec-report0 -opt-report0
-CODEDIR = $$HOME/local
-CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include # $(DEBUG)
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -limf
-#Westgrid end######################################################
-
-###################################################################
-# System g++ 801 macbook 
-else ifeq ($(preset), 801)
-
-CODEDIR = $$HOME/local
-DEBUG  = -D PIMC_DEBUG -g
-LDEBUG = -lblitz
-CXX = /opt/local/bin/g++-mp-6
-BOOSTVER = 1_68 
-BOOSTCOMP = gcc65-mt-x64
-
-ifeq ($(opts), basic)
-OPTS = -Wall -O3 -std=c++14 -mtune=native -Wno-unused-local-typedefs
-else ifeq ($(opts), strict)
-# OPTS = -std=c++14 -Wall -g -W -Wextra -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template 
-OPTS = -std=c++14 -Wall -Wextra -g -pedantic
-endif #basic, elseif strict
-
-CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options-$(BOOSTCOMP)-$(BOOSTVER) -lboost_filesystem-$(BOOSTCOMP)-$(BOOSTVER) 
-#macbook end
-######################################################
-
-###################################################################
-# System g++ 801p macbook 
-else ifeq ($(preset), 801p)
-
-CODEDIR = $$HOME/local
-DEBUG  = -D PIMC_DEBUG -g
-LDEBUG = -lblitz
-BOOSTVER = 
-
-ifeq ($(opts), basic)
-OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations
-else ifeq ($(opts), strict)
-OPTS = -std=c++14 -Wall -Wextra -g -pedantic
-endif #basic, elseif strict
-
-CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) 
-#macbook end
-######################################################
-
-###################################################################
-# System g++ local_target
-else ifeq ($(preset), local_target)
-
-CODEDIR = $$HOME/local
-DEBUG  = -D PIMC_DEBUG -g
-LDEBUG = -lblitz
-BOOSTVER = 
-
-ifeq ($(opts), basic)
-OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations
-else ifeq ($(opts), strict)
-OPTS = -std=c++14 -Wall -Wextra -g -pedantic
-endif #basic, elseif strict
-
-CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) 
-#local_target end
-######################################################
-
-###################################################################
-# System VACC
-else ifeq ($(preset), vacc)
-
-CODEDIR = $$HOME/local
-
-OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations 
-
-BOOSTVER = -gcc73-mt-x64-1_68
-DEBUG = -D PIMC_DEBUG -g
-LDEBUG = -lblitz
-
-CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER)  -lboost_system$(BOOSTVER) 
-#VACC end
-######################################################
-
-endif # sharcnet, elseif westgrid, elseif macbook
-##User Overrides end################################################
 
 ####################################################################
 ####################################################################
