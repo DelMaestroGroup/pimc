@@ -33,7 +33,9 @@ void ConstantParameters::initConstants(po::variables_map &params) {
 
     /* We use boost to generate a UUID for the simulation */
     if (params["restart"].empty()) {
-        id_ = boost::uuids::to_string(boost::uuids::random_generator()());
+
+        /* N.B. this addition of a label is untested as of 2020-07-02 */
+        id_ = params["label"].as<string>() + boost::uuids::to_string(boost::uuids::random_generator()());
         restart_ = false;
     }
     else {

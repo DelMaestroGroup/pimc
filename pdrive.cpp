@@ -138,7 +138,7 @@ int main (int argc, char *argv[]) {
                 estimatorsPtrVec.back().at(j).appendLabel(str(format("%d") % (i+1)));
         }
     }
-    
+
     /* Setup the multi-path estimators */
     if(Npaths>1){
         estimatorsPtrVec.push_back(setup.estimators(pathPtrVec,actionPtrVec,random));

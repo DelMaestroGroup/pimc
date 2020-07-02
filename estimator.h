@@ -44,6 +44,9 @@ class EstimatorBase {
         /* Output the estimator */
         virtual void output();                  
 
+        /* Output a flat average estimator */
+        virtual void outputFlat();                  
+
         /** Ouptut the fooder to disk */
         virtual void outputFooter() {};
 
@@ -238,7 +241,7 @@ class ParticlePositionEstimator: public EstimatorBase {
         static const string name;
         string getName() const {return name;}
     
-        void output();              // overload the output
+        void output() {outputFlat();}  // overload the output
 
     private:
         void accumulate();          // Accumulate values
@@ -306,6 +309,33 @@ class PlaneParticlePositionEstimator: public EstimatorBase {
 
         static const string name;
         string getName() const {return name;}
+
+    private:
+        int numGrid;                // The total number of grid boxes
+        int numLinearGrid;          // The linear number of grid boxes
+        dVec dl;                    // The linear size of each spatial bin
+        void accumulate();          // Accumulate values
+        dVec side;                  // Local copy of container geometry
+};
+
+// ========================================================================  
+// Averaged Plane Particle Density Estimator Class 
+// ========================================================================  
+/**
+ * Create a 2d histogram of particle positions but only store the average.
+ * 
+ */
+class PlaneParticleAveragePositionEstimator: public EstimatorBase {
+
+    public:
+        PlaneParticleAveragePositionEstimator(const Path &, ActionBase *, const MTRand &, double,
+                int _frequency=1, string _label="planeavedensity");
+        ~PlaneParticleAveragePositionEstimator();
+
+        static const string name;
+        string getName() const {return name;}
+
+        void output() {outputFlat();}  // overload the output
 
     private:
         int numGrid;                // The total number of grid boxes
@@ -552,7 +582,7 @@ class LocalPermutationEstimator: public EstimatorBase {
                 double, int _frequency=1, string _label="locperm");
         ~LocalPermutationEstimator();
 
-        void output();
+        void output() {outputFlat();}
 
         static const string name;
         string getName() const {return name;}

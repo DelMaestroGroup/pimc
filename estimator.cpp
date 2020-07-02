@@ -38,6 +38,7 @@ REGISTER_ESTIMATOR("particle position",ParticlePositionEstimator);
 REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
 REGISTER_ESTIMATOR("linear density rho",LinearParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density rho",PlaneParticlePositionEstimator);
+REGISTER_ESTIMATOR("planar density average rho",PlaneParticleAveragePositionEstimator);
 REGISTER_ESTIMATOR("superfluid fraction",SuperfluidFractionEstimator);
 REGISTER_ESTIMATOR("planar winding rhos/rho",PlaneWindingSuperfluidDensityEstimator);
 REGISTER_ESTIMATOR("planar area rhos/rho",PlaneAreaSuperfluidDensityEstimator);
@@ -250,6 +251,29 @@ void EstimatorBase::output() {
 
     /* Reset all values */
     reset();
+}
+
+/*************************************************************************//**
+ *  Output a flat estimator value to disk.
+ *
+ *  Instead of keeping the individual binned averages, here we reset the 
+ *  output file and write the current average to disk.
+******************************************************************************/
+void EstimatorBase::outputFlat() {
+
+    /* Prepare the position file for writing over old data */
+    communicate()->file(label)->reset();
+
+    (*outFilePtr) << header;
+    if (endLine)
+        (*outFilePtr) << endl;
+
+    /* Now write the running average of the estimator to disk */
+    for (int n = 0; n < numEst; n++) 
+        (*outFilePtr) << format("%16.8E\n") % 
+            (norm(n)*estimator(n)/totNumAccumulated);
+
+    communicate()->file(label)->rename();
 }
 
 /*************************************************************************//**
@@ -746,7 +770,7 @@ void NumberDistributionEstimator::accumulate() {
 /*************************************************************************//**
  *  Constructor.
  * 
- *  A full NDIM-dimensional particle density hisgram.
+ *  A full NDIM-dimensional particle density histogram.
  *
  *  @note Only tested for cubic boxes
 ******************************************************************************/
@@ -783,22 +807,22 @@ ParticlePositionEstimator::~ParticlePositionEstimator() {
  *  Overload the output of the base class so that a running average
  *  is kept rather than keeping all data.
 ******************************************************************************/
-void ParticlePositionEstimator::output() {
+/* void ParticlePositionEstimator::output() { */
 
-    /* Prepare the position file for writing over old data */
-    communicate()->file(label)->reset();
+/*     /1* Prepare the position file for writing over old data *1/ */
+/*     communicate()->file(label)->reset(); */
 
-    (*outFilePtr) << header;
-    if (endLine)
-        (*outFilePtr) << endl;
+/*     (*outFilePtr) << header; */
+/*     if (endLine) */
+/*         (*outFilePtr) << endl; */
 
-    /* Now write the running average of the estimator to disk */
-    for (int n = 0; n < numEst; n++) 
-        (*outFilePtr) << format("%16.8E\n") % 
-            (norm(n)*estimator(n)/totNumAccumulated);
+/*     /1* Now write the running average of the estimator to disk *1/ */
+/*     for (int n = 0; n < numEst; n++) */ 
+/*         (*outFilePtr) << format("%16.8E\n") % */ 
+/*             (norm(n)*estimator(n)/totNumAccumulated); */
 
-    communicate()->file(label)->rename();
-}
+/*     communicate()->file(label)->rename(); */
+/* } */
 
 /*************************************************************************//**
  *  Accumulate a histogram of all particle positions, with output 
@@ -905,7 +929,7 @@ void BipartitionDensityEstimator::accumulate() {
 /*************************************************************************//**
  *  Constructor.
  * 
- *  A 1-dimensional particle density hisgram.
+ *  A 1-dimensional particle density histogram.
  *
  *  @note Only tested for cubic boxes
 ******************************************************************************/
@@ -985,7 +1009,7 @@ void LinearParticlePositionEstimator::accumulate() {
 /*************************************************************************//**
  *  Constructor.
  * 
- *  A 2-dimensional particle density hisgram.
+ *  A 2-dimensional particle density histogram.
  *
  *  @note Only tested for cubic boxes
 ******************************************************************************/
@@ -1058,6 +1082,106 @@ void PlaneParticlePositionEstimator::accumulate() {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// PLANE PARTICLE AVERAGE DENSITY ESTIMATOR CLASS ----------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  A 2-dimensional particle density averaged histogram.
+ *
+ *  @note Only tested for cubic boxes
+******************************************************************************/
+PlaneParticleAveragePositionEstimator::PlaneParticleAveragePositionEstimator (
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
+        double _maxR, int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
+
+    /* We choose an odd number to make sure (0,0) is the central 
+     * grid box. */
+    numLinearGrid = 4*NGRIDSEP+1;
+    numGrid = numLinearGrid*numLinearGrid;
+
+    /* The spatial discretization */
+    for (int i = 0; i < NDIM; i++)
+        dl[i]  = path.boxPtr->side[i] / numLinearGrid;
+
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numGrid);
+
+    /* The header contains information about the grid  */
+    header = str(format("# ESTINF: dx = %12.6E dy = %12.6E NGRIDSEP = %d\n") 
+            % dl[0] % dl[1] % numLinearGrid);
+
+    /* Compute the area of a grid box */
+    double A = 1.0;
+    for (int i = 0; i < NDIM-1; i++)
+        A *= dl[i];
+
+    norm = 1.0/(1.0*path.numTimeSlices*A*path.boxPtr->side[NDIM-1]);
+    side = path.boxPtr->side;
+}
+
+/*************************************************************************//**
+ *  Destructor
+******************************************************************************/
+PlaneParticleAveragePositionEstimator::~PlaneParticleAveragePositionEstimator() { 
+}
+
+
+/*************************************************************************//**
+ *  Accumulate a histogram of all particle positions, with output 
+ *  being the running average of the density per grid space.
+******************************************************************************/
+void PlaneParticleAveragePositionEstimator::accumulate() {
+
+    beadLocator beadIndex;
+    dVec pos;
+
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
+            pos = path(beadIndex);
+
+            int index = 0;
+            for (int i = 0; i < NDIM-1; i++) {  
+                int scale = 1;
+                for (int j = i+1; j < NDIM-1; j++) 
+                    scale *= numLinearGrid;
+                index += scale*static_cast<int>(abs(pos[i] + 0.5*side[i] - EPS ) / (dl[i] + EPS));
+            }
+
+            /* update our particle position histogram */
+            if (index < numGrid)
+                estimator(index) += 1.0;
+        }
+    }
+}
+
+/*************************************************************************//**
+ *  Overload the output of the base class so that a running average
+ *  is kept rather than keeping all data.
+******************************************************************************/
+/* void PlaneParticleAveragePositionEstimator::output() { */
+
+/*     /1* Prepare the position file for writing over old data *1/ */
+/*     communicate()->file(label)->reset(); */
+
+/*     (*outFilePtr) << header; */
+/*     if (endLine) */
+/*         (*outFilePtr) << endl; */
+
+/*     /1* Now write the running average of the estimator to disk *1/ */
+/*     for (int n = 0; n < numEst; n++) */ 
+/*         (*outFilePtr) << format("%16.8E\n") % */ 
+/*             (norm(n)*estimator(n)/totNumAccumulated); */
+
+/*     communicate()->file(label)->rename(); */
+/* } */
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -1924,22 +2048,22 @@ LocalPermutationEstimator::~LocalPermutationEstimator() {
  *  Overload the output of the base class so that a running average
  *  is kept rather than keeping all data.
 ******************************************************************************/
-void LocalPermutationEstimator::output() {
+/* void LocalPermutationEstimator::output() { */
 
-    /* Prepare the position file for writing over old data */
-    communicate()->file(label)->reset();
+/*     /1* Prepare the position file for writing over old data *1/ */
+/*     communicate()->file(label)->reset(); */
 
-    (*outFilePtr) << header;
-    if (endLine)
-        (*outFilePtr) << endl;
+/*     (*outFilePtr) << header; */
+/*     if (endLine) */
+/*         (*outFilePtr) << endl; */
 
-    /* Now write the running average of the estimator to disk */
-    for (int n = 0; n < numEst; n++)
-        (*outFilePtr) << format("%16.6E\n") %
-            (estimator(n)/totNumAccumulated);
+/*     /1* Now write the running average of the estimator to disk *1/ */
+/*     for (int n = 0; n < numEst; n++) */
+/*         (*outFilePtr) << format("%16.6E\n") % */
+/*             (estimator(n)/totNumAccumulated); */
 
-    communicate()->file(label)->rename();
-}
+/*     communicate()->file(label)->rename(); */
+/* } */
 
 /*************************************************************************//**
  * Accumulate permuation cycle.
