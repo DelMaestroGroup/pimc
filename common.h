@@ -82,7 +82,7 @@
 #define NPCFSEP 50      ///< Spatial separations to be used in the pair correlation function
 #define NOBDMSEP 50     ///< Spatial separations to be used in the one body density matrix
 #define NRADSEP 200     ///< Spatial separations to be used in the radial density
-#define NGRIDSEP 50     ///< Spatial separations to be used in each dimension of the particle position grid
+#define NGRIDSEP 51     ///< Spatial separations to be used in each dimension of the particle position grid
 #define EPS 1.0E-7      ///< A small number
 #define DBL_EPS std::numeric_limits<double>::epsilon() //< Smallest double
 #define BIG 1.0E30      ///< A big number
