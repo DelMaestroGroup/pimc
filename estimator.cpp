@@ -1114,6 +1114,7 @@ PlaneParticleAveragePositionEstimator::PlaneParticleAveragePositionEstimator (
     initialize(numGrid);
 
     /* The header contains information about the grid  */
+    header = str(format("# PIMCID: %s\n") % constants()->id());
     header = str(format("# ESTINF: dx = %12.6E dy = %12.6E NGRIDSEP = %d\n") 
             % dl[0] % dl[1] % numLinearGrid);
     header += str(format("#%15s") % "plane density");
