@@ -2970,3 +2970,1376 @@ Array<dVec,1> GrapheneLUTPotential::initialConfig(const Container *boxPtr, MTRan
     }
     return initialPos;
 }
+
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// GrapheneLUT3DPotential Class---------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+ * Constructor.
+******************************************************************************/
+GrapheneLUT3DPotential::GrapheneLUT3DPotential (string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
+
+    /* get a local copy of the system size */
+    Lzo2 = _boxPtr->side[NDIM-1]/2;
+
+    /* load lookup tables */
+    {
+        // create and open a character archive for input
+        std::ifstream ifs(graphenelut3d_file_prefix + std::string("serialized.dat"));
+        boost::archive::binary_iarchive ia(ifs);
+        // write class instance to archive
+        ia >> V3d >> gradV3d_x >> gradV3d_y >> gradV3d_z >> grad2V3d >> LUTinfo;
+        // archive and stream closed when destructors are called
+    }
+
+    A11           = LUTinfo( 0  );
+    A12           = LUTinfo( 1  );
+    A21           = LUTinfo( 2  );
+    A22           = LUTinfo( 3  );
+    dx            = LUTinfo( 4  );
+    dy            = LUTinfo( 5  );
+    dz            = LUTinfo( 6  );
+    cell_length_a = LUTinfo( 7  );
+    cell_length_b = LUTinfo( 8  );
+    zmin          = LUTinfo( 9  );
+    zmax          = LUTinfo( 10 );
+    V_zmin        = LUTinfo( 11 );
+}
+
+
+/**************************************************************************//**
+ * Destructor.
+******************************************************************************/
+GrapheneLUT3DPotential::~GrapheneLUT3DPotential() {
+    V3d.free(); // Potential lookup table
+    gradV3d_x.free(); // gradient of potential x direction lookup table
+    gradV3d_y.free(); // gradient of potential y direction lookup table
+    gradV3d_z.free(); // gradient of potential z direction lookup table
+    grad2V3d.free(); // Laplacian of potential
+}
+
+/**************************************************************************//**
+ *  Return the value of the van der Waals' interaction between a graphene sheet
+ *  and a helium adatom at a position, r, above the sheet. 
+
+ *  @param r the position of a helium particle
+ *  @return the van der Waals' potential for graphene-helium
+******************************************************************************/
+double GrapheneLUT3DPotential::V(const dVec &r) {
+    if (r[2] + Lzo2 < zmin){ 
+        return V_zmin;
+    }
+    dVec _r = r;
+    _r[2] += Lzo2 - zmin;
+
+    cartesian_to_uc(_r, A11, A12, A21, A22);
+    put_in_uc(_r, cell_length_a, cell_length_b);
+    double _V = trilinear_interpolation(V3d, _r, dx, dy, dz);
+    //double _V = direct_lookup(V3d, _r, dx, dy, dz);
+    //std::cout << _r << " " << _V << std::endl;
+    return _V;
+}
+
+/**************************************************************************//**
+ *  Return the gradient of the van der Waals' interaction between a graphene sheet
+ *  and a helium adatom at a position, r, above the sheet. 
+
+ *  @param r the position of a helium particle
+ *  @return the gradient of the van der Waals' potential for graphene-helium
+******************************************************************************/
+dVec GrapheneLUT3DPotential::gradV(const dVec &r) {
+    dVec _gradV = 0.0;
+    if (r[2] + Lzo2 < zmin){ 
+        return _gradV;
+    }
+    dVec _r = r;
+    _r[2] += Lzo2 - zmin;
+
+    cartesian_to_uc(_r, A11, A12, A21, A22);
+    put_in_uc(_r, cell_length_a, cell_length_b);
+    double _gradV_x = trilinear_interpolation(gradV3d_x, _r, dx, dy, dz);
+    double _gradV_y = trilinear_interpolation(gradV3d_y, _r, dx, dy, dz);
+    double _gradV_z = trilinear_interpolation(gradV3d_z, _r, dx, dy, dz);
+    //double _gradV_x = direct_lookup(gradV3d_x, _r, dx, dy, dz);
+    //double _gradV_y = direct_lookup(gradV3d_y, _r, dx, dy, dz);
+    //double _gradV_z = direct_lookup(gradV3d_z, _r, dx, dy, dz);
+    _gradV(0) = _gradV_x;
+    _gradV(1) = _gradV_y;
+    _gradV(2) = _gradV_z;
+    return _gradV;
+}
+
+/**************************************************************************//**
+ *  Return the gradient of the van der Waals' interaction between a graphene sheet
+ *  and a helium adatom at a position, r, above the sheet. 
+
+ *  @param r the position of a helium particle
+ *  @return the gradient of the van der Waals' potential for graphene-helium
+******************************************************************************/
+double GrapheneLUT3DPotential::grad2V(const dVec &r) {
+    double _grad2V = 0.0;
+    if (r[2] + Lzo2 < zmin){ 
+        return 0.0;
+    }
+    dVec _r = r;
+    _r[2] += Lzo2 - zmin;
+
+    cartesian_to_uc(_r, A11, A12, A21, A22);
+    put_in_uc(_r, cell_length_a, cell_length_b);
+    _grad2V = trilinear_interpolation(grad2V3d, _r, dx, dy, dz);
+    //_grad2V = direct_lookup(grad2V3d, _r, dx, dy, dz);
+    return _grad2V;
+}
+
+/**************************************************************************//**
+ * Return an initial particle configuration.
+ *
+ * We create particles at random locations above the graphene sheet.
+******************************************************************************/
+Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTRand &random,
+        const int numParticles) {
+    //FIXME We initialize on grid here above zmin, should I do C_1/3 here. I think not because might
+    // be hard to get out of if other configurations are more favorable
+
+    /* The particle configuration */
+    Array<dVec,1> initialPos(numParticles);
+    initialPos = 0.0;
+
+    /* Get the linear size per particle, and the number of particles */
+    double initSide = pow((1.0*numParticles/boxPtr->volume),-1.0/(1.0*NDIM));
+
+    /* We determine the number of initial grid boxes there are in 
+     * in each dimension and compute their size */
+    int totNumGridBoxes = 1;
+    iVec numNNGrid;
+    dVec sizeNNGrid;
+
+    for (int i = 0; i < NDIM; i++) {
+        numNNGrid[i] = static_cast<int>(ceil((boxPtr->side[i] / initSide) - EPS));
+
+        /* Make sure we have at least one grid box */
+        if (numNNGrid[i] < 1)
+            numNNGrid[i] = 1;
+
+        /* Compute the actual size of the grid */
+        sizeNNGrid[i] = boxPtr->side[i] / (1.0 * numNNGrid[i]);
+        if (i == NDIM - 1) {
+            sizeNNGrid[i] = (boxPtr->side[i] - zmin) / (1.0 * numNNGrid[i]);
+        }
+
+        /* Determine the total number of grid boxes */
+        totNumGridBoxes *= numNNGrid[i];
+    }
+
+    /* Now, we place the particles at the middle of each box */
+    PIMC_ASSERT(totNumGridBoxes>=numParticles);
+    dVec pos;
+    for (int n = 0; n < totNumGridBoxes; n++) {
+
+        iVec gridIndex;
+        for (int i = 0; i < NDIM; i++) {
+            int scale = 1;
+            for (int j = i+1; j < NDIM; j++) 
+                scale *= numNNGrid[j];
+            gridIndex[i] = (n/scale) % numNNGrid[i];
+        }
+
+        for (int i = 0; i < NDIM; i++) { 
+            pos[i] = (gridIndex[i]+0.5)*sizeNNGrid[i] - 0.5*boxPtr->side[i];
+        }
+        pos[NDIM-1] += zmin;
+
+
+        boxPtr->putInside(pos);
+
+        if (n < numParticles)
+            initialPos(n) = pos;
+        else 
+            break;
+    }
+
+    return initialPos;
+}
+
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// GrapheneLUT3DPotentialGenerate Class---------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+ * Constructor.
+******************************************************************************/
+GrapheneLUT3DPotentialGenerate::GrapheneLUT3DPotentialGenerate ( 
+        const double _strain, const double _poisson_ratio,
+        const double _carbon_carbon_distance, const double _sigma, 
+        const double _epsilon, const Container *_boxPtr
+        ) : PotentialBase() {
+
+    // ADD FUNCTIONS TO CONVERT FROM BINARY TO TEXT AND VICE VERSA FOR SERIALIZED FILES
+    /* get a local copy of the system size */
+    Lzo2 = _boxPtr->side[NDIM-1]/2;
+
+    //double sigma_0 = 2.74;
+    //double epsilon_0 = 16.2463;
+    
+    double strain = _strain;
+    double poisson_ratio = _poisson_ratio;
+    double carbon_carbon_distance = _carbon_carbon_distance;
+    double sigma = _sigma;
+    double epsilon = _epsilon;
+    
+    xres = 101;
+    yres = 101;
+    zmax = 10.0;
+    zres = 1001;
+
+    xres = 11;
+    yres = 11;
+    zmax = 10.0;
+    zres = 101;
+    
+    auto [ V3d, gradV3d_x, gradV3d_y, gradV3d_z, grad2V3d, xy_x, xy_y, LUTinfo ] = get_V3D_all(strain,sigma,epsilon,xres,yres,zres,zmax);
+
+    string graphenelut3d_file_prefix = str( format( "graphene_%.2f_%.2f_%d_%d_%d_") %
+            strain % zmax % xres % yres % zres );
+
+    // create and open a character archive for output
+    std::ofstream ofs(graphenelut3d_file_prefix + "serialized.dat");
+
+    // save data to archive
+    {
+        boost::archive::binary_oarchive oa(ofs);
+        // write class instance to archive
+        //oa << A11 << A12 << A21 << A22 << dx << dy << dz << xres << yres << zres <<
+        //    cell_length_a << cell_length_b << zmin << zmax << V_zmin << V3d <<
+        //    gradV3d_x << gradV3d_y << gradV3d_z << grad2V3d;
+        oa << V3d << gradV3d_x << gradV3d_y << gradV3d_z << grad2V3d << LUTinfo;
+        // archive and stream closed when destructors are called
+    }
+
+    std::exit(0);
+}
+
+double GrapheneLUT3DPotentialGenerate::Vz_64(
+        double z, double sigma, double prefactor, int atoms_in_basis ) {
+    return atoms_in_basis*Vz_64(z,sigma,prefactor);
+}
+
+double GrapheneLUT3DPotentialGenerate::Vz_64(
+        double z, double sigma, double prefactor ) {
+    return prefactor*Vz_64(z,sigma);
+}
+
+double GrapheneLUT3DPotentialGenerate::Vz_64( double z, double sigma ) {
+    return (pow(sigma,4)*(2*pow(sigma,6) - 5*pow(z,6)))/(5*pow(z,10));
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVz_x_64(
+        double z, double sigma, double prefactor, int atoms_in_basis ) {
+    return 0.0;
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVz_x_64(
+        double z, double sigma, double prefactor ) {
+    return 0.0;
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVz_x_64( double z, double sigma ) {
+    return 0.0;
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVz_y_64(
+        double z, double sigma, double prefactor, int atoms_in_basis ) {
+    return 0.0;
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVz_y_64(
+        double z, double sigma, double prefactor ) {
+    return 0.0;
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVz_y_64( double z, double sigma ) {
+    return 0.0;
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVz_z_64(
+        double z, double sigma, double prefactor, int atoms_in_basis ) {
+    return atoms_in_basis*gradVz_z_64(z,sigma,prefactor);
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVz_z_64(
+        double z, double sigma, double prefactor ) {
+    return prefactor*gradVz_z_64(z,sigma);
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVz_z_64( double z, double sigma ) {
+    return (4*pow(sigma,4)*(-pow(sigma,6) + pow(z,6)))/pow(z,11);
+}
+
+double GrapheneLUT3DPotentialGenerate::grad2Vz_64(
+        double z, double sigma, double prefactor, int atoms_in_basis ) {
+    return atoms_in_basis*grad2Vz_64(z,sigma,prefactor);
+}
+
+double GrapheneLUT3DPotentialGenerate::grad2Vz_64(
+        double z, double sigma, double prefactor ) {
+    return prefactor*grad2Vz_64(z,sigma);
+}
+
+double GrapheneLUT3DPotentialGenerate::grad2Vz_64( double z, double sigma ) {
+    return (4*pow(sigma,4)*(11*pow(sigma,6) - 5*pow(z,6)))/pow(z,12);
+}
+
+double GrapheneLUT3DPotentialGenerate::Vg_64(
+        double x, double y, double z, double sigma, double g, double g_i,
+        double g_j, double b_i, double b_j, double prefactor ) {
+    return prefactor*Vg_64(x, y, z, sigma, g, g_i, g_j, b_i, b_j);
+}
+
+double GrapheneLUT3DPotentialGenerate::Vg_64(
+        double x, double y, double z, double sigma, double g, double g_i,
+        double g_j, double b_i, double b_j ) {
+    return (pow(g,2)*pow(sigma,4)*(-480*pow(z,3)*boost::math::cyl_bessel_k(2, g*z) + 
+                pow(g,3)*pow(sigma,6)*boost::math::cyl_bessel_k(5, g*z))*cos(g_i*(b_i + x) + 
+                g_j*(b_j + y)))/(960*pow(z,5));
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVg_x_64(
+        double x, double y, double z, double sigma, double g, double g_i,
+        double g_j, double b_i, double b_j, double prefactor ) {
+    return prefactor*gradVg_x_64(x, y, z, sigma, g, g_i, g_j, b_i, b_j);
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVg_x_64(
+        double x, double y, double z, double sigma, double g, double g_i,
+        double g_j, double b_i, double b_j ) {
+    return -(pow(g,2)*g_i*pow(sigma,4)*(-480*pow(z,3)*boost::math::cyl_bessel_k(2, g*z) +
+                pow(g,3)*pow(sigma,6)*boost::math::cyl_bessel_k(5, g*z))*sin(g_i*(b_i + x) +
+                g_j*(b_j + y)))/(960*pow(z,5));
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVg_y_64(
+        double x, double y, double z, double sigma, double g, double g_i,
+        double g_j, double b_i, double b_j, double prefactor ) {
+    return prefactor*gradVg_y_64(x, y, z, sigma, g, g_i, g_j, b_i, b_j);
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVg_y_64(
+        double x, double y, double z, double sigma, double g, double g_i,
+        double g_j, double b_i, double b_j ) {
+    return -(pow(g,2)*g_j*pow(sigma,4)*(-480*pow(z,3)*boost::math::cyl_bessel_k(2, g*z) +
+                pow(g,3)*pow(sigma,6)*boost::math::cyl_bessel_k(5, g*z))*sin(g_i*(b_i + x) + 
+                g_j*(b_j + y)))/(960*pow(z,5));
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVg_z_64(
+        double x, double y, double z, double sigma, double g, double g_i,
+        double g_j, double b_i, double b_j, double prefactor ) {
+    return prefactor*gradVg_z_64(x, y, z, sigma, g, g_i, g_j, b_i, b_j);
+}
+
+double GrapheneLUT3DPotentialGenerate::gradVg_z_64(
+        double x, double y, double z, double sigma, double g, double g_i,
+        double g_j, double b_i, double b_j ) {
+    return -(pow(g,3)*pow(sigma,4)*(10*(pow(g,2)*pow(sigma,6)*z - 48*pow(z,5))*boost::math::cyl_bessel_k(3, g*z) + 
+                g*pow(sigma,6)*(80 + pow(g*z,2))*boost::math::cyl_bessel_k(4, g*z))*cos(g_i*(b_i + x) + 
+                g_j*(b_j + y)))/(960*pow(z,7));
+}
+
+double GrapheneLUT3DPotentialGenerate::grad2Vg_64(
+        double x, double y, double z, double sigma, double g, double g_i,
+        double g_j, double b_i, double b_j, double prefactor ) {
+    return prefactor*grad2Vg_64(x, y, z, sigma, g, g_i, g_j, b_i, b_j);
+}
+
+double GrapheneLUT3DPotentialGenerate::grad2Vg_64(
+        double x, double y, double z, double sigma, double g, double g_i,
+        double g_j, double b_i, double b_j) {
+    return (pow(g,2)*pow(sigma,4)*(-120*g*pow(z,6)*(g*z*boost::math::cyl_bessel_k(0, g*z) +
+                    8*boost::math::cyl_bessel_k(1, g*z)) + z*(19*pow(g,4)*pow(sigma,6)*pow(z,2) + 
+                    480*pow(z,4)*(-6 + (pow(g_i,2) + pow(g_j,2))*pow(z,2)) - 
+                    8*pow(g,2)*(45*pow(z,6) + pow(sigma,6)*(-110 + (pow(g_i,2) +
+                                pow(g_j,2))*pow(z,2))))*boost::math::cyl_bessel_k(2, g*z) + 
+                g*(-1680*pow(z,6) + pow(sigma,6)*(5280 + pow(z,2)*(-48*(pow(g_i,2) +
+                                pow(g_j,2)) + pow(g,4)*pow(z,2) + pow(g,2)*(224 -
+                                (pow(g_i,2) + pow(g_j,2))*pow(z,2)))))*boost::math::cyl_bessel_k(3, g*z))*cos(g_i*(b_i + x) +
+                g_j*(b_j + y)))/(960*pow(z,9));
+}
+
+double GrapheneLUT3DPotentialGenerate::V_64(
+        double x, double y, double z, double sigma, double epsilon,
+        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
+        TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
+        Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+    int k_max=10000;
+    bool flag_1 = false;
+    bool flag_2 = false;
+    bool flag_3 = false;
+    TinyVector <double,2> g;
+    double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
+    double _V = 0.0;
+    _V += 2*Vz_64(z, sigma);
+    double _V_old = 0.0;
+    int g_i;
+    int g_j;
+    double g_magnitude;
+    for (int k = 1; k < 2*k_max; k++) {
+        g_i = g_i_array(k);
+        g_j = g_j_array(k);
+        g = (g_i * g_m) + (g_j * g_n);
+        g_magnitude = g_magnitude_array(k);
+        _V += Vg_64(x, y, z, sigma, g_magnitude, g[0], g[1], b_1[0], b_1[1]);
+        _V += Vg_64(x, y, z, sigma, g_magnitude, g[0], g[1], b_2[0], b_2[1]);
+
+        if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_1)) {
+            _V_old = _V;
+            flag_1 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_2)) {
+            _V_old = _V;
+            flag_2 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_3)) {
+            _V_old = _V;
+            flag_3 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && flag_1 && flag_2 && flag_3) {
+            _V_old = _V;
+            break;
+        }
+        else if ((k >= k_max) && (g_magnitude != g_magnitude_array(k+1))) {
+            //println("WARNING: k_max reached")
+            break;
+        }
+        else {
+            _V_old = _V;
+        }
+    }
+    return pf * _V;
+}
+
+double GrapheneLUT3DPotentialGenerate::gradV_x_64(
+        double x, double y, double z, double sigma, double epsilon,
+        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
+        TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
+        Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+    int k_max=10000;
+    bool flag_1 = false;
+    bool flag_2 = false;
+    bool flag_3 = false;
+    TinyVector <double,2> g;
+    double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
+    double _V = 0.0;
+    _V += 2*gradVz_x_64(z, sigma);
+    double _V_old = 0.0;
+    int g_i;
+    int g_j;
+    double g_magnitude;
+    for (int k = 1; k < 2*k_max; k++) {
+        g_i = g_i_array(k);
+        g_j = g_j_array(k);
+        g = (g_i * g_m) + (g_j * g_n);
+        g_magnitude = g_magnitude_array(k);
+        _V += gradVg_x_64(x, y, z, sigma, g_magnitude, g[0], g[1], b_1[0], b_1[1]);
+        _V += gradVg_x_64(x, y, z, sigma, g_magnitude, g[0], g[1], b_2[0], b_2[1]);
+
+        if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_1)) {
+            _V_old = _V;
+            flag_1 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_2)) {
+            _V_old = _V;
+            flag_2 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_3)) {
+            _V_old = _V;
+            flag_3 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && flag_1 && flag_2 && flag_3) {
+            _V_old = _V;
+            break;
+        }
+        else if ((k >= k_max) && (g_magnitude != g_magnitude_array(k+1))) {
+            //println("WARNING: k_max reached")
+            break;
+        }
+        else {
+            _V_old = _V;
+        }
+    }
+    return pf * _V;
+}
+
+double GrapheneLUT3DPotentialGenerate::gradV_y_64(
+        double x, double y, double z, double sigma, double epsilon,
+        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
+        TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
+        Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+    int k_max=10000;
+    bool flag_1 = false;
+    bool flag_2 = false;
+    bool flag_3 = false;
+    TinyVector <double,2> g;
+    double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
+    double _V = 0.0;
+    _V += 2*gradVz_y_64(z, sigma);
+    double _V_old = 0.0;
+    int g_i;
+    int g_j;
+    double g_magnitude;
+    for (int k = 1; k < 2*k_max; k++) {
+        g_i = g_i_array(k);
+        g_j = g_j_array(k);
+        g = (g_i * g_m) + (g_j * g_n);
+        g_magnitude = g_magnitude_array(k);
+        _V += gradVg_y_64(x, y, z, sigma, g_magnitude, g[0], g[1], b_1[0], b_1[1]);
+        _V += gradVg_y_64(x, y, z, sigma, g_magnitude, g[0], g[1], b_2[0], b_2[1]);
+
+        if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_1)) {
+            _V_old = _V;
+            flag_1 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_2)) {
+            _V_old = _V;
+            flag_2 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_3)) {
+            _V_old = _V;
+            flag_3 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && flag_1 && flag_2 && flag_3) {
+            _V_old = _V;
+            break;
+        }
+        else if ((k >= k_max) && (g_magnitude != g_magnitude_array(k+1))) {
+            //println("WARNING: k_max reached")
+            break;
+        }
+        else {
+            _V_old = _V;
+        }
+    }
+    return pf * _V;
+}
+
+double GrapheneLUT3DPotentialGenerate::gradV_z_64(
+        double x, double y, double z, double sigma, double epsilon,
+        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
+        TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
+        Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+    int k_max=10000;
+    bool flag_1 = false;
+    bool flag_2 = false;
+    bool flag_3 = false;
+    TinyVector <double,2> g;
+    double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
+    double _V = 0.0;
+    _V += 2*gradVz_z_64(z, sigma);
+    double _V_old = 0.0;
+    int g_i;
+    int g_j;
+    double g_magnitude;
+    for (int k = 1; k < 2*k_max; k++) {
+        g_i = g_i_array(k);
+        g_j = g_j_array(k);
+        g = (g_i * g_m) + (g_j * g_n);
+        g_magnitude = g_magnitude_array(k);
+        _V += gradVg_z_64(x, y, z, sigma, g_magnitude, g[0], g[1], b_1[0], b_1[1]);
+        _V += gradVg_z_64(x, y, z, sigma, g_magnitude, g[0], g[1], b_2[0], b_2[1]);
+
+        if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_1)) {
+            _V_old = _V;
+            flag_1 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_2)) {
+            _V_old = _V;
+            flag_2 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_3)) {
+            _V_old = _V;
+            flag_3 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && flag_1 && flag_2 && flag_3) {
+            _V_old = _V;
+            break;
+        }
+        else if ((k >= k_max) && (g_magnitude != g_magnitude_array(k+1))) {
+            //println("WARNING: k_max reached")
+            break;
+        }
+        else {
+            _V_old = _V;
+        }
+    }
+    return pf * _V;
+}
+
+double GrapheneLUT3DPotentialGenerate::grad2V_64(
+        double x, double y, double z, double sigma, double epsilon,
+        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
+        TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
+        Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+    int k_max=10000;
+    bool flag_1 = false;
+    bool flag_2 = false;
+    bool flag_3 = false;
+    TinyVector <double,2> g;
+    double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
+    double _V = 0.0;
+    _V += 2*grad2Vz_64(z, sigma);
+    double _V_old = 0.0;
+    int g_i;
+    int g_j;
+    double g_magnitude;
+    for (int k = 1; k < 2*k_max; k++) {
+        g_i = g_i_array(k);
+        g_j = g_j_array(k);
+        g = (g_i * g_m) + (g_j * g_n);
+        g_magnitude = g_magnitude_array(k);
+        _V += grad2Vg_64(x, y, z, sigma, g_magnitude, g[0], g[1], b_1[0], b_1[1]);
+        _V += grad2Vg_64(x, y, z, sigma, g_magnitude, g[0], g[1], b_2[0], b_2[1]);
+
+        if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_1)) {
+            _V_old = _V;
+            flag_1 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_2)) {
+            _V_old = _V;
+            flag_2 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_3)) {
+            _V_old = _V;
+            flag_3 = true;
+        }
+        else if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && flag_1 && flag_2 && flag_3) {
+            _V_old = _V;
+            break;
+        }
+        else if ((k >= k_max) && (g_magnitude != g_magnitude_array(k+1))) {
+            //println("WARNING: k_max reached")
+            break;
+        }
+        else {
+            _V_old = _V;
+        }
+    }
+    return pf * _V;
+}
+
+std::tuple< TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>,
+    TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>
+    > GrapheneLUT3DPotentialGenerate::get_graphene_vectors() {
+    return get_graphene_vectors(0.00);
+}
+
+std::tuple< TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>,
+    TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>
+    > GrapheneLUT3DPotentialGenerate::get_graphene_vectors( double strain ) {
+    return get_graphene_vectors(strain, 1.42, 0.165);
+}
+
+std::tuple< TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>,
+    TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>
+    > GrapheneLUT3DPotentialGenerate::get_graphene_vectors(
+        double strain, double carbon_carbon_distance, double poisson_ratio) {
+    Array<double,2> R_strain(2,2);
+    R_strain = -strain*poisson_ratio, 0,
+                                 0, strain;
+
+    TinyVector <double,2> A_m_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
+    TinyVector <double,2> A_m( (carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
+            (carbon_carbon_distance/2)*3*(1 + strain) ); //with strain
+    
+    TinyVector <double,2> A_n_strain0( -(carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
+    TinyVector <double,2> A_n( -(carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
+            (carbon_carbon_distance/2)*3*(1 + strain) ); //with strain
+
+    //FIXME might have a problem here if A_m_60_strain0 is passed by reference
+    TinyVector <double,2> A_m_60_strain0( carbon_carbon_distance*sqrt(3) , 0 ); // A_m_strain0 rotated 60 degrees to sit on x-axis
+    TinyVector <double,2> A_m_60 = A_m_60_strain0; // rotated with strain
+    A_m_60(0) += R_strain(0,0)*A_m_60_strain0(0) + R_strain(0,1)*A_m_60_strain0(1);
+    A_m_60(1) += R_strain(1,0)*A_m_60_strain0(0) + R_strain(1,1)*A_m_60_strain0(1);
+
+    TinyVector <double,2> A_n_60_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); // A_n_strain0 rotated 60
+    TinyVector <double,2> A_n_60 = A_n_60_strain0; // rotated with strain
+    A_n_60(0) += R_strain(0,0)*A_n_60_strain0(0) + R_strain(0,1)*A_n_60_strain0(1);
+    A_n_60(1) += R_strain(1,0)*A_n_60_strain0(0) + R_strain(1,1)*A_n_60_strain0(1);
+
+
+    // basis vectors
+    TinyVector <double,2> b_1( 0, carbon_carbon_distance*(1 + strain) );
+    TinyVector <double,2> b_2( 0, carbon_carbon_distance*2*(1 + strain) );
+
+    // reciprocal lattice vectors
+    TinyVector <double,2> g_m( 3/(1 - strain*poisson_ratio) , sqrt(3)/(1 + strain) );
+    g_m *= (2*M_PI/3/carbon_carbon_distance);
+    TinyVector <double,2> g_n( -g_m[0] , g_m[1] );
+
+    TinyVector <double,2> g_m_60( sqrt(3)/(1 - strain*poisson_ratio), -1/(1 + strain) );
+    g_m_60 *= (2*M_PI/3/carbon_carbon_distance);
+    TinyVector <double,2> g_n_60( 0 , 1/(1 + strain) );
+    g_n_60 *= (4*M_PI/3/carbon_carbon_distance);
+
+    return { A_m_60, A_n_60, b_1, b_2, g_m_60, g_n_60 };
+}
+
+std::tuple< TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>,
+    TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>
+    > GrapheneLUT3DPotentialGenerate::get_graphene_vectors_old(
+        double strain, double carbon_carbon_distance, double poisson_ratio) {
+    TinyVector <double,2> A_m_old( sqrt(3)*(4 + strain - 3*strain*poisson_ratio) ,
+            3*(4 + 3*strain - strain*poisson_ratio) ); // wrong value previously used
+    A_m_old *= (carbon_carbon_distance/8);
+    TinyVector <double,2> A_n_old( sqrt(3)*(-4 - strain + 3*strain*poisson_ratio),
+            3*(4 + 3*strain - strain*poisson_ratio) ); // wrong value previously used
+    A_n_old *= (carbon_carbon_distance/8);
+
+    // basis vectors
+    TinyVector <double,2> b_1( 0 , carbon_carbon_distance*(1 + strain) );
+    TinyVector <double,2> b_2( 0 , carbon_carbon_distance*2*(1 + strain) );
+
+    // reciprocal lattice vectors
+    TinyVector <double,2> g_m_old( sqrt(3)*(4 + 3*strain - strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)),
+                            (4 + strain - 3*strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)) );
+    g_m_old *= (8*M_PI/3/carbon_carbon_distance);
+    TinyVector <double,2> g_n_old( -g_m_old[0], g_m_old[1] );
+
+    return { A_m_old, A_n_old, b_1, b_2, g_m_old, g_n_old };
+}
+
+std::tuple< Array<int,1>, Array<int,1>, Array<double,1> >
+GrapheneLUT3DPotentialGenerate::get_g_magnitudes( 
+        TinyVector<double,2> g_m, TinyVector<double,2> g_n ) {
+    int number_of_g_i = 200;
+    int number_of_g_j = 200;
+    
+    int size_of_arrays = pow(number_of_g_i + number_of_g_j + 1,2);
+    Array<double,1> g_magnitude_array(size_of_arrays);
+    Array<int,1> g_i_array(size_of_arrays);
+    Array<int,1> g_j_array(size_of_arrays);
+
+    TinyVector<double,2> g;
+    int k = 0;
+    for (int g_i = -number_of_g_i; g_i < number_of_g_i + 1; g_i++) {
+        for (int g_j = -number_of_g_j; g_j < number_of_g_j + 1; g_j++){
+            g = (g_i * g_m) + (g_j * g_n);
+            g_magnitude_array(k) = sqrt(dot(g,g));
+            g_i_array(k) = g_i;
+            g_j_array(k) = g_j;
+            k += 1;
+        }
+    }
+    int sort_indeces[size_of_arrays];
+    for (int i = 0; i < size_of_arrays; i++) {
+        sort_indeces[i] = i;
+    }
+
+    //std::sort( sort_indeces, sort_indeces + size_of_arrays,
+    //        [] (int i, int j) {return g_magnitude_array(i) < g_magnitude_array(j);});
+    std::stable_sort( sort_indeces, sort_indeces + size_of_arrays,
+            [&g_magnitude_array] (int i, int j) {return g_magnitude_array(i) < g_magnitude_array(j);});
+    // using std::stable_sort instead of std::sort
+    // to avoid unnecessary index re-orderings
+    // when g_magnitude_array contains elements of equal values
+    // FIXME may need to pass reference to g_magnitude_array in labmda function
+    // i.e. [&g_magnitude_array](...)
+    
+    Array<double,1> g_magnitude_array2(size_of_arrays);
+    Array<int,1> g_i_array2(size_of_arrays);
+    Array<int,1> g_j_array2(size_of_arrays);
+    
+    for (int i = 0; i < size_of_arrays; i++) {
+        int p = sort_indeces[i];
+
+        g_magnitude_array2(i) = g_magnitude_array(p);
+        g_i_array2(i) = g_i_array(p);
+        g_j_array2(i) = g_j_array(p);
+    }
+    return std::make_tuple(g_i_array2, g_j_array2, g_magnitude_array2);
+}
+
+
+void GrapheneLUT3DPotentialGenerate::calculate_V3D_64(
+        Array<double,3> V3D, Array<double,2> xy_x, Array<double,2> xy_y,
+        Array<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
+        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
+        Array<int,1> g_i_array, Array<int,1> g_j_array,
+        Array<double,1> g_magnitude_array ) {
+    double x;
+    double y;
+    double z;
+    for (int k = 0; k < V3D.shape()[2]; k++) {
+        z = z_range(k);
+        for (int j = 0; j < V3D.shape()[1]; j++) {
+            for (int i = 0; i < V3D.shape()[0]; i++) {
+                x = xy_x(i,j);
+                y = xy_y(i,j);
+                V3D(i,j,k) = V_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
+            }
+        }
+    }
+}
+
+void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_x_64(
+        Array<double,3> V3D, Array<double,2> xy_x, Array<double,2> xy_y,
+        Array<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
+        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
+        Array<int,1> g_i_array, Array<int,1> g_j_array,
+        Array<double,1> g_magnitude_array ) {
+    double x;
+    double y;
+    double z;
+    for (int k = 0; k < V3D.shape()[2]; k++) {
+        z = z_range(k);
+        for (int j = 0; j < V3D.shape()[1]; j++) {
+            for (int i = 0; i < V3D.shape()[0]; i++) {
+                x = xy_x(i,j);
+                y = xy_y(i,j);
+                V3D(i,j,k) = gradV_x_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
+            }
+        }
+    }
+}
+
+void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_y_64(
+        Array<double,3> V3D, Array<double,2> xy_x, Array<double,2> xy_y,
+        Array<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
+        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
+        Array<int,1> g_i_array, Array<int,1> g_j_array,
+        Array<double,1> g_magnitude_array ) {
+    double x;
+    double y;
+    double z;
+    for (int k = 0; k < V3D.shape()[2]; k++) {
+        z = z_range(k);
+        for (int j = 0; j < V3D.shape()[1]; j++) {
+            for (int i = 0; i < V3D.shape()[0]; i++) {
+                x = xy_x(i,j);
+                y = xy_y(i,j);
+                V3D(i,j,k) = gradV_y_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
+            }
+        }
+    }
+}
+
+void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_z_64(
+        Array<double,3> V3D, Array<double,2> xy_x, Array<double,2> xy_y,
+        Array<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
+        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
+        Array<int,1> g_i_array, Array<int,1> g_j_array,
+        Array<double,1> g_magnitude_array ) {
+    double x;
+    double y;
+    double z;
+    for (int k = 0; k < V3D.shape()[2]; k++) {
+        z = z_range(k);
+        for (int j = 0; j < V3D.shape()[1]; j++) {
+            for (int i = 0; i < V3D.shape()[0]; i++) {
+                x = xy_x(i,j);
+                y = xy_y(i,j);
+                V3D(i,j,k) = gradV_z_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
+            }
+        }
+    }
+}
+
+void GrapheneLUT3DPotentialGenerate::calculate_grad2V3D_64(
+        Array<double,3> V3D, Array<double,2> xy_x, Array<double,2> xy_y,
+        Array<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
+        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
+        Array<int,1> g_i_array, Array<int,1> g_j_array,
+        Array<double,1> g_magnitude_array ) {
+    double x;
+    double y;
+    double z;
+    for (int k = 0; k < V3D.shape()[2]; k++) {
+        z = z_range(k);
+        for (int j = 0; j < V3D.shape()[1]; j++) {
+            for (int i = 0; i < V3D.shape()[0]; i++) {
+                x = xy_x(i,j);
+                y = xy_y(i,j);
+                V3D(i,j,k) = grad2V_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
+            }
+        }
+    }
+}
+
+std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_min_V_min(double x, double y,
+        double sigma, double epsilon, double area_lattice,
+        TinyVector<double,2> b_1, TinyVector<double,2> b_2,
+        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
+        Array<int,1> g_i_array, Array<int,1> g_j_array,
+        Array<double,1> g_magnitude_array ) {
+
+    double z_min_limit = 1.0;
+    double z_max_limit = 5.0;
+    const int double_bits = std::numeric_limits<double>::digits/2;
+
+    std::pair<double, double> r = boost::math::tools::brent_find_minima(
+            std::bind( &GrapheneLUT3DPotentialGenerate::V_64, this, x, y, std::placeholders::_1, sigma, epsilon,
+                area_lattice, b_1, b_2, g_m, g_n, g_i_array, g_j_array,
+                g_magnitude_array ),
+            z_min_limit, z_max_limit, double_bits);
+    
+    return r;
+}
+
+std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_V_to_find(
+        double sigma, double epsilon, double area_lattice,
+        TinyVector<double,2> b_1, TinyVector<double,2> b_2,
+        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
+        Array<int,1> g_i_array, Array<int,1> g_j_array,
+        Array<double,1> g_magnitude_array ) {
+    double V_to_find = 10000.0;
+    TinyVector<double,2> center_of_hexagon(0.0, 0.0);
+    TinyVector<double,2> above_A_site(b_1[0],b_1[1]);
+    double x = center_of_hexagon(0);
+    double y = center_of_hexagon(1);
+
+    auto [_z_min, _V_min] = get_z_min_V_min(x,y,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
+
+    double z_min_limit = 0.0;
+    double z_max_limit = _z_min;
+    const int double_bits = std::numeric_limits<double>::digits/2;
+
+
+    auto _f_V_64 = std::bind( &GrapheneLUT3DPotentialGenerate::V_64, this, x, y, std::placeholders::_1, sigma, epsilon,
+            area_lattice, b_1, b_2, g_m, g_n, g_i_array, g_j_array,
+            g_magnitude_array );
+    auto _g_lambda = [&_f_V_64](double _z, double _V) { return fabs(_f_V_64(_z) - _V); };
+    auto _g_bind = std::bind(_g_lambda, std::placeholders::_1, V_to_find); 
+    std::pair<double, double> r = boost::math::tools::brent_find_minima(
+            _g_bind, z_min_limit, z_max_limit, double_bits);
+
+    double _z_V_to_find = r.first;
+    double _found_V = V_64(above_A_site(0), above_A_site(1), _z_V_to_find,
+            sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,
+            g_magnitude_array);
+    // return z value above hex and V value above atom
+    return { _z_V_to_find, _found_V };
+}
+
+Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
+        double strain, double sigma, double epsilon, int x_res, int y_res,
+        int z_res, double z_min, double z_max ) {
+    auto [A_m, A_n, b_1, b_2, g_m, g_n] = get_graphene_vectors(strain);
+    auto [g_i_array, g_j_array, g_magnitude_array] = get_g_magnitudes(g_m,g_n);
+    
+    double cell_length_a = calculate_magnitude(A_m);
+    double cell_length_b = calculate_magnitude(A_n);
+    //double cell_length_c = 40.0;
+    double cell_angle_gamma= calculate_angle(A_m,A_n);
+    //double cell_angle_gamma_degrees = cell_angle_gamma*180/M_PI;
+    double area_lattice = cell_length_a * cell_length_b * sin(cell_angle_gamma);
+    
+    Array<double,1> uc_x_range(x_res);
+    double uc_x_min = 0.0;
+    double uc_x_max = cell_length_a;
+    double delta_uc_x = (uc_x_max - uc_x_min) / (x_res - 1);
+
+    for (int i=0; i < x_res - 1; ++i) {
+      uc_x_range(i) = uc_x_min + (delta_uc_x * i);
+    }
+    uc_x_range(x_res - 1) = uc_x_max;
+
+    //double uc_dx = uc_x_range(1) - uc_x_range(0);
+    
+    Array<double,1> uc_y_range(y_res);
+    double uc_y_min = 0.0;
+    double uc_y_max = cell_length_b;
+    double delta_uc_y = (uc_y_max - uc_y_min) / (y_res - 1);
+
+    for (int i=0; i < y_res - 1; ++i) {
+      uc_y_range(i) = uc_y_min + (delta_uc_y * i);
+    }
+    uc_y_range(y_res - 1) = uc_y_max;
+    
+    //double uc_dy = uc_y_range(1) - uc_y_range(0);
+
+    Array<double,2> uc_xy_x(x_res,y_res);
+    uc_xy_x = 0;
+    Array<double,2> uc_xy_y(x_res,y_res);
+    uc_xy_y = 0;
+
+    for (int i=0; i < x_res; ++i) {
+        for(int j=0; j < y_res; ++j) {
+            uc_xy_x(i,j) = uc_x_range(i);
+            uc_xy_y(i,j) = uc_y_range(j);
+        }
+    }
+    
+
+    Array<double,2> B(2,2);
+    B = 1, cos(cell_angle_gamma),
+        0, sin(cell_angle_gamma); //transfer to Cartesian
+    
+    // Set up transfer matrices to transfer from unit cell coordinates to Cartesian coordinates
+    //A = inv(B);
+    Array<double,2> A(2,2);
+    //A = sin(cell_angle_gamma), -cos(cell_angle_gamma),
+    //                        0, 1; 
+    //A /= sin(cell_angle_gamma);
+    A = 1, -1/tan(cell_angle_gamma),
+        0, 1/sin(cell_angle_gamma); //transfer to unit cell coords
+    
+
+    Array<double,2> xy_x(x_res,y_res);
+    Array<double,2> xy_y(x_res,y_res);
+
+    for (int i=0; i < x_res; ++i) {
+        for(int j=0; j < y_res; ++j) {
+            //xy_x(i,j) = B(0,0)*uc_xy_x(i,j) + B(0,1)*uc_xy_y(i,j);
+            //xy_y(i,j) = B(1,0)*uc_xy_x(i,j) + B(1,1)*uc_xy_y(i,j);
+
+            xy_x(i,j) = B(0,0)*uc_x_range(i) + B(0,1)*uc_y_range(j);
+            xy_y(i,j) = B(1,0)*uc_x_range(i) + B(1,1)*uc_y_range(j);
+        }
+    }
+    
+
+    Array<double,1> z_range(z_res);
+    double delta_z = (z_max - z_min) / (z_res - 1);
+
+    for (int i=0; i < z_res - 1; ++i) {
+      z_range(i) = z_min + (delta_z * i);
+    }
+    z_range(z_res - 1) = z_max;
+
+    //double dz = z_range(1) - z_range(0);
+
+    Array<double,3> _V3D(x_res,y_res,z_res);
+    _V3D = 0;
+    calculate_V3D_64(_V3D,xy_x,xy_y,z_range,sigma,epsilon,area_lattice,b_1,b_2,
+            g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
+    return _V3D;
+}
+
+std::pair<Array<double,3> , Array<double,1>> GrapheneLUT3DPotentialGenerate::get_V3D(
+        double strain, double sigma, double epsilon, int x_res, int y_res,
+        int z_res, double z_max ) {
+    auto [A_m, A_n, b_1, b_2, g_m, g_n] = get_graphene_vectors(strain);
+    auto [g_i_array, g_j_array, g_magnitude_array] = get_g_magnitudes(g_m,g_n);
+    
+    double cell_length_a = calculate_magnitude(A_m);
+    double cell_length_b = calculate_magnitude(A_n);
+    //double cell_length_c = 40.0;
+    double cell_angle_gamma= calculate_angle(A_m,A_n);
+    //double cell_angle_gamma_degrees = cell_angle_gamma*180/M_PI;
+    double area_lattice = cell_length_a * cell_length_b * sin(cell_angle_gamma);
+    
+    Array<double,1> uc_x_range(x_res);
+    double uc_x_min = 0.0;
+    double uc_x_max = cell_length_a;
+    double delta_uc_x = (uc_x_max - uc_x_min) / (x_res - 1);
+
+    for (int i=0; i < x_res - 1; ++i) {
+      uc_x_range(i) = uc_x_min + (delta_uc_x * i);
+    }
+    uc_x_range(x_res - 1) = uc_x_max;
+
+    double uc_dx = uc_x_range(1) - uc_x_range(0);
+    
+    Array<double,1> uc_y_range(y_res);
+    double uc_y_min = 0.0;
+    double uc_y_max = cell_length_b;
+    double delta_uc_y = (uc_y_max - uc_y_min) / (y_res - 1);
+
+    for (int i=0; i < y_res - 1; ++i) {
+      uc_y_range(i) = uc_y_min + (delta_uc_y * i);
+    }
+    uc_y_range(y_res - 1) = uc_y_max;
+    
+    double uc_dy = uc_y_range(1) - uc_y_range(0);
+
+    Array<double,2> uc_xy_x(x_res,y_res);
+    uc_xy_x = 0;
+    Array<double,2> uc_xy_y(x_res,y_res);
+    uc_xy_y = 0;
+
+    for (int i=0; i < x_res; ++i) {
+        for(int j=0; j < y_res; ++j) {
+            uc_xy_x(i,j) = uc_x_range(i);
+            uc_xy_y(i,j) = uc_y_range(j);
+        }
+    }
+    
+
+    Array<double,2> B(2,2);
+    B = 1, cos(cell_angle_gamma),
+        0, sin(cell_angle_gamma); //transfer to Cartesian
+    
+    // Set up transfer matrices to transfer from unit cell coordinates to Cartesian coordinates
+    //A = inv(B);
+    Array<double,2> A(2,2);
+    //A = sin(cell_angle_gamma), -cos(cell_angle_gamma),
+    //                        0, 1; 
+    //A /= sin(cell_angle_gamma);
+    A = 1, -1/tan(cell_angle_gamma),
+        0, 1/sin(cell_angle_gamma); //transfer to unit cell coords
+    
+
+    Array<double,2> xy_x(x_res,y_res);
+    Array<double,2> xy_y(x_res,y_res);
+
+    for (int i=0; i < x_res; ++i) {
+        for(int j=0; j < y_res; ++j) {
+            //xy_x(i,j) = B(0,0)*uc_xy_x(i,j) + B(0,1)*uc_xy_y(i,j);
+            //xy_y(i,j) = B(1,0)*uc_xy_x(i,j) + B(1,1)*uc_xy_y(i,j);
+
+            xy_x(i,j) = B(0,0)*uc_x_range(i) + B(0,1)*uc_y_range(j);
+            xy_y(i,j) = B(1,0)*uc_x_range(i) + B(1,1)*uc_y_range(j);
+        }
+    }
+    
+    auto [z_min, V_z_min] = get_z_V_to_find(sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
+
+    Array<double,1> z_range(z_res);
+    double delta_z = (z_max - z_min) / (z_res - 1);
+
+    for (int i=0; i < z_res - 1; ++i) {
+      z_range(i) = z_min + (delta_z * i);
+    }
+    z_range(z_res - 1) = z_max;
+
+    double dz = z_range(1) - z_range(0);
+
+    Array<double,3> _V3D(x_res,y_res,z_res);
+    _V3D = 0;
+    calculate_V3D_64(_V3D,xy_x,xy_y,z_range,sigma,epsilon,area_lattice,b_1,b_2,
+            g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
+
+    Array<double,1> _LUTinfo(12);
+    _LUTinfo = A(0,0), A(0,1), A(1,0), A(1,1), uc_dx, uc_dy, dz, cell_length_a,
+             cell_length_b, z_min, z_max, V_z_min;
+
+    return { _V3D, _LUTinfo };
+}
+
+std::tuple< Array<double,3>, Array<double,3>, Array<double,3>, Array<double,3>,
+    Array<double,3>, Array<double,2>, Array<double,2>, Array<double,1>
+    > GrapheneLUT3DPotentialGenerate::get_V3D_all(
+        double strain, double sigma, double epsilon, int x_res, int y_res,
+        int z_res, double z_max ) {
+    
+    auto [A_m, A_n, b_1, b_2, g_m, g_n] = get_graphene_vectors(strain);
+    auto [g_i_array, g_j_array, g_magnitude_array] = get_g_magnitudes(g_m,g_n);
+    
+    double cell_length_a = calculate_magnitude(A_m);
+    double cell_length_b = calculate_magnitude(A_n);
+    //double cell_length_c = 40.0;
+    double cell_angle_gamma= calculate_angle(A_m,A_n);
+    //double cell_angle_gamma_degrees = cell_angle_gamma*180/M_PI;
+    double area_lattice = cell_length_a * cell_length_b * sin(cell_angle_gamma);
+    
+    Array<double,1> uc_x_range(x_res);
+    double uc_x_min = 0.0;
+    double uc_x_max = cell_length_a;
+    double delta_uc_x = (uc_x_max - uc_x_min) / (x_res - 1);
+
+    for (int i=0; i < x_res - 1; ++i) {
+      uc_x_range(i) = uc_x_min + (delta_uc_x * i);
+    }
+    uc_x_range(x_res - 1) = uc_x_max;
+
+    double uc_dx = uc_x_range(1) - uc_x_range(0);
+    
+    Array<double,1> uc_y_range(y_res);
+    double uc_y_min = 0.0;
+    double uc_y_max = cell_length_b;
+    double delta_uc_y = (uc_y_max - uc_y_min) / (y_res - 1);
+
+    for (int i=0; i < y_res - 1; ++i) {
+      uc_y_range(i) = uc_y_min + (delta_uc_y * i);
+    }
+    uc_y_range(y_res - 1) = uc_y_max;
+
+    double uc_dy = uc_y_range(1) - uc_y_range(0);
+    
+    Array<double,2> uc_xy_x(x_res,y_res);
+    uc_xy_x = 0;
+    Array<double,2> uc_xy_y(x_res,y_res);
+    uc_xy_y = 0;
+
+    for (int i=0; i < x_res; ++i) {
+        for(int j=0; j < y_res; ++j) {
+            uc_xy_x(i,j) = uc_x_range(i);
+            uc_xy_y(i,j) = uc_y_range(j);
+        }
+    }
+    
+
+    Array<double,2> B(2,2);
+    B = 1, cos(cell_angle_gamma),
+        0, sin(cell_angle_gamma); //transfer to Cartesian
+    
+    // Set up transfer matrices to transfer from unit cell coordinates to Cartesian coordinates
+    //A = inv(B);
+    Array<double,2> A(2,2);
+    //A = sin(cell_angle_gamma), -cos(cell_angle_gamma),
+    //                        0, 1; 
+    //A /= sin(cell_angle_gamma);
+    A = 1, -1/tan(cell_angle_gamma),
+        0, 1/sin(cell_angle_gamma); //transfer to unit cell coords
+    
+
+    Array<double,2> xy_x(x_res,y_res);
+    Array<double,2> xy_y(x_res,y_res);
+
+    for (int i=0; i < x_res; ++i) {
+        for(int j=0; j < y_res; ++j) {
+            //xy_x(i,j) = B(0,0)*uc_xy_x(i,j) + B(0,1)*uc_xy_y(i,j);
+            //xy_y(i,j) = B(1,0)*uc_xy_x(i,j) + B(1,1)*uc_xy_y(i,j);
+
+            xy_x(i,j) = B(0,0)*uc_x_range(i) + B(0,1)*uc_y_range(j);
+            xy_y(i,j) = B(1,0)*uc_x_range(i) + B(1,1)*uc_y_range(j);
+        }
+    }
+    
+    auto [z_min, V_z_min] = get_z_V_to_find(sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
+
+    Array<double,1> z_range(z_res);
+    double delta_z = (z_max - z_min) / (z_res - 1);
+
+    for (int i=0; i < z_res - 1; ++i) {
+      z_range(i) = z_min + (delta_z * i);
+    }
+    z_range(z_res - 1) = z_max;
+
+    double dz = z_range(1) - z_range(0);
+
+    Array<double,3> _V3D(x_res,y_res,z_res);
+    Array<double,3> _gradV3D_x(x_res,y_res,z_res);
+    Array<double,3> _gradV3D_y(x_res,y_res,z_res);
+    Array<double,3> _gradV3D_z(x_res,y_res,z_res);
+    Array<double,3> _grad2V3D(x_res,y_res,z_res);
+    _V3D = 0;
+    _gradV3D_x = 0;
+    _gradV3D_y = 0;
+    _gradV3D_z = 0;
+    _grad2V3D = 0;
+
+    calculate_V3D_64( _V3D, xy_x, xy_y, z_range, sigma, epsilon, area_lattice,
+            b_1, b_2, g_m, g_n, g_i_array, g_j_array, g_magnitude_array );
+    calculate_gradV3D_x_64( _gradV3D_x, xy_x, xy_y, z_range, sigma, epsilon,
+            area_lattice, b_1, b_2, g_m, g_n, g_i_array, g_j_array,
+            g_magnitude_array );
+    calculate_gradV3D_y_64( _gradV3D_y, xy_x, xy_y, z_range, sigma, epsilon,
+            area_lattice, b_1, b_2, g_m, g_n, g_i_array, g_j_array,
+            g_magnitude_array );
+    calculate_gradV3D_z_64( _gradV3D_z, xy_x, xy_y, z_range, sigma, epsilon,
+            area_lattice, b_1, b_2, g_m, g_n, g_i_array, g_j_array,
+            g_magnitude_array );
+    calculate_grad2V3D_64( _grad2V3D, xy_x, xy_y, z_range, sigma, epsilon,
+            area_lattice, b_1, b_2, g_m, g_n, g_i_array, g_j_array,
+            g_magnitude_array );
+    Array<double,1> _LUTinfo(12);
+    _LUTinfo = A(0,0), A(0,1), A(1,0), A(1,1), uc_dx, uc_dy, dz, cell_length_a,
+             cell_length_b, z_min, z_max, V_z_min;
+    return { _V3D, _gradV3D_x, _gradV3D_y, _gradV3D_z, _grad2V3D, xy_x, xy_y,
+        _LUTinfo };
+}
+
+
+/**************************************************************************//**
+ * Destructor.
+******************************************************************************/
+GrapheneLUT3DPotentialGenerate::~GrapheneLUT3DPotentialGenerate() {
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// GrapheneLUT3DPotential Class---------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+ * Constructor.
+******************************************************************************/
+GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
+
+    /* load lookup tables */
+    {
+        // create and open an archive for input
+        std::ifstream ifs(graphenelut3d_file_prefix + "serialized.txt");
+        boost::archive::binary_iarchive ia(ifs);
+        // read class state from archive
+        ia >> V3d >> gradV3d_x >> gradV3d_y >> gradV3d_z >> grad2V3d >> LUTinfo;
+        // archive and stream closed when destructors are called
+    }
+
+    {
+    // create and open a character archive for output
+    std::ofstream ofs(graphenelut3d_file_prefix + "serialized.dat");
+    // save data to archive
+        boost::archive::binary_oarchive oa(ofs);
+        // write class instance to archive
+        oa << V3d << gradV3d_x << gradV3d_y << gradV3d_z << grad2V3d << LUTinfo;
+        // archive and stream closed when destructors are called
+    }
+
+    std::cout << "Finished converting binary file " <<
+        graphenelut3d_file_prefix + "serialized.txt"  << " to binary file " <<
+        graphenelut3d_file_prefix + "serialized.dat" << ", exiting." <<
+        std::endl;
+    std::exit(0);
+}
+
+/**************************************************************************//**
+ * Destructor.
+******************************************************************************/
+GrapheneLUT3DPotentialToBinary::~GrapheneLUT3DPotentialToBinary() {
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// GrapheneLUT3DPotential Class---------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+ * Constructor.
+******************************************************************************/
+GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
+
+    /* load lookup tables */
+    {
+        // create and open an archive for input
+        std::ifstream ifs(graphenelut3d_file_prefix + "serialized.dat");
+        boost::archive::binary_iarchive ia(ifs);
+        // read class state from archive
+        ia >> V3d >> gradV3d_x >> gradV3d_y >> gradV3d_z >> grad2V3d >> LUTinfo;
+        // archive and stream closed when destructors are called
+    }
+
+    {
+    // create and open a character archive for output
+    std::ofstream ofs(graphenelut3d_file_prefix + "serialized.txt");
+    // save data to archive
+        boost::archive::text_oarchive oa(ofs);
+        // write class instance to archive
+        oa << V3d << gradV3d_x << gradV3d_y << gradV3d_z << grad2V3d << LUTinfo;
+        // archive and stream closed when destructors are called
+    }
+    std::cout << "Finished converting binary file " << 
+        graphenelut3d_file_prefix + "serialized.dat"  << " to text file " <<
+        graphenelut3d_file_prefix + "serialized.txt" << ", exiting." <<
+        std::endl;
+    std::exit(0);
+}
+
+/**************************************************************************//**
+ * Destructor.
+******************************************************************************/
+GrapheneLUT3DPotentialToText::~GrapheneLUT3DPotentialToText() {
+}

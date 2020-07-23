@@ -86,13 +86,33 @@ LDEBUG = -lblitz
 BOOSTVER = 
 
 ifeq ($(opts), basic)
-OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations
+OPTS = -std=c++17 -Wall -O3 -mtune=native -Wno-deprecated-declarations
 else ifeq ($(opts), strict)
-OPTS = -std=c++14 -Wall -Wextra -g -pedantic
+OPTS = -std=c++17 -Wall -Wextra -g -pedantic
 endif #basic, elseif strict
 
 CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) 
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER)
+endif # 801p macbook 
+######################################################
+
+###################################################################
+# System c++ 801p macbook 
+ifeq ($(preset), 801ps)
+
+CODEDIR = $$HOME/local
+DEBUG  = -D PIMC_DEBUG -g
+LDEBUG = -lblitz
+BOOSTVER = 
+
+ifeq ($(opts), basic)
+OPTS = -std=c++17 -Wall -O3 -mtune=native -Wno-deprecated-declarations
+else ifeq ($(opts), strict)
+OPTS = -std=c++17 -Wall -Wextra -g -pedantic
+endif #basic, elseif strict
+
+CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_serialization$(BOOSTVER)
 endif # 801p macbook 
 ######################################################
 

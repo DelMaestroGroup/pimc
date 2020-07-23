@@ -1284,5 +1284,449 @@ class GrapheneLUTPotential: public PotentialBase  {
         Array<double,2> gradvg;
 };
 
+// ========================================================================  
+// GrapheneLUT3DPotential Class
+// ========================================================================  
+/** 
+ * \brief Returns van der Waals' potential between a helium adatom and a graphene sheet using summation in reciprocal space.
+ *
+ * Author: Nathan Nichols
+ * Returns the potential energy resulting from a van der Waals' interaction
+ * between a helium adatom and a fixed infinite graphene lattice
+ */
+class GrapheneLUT3DPotential: public PotentialBase  {
+
+    public:
+        GrapheneLUT3DPotential(const string, const Container*);
+        ~GrapheneLUT3DPotential();
+
+        /* Return the sum of the van der Waals' interaction energy between the supplied
+         * particle and the fixed graphene lattice. */
+        double V(const dVec &);
+
+        /* Return the gradient of the sum of the van der Waals' interaction energy between the supplied
+         * particle and the fixed graphene lattice. */
+        dVec gradV(const dVec &);
+        double grad2V(const dVec &);
+        
+        /** Initial configuration corresponding to graphene-helium vdW potential */
+        Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+
+        void put_in_uc( dVec &, double, double);
+        void cartesian_to_uc( dVec &, double, double, double, double);
+        double trilinear_interpolation(Array<double,3>,dVec,double,double,double);
+        double direct_lookup(Array<double,3>,dVec,double,double,double);
+
+    private:
+
+        double Lzo2;    // half the system size in the z-direction
+        
+        /* spacing of the lookup tables */
+        double dx;
+        double dy;
+        double dz;
+
+        /* resolution of the lookup tables */
+        int xres;
+        int yres;
+        int zres;
+
+        /* dimensions of the lookup tables */
+        double cell_length_a;
+        double cell_length_b;
+        double zmin;
+        double zmax;
+        double V_zmin;
+        
+        /* transfer matrix */
+        double A11;
+        double A12;
+        double A21;
+        double A22;
+
+        Array<double,3> V3d; // Potential lookup table
+        Array<double,3> gradV3d_x; // gradient of potential x direction lookup table
+        Array<double,3> gradV3d_y; // gradient of potential y direction lookup table
+        Array<double,3> gradV3d_z; // gradient of potential z direction lookup table
+        Array<double,3> grad2V3d; // Laplacian of potential
+        Array<double,1> LUTinfo;
+
+};
+
+/****
+ * Put inside unit cell
+ ***/
+inline void GrapheneLUT3DPotential::put_in_uc(dVec &r, double cell_length_a, double cell_length_b) {
+    r[0] -= cell_length_a * floor(r[0]/cell_length_a);
+    r[1] -= cell_length_b * floor(r[1]/cell_length_b);
+}
+
+/****
+ * transfer from cartesian to unit cell coordinates
+ ***/
+
+inline void GrapheneLUT3DPotential::cartesian_to_uc( dVec &r, double A11, double A12, double A21, double A22) {
+    double _x = A11 * r[0] + A12*r[1];
+    double _y = A21 * r[0] + A22*r[1];
+    r[0] = _x;
+    r[1] = _y;
+}
+
+inline double GrapheneLUT3DPotential::trilinear_interpolation(Array<double,3> P,dVec r,double dx,double dy,double dz) {
+    double x = r[0];
+    double y = r[1];
+    double z = r[2];
+
+    double _xidx = floor(x/dx);
+    double _yidx = floor(y/dy);
+    double _zidx = floor(z/dz);
+    int xidx = static_cast<int>(_xidx);
+    int yidx = static_cast<int>(_yidx);
+    int zidx = static_cast<int>(_zidx);
+
+    double Delta_x = x/dx - _xidx;
+    double Delta_y = y/dy - _yidx;
+    double Delta_z = z/dz - _zidx;
+
+    double c00 = P(xidx,yidx,zidx)*(1 - Delta_x) + P(xidx + 1,yidx,zidx)*Delta_x;
+    double c01 = P(xidx,yidx,zidx + 1)*(1 - Delta_x) + P(xidx + 1,yidx,zidx + 1)*Delta_x;
+    double c10 = P(xidx,yidx + 1,zidx)*(1 - Delta_x) + P(xidx + 1,yidx + 1,zidx)*Delta_x;
+    double c11 = P(xidx,yidx + 1,zidx + 1)*(1 - Delta_x) + P(xidx + 1,yidx + 1,zidx + 1)*Delta_x;
+
+    double c0 = c00*(1 - Delta_y) + c10*Delta_y;
+    double c1 = c01*(1 - Delta_y) + c11*Delta_y;
+
+    double c = c0*(1 - Delta_z) + c1*Delta_z;
+    return c;
+}
+
+inline double GrapheneLUT3DPotential::direct_lookup(Array<double,3> P,dVec r,double dx,double dy,double dz) {
+    double x = r[0];
+    double y = r[1];
+    double z = r[2];
+
+    int xidx = static_cast<int>(x/dx);
+    int yidx = static_cast<int>(y/dy);
+    int zidx = static_cast<int>(z/dz);
+
+    double c0 = P(xidx,yidx,zidx);
+    return c0;
+}
+
+// ========================================================================  
+// GrapheneLUT3DPotentialGenerate Class
+// ========================================================================  
+/** 
+ * \brief FIXME Returns van der Waals' potential between a helium adatom and a graphene sheet using summation in reciprocal space.
+ *
+ * Author: Nathan Nichols
+ * Returns the potential energy resulting from a van der Waals' interaction
+ * between a helium adatom and a fixed infinite graphene lattice
+ */
+class GrapheneLUT3DPotentialGenerate: public PotentialBase  {
+
+    public:
+        GrapheneLUT3DPotentialGenerate(
+                const double, const double, const double, const double,
+                const double, const Container*);
+        ~GrapheneLUT3DPotentialGenerate();
+        
+    private:
+
+        double Lzo2;    // half the system size in the z-direction
+        
+        /* spacing of the lookup tables */
+        double dx;
+        double dy;
+        double dz;
+
+        /* resolution of the lookup tables */
+        int xres;
+        int yres;
+        int zres;
+
+        /* dimensions of the lookup tables */
+        double cell_length_a;
+        double cell_length_b;
+        double zmin;
+        double zmax;
+        double V_zmin;
+        
+        /* transfer matrix */
+        double A11;
+        double A12;
+        double A21;
+        double A22;
+
+        double Vz_64( double, double, double, int );
+        double Vz_64( double, double, double );
+        double Vz_64( double, double );
+        
+        double gradVz_x_64( double, double, double, int );
+        double gradVz_x_64( double, double, double );
+        double gradVz_x_64( double, double );
+        
+        double gradVz_y_64( double, double, double, int );
+        double gradVz_y_64( double, double, double );
+        double gradVz_y_64( double, double );
+        
+        
+        double gradVz_z_64( double, double, double, int );
+        double gradVz_z_64( double, double, double );
+        double gradVz_z_64( double, double );
+
+        double grad2Vz_64( double, double, double, int );
+        double grad2Vz_64( double, double, double );
+        double grad2Vz_64( double, double );
+        
+        double Vg_64( double, double, double, double, double, double, double,
+                double, double, double );
+        double Vg_64( double, double, double, double, double, double, double,
+                double, double );
+        
+        double gradVg_x_64( double, double, double, double, double, double, double,
+                double, double, double );
+        double gradVg_x_64( double, double, double, double, double, double, double,
+                double, double );
+
+        double gradVg_y_64( double, double, double, double, double, double, double,
+                double, double, double );
+        double gradVg_y_64( double, double, double, double, double, double, double,
+                double, double );
+
+        double gradVg_z_64( double, double, double, double, double, double, double,
+                double, double, double );
+        double gradVg_z_64( double, double, double, double, double, double, double,
+                double, double );
+
+        double grad2Vg_64( double, double, double, double, double, double, double,
+                double, double, double );
+        double grad2Vg_64( double, double, double, double, double, double, double,
+                double, double );
+
+        double V_64( double, double, double, double, double, double,
+                TinyVector<double,2>, TinyVector<double,2>,
+                TinyVector<double,2>, TinyVector<double,2>, Array<int,1>,
+                Array<int,1>, Array<double,1> );
+
+        double gradV_x_64( double, double, double, double, double, double,
+                TinyVector<double,2>, TinyVector<double,2>,
+                TinyVector<double,2>, TinyVector<double,2>, Array<int,1>,
+                Array<int,1>, Array<double,1> );
+
+        double gradV_y_64( double, double, double, double, double, double,
+                TinyVector<double,2>, TinyVector<double,2>,
+                TinyVector<double,2>, TinyVector<double,2>, Array<int,1>,
+                Array<int,1>, Array<double,1> );
+
+        double gradV_z_64( double, double, double, double, double, double,
+                TinyVector<double,2>, TinyVector<double,2>,
+                TinyVector<double,2>, TinyVector<double,2>, Array<int,1>,
+                Array<int,1>, Array<double,1> );
+
+        double grad2V_64( double, double, double, double, double, double,
+                TinyVector<double,2>, TinyVector<double,2>,
+                TinyVector<double,2>, TinyVector<double,2>, Array<int,1>,
+                Array<int,1>, Array<double,1> );
+        
+        std::tuple<
+            TinyVector<double,2>, TinyVector<double,2>,
+            TinyVector<double,2>, TinyVector<double,2>,
+            TinyVector<double,2>, TinyVector<double,2>
+                > get_graphene_vectors();
+        std::tuple<
+            TinyVector<double,2>, TinyVector<double,2>,
+            TinyVector<double,2>, TinyVector<double,2>,
+            TinyVector<double,2>, TinyVector<double,2>
+                > get_graphene_vectors( double );
+        std::tuple<
+            TinyVector<double,2>, TinyVector<double,2>,
+            TinyVector<double,2>, TinyVector<double,2>,
+            TinyVector<double,2>, TinyVector<double,2>
+                > get_graphene_vectors( double, double, double );
+        std::tuple<
+            TinyVector<double,2>, TinyVector<double,2>,
+            TinyVector<double,2>, TinyVector<double,2>,
+            TinyVector<double,2>, TinyVector<double,2>
+                > get_graphene_vectors_old( double, double, double );
+        std::tuple< Array<int,1>, Array<int,1>, Array<double,1>
+            > get_g_magnitudes( TinyVector<double,2>, TinyVector<double,2> );
+
+        template <class T> double calculate_magnitude( T vec ) {
+            return sqrt(dot(vec,vec));
+        }
+        
+        template <class T1, class T2> double calculate_angle(
+                T1 x, T2 y, double magnitude_x, double magnitude_y ) {
+            return acos(dot(x,y)/magnitude_x/magnitude_y);
+        }
+        
+        template <class T1, class T2> double calculate_angle( T1 x, T2 y ) {
+            return calculate_angle(x,y,calculate_magnitude(x),calculate_magnitude(y));
+        }
+
+        void calculate_V3D_64(
+                Array<double,3>, Array<double,2>, Array<double,2>,
+                Array<double,1>, double, double,
+                double, TinyVector<double,2>, TinyVector<double,2>,
+                TinyVector<double,2>, TinyVector<double,2>,
+                Array<int,1>, Array<int,1>,
+                Array<double,1> );
+
+        void calculate_gradV3D_x_64(
+                Array<double,3>, Array<double,2>, Array<double,2>,
+                Array<double,1>, double, double,
+                double, TinyVector<double,2>, TinyVector<double,2>,
+                TinyVector<double,2>, TinyVector<double,2>,
+                Array<int,1>, Array<int,1>,
+                Array<double,1> );
+
+        void calculate_gradV3D_y_64(
+                Array<double,3>, Array<double,2>, Array<double,2>,
+                Array<double,1>, double, double,
+                double, TinyVector<double,2>, TinyVector<double,2>,
+                TinyVector<double,2>, TinyVector<double,2>,
+                Array<int,1>, Array<int,1>,
+                Array<double,1> );
+
+        void calculate_gradV3D_z_64(
+                Array<double,3>, Array<double,2>, Array<double,2>,
+                Array<double,1>, double, double,
+                double, TinyVector<double,2>, TinyVector<double,2>,
+                TinyVector<double,2>, TinyVector<double,2>,
+                Array<int,1>, Array<int,1>,
+                Array<double,1> );
+
+        void calculate_grad2V3D_64(
+                Array<double,3>, Array<double,2>, Array<double,2>,
+                Array<double,1>, double, double,
+                double, TinyVector<double,2>, TinyVector<double,2>,
+                TinyVector<double,2>, TinyVector<double,2>,
+                Array<int,1>, Array<int,1>,
+                Array<double,1> );
+
+        std::pair<double, double> get_z_min_V_min( 
+                double, double, double, double, double,
+                TinyVector<double,2>, TinyVector<double,2>,
+                TinyVector<double,2>, TinyVector<double,2>,
+                Array<int,1>, Array<int,1>, Array<double,1> );
+
+        std::pair<double, double> get_z_V_to_find( 
+                double, double, double,
+                TinyVector<double,2>, TinyVector<double,2>,
+                TinyVector<double,2>, TinyVector<double,2>,
+                Array<int,1>, Array<int,1>, Array<double,1> );
+
+        Array<double,3> get_V3D(
+                double, double, double, int, int, int, double, double ); 
+        std::pair<Array<double,3> , Array<double,1>> get_V3D(
+                double, double, double, int, int, int, double );
+        std::tuple<
+            Array<double,3>, Array<double,3>, Array<double,3>,
+            Array<double,3>, Array<double,3>, Array<double,2>,
+            Array<double,2>, Array<double,1>
+            > get_V3D_all( double, double, double, int, int, int, double );
+};
+
+// ========================================================================
+// GrapheneLUT3DPotentialToBinary Class
+// ========================================================================
+/**
+ * \brief FIXME Returns van der Waals' potential between a helium adatom and a graphene sheet using summation in reciprocal sp
+ *
+ * Author: Nathan Nichols
+ * Returns the potential energy resulting from a van der Waals' interaction
+ * between a helium adatom and a fixed infinite graphene lattice
+ */
+class GrapheneLUT3DPotentialToBinary: public PotentialBase  {
+
+    public:
+        GrapheneLUT3DPotentialToBinary(const string, const Container*);
+        ~GrapheneLUT3DPotentialToBinary();
+
+    private:
+        
+        /* spacing of the lookup tables */
+        double dx;
+        double dy;
+        double dz;
+
+        /* resolution of the lookup tables */
+        int xres;
+        int yres;
+        int zres;
+
+        /* dimensions of the lookup tables */
+        double cell_length_a;
+        double cell_length_b;
+        double zmin;
+        double zmax;
+        double V_zmin;
+        
+        /* transfer matrix */
+        double A11;
+        double A12;
+        double A21;
+        double A22;
+
+        Array<double,3> V3d; // Potential lookup table
+        Array<double,3> gradV3d_x; // gradient of potential x direction lookup table
+        Array<double,3> gradV3d_y; // gradient of potential y direction lookup table
+        Array<double,3> gradV3d_z; // gradient of potential z direction lookup table
+        Array<double,3> grad2V3d; // Laplacian of potential
+        Array<double,1> LUTinfo;
+
+};
+
+// ========================================================================
+// GrapheneLUT3DPotentialToText Class
+// ========================================================================
+/**
+ * \brief FIXME Returns van der Waals' potential between a helium adatom and a graphene sheet using summation in reciprocal sp
+ *
+ * Author: Nathan Nichols
+ * Returns the potential energy resulting from a van der Waals' interaction
+ * between a helium adatom and a fixed infinite graphene lattice
+ */
+class GrapheneLUT3DPotentialToText: public PotentialBase  {
+
+    public:
+        GrapheneLUT3DPotentialToText(const string, const Container*);
+        ~GrapheneLUT3DPotentialToText();
+
+    private:
+        
+        /* spacing of the lookup tables */
+        double dx;
+        double dy;
+        double dz;
+
+        /* resolution of the lookup tables */
+        int xres;
+        int yres;
+        int zres;
+
+        /* dimensions of the lookup tables */
+        double cell_length_a;
+        double cell_length_b;
+        double zmin;
+        double zmax;
+        double V_zmin;
+        
+        /* transfer matrix */
+        double A11;
+        double A12;
+        double A21;
+        double A22;
+
+        Array<double,3> V3d; // Potential lookup table
+        Array<double,3> gradV3d_x; // gradient of potential x direction lookup table
+        Array<double,3> gradV3d_y; // gradient of potential y direction lookup table
+        Array<double,3> gradV3d_z; // gradient of potential z direction lookup table
+        Array<double,3> grad2V3d; // Laplacian of potential
+        Array<double,1> LUTinfo;
+
+};
+
 
 #endif

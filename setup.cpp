@@ -274,7 +274,8 @@ Setup::Setup() :
 
     /* Define the allowed external  potential names */
     externalPotentialName = {"free", "harmonic", "osc_tube", "lj_tube", "plated_lj_tube",
-        "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "graphene", "fixed_lj", "graphenelut"};
+        "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "graphene", "fixed_lj",
+         "graphenelut3d", "graphenelut3dgenerate", "graphenelut3dtobinary", "graphenelut3dtotext"};
     externalNames = getList(externalPotentialName);
 
     /* Define the allowed action names */
@@ -366,6 +367,7 @@ void Setup::initParameters() {
     params.add<double>("strain","strain of graphene lattice in y-direction",oClass,0.00);
     params.add<double>("poisson","Poisson's ratio for graphene",oClass,0.165);
     params.add<double>("carbon_carbon_dist,A","Carbon-Carbon distance for graphene",oClass,1.42);
+    params.add<string>("graphenelut3d_file_prefix","GrapheneLUT3D file prefix <prefix>serialized.{dat|txt}",oClass,"");
 
     /* Initialize the physical options */
     oClass = "physical";
@@ -1094,6 +1096,30 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
     else if (constants()->extPotentialType() == "fixed_lj") 
         externalPotentialPtr = new FixedPositionLJPotential(params["lj_sigma"].as<double>(), 
                 params["lj_epsilon"].as<double>(),boxPtr);
+    else if (constants()->extPotentialType() == "graphenelut3d") 
+        externalPotentialPtr = new GrapheneLUT3DPotential(
+            params["graphenelut3d_file_prefix"].as<string>(),
+            boxPtr
+        );
+    else if (constants()->extPotentialType() == "graphenelut3dgenerate") 
+        externalPotentialPtr = new GrapheneLUT3DPotentialGenerate(
+            params["strain"].as<double>(),
+            params["poisson"].as<double>(),
+            params["carbon_carbon_dist"].as<double>(),
+            params["lj_sigma"].as<double>(),
+            params["lj_epsilon"].as<double>(),
+            boxPtr
+        );
+    else if (constants()->extPotentialType() == "graphenelut3dtobinary") 
+        externalPotentialPtr = new GrapheneLUT3DPotentialToBinary(
+            params["graphenelut3d_file_prefix"].as<string>(),
+            boxPtr
+        );
+    else if (constants()->extPotentialType() == "graphenelut3dtotext") 
+        externalPotentialPtr = new GrapheneLUT3DPotentialToText(
+            params["graphenelut3d_file_prefix"].as<string>(),
+            boxPtr
+        );
 
     return externalPotentialPtr;
 }

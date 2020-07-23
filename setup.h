@@ -14,7 +14,7 @@
 #include <boost/program_options.hpp>
 #include <boost/any.hpp>
 
-/** The four possible states of a parameter */
+/** The three possible states of a parameter */
 enum ParamState {UNSET,DEFAULTED,SET};
 
 namespace po = boost::program_options;
@@ -339,7 +339,6 @@ class Setup {
 
         /* Get a formatted list of xml options */
         string getXMLOptionList(const vector<string> &, const string);  
-
 };
 
 #endif

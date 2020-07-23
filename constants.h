@@ -111,6 +111,7 @@ class ConstantParameters
         string waveFunctionType() const {return waveFunctionType_;} ///< Get wave function type
         double endFactor() const {return endFactor_;}        ///< Get end factor
         string actionType() const {return actionType_;}             ///< Get wave action type
+        string graphenelut3d_file_prefix() const {return graphenelut3d_file_prefix_;}       ///< Get GrapheneLUT3D file prefix <prefix>_serialized.{dat|txt}
 
         /* Trial wave funciton parameters */
         double R_LL_wfn() const {return R_LL_wfn_;}        ///< Get Lieb-Liniger length scale
@@ -188,6 +189,7 @@ class ConstantParameters
         int maxWind_;             // The maximum winding number sampled
 
         bool saveStateFiles_;       // Are we saving a state file every MC bin?
+        string graphenelut3d_file_prefix_; // GrapheneLUT3D file prefix <prefix>_{V,gradV,grad2V}.npy 
         
         map <string,double> attemptProb_;   // The move attempt probabilities
 };

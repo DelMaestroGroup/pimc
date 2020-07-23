@@ -23,15 +23,24 @@
 #include <algorithm>
 #include <sstream>
 #include <chrono>
-#include <limits>
+#include <functional> // has std::bind
+ 
 
+#define BZ_HAVE_BOOST_SERIALIZATION
 #include <blitz/array.h>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+
 #include <boost/format.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+
+#include <boost/math/tools/minima.hpp> // find minima using Brent's method
 
 /* Debugging librarys and definitions. There is only an effect if
  * the code is compiled with PIMC_DEBUG on.*/
