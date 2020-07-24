@@ -86,6 +86,10 @@ int main (int argc, char *argv[]) {
     /* Create and initialize the potential pointers */
     PotentialBase *interactionPotentialPtr = setup.interactionPotential();
     PotentialBase *externalPotentialPtr = setup.externalPotential(boxPtr);
+    if ((constants()->extPotentialType() == "graphenelut3dtobinary") ||
+            (constants()->extPotentialType() == "graphenelut3dtotext")) {
+        return 99;
+    }
 
     /* Get the initial conditions associated with the external potential */
     /* Must use the copy constructor as we return a copy */

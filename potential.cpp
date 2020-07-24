@@ -4270,17 +4270,68 @@ GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (string graphenel
 
     /* load lookup tables */
     {
-        // create and open an archive for input
-        std::ifstream ifs(graphenelut3d_file_prefix + "serialized.txt");
-        boost::archive::binary_iarchive ia(ifs);
-        // read class state from archive
-        ia >> V3d >> gradV3d_x >> gradV3d_y >> gradV3d_z >> grad2V3d >> LUTinfo;
+        // create and open a character archive for input
+        std::ifstream ifs_V3d(graphenelut3d_file_prefix + "V3d.txt");
+        // save data to archive
+        boost::archive::text_iarchive ia_V3d(ifs_V3d);
+        // write class instance to archive
+        ia_V3d >> V3d;
         // archive and stream closed when destructors are called
     }
 
     {
+        // create and open a character archive for input
+        std::ifstream ifs_gradV3d_x(graphenelut3d_file_prefix + "gradV3d_x.txt");
+        // save data to archive
+        boost::archive::text_iarchive ia_gradV3d_x(ifs_gradV3d_x);
+        // write class instance to archive
+        ia_gradV3d_x >> gradV3d_x;
+        // archive and stream closed when destructors are called
+    }
+
+    {
+        // create and open a character archive for input
+        std::ifstream ifs_gradV3d_y(graphenelut3d_file_prefix + "gradV3d_y.txt");
+        // save data to archive
+        boost::archive::text_iarchive ia_gradV3d_y(ifs_gradV3d_y);
+        // write class instance to archive
+        ia_gradV3d_y >> gradV3d_y;
+        // archive and stream closed when destructors are called
+    }
+
+    {
+        // create and open a character archive for input
+        std::ifstream ifs_gradV3d_z(graphenelut3d_file_prefix + "gradV3d_z.txt");
+        // save data to archive
+        boost::archive::text_iarchive ia_gradV3d_z(ifs_gradV3d_z);
+        // write class instance to archive
+        ia_gradV3d_z >> gradV3d_z;
+        // archive and stream closed when destructors are called
+    }
+
+    {
+        // create and open a character archive for input
+        std::ifstream ifs_grad2V3d(graphenelut3d_file_prefix + "grad2V3d.txt");
+        // save data to archive
+        boost::archive::text_iarchive ia_grad2V3d(ifs_grad2V3d);
+        // write class instance to archive
+        ia_grad2V3d >> grad2V3d;
+        // archive and stream closed when destructors are called
+    }
+
+    {
+        // create and open a character archive for input
+        std::ifstream ifs_LUTinfo(graphenelut3d_file_prefix + "LUTinfo.txt");
+        // save data to archive
+        boost::archive::text_iarchive ia_LUTinfo(ifs_LUTinfo);
+        // write class instance to archive
+        ia_LUTinfo >> LUTinfo;
+        // archive and stream closed when destructors are called
+    }
+
     // create and open a character archive for output
     std::ofstream ofs(graphenelut3d_file_prefix + "serialized.dat");
+    {
     // save data to archive
         boost::archive::binary_oarchive oa(ofs);
         // write class instance to archive
@@ -4292,13 +4343,18 @@ GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (string graphenel
         graphenelut3d_file_prefix + "serialized.txt"  << " to binary file " <<
         graphenelut3d_file_prefix + "serialized.dat" << ", exiting." <<
         std::endl;
-    std::exit(0);
 }
 
 /**************************************************************************//**
  * Destructor.
 ******************************************************************************/
 GrapheneLUT3DPotentialToBinary::~GrapheneLUT3DPotentialToBinary() {
+    V3d.free();
+    gradV3d_x.free();
+    gradV3d_y.free();
+    gradV3d_z.free();
+    grad2V3d.free();
+    LUTinfo.free();
 }
 
 // ---------------------------------------------------------------------------
@@ -4322,24 +4378,80 @@ GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (string graphenelut3d
         // archive and stream closed when destructors are called
     }
 
-    {
     // create and open a character archive for output
-    std::ofstream ofs(graphenelut3d_file_prefix + "serialized.txt");
-    // save data to archive
-        boost::archive::text_oarchive oa(ofs);
+    std::ofstream ofs_V3d(graphenelut3d_file_prefix + "V3d.txt");
+    {
+        // save data to archive
+        boost::archive::text_oarchive oa_V3d(ofs_V3d);
         // write class instance to archive
-        oa << V3d << gradV3d_x << gradV3d_y << gradV3d_z << grad2V3d << LUTinfo;
+        oa_V3d << V3d;
         // archive and stream closed when destructors are called
     }
+
+    // create and open a character archive for output
+    std::ofstream ofs_gradV3d_x(graphenelut3d_file_prefix + "gradV3d_x.txt");
+    {
+        // save data to archive
+        boost::archive::text_oarchive oa_gradV3d_x(ofs_gradV3d_x);
+        // write class instance to archive
+        oa_gradV3d_x << gradV3d_x;
+        // archive and stream closed when destructors are called
+    }
+
+    // create and open a character archive for output
+    std::ofstream ofs_gradV3d_y(graphenelut3d_file_prefix + "gradV3d_y.txt");
+    {
+        // save data to archive
+        boost::archive::text_oarchive oa_gradV3d_y(ofs_gradV3d_y);
+        // write class instance to archive
+        oa_gradV3d_y << gradV3d_y;
+        // archive and stream closed when destructors are called
+    }
+
+    // create and open a character archive for output
+    std::ofstream ofs_gradV3d_z(graphenelut3d_file_prefix + "gradV3d_z.txt");
+    {
+        // save data to archive
+        boost::archive::text_oarchive oa_gradV3d_z(ofs_gradV3d_z);
+        // write class instance to archive
+        oa_gradV3d_z << gradV3d_z;
+        // archive and stream closed when destructors are called
+    }
+
+    // create and open a character archive for output
+    std::ofstream ofs_grad2V3d(graphenelut3d_file_prefix + "grad2V3d.txt");
+    {
+        // save data to archive
+        boost::archive::text_oarchive oa_grad2V3d(ofs_grad2V3d);
+        // write class instance to archive
+        oa_grad2V3d << grad2V3d;
+        // archive and stream closed when destructors are called
+    }
+
+    // create and open a character archive for output
+    std::ofstream ofs_LUTinfo(graphenelut3d_file_prefix + "LUTinfo.txt");
+    {
+        // save data to archive
+        boost::archive::text_oarchive oa_LUTinfo(ofs_LUTinfo);
+        // write class instance to archive
+        oa_LUTinfo << LUTinfo;
+        // archive and stream closed when destructors are called
+    }
+
     std::cout << "Finished converting binary file " << 
-        graphenelut3d_file_prefix + "serialized.dat"  << " to text file " <<
-        graphenelut3d_file_prefix + "serialized.txt" << ", exiting." <<
+        graphenelut3d_file_prefix + "serialized.dat"  << " to text files " <<
+        graphenelut3d_file_prefix + "<V3d|gradV3d_x|gradV3d_y|gradV3d_z|grad2V3d| LUTinfo>.txt" << ", exiting." <<
         std::endl;
-    std::exit(0);
 }
 
 /**************************************************************************//**
  * Destructor.
 ******************************************************************************/
 GrapheneLUT3DPotentialToText::~GrapheneLUT3DPotentialToText() {
+    V3d.free();
+    gradV3d_x.free();
+    gradV3d_y.free();
+    gradV3d_z.free();
+    grad2V3d.free();
+    LUTinfo.free();
 }

@@ -65,10 +65,10 @@ BOOSTVER = 1_68
 BOOSTCOMP = gcc65-mt-x64
 
 ifeq ($(opts), basic)
-OPTS = -Wall -O3 -std=c++14 -mtune=native -Wno-unused-local-typedefs
+OPTS = -Wall -O3 -std=c++17 -mtune=native -Wno-unused-local-typedefs
 else ifeq ($(opts), strict)
-# OPTS = -std=c++14 -Wall -g -W -Wextra -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template 
-OPTS = -std=c++14 -Wall -Wextra -g -pedantic
+# OPTS = -std=c++17 -Wall -g -W -Wextra -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template 
+OPTS = -std=c++17 -Wall -Wextra -g -pedantic
 endif #basic, elseif strict
 
 CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
@@ -126,9 +126,9 @@ LDEBUG = -lblitz
 BOOSTVER = 
 
 ifeq ($(opts), basic)
-OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations
+OPTS = -std=c++17 -Wall -O3 -mtune=native -Wno-deprecated-declarations
 else ifeq ($(opts), strict)
-OPTS = -std=c++14 -Wall -Wextra -g -pedantic
+OPTS = -std=c++17 -Wall -Wextra -g -pedantic
 endif #basic, elseif strict
 
 CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
@@ -142,7 +142,7 @@ ifeq ($(preset), vacc)
 
 CODEDIR = $$HOME/local
 
-OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations 
+OPTS = -std=c++17 -Wall -O3 -mtune=native -Wno-deprecated-declarations 
 
 BOOSTVER = -gcc73-mt-x64-1_68
 DEBUG = -D PIMC_DEBUG -g
@@ -174,9 +174,9 @@ CODEDIR = $(codedir)
 ifeq ($(TOOLSET), gcc)
 DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
-OPTS   = -Wall -fno-math-errno -O3 -std=c++14
+OPTS   = -Wall -fno-math-errno -O3 -std=c++17
 
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options -lboost_filesystem -lboost_serialization
 
 #icpc
 else ifeq ($(TOOLSET), intel)
@@ -201,10 +201,10 @@ DEBUG  = -D PIMC_DEBUG -g
 LDEBUG = -lblitz
 
 ifeq ($(opts), basic)
-OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations #-Wshadow  #-DNDEBUG
+OPTS = -std=c++17 -Wall -O3 -mtune=native -Wno-deprecated-declarations #-Wshadow  #-DNDEBUG
 else ifeq ($(opts), strict)
 # OPTS = -std=c++11 -Wall -g -W -Wextra -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template 
-OPTS = -std=c++14 -Wall -Wextra -g -pedantic
+OPTS = -std=c++17 -Wall -Wextra -g -pedantic
 endif #basic, elseif strict
 
 BOOSTVER ?= -gcc55-mt-x64-1_67 
@@ -226,12 +226,12 @@ LDEBUG = -lblitz
 BOOSTVER ?= -xgcc42-mt-x64-1_68
 
 ifeq ($(opts), basic)
-OPTS = -std=c++14 -stdlib=libc++ -Wall -O3 -Wno-deprecated-register -Wshadow -Wno-parentheses
+OPTS = -std=c++17 -stdlib=libc++ -Wall -O3 -Wno-deprecated-register -Wshadow -Wno-parentheses
 else ifeq ($(opts), strict)
 # OPTS = -Wall -std=c++11 -stdlib=libc++ -O3 -W -Wshadow -fno-common -ansi -pedantic -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fshort-enums -fsanitize=address -fno-omit-frame-pointer -Wconversion -Wno-c++11-extensions -Wno-shorten-64-to-32 -ferror-limit=1000 -Wno-sign-conversion -Wno-unused-parameter -Wno-ambiguous-member-template
-OPTS = -std=c++14 -stdlib=libc++ -W -Wall -Wextra -g -pedantic
+OPTS = -std=c++17 -stdlib=libc++ -W -Wall -Wextra -g -pedantic
 else ifeq ($(opts),debug)
-OPTS = -std=c++14 -stdlib=libc++ -Wall -Wno-deprecated-register
+OPTS = -std=c++17 -stdlib=libc++ -Wall -Wno-deprecated-register
 endif #basic, elseif strict
 #-fsanitize=address -fno-omit-frame-pointer
 #-Wconversion
