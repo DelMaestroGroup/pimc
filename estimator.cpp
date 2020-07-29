@@ -939,7 +939,7 @@ LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_p
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* The spatial discretization is fixed at 0.05 Å */
-    dl = 0.05;
+    dl = 0.01;
 
     /* Make sure we have a bin centered at 0.0 */
     numGrid = int(path.boxPtr->side[NDIM-1]/dl);
@@ -4582,6 +4582,8 @@ void PIGSOneBodyDensityMatrixEstimator::sample() {
 
 /*************************************************************************//**
  *  Return a dimensionally dependent random vector of length r.
+ *  @see https://mathworld.wolfram.com/SpherePointPicking.html
+ *  @see http://extremelearning.com.au/how-to-generate-uniformly-random-points-on-n-spheres-and-n-balls/
  *
  *  If we are in 3D in a cylinder geometry, we only shift in the z-direction.
  *  @param r The length of the random vector
@@ -4602,8 +4604,8 @@ inline dVec PIGSOneBodyDensityMatrixEstimator::getRandomVector(const double r) {
 #elif NDIM==3
     if (lpath.boxPtr->name == "Prism") {
         double theta = 2.0*M_PI*random.rand();
-        double phi   = M_PI*random.rand();
-        rVec[0] = r*cos(theta)*sin(phi);
+        double phi   = acos(2*random.rand() - 1.0);
+        rVec[0] = r*sin(theta)*cos(phi);
         rVec[1] = r*sin(theta)*sin(phi);
         rVec[2] = r*cos(phi);
     }

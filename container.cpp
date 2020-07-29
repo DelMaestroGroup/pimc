@@ -23,9 +23,11 @@ Container::Container() {
     sideInv2 = 0.0;
     pSide    = 0.0;
     periodic = 1;
+    maxSep   = 0.0;
     volume   = 0.0;
     rcut2    = 0.0;
     name     = "";
+    fullyPeriodic = true;
 
     /* Determine the number of grid boxes in the lookup table */
     numGrid = 1;
@@ -89,8 +91,11 @@ Prism::Prism(double density, int numParticles) {
 
     /* The hyper cube has periodic boundary conditions */
     periodic = 1; 
-
     pSide = side;
+    fullyPeriodic = true;
+
+    /* Compute the maximum possible separation possible inside the box */
+    maxSep = sqrt(dot(side/(periodic + 1.0),side/(periodic + 1.0)));
 
     /* Calculate the volume of the cube */
     volume = product(side);
@@ -107,17 +112,24 @@ Prism::Prism(double density, int numParticles) {
  *  We create a NDIM hyperprism with periodic boundary conditions in all
  *  dimensions with sides that are set at teh command line.
 ******************************************************************************/
-Prism::Prism(const dVec &_side) {
+Prism::Prism(const dVec &_side, const iVec &_periodic) {
 
     /* Setup the cube size in each dimension */
     side = _side;
     sideInv = 1.0/side;
     sideInv2 = 2.0*sideInv;
 
-    /* The hyper cube has periodic boundary conditions */
-    periodic = 1; 
+    rcut2 = 0.25*side[NDIM-1]*side[NDIM-1];
 
-    pSide = side;
+    /* Setup the periodic boundary conditions */
+    periodic = _periodic; 
+    pSide = periodic*side;
+
+    /* are there any non-periodic boundary conditions? */
+    fullyPeriodic = all(periodic==1);
+
+    /* Compute the maximum possible separation possible inside the box */
+    maxSep = sqrt(dot(side/(periodic + 1.0),side/(periodic + 1.0)));
 
     /* Calculate the volume of the cube */
     volume = product(side);
@@ -236,6 +248,9 @@ Cylinder::Cylinder(const double _rho, const double radius, const int numParticle
 
         pSide = periodic*side;
 
+        /* Compute the maximum possible separation possible inside the box */
+        maxSep = sqrt(dot(side/(periodic + 1.0),side/(periodic + 1.0)));
+
         /* Compute the cylinder volume. We use the radius here instead of the actual
          * side.  This is the 'active' volume */
         volume = M_PI*radius*radius*L;
@@ -285,6 +300,9 @@ Cylinder::Cylinder(const double radius, const double L) {
         periodic[0] = periodic[1] = 0;
         periodic[2] = 1;
 
+        /* Compute the maximum possible separation possible inside the box */
+        maxSep = sqrt(dot(side/(periodic + 1.0),side/(periodic + 1.0)));
+
         pSide = periodic*side;
 
         /* Compute the cylinder volume. We use the radius here instead of the actual
@@ -307,11 +325,12 @@ Cylinder::~Cylinder() {
 
 /**************************************************************************//**
  *  Return a random position inside the cylinder.
+ *  @see http://extremelearning.com.au/how-to-generate-uniformly-random-points-on-n-spheres-and-n-balls/
 ******************************************************************************/
 dVec Cylinder::randPosition(MTRand &random) const {
 
     dVec randPos;
-    double r = 0.5*side[0]*random.randExc();
+    double r = 0.5*side[0]*sqrt(random.randExc());
     double phi = random.randExc(2.0*M_PI);
     randPos[0] = r * cos(phi);
     randPos[1] = r * sin(phi);

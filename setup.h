@@ -280,7 +280,7 @@ class Setup {
         void outputOptions(int, char*[], const uint32, const Container*, const iVec&);
 
         /* Setup the interaction potential */
-        PotentialBase * interactionPotential();
+        PotentialBase * interactionPotential(const Container*);
 
         /* Setup the external potential */
         PotentialBase * externalPotential(const Container*);

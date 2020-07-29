@@ -274,7 +274,7 @@ Setup::Setup() :
 
     /* Define the allowed external  potential names */
     externalPotentialName = {"free", "harmonic", "osc_tube", "lj_tube", "plated_lj_tube",
-        "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "graphene", "fixed_lj",
+        "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "graphene", "fixed_lj", "graphene", "graphenelut",
          "graphenelut3d", "graphenelut3dgenerate", "graphenelut3dtobinary", "graphenelut3dtotext"};
     externalNames = getList(externalPotentialName);
 
@@ -796,10 +796,18 @@ Container * Setup::cell() {
     }
     /* Setup a hyperprism */
     else if (params["geometry"].as<string>() == "prism") {
+
+        /* we determine if we are using a non-periodic cell for 
+         * the graphene potential */
+        iVec periodic;
+        periodic = 1;
+        if (params["external"].as<string>().find("graphene") != string::npos)
+            periodic[NDIM-1] = 0;
+
         if (definedCell && params("number_particles")) 
-            boxPtr = new Prism(params["side"].as<dVec>());
+            boxPtr = new Prism(params["side"].as<dVec>(),periodic);
         else if (definedCell && params("density")) {
-            boxPtr = new Prism(params["side"].as<dVec>());
+            boxPtr = new Prism(params["side"].as<dVec>(),periodic);
             params.set<int>("number_particles", int(boxPtr->volume*params["density"].as<double>()));
         }
         else
@@ -813,6 +821,7 @@ Container * Setup::cell() {
     return boxPtr;
 }
 
+    /* if ((params["external"].as<string>().find("tube") != string::npos) && (NDIM != 3)) { */
 /**************************************************************************//**
  * Setup the worldlines.
  *
@@ -1013,7 +1022,7 @@ void Setup::communicator() {
  * Based on the user's choice we create a new interaction potential pointer
  * which is returned to the main program.  
 ******************************************************************************/
-PotentialBase * Setup::interactionPotential() {
+PotentialBase * Setup::interactionPotential(const Container* boxPtr) {
 
     PotentialBase *interactionPotentialPtr = NULL;
     if (constants()->intPotentialType() == "free")
@@ -1033,9 +1042,9 @@ PotentialBase * Setup::interactionPotential() {
         interactionPotentialPtr = new LorentzianPotential(params["delta_width"].as<double>(),
                 params["delta_strength"].as<double>());
     else if (constants()->intPotentialType() == "aziz")
-        interactionPotentialPtr = new AzizPotential(params["side"].as<dVec>());
+        interactionPotentialPtr = new AzizPotential(boxPtr);
     else if (constants()->intPotentialType() == "szalewicz")
-        interactionPotentialPtr = new SzalewiczPotential(params["side"].as<dVec>());
+        interactionPotentialPtr = new SzalewiczPotential(boxPtr);
     else if (constants()->intPotentialType() == "harmonic")
         interactionPotentialPtr = new HarmonicPotential(params["omega"].as<double>());
     else if (constants()->intPotentialType() == "dipole")

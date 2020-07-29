@@ -48,7 +48,8 @@ cd $HOME/local/src
 4. Read the instructions in the `INSTALL` file to determine if there is anything special you need to do on your system.
 5. Execute
 ~~~
-cmake -DCMAKE_INSTALL_PREFIX=PREFIX .
+mkdir build; cd build
+cmake -DCMAKE_INSTALL_PREFIX=PREFIX ..
 make lib
 make install
 ~~~
@@ -110,11 +111,11 @@ project : default-build <toolset>darwin ;
 but the rest should be the same. -->
 5. Execute
 ~~~
-./b2 install --prefix=PREFIX --with-program_options --with-filesystem cxxflags="-std=c++14" linkflags="-std=c++14"
+./b2 install --prefix=PREFIX --with-program_options --with-filesystem --with-system --with-serialization cxxflags="-std=c++14" linkflags="-std=c++14"
 ~~~
-or if you are using the clang compiler on mac os
+or if you are using the `clang` compiler on mac os
 ~~~
-./b2 install --prefix=PREFIX --toolset=darwin --with-program_options --with-filesystem cxxflags="-std=c++14 -stdlib=libc++" linkflags="-std=c++14 -stdlib=libc++" --layout=versioned
+./b2 install --prefix=PREFIX --toolset=darwin --with-program_options --with-filesystem --with-system --with-serialization cxxflags="-std=c++14 -stdlib=libc++" linkflags="-std=c++14 -stdlib=libc++"
 ~~~
 6. If you want to have multiple versions of the library compiled with different compilers you can use the `--layout=versioned` flag above, or you could add `option.set layout : versioned ;` to your `project-config.jam`.  Note: you may have to rename the `$HOME/include/blitz_VER` directory to remove the version number.
 7.  You should now have a `PREFIX/include` directory containing the header files for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain the following files (the `.dylib` files will only appear on Mac OS X)
@@ -153,14 +154,14 @@ OPTS = -std=c++14 -Wall -Wextra -g -pedantic
 endif #basic, elseif strict
 
 CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) 
+LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER) -lboost_serialization$(BOOSTVER)
 #local_target end
 ######################################################
 ~~~
 which assumes you haven't versioned your libraries. You could:
 1. Edit the `CODEDIR` variable to point to the location where you have installed blitz and boost above.  We suggest `$HOME/local` 
 2. Edit the `OPTS` variable to reflect any local compile options.
-4. If you installed boost with the `--layout=versioned` command above and you have multiple versions installed on your machine, you may need to append the particular version you want to link to in the names of the boost libraries.  This is most easily done by updating the `BOOSTVER` variable above: e.g. `BOOSTVER = -gcc42-mt-1_49` where here we have compiled boost v1.49 with gcc v4.2.  This will need to be updated for your particular configuration.
+4. If you installed boost with the `--layout=versioned` command above and you have multiple versions installed on your machine, you may need to append the particular version you want to link to in the names of the boost libraries.  This is most easily done by updating the `BOOSTVER` variable above: e.g. `BOOSTVER = -xgcc42-mt-x64-1_73` where here we have compiled boost v1.73 with clang.  This will need to be updated for your particular configuration. Make sure to look in the `$PREFIX/include` directory as your boost header files may have been inserted in a named directory, e.g. `$PREFIX/include/boost-1_73/boost`.
 5. The make process will then take three options:
  - `opts=debug,basic,strict` turn on different compiling and linking options
  - `ndim=1,2,3` the number of spatial dimensions

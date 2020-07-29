@@ -84,10 +84,11 @@ int main (int argc, char *argv[]) {
     }
     
     /* Create and initialize the potential pointers */
-    PotentialBase *interactionPotentialPtr = setup.interactionPotential();
+    PotentialBase *interactionPotentialPtr = setup.interactionPotential(boxPtr);
     PotentialBase *externalPotentialPtr = setup.externalPotential(boxPtr);
     if ((constants()->extPotentialType() == "graphenelut3dtobinary") ||
-            (constants()->extPotentialType() == "graphenelut3dtotext")) {
+            (constants()->extPotentialType() == "graphenelut3dtotext") ||
+            (constants()->extPotentialType() == "graphenelut3dgenerate") ) {
         return 99;
     }
 

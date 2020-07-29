@@ -677,7 +677,7 @@ class LJHourGlassPotential : public PotentialBase {
  */
 class AzizPotential : public PotentialBase, public TabulatedPotential {
     public:
-        AzizPotential (const dVec &);
+        AzizPotential (const Container *);
         ~AzizPotential ();
 
         /* The Aziz HFDHE2 Potential */
@@ -773,7 +773,7 @@ inline double AzizPotential::grad2V(const dVec &r) {
  */
 class SzalewiczPotential : public PotentialBase, public TabulatedPotential {
     public:
-        SzalewiczPotential (const dVec &);
+        SzalewiczPotential (const Container *);
         ~SzalewiczPotential ();
 
         /* The Szalewicz HFDHE2 Potential */
@@ -910,13 +910,6 @@ inline double SzalewiczPotential::grad2V(const dVec &r) {
     g2V = direct(lookupd2Vdr2,extd2Vdr2,rnorm);
     return g2V;
 }
-
-
-
-
-
-
-
 
 // ========================================================================  
 // FixedAzizPotential Class
@@ -1194,6 +1187,8 @@ class GraphenePotential: public PotentialBase  {
     private:
         double sigma;
         double epsilon;
+        double Lz;
+        double Lzo2;
 
         double a1x;
         double a1y;
@@ -1262,7 +1257,10 @@ class GrapheneLUTPotential: public PotentialBase  {
 
         double A;
 
-        double Lzo2;    // half the system size in the z-direction
+        double Lzo2;            ///< half the system size in the z-direction
+        double Lz;              ///< The size of the system in the z-direction
+        double zWall;           ///< The location of the onset of the "hard" wall 
+        double invWallWidth;    ///< How fast the wall turns on.
         
         double q = 2.0; // number of basis vectors
         
@@ -1318,18 +1316,14 @@ class GrapheneLUT3DPotential: public PotentialBase  {
         double direct_lookup(Array<double,3>,dVec,double,double,double);
 
     private:
-
-        double Lzo2;    // half the system size in the z-direction
+        double Lzo2;      ///< half the system size in the z-direction
+        double zWall;     ///< The location of the onset of the "hard" wall 
+        double invWallWidth; ///< How fast the wall turns on.
         
         /* spacing of the lookup tables */
         double dx;
         double dy;
         double dz;
-
-        /* resolution of the lookup tables */
-        int xres;
-        int yres;
-        int zres;
 
         /* dimensions of the lookup tables */
         double cell_length_a;
@@ -1435,29 +1429,16 @@ class GrapheneLUT3DPotentialGenerate: public PotentialBase  {
 
         double Lzo2;    // half the system size in the z-direction
         
-        /* spacing of the lookup tables */
-        double dx;
-        double dy;
-        double dz;
-
         /* resolution of the lookup tables */
         int xres;
         int yres;
         int zres;
 
         /* dimensions of the lookup tables */
-        double cell_length_a;
-        double cell_length_b;
-        double zmin;
+        /* double zmin; */
         double zmax;
-        double V_zmin;
+        /* double V_zmin; */
         
-        /* transfer matrix */
-        double A11;
-        double A12;
-        double A21;
-        double A22;
-
         double Vz_64( double, double, double, int );
         double Vz_64( double, double, double );
         double Vz_64( double, double );
@@ -1645,30 +1626,6 @@ class GrapheneLUT3DPotentialToBinary: public PotentialBase  {
         ~GrapheneLUT3DPotentialToBinary();
 
     private:
-        
-        /* spacing of the lookup tables */
-        double dx;
-        double dy;
-        double dz;
-
-        /* resolution of the lookup tables */
-        int xres;
-        int yres;
-        int zres;
-
-        /* dimensions of the lookup tables */
-        double cell_length_a;
-        double cell_length_b;
-        double zmin;
-        double zmax;
-        double V_zmin;
-        
-        /* transfer matrix */
-        double A11;
-        double A12;
-        double A21;
-        double A22;
-
         Array<double,3> V3d; // Potential lookup table
         Array<double,3> gradV3d_x; // gradient of potential x direction lookup table
         Array<double,3> gradV3d_y; // gradient of potential y direction lookup table
@@ -1695,30 +1652,6 @@ class GrapheneLUT3DPotentialToText: public PotentialBase  {
         ~GrapheneLUT3DPotentialToText();
 
     private:
-        
-        /* spacing of the lookup tables */
-        double dx;
-        double dy;
-        double dz;
-
-        /* resolution of the lookup tables */
-        int xres;
-        int yres;
-        int zres;
-
-        /* dimensions of the lookup tables */
-        double cell_length_a;
-        double cell_length_b;
-        double zmin;
-        double zmax;
-        double V_zmin;
-        
-        /* transfer matrix */
-        double A11;
-        double A12;
-        double A21;
-        double A22;
-
         Array<double,3> V3d; // Potential lookup table
         Array<double,3> gradV3d_x; // gradient of potential x direction lookup table
         Array<double,3> gradV3d_y; // gradient of potential y direction lookup table

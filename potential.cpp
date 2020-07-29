@@ -476,7 +476,7 @@ DipolePotential::~DipolePotential() {
  *  The interactions with the fixed particles are assumed to be Aziz.
 ******************************************************************************/
 FixedAzizPotential::FixedAzizPotential(const Container *_boxPtr) :
-    aziz(_boxPtr->side) {
+    aziz(_boxPtr) {
 
     char state;             // Fixed or updateable?
     dVec pos;               // The loaded position
@@ -1460,7 +1460,7 @@ Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr,
  *  Create the Aziz interaction potential.  We use the standard 1979 values.
  *  @see R.A. Aziz et al. J. Chem. Phys. 70, 4330 (1979).
 ******************************************************************************/
-AzizPotential::AzizPotential(const dVec &side) : PotentialBase(), TabulatedPotential()
+AzizPotential::AzizPotential(const Container *_boxPtr) : PotentialBase(), TabulatedPotential()
 {
     /* Define all variables for the Aziz potential */
     /* R.A. Aziz et al. J. Chem. Phys. 70, 4330 (1979) */
@@ -1479,7 +1479,7 @@ AzizPotential::AzizPotential(const dVec &side) : PotentialBase(), TabulatedPoten
     extd2Vdr2 = 0.0;
 
     /* We take the maximum possible separation */
-    double L = max(side);
+    double L = _boxPtr->maxSep;
 
     /* Create the potential lookup tables */
     // initLookupTable(0.00005*rm,L);
@@ -1610,7 +1610,7 @@ double AzizPotential::valued2Vdr2(const double r) {
  *  Create the Szalewicz interaction potential.  We use the standard 1979 values.
  *  @see PAPER REF.
 ******************************************************************************/
-SzalewiczPotential::SzalewiczPotential(const dVec &side) : PotentialBase(), TabulatedPotential()
+SzalewiczPotential::SzalewiczPotential(const Container *_boxPtr) : PotentialBase(), TabulatedPotential()
 {
     /* Define all variables for the Szalewicz potential */
     // FIXME Fix comments
@@ -1621,8 +1621,7 @@ SzalewiczPotential::SzalewiczPotential(const dVec &side) : PotentialBase(), Tabu
     extd2Vdr2 = 0.0;
 
     /* We take the maximum possible separation */
-    double L = max(side); // FIXME this is not true
-
+    double L = _boxPtr->maxSep;
 
     // FIXME Get rid of this stuff or put it somwhere else
     /*
@@ -2470,29 +2469,27 @@ GraphenePotential::GraphenePotential (double _strain, double _poisson, double _a
     sigma = _sigma;
     epsilon = _epsilon;
 
+    Lz = constants()->L();
+    Lzo2 = Lz/2.0;
+
     /* Lattice vectors */
     /* @see: https://wiki.cmt.w3.uvm.edu/index.php?title=Bose_Hubbard_model_treatment_for_Helium_absorbed_on_graphene#strain */
-    a1x = sqrt(3.0)*a0*0.5*(1-strain*poisson);
+    a1x = sqrt(3.0)*a0*0.5*(1.0-strain*poisson);
     a1y = 3.0*a0*0.5*(1+strain);
     a2x = -a1x;
     a2y = a1y;
 
     /* reciprocal lattice vectors */
-    /* g1x = 2*M_PI/(sqrt(3.0)*a0*(1-strain*poisson)); */
-    /* g1y = 2*M_PI/(3.0*a0*(1+strain)); */
-
-
-    /* THESE ARE WRONG */
-    g1x = 8.*M_PI*sqrt(3.)*(4. + (3.*strain) - (strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
-    g1y = 8.*M_PI*(4. + strain - (3.*strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
+    g1x = 2*M_PI/(sqrt(3.0)*a0*(1.0-strain*poisson));
+    g1y = 2*M_PI/(3.0*a0*(1+strain));
     g2x = -g1x;
     g2y = g1y;
 
     /* basis vectors */
-    b1x = a2x;
-    b1y = -0.5 * (1. + strain) * a0;
-    b2x = 0.;
-    b2y = -.5*(1. + strain) * a0-(a1x/sqrt(3.));
+    b1x = sqrt(3.0)*a0*0.5*(1.0-strain*poisson);
+    b1y = 0.5*a0*(1.0 + strain);
+    b2x = 0.0;
+    b2y = a0*(1+strain);
 
     /* area of unit cell */
     A = fabs((a1x*a2y) - (a1y*a2x));
@@ -2516,9 +2513,16 @@ GraphenePotential::~GraphenePotential() {
 ******************************************************************************/
 double GraphenePotential::V(const dVec &r) {
 
+    double z = r[2] + Lzo2;
+
+    /* We take care of the particle being in a forbidden region */
+    if (z < 1.5) 
+        return 40000.;
+    if (z > Lz-0.05)
+        return 40000.;
+
     double x = r[0];
     double y = r[1];
-    double z = r[2]+(constants()->L()/2);
     double g = 0.;
     double gdotb1 = 0.;
     double gdotb2 = 0.;
@@ -2527,14 +2531,10 @@ double GraphenePotential::V(const dVec &r) {
     double prefactor = 0.;
     double v_g = 0.;
     double v = (4.*M_PI/A)*epsilon*sigma*sigma*( ((2./5.)*pow((sigma/z),10)) - pow((sigma/z),4) );
-    if (z < 1.5) {
-        return 10000.;
-    }
-    
-    else {
-        for (double m = -1; m < 1+1; m++) {
-            for (double n = -1; n < 1+1; n++) {
-                if ((m != 0) || (n != 0)){
+
+    for (double m = -1; m < 1+1; m++) {
+        for (double n = -1; n < 1+1; n++) {
+            if ((m != 0) || (n != 0)){
                 g = sqrt(pow((m*g1x + n*g2x),2.) + pow((m*g1y + n*g2y),2.));
                 gdotb1 = ((m*g1x + n*g2x)*(b1x+x)) + ((m*g1y + n*g2y)*(b1y+y));
                 gdotb2 = ((m*g1x + n*g2x)*(b2x+x)) + ((m*g1y + n*g2y)*(b2y+y));
@@ -2544,14 +2544,12 @@ double GraphenePotential::V(const dVec &r) {
 
                 v_g = prefactor*(k5term-k2term);
                 v += (cos(gdotb1)+cos(gdotb2))*v_g;
-                }
             }
         }
-        
-
-        return v;
-
     }
+
+    return v;
+
 }
 /**************************************************************************//**
  * Return an initial particle configuration.
@@ -2656,6 +2654,13 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
 
     /* get a local copy of the system size */
     Lzo2 = 0.5*_boxPtr->side[NDIM-1];
+    Lz   = _boxPtr->side[NDIM-1];
+
+    /* Arbitrary hard-wall cutoff 1 van der Waals radius (1.4 A) from Lz */
+    zWall = _boxPtr->side[NDIM-1]-1.4;
+
+    /* Inverse width of the wall onset, corresponding to 1/10 A here. */
+    invWallWidth = 10.0;
 
     /* Lookup Tables */
     tableLength = int((zmax - zmin)/dr);
@@ -2663,22 +2668,23 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
     /* gradvg.resize(gtot, tableLength); */
 
     /* Lattice vectors */
-    a1x = (sqrt(3.)*a0/8.)*(4.+strain-(3.*strain*poisson));
-    a1y = (3.*a0/8.)*(4.+(3.*strain)-(strain*poisson));
+    /* @see: https://wiki.cmt.w3.uvm.edu/index.php?title=Bose_Hubbard_model_treatment_for_Helium_absorbed_on_graphene#strain */
+    a1x = sqrt(3.0)*a0*0.5*(1-strain*poisson);
+    a1y = 3.0*a0*0.5*(1+strain);
     a2x = -a1x;
     a2y = a1y;
 
     /* reciprocal lattice vectors */
-    g1x = 8.*M_PI*sqrt(3.)*(4. + (3.*strain) - (strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
-    g1y = 8.*M_PI*(4. + strain - (3.*strain*poisson))/(3.*a0*(4. + strain - (3.*strain*poisson))*(4.+(3*strain)-(strain*poisson)));
+    g1x = 2*M_PI/(sqrt(3.0)*a0*(1-strain*poisson));
+    g1y = 2*M_PI/(3.0*a0*(1+strain));
     g2x = -g1x;
     g2y = g1y;
 
     /* basis vectors */
-    b1x = a2x;
-    b1y = -0.5 * (1. + strain) * a0;
-    b2x = 0.;
-    b2y = -.5*(1. + strain) * a0-(a1x/sqrt(3.));
+    b1x = sqrt(3.0)*a0*0.5*(1.0-strain*poisson);
+    b1y = 0.5*a0*(1.0 + strain);
+    b2x = 0.0;
+    b2y = a0*(1.0 + strain);
 
     /* area of unit cell */
     A = fabs((a1x*a2y) - (a1y*a2x));
@@ -2834,10 +2840,13 @@ GrapheneLUTPotential::~GrapheneLUTPotential() {
 double GrapheneLUTPotential::V(const dVec &r) {
     
     double z = r[2]+(Lzo2);
-    int zindex = int((z-zmin)/dr);
     if (z < zmin) 
         return 400000.;
+
+    /* A sigmoid to represent the hard-wall */
+    double VWall = 400000.0/(1.0+exp(-invWallWidth*(z-zWall)));
     
+    int zindex = int((z-zmin)/dr);
     if (zindex >= tableLength)
         return q*(epsilon*sigma*sigma*2.*M_PI/A)*( ((2./5.)*pow((sigma/z),10)) - pow((sigma/z),4) );
 
@@ -2867,7 +2876,7 @@ double GrapheneLUTPotential::V(const dVec &r) {
         ig++;
     }
 
-    return v;
+    return v + VWall;
 }
 
 /**************************************************************************//**
@@ -2986,11 +2995,17 @@ GrapheneLUT3DPotential::GrapheneLUT3DPotential (string graphenelut3d_file_prefix
     /* get a local copy of the system size */
     Lzo2 = _boxPtr->side[NDIM-1]/2;
 
+    /* Arbitrary hard-wall cutoff 1 van der Waals radius (1.4 A) from Lz */
+    zWall = _boxPtr->side[NDIM-1]-1.4;
+
+    /* Inverse width of the wall onset, corresponding to 1/10 A here. */
+    invWallWidth = 10.0;
+
     /* load lookup tables */
     {
         // create and open a character archive for input
         std::ifstream ifs(graphenelut3d_file_prefix + std::string("serialized.dat"));
-        boost::archive::binary_iarchive ia(ifs);
+        boost::archive::binary_iarchive ia(ifs,boost::archive::archive_flags::no_header);
         // write class instance to archive
         ia >> V3d >> gradV3d_x >> gradV3d_y >> gradV3d_z >> grad2V3d >> LUTinfo;
         // archive and stream closed when destructors are called
@@ -3020,6 +3035,7 @@ GrapheneLUT3DPotential::~GrapheneLUT3DPotential() {
     gradV3d_y.free(); // gradient of potential y direction lookup table
     gradV3d_z.free(); // gradient of potential z direction lookup table
     grad2V3d.free(); // Laplacian of potential
+    LUTinfo.free();  // Information about the 3D lookup table 
 }
 
 /**************************************************************************//**
@@ -3030,9 +3046,15 @@ GrapheneLUT3DPotential::~GrapheneLUT3DPotential() {
  *  @return the van der Waals' potential for graphene-helium
 ******************************************************************************/
 double GrapheneLUT3DPotential::V(const dVec &r) {
-    if (r[2] + Lzo2 < zmin){ 
+    double z = r[2]+Lzo2;
+
+    /* Check for extremal values of z */
+    if (z < zmin)
         return V_zmin;
-    }
+
+    /* A sigmoid to represent the hard-wall */
+    double VWall = V_zmin/(1.0+exp(-invWallWidth*(z-zWall)));
+    
     dVec _r = r;
     _r[2] += Lzo2 - zmin;
 
@@ -3041,7 +3063,8 @@ double GrapheneLUT3DPotential::V(const dVec &r) {
     double _V = trilinear_interpolation(V3d, _r, dx, dy, dz);
     //double _V = direct_lookup(V3d, _r, dx, dy, dz);
     //std::cout << _r << " " << _V << std::endl;
-    return _V;
+    
+    return _V + VWall;
 }
 
 /**************************************************************************//**
@@ -3189,22 +3212,25 @@ GrapheneLUT3DPotentialGenerate::GrapheneLUT3DPotentialGenerate (
     //double epsilon_0 = 16.2463;
     
     double strain = _strain;
-    double poisson_ratio = _poisson_ratio;
-    double carbon_carbon_distance = _carbon_carbon_distance;
+    /* double poisson_ratio = _poisson_ratio; */
+    /* double carbon_carbon_distance = _carbon_carbon_distance; */
     double sigma = _sigma;
     double epsilon = _epsilon;
     
+    /* The hard-coded resolution of the lookup table and maximum distance
+     * above the sheet */
     xres = 101;
     yres = 101;
     zmax = 10.0;
     zres = 1001;
 
-    xres = 11;
-    yres = 11;
-    zmax = 10.0;
-    zres = 101;
+    /* xres = 5; */
+    /* yres = 5; */
+    /* zmax = 10.0; */
+    /* zres = 51; */
     
-    auto [ V3d, gradV3d_x, gradV3d_y, gradV3d_z, grad2V3d, xy_x, xy_y, LUTinfo ] = get_V3D_all(strain,sigma,epsilon,xres,yres,zres,zmax);
+    auto [ V3d, gradV3d_x, gradV3d_y, gradV3d_z, grad2V3d, xy_x, xy_y, LUTinfo ] = 
+        get_V3D_all(strain,sigma,epsilon,xres,yres,zres,zmax);
 
     string graphenelut3d_file_prefix = str( format( "graphene_%.2f_%.2f_%d_%d_%d_") %
             strain % zmax % xres % yres % zres );
@@ -3214,16 +3240,11 @@ GrapheneLUT3DPotentialGenerate::GrapheneLUT3DPotentialGenerate (
 
     // save data to archive
     {
-        boost::archive::binary_oarchive oa(ofs);
+        boost::archive::binary_oarchive oa(ofs,boost::archive::archive_flags::no_header);
         // write class instance to archive
-        //oa << A11 << A12 << A21 << A22 << dx << dy << dz << xres << yres << zres <<
-        //    cell_length_a << cell_length_b << zmin << zmax << V_zmin << V3d <<
-        //    gradV3d_x << gradV3d_y << gradV3d_z << grad2V3d;
         oa << V3d << gradV3d_x << gradV3d_y << gradV3d_z << grad2V3d << LUTinfo;
         // archive and stream closed when destructors are called
     }
-
-    std::exit(0);
 }
 
 double GrapheneLUT3DPotentialGenerate::Vz_64(
@@ -4273,7 +4294,7 @@ GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (string graphenel
         // create and open a character archive for input
         std::ifstream ifs_V3d(graphenelut3d_file_prefix + "V3d.txt");
         // save data to archive
-        boost::archive::text_iarchive ia_V3d(ifs_V3d);
+        boost::archive::text_iarchive ia_V3d(ifs_V3d,boost::archive::archive_flags::no_header);
         // write class instance to archive
         ia_V3d >> V3d;
         // archive and stream closed when destructors are called
@@ -4283,7 +4304,7 @@ GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (string graphenel
         // create and open a character archive for input
         std::ifstream ifs_gradV3d_x(graphenelut3d_file_prefix + "gradV3d_x.txt");
         // save data to archive
-        boost::archive::text_iarchive ia_gradV3d_x(ifs_gradV3d_x);
+        boost::archive::text_iarchive ia_gradV3d_x(ifs_gradV3d_x,boost::archive::archive_flags::no_header);
         // write class instance to archive
         ia_gradV3d_x >> gradV3d_x;
         // archive and stream closed when destructors are called
@@ -4293,7 +4314,7 @@ GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (string graphenel
         // create and open a character archive for input
         std::ifstream ifs_gradV3d_y(graphenelut3d_file_prefix + "gradV3d_y.txt");
         // save data to archive
-        boost::archive::text_iarchive ia_gradV3d_y(ifs_gradV3d_y);
+        boost::archive::text_iarchive ia_gradV3d_y(ifs_gradV3d_y,boost::archive::archive_flags::no_header);
         // write class instance to archive
         ia_gradV3d_y >> gradV3d_y;
         // archive and stream closed when destructors are called
@@ -4303,7 +4324,7 @@ GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (string graphenel
         // create and open a character archive for input
         std::ifstream ifs_gradV3d_z(graphenelut3d_file_prefix + "gradV3d_z.txt");
         // save data to archive
-        boost::archive::text_iarchive ia_gradV3d_z(ifs_gradV3d_z);
+        boost::archive::text_iarchive ia_gradV3d_z(ifs_gradV3d_z,boost::archive::archive_flags::no_header);
         // write class instance to archive
         ia_gradV3d_z >> gradV3d_z;
         // archive and stream closed when destructors are called
@@ -4313,7 +4334,7 @@ GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (string graphenel
         // create and open a character archive for input
         std::ifstream ifs_grad2V3d(graphenelut3d_file_prefix + "grad2V3d.txt");
         // save data to archive
-        boost::archive::text_iarchive ia_grad2V3d(ifs_grad2V3d);
+        boost::archive::text_iarchive ia_grad2V3d(ifs_grad2V3d,boost::archive::archive_flags::no_header);
         // write class instance to archive
         ia_grad2V3d >> grad2V3d;
         // archive and stream closed when destructors are called
@@ -4323,7 +4344,7 @@ GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (string graphenel
         // create and open a character archive for input
         std::ifstream ifs_LUTinfo(graphenelut3d_file_prefix + "LUTinfo.txt");
         // save data to archive
-        boost::archive::text_iarchive ia_LUTinfo(ifs_LUTinfo);
+        boost::archive::text_iarchive ia_LUTinfo(ifs_LUTinfo,boost::archive::archive_flags::no_header);
         // write class instance to archive
         ia_LUTinfo >> LUTinfo;
         // archive and stream closed when destructors are called
@@ -4333,7 +4354,7 @@ GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (string graphenel
     std::ofstream ofs(graphenelut3d_file_prefix + "serialized.dat");
     {
     // save data to archive
-        boost::archive::binary_oarchive oa(ofs);
+        boost::archive::binary_oarchive oa(ofs,boost::archive::archive_flags::no_header);
         // write class instance to archive
         oa << V3d << gradV3d_x << gradV3d_y << gradV3d_z << grad2V3d << LUTinfo;
         // archive and stream closed when destructors are called
@@ -4372,7 +4393,7 @@ GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (string graphenelut3d
     {
         // create and open an archive for input
         std::ifstream ifs(graphenelut3d_file_prefix + "serialized.dat");
-        boost::archive::binary_iarchive ia(ifs);
+        boost::archive::binary_iarchive ia(ifs,boost::archive::archive_flags::no_header);
         // read class state from archive
         ia >> V3d >> gradV3d_x >> gradV3d_y >> gradV3d_z >> grad2V3d >> LUTinfo;
         // archive and stream closed when destructors are called
@@ -4382,7 +4403,7 @@ GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (string graphenelut3d
     std::ofstream ofs_V3d(graphenelut3d_file_prefix + "V3d.txt");
     {
         // save data to archive
-        boost::archive::text_oarchive oa_V3d(ofs_V3d);
+        boost::archive::text_oarchive oa_V3d(ofs_V3d,boost::archive::archive_flags::no_header);
         // write class instance to archive
         oa_V3d << V3d;
         // archive and stream closed when destructors are called
@@ -4392,7 +4413,7 @@ GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (string graphenelut3d
     std::ofstream ofs_gradV3d_x(graphenelut3d_file_prefix + "gradV3d_x.txt");
     {
         // save data to archive
-        boost::archive::text_oarchive oa_gradV3d_x(ofs_gradV3d_x);
+        boost::archive::text_oarchive oa_gradV3d_x(ofs_gradV3d_x,boost::archive::archive_flags::no_header);
         // write class instance to archive
         oa_gradV3d_x << gradV3d_x;
         // archive and stream closed when destructors are called
@@ -4402,7 +4423,7 @@ GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (string graphenelut3d
     std::ofstream ofs_gradV3d_y(graphenelut3d_file_prefix + "gradV3d_y.txt");
     {
         // save data to archive
-        boost::archive::text_oarchive oa_gradV3d_y(ofs_gradV3d_y);
+        boost::archive::text_oarchive oa_gradV3d_y(ofs_gradV3d_y,boost::archive::archive_flags::no_header);
         // write class instance to archive
         oa_gradV3d_y << gradV3d_y;
         // archive and stream closed when destructors are called
@@ -4412,7 +4433,7 @@ GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (string graphenelut3d
     std::ofstream ofs_gradV3d_z(graphenelut3d_file_prefix + "gradV3d_z.txt");
     {
         // save data to archive
-        boost::archive::text_oarchive oa_gradV3d_z(ofs_gradV3d_z);
+        boost::archive::text_oarchive oa_gradV3d_z(ofs_gradV3d_z,boost::archive::archive_flags::no_header);
         // write class instance to archive
         oa_gradV3d_z << gradV3d_z;
         // archive and stream closed when destructors are called
@@ -4422,7 +4443,7 @@ GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (string graphenelut3d
     std::ofstream ofs_grad2V3d(graphenelut3d_file_prefix + "grad2V3d.txt");
     {
         // save data to archive
-        boost::archive::text_oarchive oa_grad2V3d(ofs_grad2V3d);
+        boost::archive::text_oarchive oa_grad2V3d(ofs_grad2V3d,boost::archive::archive_flags::no_header);
         // write class instance to archive
         oa_grad2V3d << grad2V3d;
         // archive and stream closed when destructors are called
@@ -4432,7 +4453,7 @@ GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (string graphenelut3d
     std::ofstream ofs_LUTinfo(graphenelut3d_file_prefix + "LUTinfo.txt");
     {
         // save data to archive
-        boost::archive::text_oarchive oa_LUTinfo(ofs_LUTinfo);
+        boost::archive::text_oarchive oa_LUTinfo(ofs_LUTinfo,boost::archive::archive_flags::no_header);
         // write class instance to archive
         oa_LUTinfo << LUTinfo;
         // archive and stream closed when destructors are called
@@ -4440,7 +4461,7 @@ GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (string graphenelut3d
 
     std::cout << "Finished converting binary file " << 
         graphenelut3d_file_prefix + "serialized.dat"  << " to text files " <<
-        graphenelut3d_file_prefix + "<V3d|gradV3d_x|gradV3d_y|gradV3d_z|grad2V3d| LUTinfo>.txt" << ", exiting." <<
+        graphenelut3d_file_prefix + "<V3d|gradV3d_x|gradV3d_y|gradV3d_z|grad2V3d|LUTinfo>.txt" << ", exiting." <<
         std::endl;
 }
 

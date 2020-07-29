@@ -34,10 +34,12 @@ class Container {
 
         double volume;                      ///< The volume of the container in A^3
         double rcut2;                       ///< The smallest separation squared
+        double maxSep;                      ///< The maximum possible separation for 2 beads on the same timeslice
 
         string name;                        ///< The name of the container
 
         int numGrid;                        ///< The number of grid boxes for the position grid
+        bool fullyPeriodic;                 ///< Is the prism fully periodic?
 
         dVec gridSize;                      ///< The grid size in each dimension
 
@@ -104,12 +106,25 @@ class Container {
 class Prism: public Container {
     public:
         Prism(const double, const int);
-        Prism(const dVec &);
+        Prism(const dVec &, const iVec &_periodic=1);
         ~Prism();
 
         /** For PBC, this is identical to putInBC */
         void putInside(dVec &r) const {
             putInBC(r);
+
+            /* This is slow!  Try function pointers? Or create a separate hard
+             * top box? */
+            /* if (!fullyPeriodic) { */
+            /*     for (int i = 0; i < NDIM; i++) { */
+            /*         if (!periodic[i]) { */
+            /*             if (r[i] >= 0.5*side[i]) */
+            /*                 r[i] = 0.5*side[i] - EPS; */
+            /*             if (r[i] < -0.5*side[i]) */ 
+            /*                 r[i] = -0.5*side[i] + EPS; */
+            /*         } */
+            /*     } */
+            /* } */
         }
 
         dVec randPosition(MTRand &) const;                  
