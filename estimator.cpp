@@ -938,15 +938,9 @@ LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_p
         int _frequency, string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-    /* The spatial discretization is fixed at 0.05 Å */
-    dl = 0.01;
-
     /* Make sure we have a bin centered at 0.0 */
-    numGrid = int(path.boxPtr->side[NDIM-1]/dl);
-    if (numGrid % 2 == 0) {
-        numGrid += 1;
-        dl = path.boxPtr->side[NDIM-1] / numGrid;
-    }
+    numGrid = 2*NGRIDSEP-1;
+    dz = path.boxPtr->side[NDIM-1] / numGrid;
 
     /* This is a diagonal estimator that gets its own file */
     initialize(numGrid);
@@ -955,16 +949,16 @@ LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_p
     side = path.boxPtr->side;
 
     /* The header contains information about the grid  */
-    header = str(format("# ESTINF: dz = %12.6E NGRIDSEP = %d\n") % dl % numGrid);
+    header = str(format("# ESTINF: dz = %12.6E NGRIDSEP = %d\n") % dz % numGrid);
     header += str(format("#%15.6E") % (-0.5*side[NDIM-1]));
     for (int n = 1; n < numGrid; n++) 
-        header.append(str(format("%16.6E") % (n*dl - 0.5*side[NDIM-1])));
+        header.append(str(format("%16.6E") % (n*dz - 0.5*side[NDIM-1])));
 
     double A = 1.0;
     for (int i = 0; i < NDIM-1; i++)
         A *= side[i];
 
-    norm = 1.0/(1.0*path.numTimeSlices*A*dl);
+    norm = 1.0/(1.0*path.numTimeSlices*A*dz);
 }
 
 /*************************************************************************//**
@@ -990,7 +984,7 @@ void LinearParticlePositionEstimator::accumulate() {
             pos = path(beadIndex);
 
             /* Get the z-index */
-            index = static_cast<int>(abs(pos[NDIM-1] + 0.5*side[NDIM-1] - EPS ) / (dl + EPS));
+            index = static_cast<int>(abs(pos[NDIM-1] + 0.5*side[NDIM-1] - EPS ) / (dz + EPS));
 
             /* update our particle position histogram */
             if (index < numGrid)

@@ -288,7 +288,7 @@ class LinearParticlePositionEstimator: public EstimatorBase {
 
     private:
         int numGrid;                // The number of grid points
-        double dl;                  // The size of each spatial bin
+        double dz;                  // The size of each spatial bin in the z-direction
         void accumulate();          // Accumulate values
         dVec side;                  // Local copy of container geometry
 };
