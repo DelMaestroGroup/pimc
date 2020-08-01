@@ -148,9 +148,9 @@ LDEBUG = -lblitz
 BOOSTVER = 
 
 ifeq ($(opts), basic)
-OPTS = -std=c++14 -Wall -O3 -mtune=native -Wno-deprecated-declarations
+OPTS = -std=c++17 -Wall -O3 -mtune=native -Wno-deprecated-declarations
 else ifeq ($(opts), strict)
-OPTS = -std=c++14 -Wall -Wextra -g -pedantic
+OPTS = -std=c++17 -Wall -Wextra -g -pedantic
 endif #basic, elseif strict
 
 CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
