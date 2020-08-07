@@ -187,6 +187,18 @@ void TabulatedPotential::initLookupTable(const double _dr, const double maxSep) 
         r += dr;
     }
 
+    /* r = 0.0; */
+    /* for (int n = 0; n < tableLength; n++) { */
+    /*     communicate()->file("debug")->stream() << format("%24.16e %24.16e\n") */
+    /*         % r % lookupV(n); */
+    /*     r += dr; */
+    /* }; */
+
+    /* exit(-1); */
+        
+
+//      cout << format("%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E\n") % r % lookupV(n) % valueV(r) % 
+
 //  double rc = constants()->rc();
 //  for (int n = 0; n < tableLength; n++) {
 //      r += dr;
@@ -1465,12 +1477,12 @@ AzizPotential::AzizPotential(const Container *_boxPtr) : PotentialBase(), Tabula
     /* Define all variables for the Aziz potential */
     /* R.A. Aziz et al. J. Chem. Phys. 70, 4330 (1979) */
     rm      = 2.9673;   // A
-    A       = 0.5449E6; 
+    A       = 0.5448504E6; 
     epsilon = 10.8;     // K
-    alpha   = 13.353; 
-    D       = 1.2413; 
-    C6      = 1.3732;
-    C8      = 0.42538;
+    alpha   = 13.353384; 
+    D       = 1.241314; 
+    C6      = 1.3732412;
+    C8      = 0.4253785;
     C10     = 0.1781;
 
     /* The extremal values are all zero here */
@@ -2999,7 +3011,7 @@ GrapheneLUT3DPotential::GrapheneLUT3DPotential (string graphenelut3d_file_prefix
     zWall = _boxPtr->side[NDIM-1]-1.4;
 
     /* Inverse width of the wall onset, corresponding to 1/10 A here. */
-    invWallWidth = 10.0;
+    invWallWidth = 20.0;
 
     /* load lookup tables */
     {

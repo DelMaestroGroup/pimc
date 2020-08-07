@@ -369,10 +369,10 @@ EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
 
     /* Set estimator name and header, we will always report the energy
      * first, hence the comment symbol*/
-    header = str(format("#%15s%16s%16s%16s%16s%16s%16s") 
-            % "K" % "V" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
+    header = str(format("#%15s%16s%16s%16s%16s%16s%16s%16s%16s") 
+            % "K" % "V" % "V_ext" % "V_int" % "E" % "E_mu" % "K/N" % "V/N" % "E/N");
     endLine = false;
-    initialize(7);
+    initialize(9);
 }
 
 /*************************************************************************//**
@@ -391,7 +391,7 @@ EnergyEstimator::~EnergyEstimator() {
 void EnergyEstimator::accumulate() {
 
     double totK = 0.0;
-    double totVop = 0.0;
+    TinyVector<double,2> totVop(0.0);
     double totV = 0.0;
 
     int numParticles  = path.getTrueNumParticles();
@@ -448,22 +448,25 @@ void EnergyEstimator::accumulate() {
     totK += (classicalKinetic + t1);
     totV = t2 - t1 + tailV;
 
-    totVop += tailV;
+    /* add the tail correction */
+    totVop[1] += tailV;
 
-    totV = totVop;
+    totV = sum(totVop);
 
     /* Now we accumulate the average total, kinetic and potential energy, 
      * as well as their values per particles. */
     estimator(0) += totK;
     estimator(1) += totV;
-    estimator(2) += totK + totV;
+    estimator(2) += totVop[0];
+    estimator(3) += totVop[1];
 
-    estimator(3) += totK + totV - constants()->mu()*numParticles;
+    estimator(4) += totK + totV;
+    estimator(5) += totK + totV - constants()->mu()*numParticles;
 
     if (numParticles > 0) {
-        estimator(4) += totK/(1.0*numParticles);
-        estimator(5) += totV/(1.0*numParticles);
-        estimator(6) += (totK + totV)/(1.0*numParticles);
+        estimator(6) += totK/(1.0*numParticles);
+        estimator(7) += totV/(1.0*numParticles);
+        estimator(8) += (totK + totV)/(1.0*numParticles);
     }
 }
 
@@ -594,7 +597,7 @@ void VirialEnergyEstimator::accumulate() {
         T5 += actionPtr->derivPotentialActionTau(slice);
         virKinTerm += actionPtr->virKinCorr(slice);
         if (eo==0) 
-            totVop  += actionPtr->potential(slice);
+            totVop  += sum(actionPtr->potential(slice));
 
         P3 += actionPtr->rDOTgradUterm1(slice)
             + actionPtr->rDOTgradUterm2(slice);
@@ -3772,7 +3775,7 @@ void PotentialEnergyEstimator::accumulate() {
     
     /* We use a simple operator estimator for V. */
     for (int slice = 0; slice <= path.numTimeSlices; slice+=2)
-        estimator(slice/2) += actionPtr->potential(slice) + tailV;
+        estimator(slice/2) += sum(actionPtr->potential(slice)) + tailV;
 }
 
 // ---------------------------------------------------------------------------
@@ -3956,7 +3959,7 @@ void PigsEnergyEstimator::accumulate() {
             t2 += actionPtr->derivPotentialActionTau(slice);
         }
     }
-    totVop  += actionPtr->potential(midSlice);
+    totVop  += sum(actionPtr->potential(midSlice));
 
     t1 *= constants()->lambda()/(constants()->tau()*(2.0*actionPeriod));
     t2 /= (2.0*actionPeriod);

@@ -292,7 +292,7 @@ double LocalAction::potentialAction () {
     /* Combine the potential and a possible correction */
     for (int slice = 0; slice < path.numTimeSlices; slice++) {
         eo = (slice % 2);
-        totU += VFactor[eo]*tau()*V(slice);
+        totU += VFactor[eo]*tau()*sum(V(slice));
         
         /* We only add the correction if it is finite */
          if ( gradVFactor[eo] > EPS ) 
@@ -424,7 +424,7 @@ double LocalAction::derivPotentialActionTau (int slice) {
     eo = (slice % 2);
 
     /* We first compute the base potential action piece */
-    dU = VFactor[eo]*V(slice);
+    dU = VFactor[eo]*sum(V(slice));
  
     /* As long as there is a finite correction, we include it */
     if ( gradVFactor[eo] > EPS )
@@ -563,14 +563,13 @@ double LocalAction::V(const beadLocator &bead1) {
 }
 
 /*************************************************************************//**
- *  Returns the total value of the potential energy, including both the
- *  external potential, and that due to interactions for all particles in
+ *  Returns the external and interaction potential energy, for all particles on
  *  a single time slice.  
  *
  *  This is really only used for either debugging or during the calculation 
  *  of the potential energy. As such, we update the separation histogram here.
 ******************************************************************************/
-double LocalAction::V(const int slice) {
+TinyVector<double,2> LocalAction::V(const int slice) {
 
     double totVint = 0.0;
     double totVext = 0.0;
@@ -602,7 +601,9 @@ double LocalAction::V(const int slice) {
             } // bead2
 
     } // bead1
-    return ( totVext + totVint );
+
+    /* Separate the external and interaction parts */ 
+    return TinyVector<double,2>(totVext,totVint);
 }
 
 /*************************************************************************//**
@@ -1513,7 +1514,7 @@ double NonLocalAction::potentialAction () {
 
     double totU = 0.0;
     for (int slice = 0; slice < path.numTimeSlices; slice++) 
-        totU += U(slice);
+        totU += sum(U(slice));
 
     return ( totU );
 }
@@ -1614,9 +1615,10 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
  *  Computes the total potential energy by summing over all particles and time
  *  slices.  
 ******************************************************************************/
-double NonLocalAction::U(int slice) {
+TinyVector<double,2> NonLocalAction::U(int slice) {
 
-    double totU = 0.0;
+    double totUint = 0.0;
+    double totUext = 0.0;
 
     beadLocator bead1;
     bead1[0] = bead2[0] = slice;
@@ -1642,11 +1644,11 @@ double NonLocalAction::U(int slice) {
             nextBead2 = path.next(bead2);
 
             sep2 = path.getSeparation(nextBead1,nextBead2);
-            totU += interactionPtr->V(sep,sep2);
+            totUint += interactionPtr->V(sep,sep2);
         } // bead2
 
     } // bead1
-    return ( totU );
+    return TinyVector<double,2>(totUext,totUint);
 }
 
 /**************************************************************************//**

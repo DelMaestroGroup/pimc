@@ -82,7 +82,7 @@ class ActionBase {
         virtual double virKinCorr(int) { return 0.0; }
 
         /* The bare local potential at a single time slice */
-        virtual double potential(int) { return 0.0; }
+        virtual TinyVector<double,2> potential(int) { return TinyVector<double,2>(0.0); }
         virtual double potential(int,double) { return 0.0; }
 
         /** The public method that sets the tau scaling factor. */
@@ -184,7 +184,7 @@ class LocalAction : public ActionBase {
         virtual double virKinCorr(int slice) { return virialKinCorrection(slice); }
 
         /* The bare local potential at a single time slice */
-        virtual double potential(int slice) { return V(slice); }
+        virtual TinyVector<double,2> potential(int slice) { return V(slice); }
         virtual double potential(int slice, double maxR) { return V(slice,maxR); }
 
     protected:
@@ -196,8 +196,11 @@ class LocalAction : public ActionBase {
         /* The full potential for a single bead and all beads at a single
          * time slice. */
         double V(const beadLocator&);   
-        double V(const int);
         double V(const int, const double);
+
+        /* For the potential at a given time slice we separate the interaction
+         * and potential parts */
+        TinyVector <double,2> V(const int);
 
         /* The gradient of the potential squared for a single bead and all beads
          * at a single time slice. */
@@ -264,11 +267,11 @@ class NonLocalAction : public ActionBase {
         double derivPotentialActionTau (int);
         double derivPotentialActionLambda (int);
     
-        /* The bare local potential at a single time slice */
-        virtual double potential(int slice) { return U(slice); }
+        /* The bare local external and interaction potential at a single time slice */
+        virtual TinyVector<double,2> potential(int slice) { return U(slice); }
 
     protected:
-        double U(int);
+        TinyVector<double,2> U(int);
     
     private:
         vector<bool> NNbead; //Records which beads where already visited for NN operation
