@@ -165,6 +165,18 @@ dVec Prism::randUpdate (MTRand &random, const dVec &pos) const {
     for (int i = 0; i < NDIM; i++) 
         randPos[i] += 4.0*constants()->displaceDelta()*(-0.5 + random.rand());
     putInside(randPos);
+
+    /* Make sure we don't move a particle outside the box */
+    if (!fullyPeriodic) {
+        for (int i = 0; i < NDIM; i++) {
+            if (!periodic[i]) {
+                if (randPos[i] >= 0.5*side[i])
+                    randPos[i] = 0.5*side[i] - EPS;
+                if (randPos[i] < -0.5*side[i]) 
+                    randPos[i] = -0.5*side[i] + EPS;
+            }
+        }
+    }
     return randPos;
 }
 

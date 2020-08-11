@@ -1309,6 +1309,7 @@ class GrapheneLUT3DPotential: public PotentialBase  {
         
         /** Initial configuration corresponding to graphene-helium vdW potential */
         Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+        Array<dVec,1> initialConfig1(const Container*, MTRand &, const int); 
 
         void put_in_uc( dVec &, double, double);
         void cartesian_to_uc( dVec &, double, double, double, double);

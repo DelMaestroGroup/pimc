@@ -3135,7 +3135,7 @@ double GrapheneLUT3DPotential::grad2V(const dVec &r) {
  *
  * We create particles at random locations above the graphene sheet.
 ******************************************************************************/
-Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTRand &random,
+Array<dVec,1> GrapheneLUT3DPotential::initialConfig1(const Container *boxPtr, MTRand &random,
         const int numParticles) {
     //FIXME We initialize on grid here above zmin, should I do C_1/3 here. I think not because might
     // be hard to get out of if other configurations are more favorable
@@ -3144,7 +3144,7 @@ Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTR
     Array<dVec,1> initialPos(numParticles);
     initialPos = 0.0;
 
-    /* Get the linear size per particle, and the number of particles */
+    /* Get the average inter-particle separation in the accessible volume. */
     double initSide = pow((1.0*numParticles/boxPtr->volume),-1.0/(1.0*NDIM));
 
     /* We determine the number of initial grid boxes there are in 
@@ -3162,8 +3162,10 @@ Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTR
 
         /* Compute the actual size of the grid */
         sizeNNGrid[i] = boxPtr->side[i] / (1.0 * numNNGrid[i]);
+
+        /* Modify due to the graphene and hard wall */
         if (i == NDIM - 1) {
-            sizeNNGrid[i] = (boxPtr->side[i] - zmin) / (1.0 * numNNGrid[i]);
+            sizeNNGrid[i] = (zWall - zmin) / (1.0 * numNNGrid[i]);
         }
 
         /* Determine the total number of grid boxes */
@@ -3183,11 +3185,10 @@ Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTR
             gridIndex[i] = (n/scale) % numNNGrid[i];
         }
 
-        for (int i = 0; i < NDIM; i++) { 
+        /* We treat the z-direction differently due to the graphene and wall */
+        for (int i = 0; i < NDIM; i++) 
             pos[i] = (gridIndex[i]+0.5)*sizeNNGrid[i] - 0.5*boxPtr->side[i];
-        }
         pos[NDIM-1] += zmin;
-
 
         boxPtr->putInside(pos);
 
@@ -3196,6 +3197,92 @@ Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTR
         else 
             break;
     }
+
+    /* Output for plotting in python */
+    /* cout << "np.array(["; */
+    /* for (int n = 0; n < numParticles; n++)  { */
+    /*     cout << "["; */
+    /*     for (int i = 0; i < NDIM-1; i++) */
+    /*         cout << initialPos(n)[i] << ", "; */
+    /*     cout << initialPos(n)[NDIM-1] << "]," << endl; */
+    /* } */
+    /* cout << "])" << endl; */
+    /* exit(-1); */
+
+    return initialPos;
+}
+
+/**************************************************************************//**
+ * Return an initial particle configuration.
+ *
+ * We create particles at random locations above the graphene sheet.
+******************************************************************************/
+Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTRand &random,
+        const int numParticles) {
+    
+    /* The particle configuration */
+    Array<dVec,1> initialPos(numParticles);
+    initialPos = 0.0;
+
+    dVec side_; 
+    side_ = boxPtr->side;
+
+    /* The first particle is randomly placed inside the box */
+    for (int i = 0; i < NDIM-1; i++)
+        initialPos(0)[i] = side_[i]*(-0.5 + random.rand());
+    initialPos(0)[NDIM-1] = -0.5*side_[NDIM-1]+zmin + (zWall-zmin)*random.rand();
+
+    double hardCoreRadius = 1.00;
+
+    /* We keep trying to insert particles with no overlap */
+    int numInserted = 1;
+    int numAttempts = 0;
+    int maxNumAttempts = ipow(10,6);
+    dVec trialPos,sep;
+    double rsep;
+    while ((numInserted < numParticles) && (numAttempts < maxNumAttempts)) {
+        numAttempts += 1;
+
+        /* Generate a random position inside the box */
+        for (int i = 0; i < NDIM-1; i++)
+            trialPos[i] = side_[i]*(-0.5 + random.rand());
+        trialPos[NDIM-1] = -0.5*side_[NDIM-1]+zmin + (zWall-zmin)*random.rand();
+
+        /* Make sure it doesn't overlap with any existing particles. If not,
+         * add it, otherwise, break */
+        bool acceptParticle = true;
+        for (int n = 0; n < numInserted; n++) {
+            sep = trialPos - initialPos(n);
+            boxPtr->putInBC(sep);
+            rsep = sqrt(dot(sep,sep));
+            if (rsep < 2*hardCoreRadius) {
+                acceptParticle = false;
+                break;
+            }
+        }
+
+        if (acceptParticle) {
+            initialPos(numInserted) = trialPos;
+            numInserted += 1;
+        }
+
+    }
+
+    if (numAttempts == maxNumAttempts) {
+        cerr << "Could not construct a valid initial configuration." << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    /* Output configuration to terminal suitable for plotting with python */
+    /* cout << "np.array(["; */
+    /* for (int n = 0; n < numParticles; n++)  { */
+    /*     cout << "["; */
+    /*     for (int i = 0; i < NDIM-1; i++) */
+    /*         cout << initialPos(n)[i] << ", "; */
+    /*     cout << initialPos(n)[NDIM-1] << "]," << endl; */
+    /* } */
+    /* cout << "])" << endl; */
+    /* exit(EXIT_FAILURE); */
 
     return initialPos;
 }
