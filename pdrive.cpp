@@ -178,7 +178,7 @@ int main (int argc, char *argv[]) {
     if (!constants()->restart()) {
 
         /* Equilibrate */
-        cout << format("[PIMCID: %s] - Equilibration Stage.") % constants()->id() << endl;
+        cout << format("[PIMCID: %s] - Pre-Equilibration Stage.") % constants()->id() << endl;
         for (uint32 n = 0; n < constants()->numEqSteps(); n++) 
             pimc.equilStep(n,setup.params("relax"),setup.params("relaxmu"));
 
@@ -197,7 +197,7 @@ int main (int argc, char *argv[]) {
         pimc.step();
         if (pimc.numStoredBins > oldNumStored) {
             oldNumStored = pimc.numStoredBins;
-            cout << format("[PIMCID: %s] - Bin #%4d stored to disk.") % constants()->id() 
+            cout << format("[PIMCID: %s] - Bin #%5d stored to disk.") % constants()->id() 
                 % oldNumStored << endl;
         }
         n++;

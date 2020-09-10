@@ -124,6 +124,7 @@ class ConstantParameters
 
         /* Increment/decrement methods */
         void shiftC0(double frac) {C0_ += frac*C0_; getC();}                ///< Shift the value of C0
+        void setC0(double _C0) {C0_ = _C0; getC();}                         ///< Set the value of C0
         void getC() {C_ = C0_ / (1.0*Mbar_*numTimeSlices_*V_);}             ///< Get the value of the worm constant 
         void shiftCoMDelta(double frac) {comDelta_ += frac*comDelta_; }     ///< Shift the CoM move size
         void shiftDisplaceDelta(double frac) {displaceDelta_ += frac*displaceDelta_; }      ///< Shift the displace move size

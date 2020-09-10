@@ -40,11 +40,14 @@ class PathIntegralMonteCarlo {
                                 boost::ptr_vector<estimator_vector> &, const bool, uint32 binSize=100);
         ~PathIntegralMonteCarlo ();
 
-        /* The equilibration relaxation */
-        void equilStep(const uint32, const bool, const bool);
 
-        /* The equilibration relaxation with off diagonal updates */
-        void equilStepOffDiagonal(const uint32, const bool);
+        /* The equilibration relaxation */
+        void equilStepDiagonal();
+
+        bool  equilStepRelaxmu();
+        bool  equilStepRelaxC0();
+
+        void equilStep(const uint32, const bool, const bool);
 
         /* The actual monte carlo step */
         void step();
@@ -68,9 +71,10 @@ class PathIntegralMonteCarlo {
         int numDisplaceAccepted;    ///< Number of equil Displace moves accepted
         int numMuAttempted;         ///< Number of moves between mu adjustments
         int numNAttempted;          ///< The number of particle measurements
-        int cN;                     ///< The current total number of particles
+        int numStepsAttempted;      ///< Number of steps for relaxing C0
 
         void printWormState();
+        string printHistogram();
 
     private:
         MTRand &random;             // The global random number generator
@@ -81,6 +85,32 @@ class PathIntegralMonteCarlo {
         int numUpdates;             // The maximum number of updates per step.
         uint32 binSize;                // The maximum number measurements per bin.
         int numParticles;           // The number of particles
+
+        int N0;                     ///< The initial/target number of particles
+        bool foundmu;               ///< Have we found the optimal μ?
+        bool foundC0;               ///< Have we found the optimal C0?
+        double muFactor;            ///< Used for scaling muShift stepsize
+        double bestmu;              ///< The previously best value of mu.
+        int  bestPN;                ///< The previously best value of PN.
+        double bestDiffAveN;        ///< The currently best value of aveN;
+        bool inWindow;              ///< Is the number of particles in the window?
+
+        int sgnAveN;                ///< What is the relative sign betwen aveN and N0?
+
+        Array<int,1> PN;            ///< Number probability distribution (used in relaxmu)
+        bool relaxmuMessage;        ///< For printing a message when μ relaxation begins
+        bool relaxC0Message;        ///< For printing a message when μ relaxation begins
+        bool equilMessage;          ///< For printing a message when equilibration begins
+        bool equilODMessage;        ///< For printing a message when OD equilibration begins
+        vector <double> C0Vals;     ///< Record of previously attempted values of C0
+        vector <double> diagFracVals;   ///< Record fo diagonal fraction (for linear regression).
+
+        double targetDiagFrac;      ///< The target diagonal fraction we are trying to obtain.
+        int sgnDiagFrac;            ///< What is the relative sign for C0 relaxation
+        double shiftC0;             ///< How much are we shifting C0?
+        int barStepSize;            ///< Used for printing a status bar.
+        int numRemainingSteps;      ///< The number of remaining steps in the equilibration stage.
+        int numBars;                ///< Used for printing out progress bar
 
         uint32 Npaths;                 // Number of paths
     
@@ -107,6 +137,9 @@ class PathIntegralMonteCarlo {
 
         /* Output estimators to disk */
         void output();
+
+        /* perform an iterative linear regrssion for C0 calculation */
+        double linearRegressionC0();
 
         /* Load the PIMC state from disk */
         void loadState();
