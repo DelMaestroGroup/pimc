@@ -1455,6 +1455,7 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
 
     /* Construct the command that would be required to restart the simulation */
     bool outputC0 = false;
+    bool outputmu = false;
     bool outputD = false;
     bool outputd = false;
     bool outputEstimator = false;
@@ -1470,6 +1471,10 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
         else if ( (arg == "-C") || (arg == "worm_constant") ) {
             communicate()->file("log")->stream() << format("-C %21.15e ") % constants()->C0();
             outputC0 = true;
+        }
+        else if ( (arg == "-u") || (arg == "chemical_potential") ) {
+            communicate()->file("log")->stream() << format("-u %21.15e ") % constants()->mu();
+            outputmu = true;
         }
         else if ((arg == "-p") || (arg == "--process")) {
             communicate()->file("log")->stream() << format("-p %03d ") % params["process"].as<uint32>();
@@ -1498,6 +1503,10 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
     /* If we haven't specified the worm constant, output it now */
     if (!outputC0)
         communicate()->file("log")->stream() << format("-C %21.15e ") % constants()->C0();
+
+    /* If we haven't specified the chemical potential , output it now */
+    if (!outputmu)
+        communicate()->file("log")->stream() << format("-u %21.15e ") % constants()->mu();
 
     /* If we haven't specified the center of mass Delta, output it now */
     if (!outputD)
