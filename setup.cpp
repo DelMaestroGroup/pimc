@@ -274,7 +274,7 @@ Setup::Setup() :
 
     /* Define the allowed external  potential names */
     externalPotentialName = {"free", "harmonic", "osc_tube", "lj_tube", "plated_lj_tube",
-        "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "graphene", "fixed_lj", "graphene", "graphenelut",
+        "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "fixed_lj", "graphene", "graphenelut",
          "graphenelut3d", "graphenelut3dgenerate", "graphenelut3dtobinary", "graphenelut3dtotext"};
     externalNames = getList(externalPotentialName);
 

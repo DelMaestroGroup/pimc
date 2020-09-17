@@ -171,9 +171,9 @@ dVec Prism::randUpdate (MTRand &random, const dVec &pos) const {
         for (int i = 0; i < NDIM; i++) {
             if (!periodic[i]) {
                 if (randPos[i] >= 0.5*side[i])
-                    randPos[i] = 0.5*side[i] - EPS;
+                    randPos[i] = 0.5*side[i] - 2*EPS;
                 if (randPos[i] < -0.5*side[i]) 
-                    randPos[i] = -0.5*side[i] + EPS;
+                    randPos[i] = -0.5*side[i] + 2*EPS;
             }
         }
     }

@@ -2663,6 +2663,7 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
     double a0 = _a0;
     sigma = _sigma;
     epsilon = _epsilon;
+    V_zmin = 152153.0;
 
     /* get a local copy of the system size */
     Lzo2 = 0.5*_boxPtr->side[NDIM-1];
@@ -2672,7 +2673,7 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
     zWall = _boxPtr->side[NDIM-1]-1.4;
 
     /* Inverse width of the wall onset, corresponding to 1/10 A here. */
-    invWallWidth = 10.0;
+    invWallWidth = 20.0;
 
     /* Lookup Tables */
     tableLength = int((zmax - zmin)/dr);
@@ -2853,10 +2854,10 @@ double GrapheneLUTPotential::V(const dVec &r) {
     
     double z = r[2]+(Lzo2);
     if (z < zmin) 
-        return 400000.;
+        return V_zmin;
 
     /* A sigmoid to represent the hard-wall */
-    double VWall = 400000.0/(1.0+exp(-invWallWidth*(z-zWall)));
+    double VWall = V_zmin/(1.0+exp(-invWallWidth*(z-zWall)));
     
     int zindex = int((z-zmin)/dr);
     if (zindex >= tableLength)

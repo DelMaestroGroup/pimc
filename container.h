@@ -115,16 +115,16 @@ class Prism: public Container {
 
             /* This is slow!  Try function pointers? Or create a separate hard
              * top box? */
-            /* if (!fullyPeriodic) { */
-            /*     for (int i = 0; i < NDIM; i++) { */
-            /*         if (!periodic[i]) { */
-            /*             if (r[i] >= 0.5*side[i]) */
-            /*                 r[i] = 0.5*side[i] - EPS; */
-            /*             if (r[i] < -0.5*side[i]) */ 
-            /*                 r[i] = -0.5*side[i] + EPS; */
-            /*         } */
-            /*     } */
-            /* } */
+            if (!fullyPeriodic) {
+                for (int i = 0; i < NDIM; i++) {
+                    if (!periodic[i]) {
+                        if (r[i] >= 0.5*side[i])
+                            r[i] = 0.5*side[i] - 2*EPS;
+                        if (r[i] < -0.5*side[i]) 
+                            r[i] = -0.5*side[i] + 2*EPS;
+                    }
+                }
+            }
         }
 
         dVec randPosition(MTRand &) const;                  

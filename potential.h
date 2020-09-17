@@ -1261,6 +1261,7 @@ class GrapheneLUTPotential: public PotentialBase  {
         double Lz;              ///< The size of the system in the z-direction
         double zWall;           ///< The location of the onset of the "hard" wall 
         double invWallWidth;    ///< How fast the wall turns on.
+        double V_zmin;          ///< A large potential value used for the cutoff
         
         double q = 2.0; // number of basis vectors
         
