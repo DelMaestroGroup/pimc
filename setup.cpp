@@ -1689,10 +1689,10 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
     communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Initial Worm Constant" % 
         params["worm_constant"].as<double>();
     communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Worm Constant" % constants()->C0();
-    communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Inital CoM Delta" % params["com_delta"].as<double>();
+    communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Initial CoM Delta" % params["com_delta"].as<double>();
     communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "CoM Delta" % constants()->comDelta();
     if (PIGS) {
-        communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Inital Displace Delta" % params["displace_delta"].as<double>();
+        communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Initial Displace Delta" % params["displace_delta"].as<double>();
         communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Displace Delta" % constants()->displaceDelta();
     }
     communicate()->file("log")->stream() << 
