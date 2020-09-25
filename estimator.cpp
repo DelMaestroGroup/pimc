@@ -119,6 +119,16 @@ EstimatorBase::EstimatorBase(const Path &_path, ActionBase *_actionPtr,
     /* Two handy local constants */
     canonical = constants()->canonical();
     numBeads0 = constants()->initialNumParticles()*constants()->numTimeSlices();
+
+    /*  The slices over which we average quantities PIGS vs. PIMC */
+
+#if PIGS
+    startSlice = (path.numTimeSlices-1)/2;
+    endSlice = startSlice + 1;
+#else
+    startSlice = 0;
+    endSlice = path.numTimeSlices;
+#endif
 }
 
 /**************************************************************************//**
@@ -797,7 +807,7 @@ ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path,
 
     /* The normalization: 1/(dV*M) */
     for (int n = 0; n < numEst; n++)
-        norm(n) = 1.0/(1.0*path.numTimeSlices*path.boxPtr->gridBoxVolume(n));
+        norm(n) = 1.0/(1.0*(endSlice-startSlice)*path.boxPtr->gridBoxVolume(n));
 }
 
 /*************************************************************************//**
@@ -807,27 +817,6 @@ ParticlePositionEstimator::~ParticlePositionEstimator() {
 }
 
 /*************************************************************************//**
- *  Overload the output of the base class so that a running average
- *  is kept rather than keeping all data.
-******************************************************************************/
-/* void ParticlePositionEstimator::output() { */
-
-/*     /1* Prepare the position file for writing over old data *1/ */
-/*     communicate()->file(label)->reset(); */
-
-/*     (*outFilePtr) << header; */
-/*     if (endLine) */
-/*         (*outFilePtr) << endl; */
-
-/*     /1* Now write the running average of the estimator to disk *1/ */
-/*     for (int n = 0; n < numEst; n++) */ 
-/*         (*outFilePtr) << format("%16.8E\n") % */ 
-/*             (norm(n)*estimator(n)/totNumAccumulated); */
-
-/*     communicate()->file(label)->rename(); */
-/* } */
-
-/*************************************************************************//**
  *  Accumulate a histogram of all particle positions, with output 
  *  being the running average of the density per grid space.
 ******************************************************************************/
@@ -835,7 +824,7 @@ void ParticlePositionEstimator::accumulate() {
 
     beadLocator beadIndex;
 
-    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+    for (int slice = startSlice; slice < endSlice; slice++) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
             beadIndex = slice,ptcl;
 
@@ -961,7 +950,7 @@ LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_p
     for (int i = 0; i < NDIM-1; i++)
         A *= side[i];
 
-    norm = 1.0/(1.0*path.numTimeSlices*A*dz);
+    norm = 1.0/(1.0*(endSlice-startSlice)*A*dz);
 }
 
 /*************************************************************************//**
@@ -981,7 +970,7 @@ void LinearParticlePositionEstimator::accumulate() {
     dVec pos;
     int index;
 
-    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+    for (int slice = startSlice; slice < endSlice; slice++) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
             beadIndex = slice,ptcl;
             pos = path(beadIndex);
@@ -1040,7 +1029,7 @@ PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_pat
     for (int i = 0; i < NDIM-1; i++)
         A *= dl[i];
 
-    norm = 1.0/(1.0*path.numTimeSlices*A*path.boxPtr->side[NDIM-1]);
+    norm = 1.0/(1.0*(endSlice-startSlice)*A*path.boxPtr->side[NDIM-1]);
     side = path.boxPtr->side;
 }
 
@@ -1060,7 +1049,7 @@ void PlaneParticlePositionEstimator::accumulate() {
     beadLocator beadIndex;
     dVec pos;
 
-    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+    for (int slice = startSlice; slice < endSlice; slice++) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
             beadIndex = slice,ptcl;
             pos = path(beadIndex);
@@ -1121,7 +1110,7 @@ PlaneParticleAveragePositionEstimator::PlaneParticleAveragePositionEstimator (
     for (int i = 0; i < NDIM-1; i++)
         A *= dl[i];
 
-    norm = 1.0/(1.0*path.numTimeSlices*A*path.boxPtr->side[NDIM-1]);
+    norm = 1.0/(1.0*(endSlice-startSlice)*A*path.boxPtr->side[NDIM-1]);
     side = path.boxPtr->side;
 }
 
@@ -1130,7 +1119,6 @@ PlaneParticleAveragePositionEstimator::PlaneParticleAveragePositionEstimator (
 ******************************************************************************/
 PlaneParticleAveragePositionEstimator::~PlaneParticleAveragePositionEstimator() { 
 }
-
 
 /*************************************************************************//**
  *  Accumulate a histogram of all particle positions, with output 
@@ -1141,7 +1129,7 @@ void PlaneParticleAveragePositionEstimator::accumulate() {
     beadLocator beadIndex;
     dVec pos;
 
-    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+    for (int slice = startSlice; slice < endSlice; slice++) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
             beadIndex = slice,ptcl;
             pos = path(beadIndex);
@@ -1160,27 +1148,6 @@ void PlaneParticleAveragePositionEstimator::accumulate() {
         }
     }
 }
-
-/*************************************************************************//**
- *  Overload the output of the base class so that a running average
- *  is kept rather than keeping all data.
-******************************************************************************/
-/* void PlaneParticleAveragePositionEstimator::output() { */
-
-/*     /1* Prepare the position file for writing over old data *1/ */
-/*     communicate()->file(label)->reset(); */
-
-/*     (*outFilePtr) << header; */
-/*     if (endLine) */
-/*         (*outFilePtr) << endl; */
-
-/*     /1* Now write the running average of the estimator to disk *1/ */
-/*     for (int n = 0; n < numEst; n++) */ 
-/*         (*outFilePtr) << format("%16.8E\n") % */ 
-/*             (norm(n)*estimator(n)/totNumAccumulated); */
-
-/*     communicate()->file(label)->rename(); */
-/* } */
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -4003,9 +3970,9 @@ PigsThermoEnergyEstimator::PigsThermoEnergyEstimator (const Path &_path,
 {
     /* Set estimator name and header, we will always report the energy
      * first, hence the comment symbol*/
-    header = str(format("#%15s%16s%16s") % "K" % "V" % "E");
+    header = str(format("#%15s%16s%16s%16s%16s") % "K" % "V" % "V_ext" % "V_int" % "E");
     endLine = true;
-    initialize(3);
+    initialize(5);
 }
 
 /*************************************************************************//**
@@ -4031,6 +3998,7 @@ void PigsThermoEnergyEstimator::accumulate() {
     
     double totK = 0.0;
     double totV = 0.0;
+    TinyVector<double,2> totVop(0.0);
     
     int numParticles  = path.getTrueNumParticles();
     int numTimeSlices = path.numTimeSlices;
@@ -4060,6 +4028,7 @@ void PigsThermoEnergyEstimator::accumulate() {
             totK -= dot(vel,vel);
         }
     }
+    totVop = actionPtr->potential(midSlice);
     
     /* Normalize the accumulated link-action part */
     totK *= kinNorm;
@@ -4090,13 +4059,15 @@ void PigsThermoEnergyEstimator::accumulate() {
     /* Perform all the normalizations and compute the individual energy terms */
     totK += (classicalKinetic + t1);
     totV = t2 - t1 + tailV;
+    totVop[1] += tailV;
     
     /* Now we accumulate the average total, kinetic and potential energy, 
      * as well as their values per particles. */
     estimator(0) += totK;
     estimator(1) += totV;
-    estimator(2) += totK + totV;
-    
+    estimator(2) += totVop[0];
+    estimator(3) += totVop[1];
+    estimator(4) += totK + totV;
 }
 
 // ---------------------------------------------------------------------------

@@ -90,6 +90,8 @@ class EstimatorBase {
 
         int numEst;                     ///< The number of individual quantities measured
         int frequency;                  ///< The frequency at which we accumulate
+        int startSlice;                 ///< Where imaginary time averages begin
+        int endSlice;                   ///< Where imaginary time averages end
         string label;                   ///< The label used for the output file
 
         uint32 numSampled;              ///< The number of times we have sampled

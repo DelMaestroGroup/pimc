@@ -413,10 +413,11 @@ void Setup::initParameters() {
     params.add<int>("number_broken", "number of broken world-lines",oClass,0);
     params.add<double>("spatial_subregion", "define a spatial subregion",oClass);
 
-    /* The updates and measurement defaults depend on PIGS vs PIMC */
+    /* The updates, measurement defaults, and ensemble can depend on PIGS vs PIMC */
     vector<string> estimatorsToMeasure;
     vector<string> movesToPerform;
     if (PIGS) {
+        params.set<bool>("canonical",true);
         estimatorsToMeasure = {PigsEnergyEstimator::name, TimeEstimator::name};
         movesToPerform = {CenterOfMassMove::name, StagingMove::name, EndStagingMove::name,
             DisplaceMove::name};         
@@ -695,29 +696,29 @@ bool Setup::parseOptions() {
     }
 
     /* Make sure we don't measure any pigs estimators if we have T > 0 */
-    if (!PIGS) {
-        for (string name : params["estimator"].as<vector<string>>()) {
-            bool foundPIGSEstimator = (name.find("pigs") != string::npos);
-            if (foundPIGSEstimator) {
-                cerr << "ERROR: Tried to measure a PIGS estimator when T > 0: " << name << endl;
-                cerr << "Action: remove " << name << " estimator." <<  endl;
-                return true;
-            }
-        }
-    }
-    /* Make sure all our estimators are pigs estimators */
-    else {
-        for (string name : params["estimator"].as<vector<string> >()) {
-            bool foundPIGSEstimator = (name.find("pigs") != string::npos)
-                || (name.find("time") != string::npos);
+    /* if (!PIGS) { */
+    /*     for (string name : params["estimator"].as<vector<string>>()) { */
+    /*         bool foundPIGSEstimator = (name.find("pigs") != string::npos); */
+    /*         if (foundPIGSEstimator) { */
+    /*             cerr << "ERROR: Tried to measure a PIGS estimator when T > 0: " << name << endl; */
+    /*             cerr << "Action: remove " << name << " estimator." <<  endl; */
+    /*             return true; */
+    /*         } */
+    /*     } */
+    /* } */
+    /* /1* Make sure all our estimators are pigs estimators *1/ */
+    /* else { */
+    /*     for (string name : params["estimator"].as<vector<string> >()) { */
+    /*         bool foundPIGSEstimator = (name.find("pigs") != string::npos) */
+    /*             || (name.find("time") != string::npos); */
 
-            if (!foundPIGSEstimator) {
-                cerr << "ERROR: Tried to measure a non-PIGS estimator when T > 0: " << name << endl;
-                cerr << "Action: remove " << name << " estimator." <<  endl;
-                return true;
-            }
-        }
-    }
+    /*         if (!foundPIGSEstimator) { */
+    /*             cerr << "ERROR: Tried to measure a non-PIGS estimator when T = 0: " << name << endl; */
+    /*             cerr << "Action: remove " << name << " estimator." <<  endl; */
+    /*             return true; */
+    /*         } */
+    /*     } */
+    /* } */
 
     /* Only measure cylinder estimators when we have a cylinder cell */
     if (params["geometry"].as<string>() == "prism") {
