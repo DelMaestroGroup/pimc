@@ -31,7 +31,7 @@ class ActionBase {
     public:
         ActionBase (const Path &, LookupTable &, PotentialBase *, 
                 PotentialBase *, WaveFunctionBase *, bool _local=true,
-                string _name="Base", double _endFactor=1.0);
+                string _name="Base", double _endFactor=1.0, int _period=1);
         virtual ~ActionBase();
 
         /** Returns the action name */
@@ -102,6 +102,9 @@ class ActionBase {
         /** Is the action local in imaginary time? */
         const bool local;
 
+        /* The period of the action */
+        const int period;
+
         PotentialBase *externalPtr;     ///< The external potential
         PotentialBase *interactionPtr;  ///< The interaction potential
 
@@ -150,7 +153,7 @@ class LocalAction : public ActionBase {
         LocalAction (const Path &, LookupTable &, PotentialBase *, 
                 PotentialBase *, WaveFunctionBase *, const TinyVector<double,2>&, 
                 const TinyVector<double,2>&, bool _local=true, string _name="Local",
-                double _endFactor=1.0);
+                double _endFactor=1.0, int _period=1);
         virtual ~LocalAction();
 
         /* The potential action */

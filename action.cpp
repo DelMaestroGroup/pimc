@@ -23,8 +23,9 @@
 ActionBase::ActionBase (const Path &_path, LookupTable &_lookup, 
         PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
         WaveFunctionBase *_waveFunctionPtr, bool _local, string _name, 
-        double _endFactor) :
+        double _endFactor, int _period) :
     local(_local), 
+    period(_period),
     externalPtr(_externalPtr),
     interactionPtr(_interactionPtr),
     name(_name),
@@ -259,9 +260,9 @@ LocalAction::LocalAction (const Path &_path, LookupTable &_lookup,
         PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
         WaveFunctionBase *_waveFunctionPtr, const TinyVector<double,2> &_VFactor, 
         const TinyVector<double,2> & _gradVFactor, bool _local, string _name,
-        double _endFactor) :
+        double _endFactor, int _period) :
     ActionBase(_path,_lookup,_externalPtr,_interactionPtr,_waveFunctionPtr,
-            _local,_name,_endFactor), 
+            _local,_name,_endFactor,_period), 
     VFactor(_VFactor),
     gradVFactor(_gradVFactor)
 {
@@ -355,7 +356,7 @@ double LocalAction::barePotentialAction (const beadLocator &beadIndex) {
 #if PIGS
      /* We tack on a trial wave function and boundary piece if necessary */  
      if ( (beadIndex[0] == 0) || (beadIndex[0]== (constants()->numTimeSlices()-1)) ) {
-         bareU *= 0.5;
+         bareU *= 0.5*endFactor;
          bareU -= log(waveFunctionPtr->PsiTrial(beadIndex[0]));
      }
 #endif

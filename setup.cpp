@@ -1186,6 +1186,7 @@ ActionBase * Setup::action(const Path &path, LookupTable &lookup,
 
         VFactor = 1.0;
         gradVFactor = 0.0;
+        int period = 1;
 
         if (constants()->actionType() == "gsf") {
 
@@ -1197,16 +1198,19 @@ ActionBase * Setup::action(const Path &path, LookupTable &lookup,
             double alpha = 0.0;
             gradVFactor[0] = 2.0*alpha/9.0;
             gradVFactor[1] = 2.0*(1.0-alpha)/9.0;
+            period = 2;
         }
-        else if (constants()->actionType() == "li_broughton")
+        else if (constants()->actionType() == "li_broughton") {
             gradVFactor = 1.0 / 12.0;
+            period = 2;
+        }
 
         /* Do we want to use full staging moves? */
         bool local = !params("full_updates");
 
         actionPtr = new LocalAction(path,lookup,externalPotentialPtr,
                 interactionPotentialPtr,waveFunctionPtr,VFactor,gradVFactor,local,
-                constants()->actionType(),constants()->endFactor());
+                constants()->actionType(),constants()->endFactor(),period);
     }
 
     return actionPtr;
