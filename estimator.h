@@ -85,7 +85,6 @@ class EstimatorBase {
 
         fstream *outFilePtr;            ///< The output fie
 
-        /* vector<string> estLabel;        ///< The names of the estimators to be measured. */
         map<string,int> estIndex;       ///< Map estimator labels to indices.
 
         Array<double,1> estimator;      ///< The estimator array
@@ -95,6 +94,8 @@ class EstimatorBase {
         int frequency;                  ///< The frequency at which we accumulate
         int startSlice;                 ///< Where imaginary time averages begin
         int endSlice;                   ///< Where imaginary time averages end
+        int endDiagSlice;               ///< Where imaginary time averages end for diagonal estimiators
+        vector<double> sliceFactor;        ///< Used to properly incorporate end affects 
         string label;                   ///< The label used for the output file
 
         uint32 numSampled;              ///< The number of times we have sampled

@@ -117,14 +117,25 @@ EstimatorBase::EstimatorBase(const Path &_path, ActionBase *_actionPtr,
     canonical = constants()->canonical();
     numBeads0 = constants()->initialNumParticles()*constants()->numTimeSlices();
 
+    /* A normalization factor for time slices used in estimators */
+    sliceFactor.resize(constants()->numTimeSlices(),1.0);
+
     /*  The slices over which we average quantities PIGS vs. PIMC */
 #if PIGS
     int midSlice = (path.numTimeSlices-1)/2;
     startSlice = midSlice - actionPtr->period;
     endSlice = midSlice + actionPtr->period;
+    endDiagSlice = endSlice;
+
+    if(actionPtr->local) {
+        endDiagSlice = endSlice + 1;
+        sliceFactor[startSlice] = 0.5;
+        sliceFactor[endSlice] = 0.5;
+    }
 #else
     startSlice = 0;
     endSlice = path.numTimeSlices;
+    endDiagSlice = endSlice;
 #endif
 }
 
@@ -455,24 +466,24 @@ void EnergyEstimator::accumulate() {
     double t1 = 0.0;
     double t2 = 0.0;
 
-    for (int slice = startSlice; slice < endSlice; slice++) {
-        t1 += actionPtr->derivPotentialActionLambda(slice);
-        t2 += actionPtr->derivPotentialActionTau(slice);
+    for (int slice = startSlice; slice < endDiagSlice; slice++) {
+        t1 += sliceFactor[slice]*actionPtr->derivPotentialActionLambda(slice);
+        t2 += sliceFactor[slice]*actionPtr->derivPotentialActionTau(slice);
         if (!(slice % actionPtr->period))
-            totVop  += actionPtr->potential(slice);
+            totVop  += sliceFactor[slice]*actionPtr->potential(slice);
     }
 
     /* We need to add some modifications at the ends of the averaging window
      * for some PIGS actions */
-#if PIGS
-    if(actionPtr->local) {
-        t1 += 0.5*(actionPtr->derivPotentialActionLambda(endSlice) -
-                actionPtr->derivPotentialActionLambda(startSlice));
-        t2 += 0.5*(actionPtr->derivPotentialActionTau(endSlice) - 
-                actionPtr->derivPotentialActionTau(startSlice));
-        totVop  += 0.5*(actionPtr->potential(endSlice) - actionPtr->potential(startSlice));
-    }
-#endif
+/* #if PIGS */
+/*     if(actionPtr->local) { */
+/*         t1 += 0.5*(actionPtr->derivPotentialActionLambda(endSlice) - */
+/*                 actionPtr->derivPotentialActionLambda(startSlice)); */
+/*         t2 += 0.5*(actionPtr->derivPotentialActionTau(endSlice) - */ 
+/*                 actionPtr->derivPotentialActionTau(startSlice)); */
+/*         totVop  += 0.5*(actionPtr->potential(endSlice) - actionPtr->potential(startSlice)); */
+/*     } */
+/* #endif */
 
     t1 *= constants()->lambda()/(constants()->tau()*numTimeSlices);
     t2 /= 1.0*numTimeSlices;
@@ -832,7 +843,8 @@ ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path,
 
     /* The normalization: 1/(dV*M) */
     for (int n = 0; n < numEst; n++)
-        norm(n) = 1.0/(1.0*(endSlice-startSlice)*path.boxPtr->gridBoxVolume(n));
+        norm(n) = 1.0/(1.0*(endSlice-startSlice)*(1.0/actionPtr->period) *
+                path.boxPtr->gridBoxVolume(n));
 }
 
 /*************************************************************************//**
@@ -849,13 +861,13 @@ void ParticlePositionEstimator::accumulate() {
 
     beadLocator beadIndex;
 
-    for (int slice = startSlice; slice < endSlice; slice++) {
+    for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
             beadIndex = slice,ptcl;
 
             /* update our particle position histogram */
             int n = path.boxPtr->gridIndex(path(beadIndex));
-            estimator(n) += 1.0;
+            estimator(n) += sliceFactor[slice];
         }
     }
 }
@@ -975,7 +987,7 @@ LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_p
     for (int i = 0; i < NDIM-1; i++)
         A *= side[i];
 
-    norm = 1.0/(1.0*(endSlice-startSlice)*A*dz);
+    norm = 1.0/(1.0*(endSlice-startSlice)*(1.0/actionPtr->period)*A*dz);
 }
 
 /*************************************************************************//**
@@ -995,7 +1007,7 @@ void LinearParticlePositionEstimator::accumulate() {
     dVec pos;
     int index;
 
-    for (int slice = startSlice; slice < endSlice; slice++) {
+    for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
             beadIndex = slice,ptcl;
             pos = path(beadIndex);
@@ -1005,7 +1017,7 @@ void LinearParticlePositionEstimator::accumulate() {
 
             /* update our particle position histogram */
             if (index < numGrid)
-                estimator(index) += 1.0;
+                estimator(index) += sliceFactor[slice];
         }
     }
 }
@@ -1054,7 +1066,7 @@ PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_pat
     for (int i = 0; i < NDIM-1; i++)
         A *= dl[i];
 
-    norm = 1.0/(1.0*(endSlice-startSlice)*A*path.boxPtr->side[NDIM-1]);
+    norm = 1.0/((endSlice-startSlice)*(1.0/actionPtr->period)*A*path.boxPtr->side[NDIM-1]);
     side = path.boxPtr->side;
 }
 
@@ -1074,7 +1086,7 @@ void PlaneParticlePositionEstimator::accumulate() {
     beadLocator beadIndex;
     dVec pos;
 
-    for (int slice = startSlice; slice < endSlice; slice++) {
+    for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
             beadIndex = slice,ptcl;
             pos = path(beadIndex);
@@ -1089,7 +1101,7 @@ void PlaneParticlePositionEstimator::accumulate() {
 
             /* update our particle position histogram */
             if (index < numGrid)
-                estimator(index) += 1.0;
+                estimator(index) += sliceFactor[slice];
         }
     }
 }
@@ -1135,7 +1147,7 @@ PlaneParticleAveragePositionEstimator::PlaneParticleAveragePositionEstimator (
     for (int i = 0; i < NDIM-1; i++)
         A *= dl[i];
 
-    norm = 1.0/(1.0*(endSlice-startSlice)*A*path.boxPtr->side[NDIM-1]);
+    norm = 1.0/((endSlice-startSlice)*(1.0/actionPtr->period)*A*path.boxPtr->side[NDIM-1]);
     side = path.boxPtr->side;
 }
 
@@ -1154,7 +1166,7 @@ void PlaneParticleAveragePositionEstimator::accumulate() {
     beadLocator beadIndex;
     dVec pos;
 
-    for (int slice = startSlice; slice < endSlice; slice++) {
+    for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
             beadIndex = slice,ptcl;
             pos = path(beadIndex);
@@ -1169,7 +1181,7 @@ void PlaneParticleAveragePositionEstimator::accumulate() {
 
             /* update our particle position histogram */
             if (index < numGrid)
-                estimator(index) += 1.0;
+                estimator(index) += sliceFactor[slice];
         }
     }
 }

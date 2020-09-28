@@ -418,7 +418,7 @@ void Setup::initParameters() {
     vector<string> movesToPerform;
     if (PIGS) {
         params.set<bool>("canonical",true);
-        estimatorsToMeasure = {PigsEnergyEstimator::name, TimeEstimator::name};
+        estimatorsToMeasure = {EnergyEstimator::name, TimeEstimator::name};
         movesToPerform = {CenterOfMassMove::name, StagingMove::name, EndStagingMove::name,
             DisplaceMove::name};         
     }
