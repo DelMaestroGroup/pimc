@@ -14,6 +14,7 @@
 #include <cstring>
 #include <fstream>
 
+
 // ========================================================================  
 // File Class
 // ========================================================================  
@@ -44,9 +45,15 @@ class File
         /* Close the file if open */
         void close();       
 
+        bool exists() {return exists_;}    ///< did the file exist before opening?
+
     protected:
+        friend class Communicator;    // Friends for I/O
+
         string name;        // The File name
         string bakname;     // The backup name
+
+        bool exists_;       // Does the file exist? Check on creation.
 
         fstream rwfile;     // The i/o file object
 

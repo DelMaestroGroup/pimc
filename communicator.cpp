@@ -32,6 +32,9 @@ File::File(string _type, string _data, string ensemble, string outDir) {
 
     /* Create a backup name */
     bakname = str(format("%s/%s-%s-%s.bak") % outDir % ensemble % _type % _data);
+
+    /* Determine if the file already exists */
+    exists_ = boost::filesystem::exists(name);
 }
 
 /**************************************************************************//**
@@ -166,17 +169,17 @@ void Communicator::init(double _tau, bool outputWorldline, string _initName,
         boost::filesystem::create_directory(cylPath);
     }
 
+
+    /* A header line for the files */
+    header =  str(format("# PIMCID: %s\n") % constants()->id());
+
     /* Depending on whether or not we are restarting the simulations, the open mode
-     * changes and header line changes. */
+     * changes. */
     if (constants()->restart()) {
         mode = ios::out|ios::app;
-        header = "";
     }
     else {
         mode = ios::out;
-
-        /* Get the header line */
-        header =  str(format("# PIMCID: %s\n") % constants()->id());
     }
 }
 
@@ -224,9 +227,10 @@ void Communicator::initFile(string type) {
         /* Construct the file and open it */
         file_.insert(type, new File(ctype,dataName,ensemble,outDir));
         file_.at(type).open(mode);
-        
-        /* Write the header line */
-        file_.at(type).stream() << header;
+
+        /* Write the header line if the file doesn't exist */
+        if (!file_.at(type).exists())
+            file_.at(type).stream() << header;
     }
 }
 

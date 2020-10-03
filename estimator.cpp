@@ -244,8 +244,9 @@ void EstimatorBase::prepare() {
         /* Assign the output file pointer */
         outFilePtr = &(communicate()->file(label)->stream());
 
-        /* Write the header to disk if we are not restarting */
-        if (!constants()->restart()) {
+        /* Write the header to disk if we are not restarting or if this is
+         * a new estimator. */
+        if (!constants()->restart() || (!communicate()->file(label)->exists())) {
             (*outFilePtr) << header;
             if (endLine)
                 (*outFilePtr) << endl;
