@@ -77,8 +77,8 @@
 #endif
 
 /* Used for getting the repo version number into the code */
-#ifndef SVN_VERSION
-#define SVN_VERSION "none"
+#ifndef REPO_VERSION
+#define REPO_VERSION "none"
 #endif
 
 /* We Default to turning on the NN lookup table. Comment this line out for testing

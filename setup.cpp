@@ -319,7 +319,7 @@ void Setup::initParameters() {
     /* Initialize the simulation options */
     string oClass = "simulation";
     params.add<bool>("help,h","produce help message",oClass);
-    params.add<bool>("version","output svn version",oClass);
+    params.add<bool>("version","output repo version",oClass);
     params.add<bool>("validate","validate command line or xml options",oClass);
     params.add<bool>("dimension","output currently compiled dimension",oClass);
     params.add<int>("output_config,o","number of output configurations",oClass,0);
@@ -500,9 +500,9 @@ bool Setup::parseOptions() {
         return true;
     }
 
-    /* Output the svn version that the code was compiled with */
+    /* Output the git version that the code was compiled with */
     if (params("version")) {
-        cout << endl << format("Code was compiled with repo version %s.") % SVN_VERSION
+        cout << endl << format("Code was compiled with repo version %s.") % REPO_VERSION
             << endl << endl;
         return true;
     }

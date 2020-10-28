@@ -34,8 +34,9 @@ ifeq (,$(findstring none,$(preset)))
 $(info You have specified $$preset ${preset})
 endif
 
-# Get the svn version number into the executable
-SVNDEV := -D'SVN_VERSION="$(shell svnversion -n .)"'
+# Get the version number into the executable
+SVNDEV := -D'REPO_VERSION="$(shell svnversion -n .)"'
+GETVER := -D'REPO_VERSION="$(shell git rev-parse HEAD)"'
 
 ####################################################################
 ####################################################################
@@ -258,7 +259,7 @@ PROG  ?= pimc.e
 SOURCE = pdrive.cpp pimc.cpp constants.cpp container.cpp path.cpp worm.cpp action.cpp potential.cpp move.cpp estimator.cpp lookuptable.cpp communicator.cpp setup.cpp wavefunction.cpp cmc.cpp
 OBJS   = $(SOURCE:.cpp=.o)
 
-COMPILE_PCH  = $(CXX) $(CXXFLAGS) $(SVNDEV) -pipe
+COMPILE_PCH  = $(CXX) $(CXXFLAGS) $(GETVER) -pipe
 COMPILE_WPCH = $(COMPILE_PCH) --include common.h
 LINK         = $(LD) $(OBJS) -pipe $(LDFLAGS)
 
