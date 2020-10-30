@@ -15,7 +15,8 @@ If you have questions, bug reports or plan to use this code for scientific resea
 
 The development and maintenance of this code base has been supported in part by the National Science Foundation under Award Nos. [DMR-1553991](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1553991) and [DMR-1808440](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1808440).
 
-<img width="100px" alt="NSF Logo" src="https://www.nsf.gov/images/logos/NSF_4-Color_bitmap_Logo.png">
+[<img width="100px" src="https://www.nsf.gov/images/logos/NSF_4-Color_bitmap_Logo.png">](http://www.nsf.gov/awardsearch/showAward?AWD_ID=1553991)
+
 
 ## Installation
 
@@ -45,12 +46,14 @@ cd $HOME/local/src
 3. Move into the blitz source directory
 4. Read the instructions in the `INSTALL` file to determine if there is anything special you need to do on your system.
 5. Execute
+
 ```bash
 mkdir build; cd build
 cmake -DCMAKE_INSTALL_PREFIX=PREFIX ..
 make lib
 make install
 ```
+
 where `PREFIX` is the location you want to install the libraries, we suggest `$HOME/local` where `$HOME` is your expanded home directory.
 
 <!-- *Note:* If attempting to compile the old version of blitz-0.9 with gcc version 4.3 or later you may encounter errors
