@@ -39,6 +39,7 @@ REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
 REGISTER_ESTIMATOR("linear density rho",LinearParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density rho",PlaneParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density average rho",PlaneParticleAveragePositionEstimator);
+REGISTER_ESTIMATOR("planar potential average Vext",PlaneAverageExternalPotentialEstimator);
 REGISTER_ESTIMATOR("superfluid fraction",SuperfluidFractionEstimator);
 REGISTER_ESTIMATOR("planar winding rhos/rho",PlaneWindingSuperfluidDensityEstimator);
 REGISTER_ESTIMATOR("planar area rhos/rho",PlaneAreaSuperfluidDensityEstimator);
@@ -473,18 +474,6 @@ void EnergyEstimator::accumulate() {
         if (!(slice % actionPtr->period))
             totVop  += sliceFactor[slice]*actionPtr->potential(slice);
     }
-
-    /* We need to add some modifications at the ends of the averaging window
-     * for some PIGS actions */
-/* #if PIGS */
-/*     if(actionPtr->local) { */
-/*         t1 += 0.5*(actionPtr->derivPotentialActionLambda(endSlice) - */
-/*                 actionPtr->derivPotentialActionLambda(startSlice)); */
-/*         t2 += 0.5*(actionPtr->derivPotentialActionTau(endSlice) - */ 
-/*                 actionPtr->derivPotentialActionTau(startSlice)); */
-/*         totVop  += 0.5*(actionPtr->potential(endSlice) - actionPtr->potential(startSlice)); */
-/*     } */
-/* #endif */
 
     t1 *= constants()->lambda()/(constants()->tau()*numTimeSlices);
     t2 /= 1.0*numTimeSlices;
@@ -1185,6 +1174,110 @@ void PlaneParticleAveragePositionEstimator::accumulate() {
                 estimator(index) += sliceFactor[slice];
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// PLANE AVERAGE EXTERNAL POTENTIAL ESTIMATOR
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  2-dimensional average external potential.
+ *
+******************************************************************************/
+PlaneAverageExternalPotentialEstimator::PlaneAverageExternalPotentialEstimator (
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
+        double _maxR, int _frequency, string _label) : 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
+
+    /* We choose an odd number to make sure (0,0) is the central 
+     * grid box. */
+    numLinearGrid = 4*NGRIDSEP+1;
+    numGrid = numLinearGrid*numLinearGrid;
+
+    /* The spatial discretization */
+    for (int i = 0; i < NDIM; i++)
+        dl[i]  = path.boxPtr->side[i] / numLinearGrid;
+
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numGrid);
+
+    /* The header contains information about the grid  */
+    header = str(format("# PIMCID: %s\n") % constants()->id());
+    header = str(format("# ESTINF: dx = %12.6E dy = %12.6E NGRIDSEP = %d\n") 
+            % dl[0] % dl[1] % numLinearGrid);
+    header += str(format("#%15s") % "plane external potential");
+
+    side = path.boxPtr->side;
+}
+
+/*************************************************************************//**
+ *  Destructor
+******************************************************************************/
+PlaneAverageExternalPotentialEstimator::~PlaneAverageExternalPotentialEstimator() { 
+}
+
+/*************************************************************************//**
+ *  Accumulate the average external potential energy felt by all particles 
+ *  as a function of x and y.
+******************************************************************************/
+void PlaneAverageExternalPotentialEstimator::accumulate() {
+
+    beadLocator beadIndex;
+    dVec pos;
+
+    for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
+        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+            beadIndex = slice,ptcl;
+            pos = path(beadIndex);
+
+            /* Obtain the index of the particle position */
+            int index = 0;
+            for (int i = 0; i < NDIM-1; i++) {  
+                int scale = 1;
+                for (int j = i+1; j < NDIM-1; j++) 
+                    scale *= numLinearGrid;
+                index += scale*static_cast<int>(abs(pos[i] + 0.5*side[i] - EPS ) / (dl[i] + EPS));
+            }
+
+            /* update the external potential in each grid box */
+            if (index < numGrid) {
+                norm(index) += sliceFactor[slice];
+                estimator(index) += sliceFactor[slice]*actionPtr->externalPtr->V(pos);
+            }
+        } //ptcl
+    } //slice
+}
+
+/*************************************************************************//**
+ *  Output a flat estimator value to disk.
+ *
+ *  Instead of keeping the individual binned averages, here we reset the 
+ *  output file and write the current average to disk.
+******************************************************************************/
+void PlaneAverageExternalPotentialEstimator::output() {
+
+    /* Prepare the position file for writing over old data */
+    communicate()->file(label)->reset();
+
+    (*outFilePtr) << header;
+    if (endLine)
+        (*outFilePtr) << endl;
+
+    /* Now write the running average of the estimator to disk */
+    double Vext = 0.0;
+    for (int n = 0; n < numEst; n++) { 
+        if (abs(norm(n)) > 0.0)
+            Vext = estimator(n)/norm(n);
+        else
+            Vext = 0.0;
+        (*outFilePtr) << format("%16.8E\n") % Vext;
+    }
+
+    communicate()->file(label)->rename();
 }
 
 // ---------------------------------------------------------------------------

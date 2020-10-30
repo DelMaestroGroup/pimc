@@ -1,31 +1,27 @@
-Documentation  {#mainpage}
-=============
+# Documentation  
 
-Introduction {#introduction}
-============
+## Introduction 
 
 This webpage contains the details of a worm algorithm path integral quantum Monte Carlo (WA-PIMC) code actively developed in c++ since 2008 in the [Del Maestro group](http://delmaestro.org/adrian) based on:
 
 - T > 0: [M. Boninsegni, N. V. Prokofiev, and B. Svistunov, Phys. Rev. E <b>74</b>, 036701 (2006)](http://link.aps.org/doi/10.1103/PhysRevE.74.036701)
-- T = 0: [A. Sarsa, K.E. Schmidt and W. R. Magro, J. Chem. Phys. <b>113</b>, 1366 (2000)] (http://aip.scitation.org/doi/abs/10.1063/1.481926)
+- T = 0: [A. Sarsa, K.E. Schmidt and W. R. Magro, J. Chem. Phys. <b>113</b>, 1366 (2000)](http://aip.scitation.org/doi/abs/10.1063/1.481926)
 
 It can be used to simulate indistinguishable bosons with various types of realistic interactions in one, two and three spatial dimensions. As written, it takes a large number of command line options and allows for the measurement of essentially any physical observable of interest.
 
 The design philosophy included the goal of abstracting the actual implementation of the WA-PIMC method to a kernel that will never need to be touched by the end user.  The code can be easily extended to study a wide variety of situations by including new types of containers, potentials estimators and communicators.
 
-If you have questions, bug reports or plan to use this code for scientific research, please contact me at Adrian.DelMaestro@uvm.edu.
+If you have questions, bug reports or plan to use this code for scientific research, please contact me at Adrian.DelMaestro@utk.edu.
 
 The development and maintenance of this code base has been supported in part by the National Science Foundation under Award Nos. [DMR-1553991](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1553991) and [DMR-1808440](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1808440).
 
 <img width="100px" alt="NSF Logo" src="https://www.nsf.gov/images/logos/NSF_4-Color_bitmap_Logo.png">
 
-Installation {#installation}
-============
+## Installation
 
 This program has been successfully compiled and run on both Intel and AMD systems using clang, g++, pathscale and icpc. Before installing, one needs to ensure that all dependencies are met.  We recommend that the required libraries (boost and blitz) are installed in a `local` folder inside your home directory: `$HOME/local`.
 
-Dependencies {#dependencies}
-------------
+## Dependencies 
 
 The code is written in c++ and makes use of both the <a href="https://github.com/blitzpp/blitz">blitz++</a> and <a href="http://www.boost.org/">boost</a> libraries.  You should be able to grab `blitz` from github and compile from source via the instructions below.
 
@@ -33,26 +29,28 @@ We use many of the boost header-only libraries, but two libraries will need to b
 
 If you don't have a `$HOME/local` you should create this directory now via
 
-    mkdir $HOME/local
+```bash
+mkdir $HOME/local
+```
 
 ### Blitz ###
 
 Unless you need to use the blitz++'s internal debug functionality initiated through \#`define BZ_DEBUG` which is set by including `debug=1` when compiling, blitz can be used as a 'header only' library and does not need to be compiled.  This is the most common use case.  However, as it doesn't take very long to compile one can proceed as follows:
 
 1. Move into your source directory (create if necessary).
-~~~
+```bash
 cd $HOME/local/src
-~~~
+```
 2. Clone the latest version of blitz++ from  [github](https://github.com/blitzpp/blitz) into `$HOME/local/src`
 3. Move into the blitz source directory
 4. Read the instructions in the `INSTALL` file to determine if there is anything special you need to do on your system.
 5. Execute
-~~~
+```bash
 mkdir build; cd build
 cmake -DCMAKE_INSTALL_PREFIX=PREFIX ..
 make lib
 make install
-~~~
+```
 where `PREFIX` is the location you want to install the libraries, we suggest `$HOME/local` where `$HOME` is your expanded home directory.
 
 <!-- *Note:* If attempting to compile the old version of blitz-0.9 with gcc version 4.3 or later you may encounter errors
@@ -109,35 +107,35 @@ if ! darwin in [ feature.values <toolset> ]
 project : default-build <toolset>darwin ;
 ~~~
 but the rest should be the same. -->
-5. Execute
-~~~
+1. Execute
+```bash
 ./b2 install --prefix=PREFIX --with-program_options --with-filesystem --with-system --with-serialization cxxflags="-std=c++14" linkflags="-std=c++14"
-~~~
+```
 or if you are using the `clang` compiler on mac os
-~~~
+```bash
 ./b2 install --prefix=PREFIX --toolset=darwin --with-program_options --with-filesystem --with-system --with-serialization cxxflags="-std=c++14 -stdlib=libc++" linkflags="-std=c++14 -stdlib=libc++"
-~~~
-6. If you want to have multiple versions of the library compiled with different compilers you can use the `--layout=versioned` flag above, or you could add `option.set layout : versioned ;` to your `project-config.jam`.  Note: you may have to rename the `$HOME/include/blitz_VER` directory to remove the version number.
-7.  You should now have a `PREFIX/include` directory containing the header files for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain the following files (the `.dylib` files will only appear on Mac OS X)
-~~~
+```
+2. If you want to have multiple versions of the library compiled with different compilers you can use the `--layout=versioned` flag above, or you could add `option.set layout : versioned ;` to your `project-config.jam`.  Note: you may have to rename the `$HOME/include/blitz_VER` directory to remove the version number.
+3. You should now have a `PREFIX/include` directory containing the header files for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain the following files (the `.dylib` files will only appear on Mac OS X)
+```bash
 libblitz.a   libboost_filesystem.a      libboost_program_options.a libboost_system.a
 libblitz.la  libboost_filesystem.dylib  libboost_program_options.dylib libboost_system.dylib
-~~~
-8. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on mac os) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` e.g.  
-~~~
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:PREFIX/lib
-~~~
-9. Source your `.bashrc` or `.bash_profile`.
-~~~
-source ~/.bashrc
-~~~
+```
+4. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on mac os) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` e.g.
+```bash
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:PREFIX/lib
+```
+5. Source your `.bashrc` or `.bash_profile`.
+```bash
+    source ~/.bashrc
+```
 
-Path Integral Monte Carlo {#pimc}
--------------------------
+## Path Integral Monte Carlo
 
 After successfully installing blitz and boost you are now ready to compile the
 main pimc program on your system.  You should inspect the `Makefile`, which has configurations for various systems and compilers that you should be able to generalize to your specific case.  You can use the `preset` variable to specify a `local_target` that you have modified for your particular configuration.  A sample is included already in the `Makefile`:
-~~~
+
+```bash
 ###################################################################
 # System g++ local_target
 else ifeq ($(preset), local_target)
@@ -157,48 +155,45 @@ CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
 LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER) -lboost_serialization$(BOOSTVER)
 #local_target end
 ######################################################
-~~~
+```
 which assumes you haven't versioned your libraries. You could:
+
 1. Edit the `CODEDIR` variable to point to the location where you have installed blitz and boost above.  We suggest `$HOME/local` 
 2. Edit the `OPTS` variable to reflect any local compile options.
-4. If you installed boost with the `--layout=versioned` command above and you have multiple versions installed on your machine, you may need to append the particular version you want to link to in the names of the boost libraries.  This is most easily done by updating the `BOOSTVER` variable above: e.g. `BOOSTVER = -xgcc42-mt-x64-1_73` where here we have compiled boost v1.73 with clang.  This will need to be updated for your particular configuration. Make sure to look in the `$PREFIX/include` directory as your boost header files may have been inserted in a named directory, e.g. `$PREFIX/include/boost-1_73/boost`.
-5. The make process will then take three options:
+3. If you installed boost with the `--layout=versioned` command above and you have multiple versions installed on your machine, you may need to append the particular version you want to link to in the names of the boost libraries.  This is most easily done by updating the `BOOSTVER` variable above: e.g. `BOOSTVER = -xgcc42-mt-x64-1_73` where here we have compiled boost v1.73 with clang.  This will need to be updated for your particular configuration. Make sure to look in the `$PREFIX/include` directory as your boost header files may have been inserted in a named directory, e.g. `$PREFIX/include/boost-1_73/boost`.
+4. The make process will then take three options:
  - `opts=debug,basic,strict` turn on different compiling and linking options
  - `ndim=1,2,3` the number of spatial dimensions
  - `preset=local_target` compile for host `local_target`
-6. Target modes are `all, release, debug, pigs and pigs_debug` where the first two are default and don't need to be included.
-7. To compile (in parallel) for bulk (3D) helium in production mode on host target:
-~~~
+5. Target modes are `all, release, debug, pigs and pigs_debug` where the first two are default and don't need to be included.
+6. To compile (in parallel) for bulk (3D) helium in production mode on host target:
+```bash
 make -j ndim=3 preset=local_target
-~~~
+```
 which will produce the executable `pimc.e`
-
 
 If you run into problems, failures with linking etc., common errors may include
 not properly setting your `LD_LIBRARY_PATH` or not starting from a clean build
 directory (issue `make clean`).
 
-Usage       {#usage}
-=====
+## Usage
 
 In order to get a quick idea of the options which the code accepts type:
-
-    pimc.e --help
+```bash
+pimc.e --help
+```
 
 The code requires various combinations of these options to run, and the help message should give
 you an idea about which ones are mandatory.
 
-Quick Start     {#quickstart}
------------
+### Quick Start 
 
 If you want to perform a quick test-run for bulk helium you could try something like:
+```bash
+./pimc.e -T 5 -N 16 -n 0.02198 -t 0.01 -M 8 -C 1.0 -I aziz -X free -E 10000 -S 20 -l 7 -u 0.02 --relax
+```
 
-    ./pimc.e -T 5 -N 16 -n 0.02198 -t 0.01 -M 8 -C 1.0 -I aziz -X free -E 10000 -S 20 -l 7 -u 0.02 --relax
-
-In order for this to work, you will need a folder named `OUTPUT` in the directory where you type
-the command as it will produce output files in `OUTPUT` that contain all the results of the
-code.  Each run of the code is associated with a unique identifying integer:
-the `PIMCID`.  The options used in this demo include a subset of all the possible options:
+In order for this to work, you will need a folder named `OUTPUT` in the directory where you type the command as it will produce output files in `OUTPUT` that contain all the results of the code.  Each run of the code is associated with a unique identifying integer: the `PIMCID`.  The options used in this demo include a subset of all the possible options:
 
 | Code Option | Description |
 | :-----------: | ----------- |
@@ -245,7 +240,7 @@ All options, including lists of possible values and default values can be seen
 by using the `--help flag`.
 
 The output of the above command should yield something like:
-~~~
+```bash
   _____    _____   __  __    _____
  |  __ \  |_   _| |  \/  |  / ____|
  | |__) |   | |   | \  / | | |
@@ -292,11 +287,13 @@ The output of the above command should yield something like:
 [PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  19 stored to disk.
 [PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  20 stored to disk.
 [PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Measurement complete.
-~~~
+```
 
 during the relaxation process where `PIMCID` is a uuid, and 20 measurements will be output to disk.  To analyze the results the code, you will need to obtain a number of python programs located in a `SCRIPTS` directory which can be obtained via:
 
-    svn checkout --username=SVNID http://svn.delmaestro.org/projects/SCRIPTS/ $HOME/local/pimcscripts
+```bash
+svn checkout --username=SVNID http://svn.delmaestro.org/projects/SCRIPTS/ $HOME/local/pimcscripts
+```
 
 Which will place them in a folder `pimcscripts` in your `$HOME/local/`
 directory.  Many of these depend on some general utility modules that should be
@@ -304,11 +301,11 @@ added to this directory on your local machine.
 
 1. Move in to the `pimcsripts` directory
 2. Download the relevant scripts (replacing `svnID` with your svn username)
-~~~
+```bash
 svn export --username=svnID http://svn.delmaestro.org/pyutils/pyutils.py
 svn export --username=svnID http://svn.delmaestro.org/pyutils/loadgmt.py
 svn export --username=svnID http://svn.delmaestro.org/pyutils/kevent.py
-~~~
+```
 It may be advantageous to add a new environment variable for the location of
 this folder to your `.bashrc` as you will use these scripts extensively.  In
 order to take advantage of many of the plotting options you will need to have
@@ -319,11 +316,13 @@ you will need to download and install the gradient files from
 
 After this has been completed, you can analyze the results of your run via
 
-    python $HOME/local/pimcsripts/pimcave.py OUTPUT/gce-estimator-05.000-008.996-+000.020-0.01000-c5555b0b-a259-49bd-a4b1-7a12b8214fd4.dat
+```bash
+python $HOME/local/pimcsripts/pimcave.py OUTPUT/gce-estimator-05.000-008.996-+000.020-0.01000-c5555b0b-a259-49bd-a4b1-7a12b8214fd4.dat
+```
 
 where `c5555b0b-a259-49bd-a4b1-7a12b8214fd4` needs to be replaced with the unique identifier generated on your machine.  The results should yield something like:
 
-~~~
+```bash
 # PIMCID c5555b0b-a259-49bd-a4b1-7a12b8214fd4
 # Number Samples     20
 K                  342.70210	    16.30687	 4.76
@@ -339,7 +338,7 @@ density              0.02429	     0.00044	 1.82
 us                1178.62311	    23.20618	 1.97
 mcsteps            127.30000	     2.28738	 1.80
 diagonal             0.79007	     0.01326	 1.68
-~~~
+```
 
 The basic idea of running the program is that one needs to setup the simulation
 cell, by defining either its specific geometry via the size (`L`) flag, or by a
@@ -354,8 +353,7 @@ equilibration (`E`) steps and production output bins (`S`). A more detailed
 grasp of all possible program options can be obtained by reading the main
 driver file `pdrive.cpp`.
 
-Output      {#output}
-======
+### Output
 
 The results of running the code are a number of data, state and log files that reside in the `OUTPUT` directory.  If the code is run for the cylinder geometry, there will be an additional copy of the files in `OUTPUT/CYLINDER` which contain measurements that have been restricted to some cutoff radius indicated by including the `w` flag when running.  The generic output files are:
 
@@ -370,12 +368,10 @@ The results of running the code are a number of data, state and log files that r
 |`gce-radial-T-L-u-t-PIMCID.dat` | The radial density |
 |`gce-state-T-L-u-t-PIMCID.dat` | The state file (used to restart the simulation) |
 |`gce-super-T-L-u-t-PIMCID.dat` |  Contains all superfluid estimators |
-|`gce-worm-T-L-u-t-PIMCID.dat` | Contains details on the worm |
 
 Each line in either the scalar or vector estimator files contains a bin which is the average of some measurement over a certain number of Monte Carlo steps.  By averaging bins, one can get the final result along with its uncertainty via the variance.
 
-General Description     {#description}
-===================
+## General Description
 
 A full understanding of this path integral Monte Carlo code requires an
 understanding of the WA-PIMC algorithm alluded to in the introduction.  In this
@@ -416,10 +412,3 @@ particles and external environments can be added by adding new
 [Potential](@ref PotentialBase) then updating Setup to allow for their
 specification at the command line.  Finally, radically different systems can be
 studied by modifying the [Container](@ref Container) class.
-
-<!--
-Python Script User Guide {#scripts}
-=========================
-
-[PIMC Scripts User Guide](sphinx/index.html)
--->

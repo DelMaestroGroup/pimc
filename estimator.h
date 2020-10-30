@@ -352,6 +352,34 @@ class PlaneParticleAveragePositionEstimator: public EstimatorBase {
         dVec side;                  // Local copy of container geometry
 };
 
+// ========================================================================  
+// Averaged Plane External Potential Estimator Class 
+// ========================================================================  
+/**
+ * Create a 2d histogram of particle positions but only store the average.
+ * 
+ */
+class PlaneAverageExternalPotentialEstimator: public EstimatorBase {
+
+    public:
+        PlaneAverageExternalPotentialEstimator(const Path &, ActionBase *, 
+                const MTRand &, double, int _frequency=1, string _label="planeaveVext");
+        ~PlaneAverageExternalPotentialEstimator();
+
+        static const string name;
+        string getName() const {return name;}
+
+        void output();  // overload the output
+
+
+    private:
+        int numGrid;                // The total number of grid boxes
+        int numLinearGrid;          // The linear number of grid boxes
+        dVec dl;                    // The linear size of each spatial bin
+        void accumulate();          // Accumulate values
+        dVec side;                  // Local copy of container geometry
+};
+
 
 // ========================================================================  
 // Number Distribution Estimator Class 
