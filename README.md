@@ -72,66 +72,36 @@ For detailed instructions on installing boost with compiled libraries please see
 
 1. Download and decompress boost into `$HOME/local/src/`
 2. Change to the boost source directory
-3. Execute
-~~~
-./bootstrap.sh 
-~~~
-If you want to compile for a specific toolset you could add `--with-toolset=gcc`.  Now you are ready to install.
-<!-- 4. Open `project-config.jam` it might look something like the text below where I'm using gcc version 6.5.0.  You can add the 
-~~~
-import option ;
-import feature ;
+3. Execute `bootstrap.sh`
+If you want to compile for a specific toolset you could add `--with-toolset=gcc`.  Now you are ready to install.  Execute
 
-# Compiler configuration. 
-if ! gcc in [ feature.values <toolset> ]
-{
-    using gcc : 6.5.0 : /opt/local/bin/g++-mp-6 : <cxxflags>"-std=c++14" ;
-}
+    ```bash
+    ./b2 install --prefix=PREFIX --with-program_options --with-filesystem --with-system --with-serialization cxxflags="-std=c++14" linkflags="-std=c++14"
+    ```
+    or if you are using the `clang` compiler on mac os
 
-project : default-build <toolset>gcc ;
+    ```bash
+    ./b2 install --prefix=PREFIX --toolset=darwin --with-program_options --with-filesystem --with-system --with-serialization cxxflags="-std=c++14 -stdlib=libc++" linkflags="-std=c++14 -stdlib=libc++" 
+    ```
 
-libraries =  --with-program_options --with-filesystem ;
+4. If you want to have multiple versions of the library compiled with different compilers you can use the `--layout=versioned` flag above, or you could add `option.set layout : versioned ;` to your `project-config.jam`.  Note: you may have to rename the `$HOME/include/blitz_VER` directory to remove the version number.
+5. You should now have a `PREFIX/include` directory containing the header files for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain the following files (the `.dylib` files will only appear on Mac OS X)
+    ```bash
+    libblitz.a   libboost_filesystem.a      libboost_program_options.a     libboost_system.a 
+    libblitz.la  libboost_filesystem.dylib  libboost_program_options.dylib libboost_system.dylib
+    ```
 
-option.set prefix : $HOME/local ;
-option.set exec-prefix : $HOME/local ;
-option.set libdir : $HOME/local/lib ;
-option.set includedir : $HOME/local/include ;
+6. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on mac os) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` e.g.
 
-# Stop on first error
-option.set keep-going : false ;
-~~~
-where you will need to make sure to include all the correct details and location of your gcc compiler, see [here](https://solarianprogrammer.com/2016/03/06/compiling-boost-gcc-5-clang-mac-os-x/) for more details. If you are using clang on Mac OS X, the compiler part will read:
-~~~
-if ! darwin in [ feature.values <toolset> ]
-{
-    using darwin ; 
-}
-
-project : default-build <toolset>darwin ;
-~~~
-but the rest should be the same. -->
-1. Execute
-```bash
-./b2 install --prefix=PREFIX --with-program_options --with-filesystem --with-system --with-serialization cxxflags="-std=c++14" linkflags="-std=c++14"
-```
-or if you are using the `clang` compiler on mac os
-```bash
-./b2 install --prefix=PREFIX --toolset=darwin --with-program_options --with-filesystem --with-system --with-serialization cxxflags="-std=c++14 -stdlib=libc++" linkflags="-std=c++14 -stdlib=libc++"
-```
-2. If you want to have multiple versions of the library compiled with different compilers you can use the `--layout=versioned` flag above, or you could add `option.set layout : versioned ;` to your `project-config.jam`.  Note: you may have to rename the `$HOME/include/blitz_VER` directory to remove the version number.
-3. You should now have a `PREFIX/include` directory containing the header files for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain the following files (the `.dylib` files will only appear on Mac OS X)
-```bash
-libblitz.a   libboost_filesystem.a      libboost_program_options.a libboost_system.a
-libblitz.la  libboost_filesystem.dylib  libboost_program_options.dylib libboost_system.dylib
-```
-4. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on mac os) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` e.g.
-```bash
+    ```bash
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:PREFIX/lib
-```
-5. Source your `.bashrc` or `.bash_profile`.
-```bash
+    ```
+
+7. Source your `.bashrc` or `.bash_profile`.
+
+    ```bash
     source ~/.bashrc
-```
+    ```
 
 ## Path Integral Monte Carlo
 
@@ -302,13 +272,15 @@ Which will place them in a folder `pimcscripts` in your `$HOME/local/`
 directory.  Many of these depend on some general utility modules that should be
 added to this directory on your local machine.
 
-1. Move in to the `pimcsripts` directory
+1. Move in to the `pimcscripts` directory
 2. Download the relevant scripts (replacing `svnID` with your svn username)
-```bash
-svn export --username=svnID http://svn.delmaestro.org/pyutils/pyutils.py
-svn export --username=svnID http://svn.delmaestro.org/pyutils/loadgmt.py
-svn export --username=svnID http://svn.delmaestro.org/pyutils/kevent.py
-```
+
+    ```bash
+    svn export --username=svnID http://svn.delmaestro.org/pyutils/pyutils.py
+    svn export --username=svnID http://svn.delmaestro.org/pyutils/loadgmt.py
+    svn export --username=svnID http://svn.delmaestro.org/pyutils/kevent.py
+    ```
+
 It may be advantageous to add a new environment variable for the location of
 this folder to your `.bashrc` as you will use these scripts extensively.  In
 order to take advantage of many of the plotting options you will need to have
