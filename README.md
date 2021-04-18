@@ -129,21 +129,21 @@ On Windows try:
 
 As above, and with further details below, but you should consider using the following CMake options with the appropriate value instead of xxx :
 
-- -DNDIM=1,2,3 the number of spatial dimensions
-- -DGPU_BLOCK_SIZE=xxx equal to the maximum threadblock size and enables GPU acceleration (using [AMD's HIP language](https://github.com/ROCm-Developer-Tools/HIP))
-- -DMAX_GPU_STREAMS=xxx equal to maximum number of concurrent streams on GPU device
-- -DCMAKE_C_COMPILER=xxx equal to the name of the C99 Compiler you wish to use (or the environment variable CC)
-- -DCMAKE_CXX_COMPILER=xxx equal to the name of the C++17 compiler you wish to use (or the environment variable CXX)
-- -DCMAKE_PREFIX_PATH=xxx to add a non-standard location for CMake to search for libraries, headers or programs
-- -DCMAKE_INSTALL_PREFIX=xxx to install pimc to a non-standard location
-- -DBOOST_ROOT=xxx to add non-standart location for Boost install
-- -DBLITZ_ROOT=xxx to add non-standart location for Blitz install
-- -DSTATIC=1 to enable a static build
-- -DCMAKE_BUILD_TYPE=Debug to build pimc in debug mode
-- -DCMAKE_BUILD_TYPE=PIGS to build pigs
-- -DCMAKE_BUILD_TYPE=PIGSDebug to build pigs in debug mode
-- -E env CXXFLAGS="xxx" add additional compiler flags
-- -E env LDFLAGS="xxx" add additional linker flags
+- `-DNDIM=1|2|3` the number of spatial dimensions
+- `-DGPU_BLOCK_SIZE=xxx` equal to the maximum threadblock size and enables GPU acceleration (using [AMD's HIP language](https://github.com/ROCm-Developer-Tools/HIP))
+- `-DMAX_GPU_STREAMS=xxx` equal to maximum number of concurrent streams on GPU device
+- `-DCMAKE_C_COMPILER=xxx` equal to the name of the C99 Compiler you wish to use (or the environment variable `CC`)
+- `-DCMAKE_CXX_COMPILER=xxx` equal to the name of the C++17 compiler you wish to use (or the environment variable `CXX`)
+- `-DCMAKE_PREFIX_PATH=xxx` to add a non-standard location for CMake to search for libraries, headers or programs
+- `-DCMAKE_INSTALL_PREFIX=xxx` to install pimc to a non-standard location
+- `-DBOOST_ROOT=xxx` to add non-standart location for Boost install
+- `-DBLITZ_ROOT=xxx` to add non-standart location for Blitz install
+- `-DSTATIC=1` to enable a static build
+- `-DCMAKE_BUILD_TYPE=Debug` to build pimc in debug mode
+- `-DCMAKE_BUILD_TYPE=PIGS` to build pigs
+- `-DCMAKE_BUILD_TYPE=PIGSDebug` to build pigs in debug mode
+- `-E env CXXFLAGS="xxx"` add additional compiler flags
+- `-E env LDFLAGS="xxx"` add additional linker flags
 
 Executables will be installed to `CMAKE_INSTALL_PREFIX` location or if the install is skiped will be located in `build/pimc`.
 Executables produced are `pimc.e`, `pimcd.e`, `pigs.e`, and `pigsd.e` for `CMAKE_BUILD_TYPE=Release|Debug|PIGS|PIGSDebug` respectively.
