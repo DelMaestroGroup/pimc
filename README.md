@@ -113,7 +113,7 @@ PIMC uses CMake for build, test and installation automation. For details on usin
   mkdir build
   cd build
   cmake ../src
-  make lib
+  make
   sudo make install
   ```
 
