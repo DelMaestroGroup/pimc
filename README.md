@@ -106,48 +106,51 @@ If you want to compile for a specific toolset you could add `--with-toolset=gcc`
 ## Path Integral Monte Carlo
 
 After successfully installing blitz and boost you are now ready to compile the
-main pimc program on your system.  You should inspect the `Makefile`, which has configurations for various systems and compilers that you should be able to generalize to your specific case.  You can use the `preset` variable to specify a `local_target` that you have modified for your particular configuration.  A sample is included already in the `Makefile`:
+main pimc program on your system.
+PIMC uses CMake for build, test and installation automation. For details on using CMake consult https://cmake.org/documentation/. In short, the following steps should work on UNIX-like systems:
 
-```bash
-###################################################################
-# System g++ local_target
-else ifeq ($(preset), local_target)
+  ```
+  mkdir build
+  cd build
+  cmake ../src
+  make lib
+  sudo make install
+  ```
 
-CODEDIR = $$HOME/local
-DEBUG  = -D PIMC_DEBUG -g
-LDEBUG = -lblitz
-BOOSTVER = 
+On Windows try:
 
-ifeq ($(opts), basic)
-OPTS = -std=c++17 -Wall -O3 -mtune=native -Wno-deprecated-declarations
-else ifeq ($(opts), strict)
-OPTS = -std=c++17 -Wall -Wextra -g -pedantic
-endif #basic, elseif strict
+  ```
+  md build
+  cd build
+  cmake ../src
+  cmake --build . --config Release
+  cmake --build . --target install
+  ```
 
-CXXFLAGS  = $(OPTS) $(DIM) -I$(CODEDIR)/include
-LDFLAGS = -L$(CODEDIR)/lib -lboost_program_options$(BOOSTVER) -lboost_filesystem$(BOOSTVER) -lboost_system$(BOOSTVER) -lboost_serialization$(BOOSTVER)
-#local_target end
-######################################################
-```
-which assumes you haven't versioned your libraries. You could:
+As above, and with further details below, but you should consider using the following CMake options with the appropriate value instead of xxx :
 
-1. Edit the `CODEDIR` variable to point to the location where you have installed blitz and boost above.  We suggest `$HOME/local` 
-2. Edit the `OPTS` variable to reflect any local compile options.
-3. If you installed boost with the `--layout=versioned` command above and you have multiple versions installed on your machine, you may need to append the particular version you want to link to in the names of the boost libraries.  This is most easily done by updating the `BOOSTVER` variable above: e.g. `BOOSTVER = -xgcc42-mt-x64-1_73` where here we have compiled boost v1.73 with clang.  This will need to be updated for your particular configuration. Make sure to look in the `$PREFIX/include` directory as your boost header files may have been inserted in a named directory, e.g. `$PREFIX/include/boost-1_73/boost`.
-4. The make process will then take three options:
- - `opts=debug,basic,strict` turn on different compiling and linking options
- - `ndim=1,2,3` the number of spatial dimensions
- - `preset=local_target` compile for host `local_target`
-5. Target modes are `all, release, debug, pigs and pigs_debug` where the first two are default and don't need to be included.
-6. To compile (in parallel) for bulk (3D) helium in production mode on host target:
-```bash
-make -j ndim=3 preset=local_target
-```
-which will produce the executable `pimc.e`
+- -DNDIM=1,2,3 the number of spatial dimensions
+- -DGPU_BLOCK_SIZE=xxx equal to the maximum threadblock size and enables GPU acceleration (using [AMD's HIP language](https://github.com/ROCm-Developer-Tools/HIP))
+- -DMAX_GPU_STREAMS=xxx equal to maximum number of concurrent streams on GPU device
+- -DCMAKE_C_COMPILER=xxx equal to the name of the C99 Compiler you wish to use (or the environment variable CC)
+- -DCMAKE_CXX_COMPILER=xxx equal to the name of the C++17 compiler you wish to use (or the environment variable CXX)
+- -DCMAKE_PREFIX_PATH=xxx to add a non-standard location for CMake to search for libraries, headers or programs
+- -DCMAKE_INSTALL_PREFIX=xxx to install pimc to a non-standard location
+- -DBOOST_ROOT=xxx to add non-standart location for Boost install
+- -DBLITZ_ROOT=xxx to add non-standart location for Blitz install
+- -DSTATIC=1 to enable a static build
+- -DCMAKE_BUILD_TYPE=Debug to build pimc in debug mode
+- -DCMAKE_BUILD_TYPE=PIGS to build pigs
+- -DCMAKE_BUILD_TYPE=PIGSDebug to build pigs in debug mode
+- -E env CXXFLAGS="xxx" add additional compiler flags
+- -E env LDFLAGS="xxx" add additional linker flags
+
+Executables will be installed to `CMAKE_INSTALL_PREFIX` location or if the install is skiped will be located in `build/pimc`.
+Executables produced are `pimc.e`, `pimcd.e`, `pigs.e`, and `pigsd.e` for `CMAKE_BUILD_TYPE=Release|Debug|PIGS|PIGSDebug` respectively.
 
 If you run into problems, failures with linking etc., common errors may include
 not properly setting your `LD_LIBRARY_PATH` or not starting from a clean build
-directory (issue `make clean`).
+directory (issue `make clean` or `rm -rf ./*` inside the build directory).
 
 ## Usage
 
