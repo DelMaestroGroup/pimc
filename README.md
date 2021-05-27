@@ -136,8 +136,8 @@ As above, and with further details below, but you should consider using the foll
 - `-D CMAKE_CXX_COMPILER=xxx` equal to the name of the C++17 compiler you wish to use (or the environment variable `CXX`)
 - `-D CMAKE_PREFIX_PATH=xxx` to add a non-standard location for CMake to search for libraries, headers or programs
 - `-D CMAKE_INSTALL_PREFIX=xxx` to install pimc to a non-standard location
-- `-D BOOST_ROOT=xxx` to add non-standart location for Boost install
-- `-D BLITZ_ROOT=xxx` to add non-standart location for Blitz++ install
+- `-D BOOST_ROOT=xxx` to add non-standard location for Boost install
+- `-D BLITZ_ROOT=xxx` to add non-standard location for Blitz++ install
 - `-D STATIC=1` to enable a static build
 - `-D CMAKE_BUILD_TYPE=Debug` to build pimc in debug mode
 - `-D CMAKE_BUILD_TYPE=PIGS` to build pigs
