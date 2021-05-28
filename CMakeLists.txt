@@ -52,8 +52,11 @@ if (GPU_BLOCK_SIZE)
 endif()
 
 # Set default build flags
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -Wall -fno-math-errno -O3")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fno-math-errno -O3")
+if (NOT DEFAULT_CXX_FLAGS)
+    set(DEFAULT_CXX_FLAGS "-Wall -fno-math-errno -O3")
+    #set(DEFAULT_CXX_FLAGS "-march=native -Wall -fno-math-errno -O3")
+endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEFAULT_CXX_FLAGS}")
 
 # Determine executable name
 set(exe pimc.e)
@@ -90,7 +93,7 @@ target_include_directories(${exe} PUBLIC
     PRIVATE src)
 
 # Set debug flags
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D PIMC_DEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DPIMC_DEBUG")
 
 # Add PIGS build mode
 set(CMAKE_CXX_FLAGS_PIGS "${CMAKE_CXX_FLAGS} -DPIGS")
