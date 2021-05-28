@@ -143,8 +143,8 @@ As above, and with further details below, but you should consider using the foll
 - `-D CMAKE_BUILD_TYPE=PIGS` to build pigs
 - `-D CMAKE_BUILD_TYPE=PIGSDebug` to build pigs in debug mode
 - `-D DEFAULT_CXX_FLAGS="xxx"` to overwrite default compiler flags for Release and PIGS builds (default `-Wall -fno-math-errno -O3`)
-- `-D CMAKE_CXX_FLAGS="xxx" to set additional compiler flags for Release and PIGS builds
-- `-D CMAKE_CXX_FLAGS_DEBUG="xxx" to set additional compiler flags for PIMCDebug and PIGSDebug builds
+- `-D CMAKE_CXX_FLAGS="xxx"` to set additional compiler flags for Release and PIGS builds
+- `-D CMAKE_CXX_FLAGS_DEBUG="xxx"` to set additional compiler flags for PIMCDebug and PIGSDebug builds
 - `-E env CXXFLAGS="xxx"` add additional compiler flags
 - `-E env LDFLAGS="xxx"` add additional linker flags
 
