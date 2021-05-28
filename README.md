@@ -112,7 +112,7 @@ PIMC uses CMake for build, test and installation automation. For details on usin
   ```
   mkdir build
   cd build
-  cmake ../src
+  cmake ../
   make
   sudo make install
   ```
@@ -122,7 +122,7 @@ On Windows try:
   ```
   md build
   cd build
-  cmake ../src
+  cmake ../
   cmake --build . --config Release
   cmake --build . --target install
   ```
