@@ -1,9 +1,30 @@
 cmake_minimum_required(VERSION 3.18.1)
 
-project(pimc.e)
+if (USE_CUDA)
+    project(pimc.e LANGUAGES CXX CUDA)
+    add_definitions(-D USE_CUDA=${USE_CUDA})
+else()
+    project(pimc.e LANGUAGES CXX)
+endif()
+
+# Must use GNUInstallDirs to install libraries into correct
+# locations on all platforms.
+include(GNUInstallDirs)
+
+# Set module path
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/modules)
 
 # Set c++ standard
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_STANDARD_REQUIRED TRUE)
+if (USE_CUDA)
+    set(CMAKE_CUDA_STANDARD 14)
+    set(CMAKE_CUDA_STANDARD_REQUIRED TRUE)
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set(CMAKE_CUDA_ARCHITECTURES 70)
+    endif()
+    message("CUDA architectures set to ${CMAKE_CUDA_ARCHITECTURES}.")
+endif()
 
 # Check for static build
 if(STATIC)
@@ -45,10 +66,22 @@ elseif(CMAKE_BUILD_TYPE MATCHES PIGSDebug)
 endif()
 
 # Find source files ( better to list explicitly https://stackoverflow.com/questions/1027247/specify-source-files-globally-with-glob )
-file(GLOB PIMC_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
-    )
-add_executable(${exe} ${PIMC_SRC})
+file( GLOB PIMC_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp )
+if(USE_CUDA)
+    file( GLOB PIMC_CUDA ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu )
+    add_executable(${exe} ${PIMC_SRC} ${PIMC_CUDA})
+    set_target_properties( ${exe} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+    #if(APPLE)
+    #  # We need to add the path to the driver (libcuda.dylib) as an rpath, 
+    #  # so that the static cuda runtime can find it at runtime.
+    #  set_property(TARGET ${exe} 
+    #               PROPERTY
+    #               BUILD_RPATH ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+    #endif()
+else()
+    add_executable(${exe} ${PIMC_SRC})
+endif()
 
 # Define headers for target
 target_include_directories(${exe} PUBLIC
@@ -146,3 +179,4 @@ export(TARGETS ${exe} FILE ${exe}Config.cmake)
 
 # Unit tests
 # We need to make some of these
+enable_testing()
