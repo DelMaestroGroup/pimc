@@ -219,106 +219,80 @@ All options, including lists of possible values and default values can be seen
 by using the `--help flag`.
 
 The output of the above command should yield something like:
-```bash
-  _____    _____   __  __    _____
- |  __ \  |_   _| |  \/  |  / ____|
- | |__) |   | |   | \  / | | |
- |  ___/    | |   | |\/| | | |
- | |       _| |_  | |  | | | |____
- |_|      |_____| |_|  |_|  \_____|
 
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Equilibration Stage.
-0.72	 1.00000	 0.95000	   19	0.026101
-0.72	 0.95000	 0.90250	   18	0.024728
-0.59	 0.90250	 0.81225	   18	0.024728
-0.60	 0.81225	 0.73102	   19	0.026101
-0.75	 0.73102	 0.69447	   16	0.021980
-0.63	 0.69447	 0.65975	   17	0.023354
-0.74	 0.65975	 0.62676	   20	0.027475
-0.81	 0.62676	 0.62676	   18	0.024728
-0.72	 0.62676	 0.59542	   17	0.023354
-0.77	 0.59542	 0.59542	   18	0.024728
-0.74	 0.59542	 0.56565	   17	0.023354
-0.79	 0.56565	 0.56565	   19	0.026101
-0.72	 0.56565	 0.53737	   13	0.017859
-0.73	 0.53737	 0.51050	   17	0.023354
-0.75	 0.51050	 0.51050	   15	0.020606
-0.74	 0.51050	 0.48498	   17	0.023354
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Measurement Stage.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   1 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   2 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   3 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   4 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   5 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   6 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   7 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   8 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #   9 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  10 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  11 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  12 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  13 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  14 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  15 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  16 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  17 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  18 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  19 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Bin #  20 stored to disk.
-[PIMCID: c5555b0b-a259-49bd-a4b1-7a12b8214fd4] - Measurement complete.
-```
+      _____    _____   __  __    _____
+     |  __ \  |_   _| |  \/  |  / ____|
+     | |__) |   | |   | \  / | | |
+     |  ___/    | |   | |\/| | | |
+     | |       _| |_  | |  | | | |____
+     |_|      |_____| |_|  |_|  \_____|
 
-during the relaxation process where `PIMCID` is a uuid, and 20 measurements will be output to disk.  To analyze the results the code, you will need to obtain a number of python programs located in a `SCRIPTS` directory which can be obtained via:
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Pre-Equilibration Stage.
+    [▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇] 	. Diagonal Pre-Equilibration.
+    [▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇] 	. Off-Diagonal Pre-Equilibration.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Relax Worm Constant.
 
-```bash
-svn checkout --username=SVNID http://svn.delmaestro.org/projects/SCRIPTS/ $HOME/local/pimcscripts
-```
 
-Which will place them in a folder `pimcscripts` in your `$HOME/local/`
-directory.  Many of these depend on some general utility modules that should be
-added to this directory on your local machine.
+    Converged on C0 =  1.00000
 
-1. Move in to the `pimcscripts` directory
-2. Download the relevant scripts (replacing `svnID` with your svn username)
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Equilibration Stage.
+    [▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇]
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Measurement Stage.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #    1 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #    2 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #    3 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #    4 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #    5 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #    6 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #    7 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #    8 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #    9 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #   10 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #   11 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #   12 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #   13 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #   14 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #   15 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #   16 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #   17 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #   18 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #   19 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Bin #   20 stored to disk.
+    [PIMCID: 395a20fc-f1aa-4169-81e0-97a77e251bc4] - Measurement complete.
 
-    ```bash
-    svn export --username=svnID http://svn.delmaestro.org/pyutils/pyutils.py
-    svn export --username=svnID http://svn.delmaestro.org/pyutils/loadgmt.py
-    svn export --username=svnID http://svn.delmaestro.org/pyutils/kevent.py
-    ```
+during the relaxation process where the string following `PIMCID:` is a uuid that uniquely tags your run, and 20 measurements will be output to disk.  To analyze the results the code, you will need to obtain and install the [pimcscripts](https://github.com/DelMaestroGroup/pimcscripts) package via: 
 
-It may be advantageous to add a new environment variable for the location of
-this folder to your `.bashrc` as you will use these scripts extensively.  In
-order to take advantage of many of the plotting options you will need to have
-various python libraries installed such as
-[Matplotlib](http://matplotlib.sourceforge.net/).  For the extra color options
-you will need to download and install the gradient files from
-[CPT-City](http://soliton.vm.bytemark.co.uk/pub/cpt-city/pkg/)
+
+	pip install --upgrade git+git://github.com/DelMaestroGroup/pimcscripts.git#egg=pimcscripts
+
+Which will add the `pimcscripts` library and a number of useful python analysis programs to your path. 
 
 After this has been completed, you can analyze the results of your run via
 
 ```bash
-python $HOME/local/pimcsripts/pimcave.py OUTPUT/gce-estimator-05.000-008.996-+000.020-0.01000-c5555b0b-a259-49bd-a4b1-7a12b8214fd4.dat
+pimcave.py OUTPUT/gce-estimator-05.000-008.996-+000.020-0.01000-395a20fc-f1aa-4169-81e0-97a77e251bc4.dat
 ```
 
-where `c5555b0b-a259-49bd-a4b1-7a12b8214fd4` needs to be replaced with the unique identifier generated on your machine.  The results should yield something like:
+where `395a20fc-f1aa-4169-81e0-97a77e251bc4` needs to be replaced with the unique identifier generated on your machine.  The results should yield something like:
 
 ```bash
-# PIMCID c5555b0b-a259-49bd-a4b1-7a12b8214fd4
+# PIMCID 395a20fc-f1aa-4169-81e0-97a77e251bc4
 # Number Samples     20
-K                  342.70210	    16.30687	 4.76
-V                 -480.38334	    17.01402	 3.54
-E                 -137.68124	    11.58631	 8.42
-E_mu              -138.03494	    11.58918	 8.40
-K/N                 19.18999	     0.72609	 3.78
-V/N                -26.93371	     0.53264	 1.98
-E/N                 -7.74372	     0.58986	 7.62
-N                   17.68500	     0.32215	 1.82
-N^2                315.36300	    10.87876	 3.45
-density              0.02429	     0.00044	 1.82
-us                1178.62311	    23.20618	 1.97
-mcsteps            127.30000	     2.28738	 1.80
-diagonal             0.79007	     0.01326	 1.68
+K                  315.54530	    12.70789	 4.03
+V                 -509.32392	    11.22932	 2.20
+V_ext                0.00000	     0.00000	 0.00
+V_int             -507.58296	    10.92684	 2.15
+E                 -193.77862	    10.05201	 5.19
+E_mu              -194.11968	    10.05299	 5.18
+K/N                 18.40800	     0.62058	 3.37
+V/N                -29.71109	     0.35392	 1.19
+E/N                -11.30309	     0.56667	 5.01
+N                   17.05300	     0.17947	 1.05
+N^2                292.21000	     6.07779	 2.08
+density              0.02343	     0.00025	 1.05
+us                1290.97997	    22.17522	 1.72
+mcsteps            157.20000	     3.86251	 2.46
+diagonal             0.64350	     0.01594	 2.48
 ```
 
 The basic idea of running the program is that one needs to setup the simulation
@@ -368,28 +342,6 @@ of the system in such a way that detailed balance is maintained.  After some
 suitable equilibration period, measurements are made and their results are
 stored to disk.
 
-As discussed above, the driver file for this PIMC program is called pdrive.cpp.
-It takes a series of command line options, which are used by the Setup class to
-initialize ConstantParameters, Container, LookupTable and Communicator objects.
-Next, a Potential object is created which describes the potential environment
-(any walls etc.) and the interactions between bosons. A Path object is then
-instantiated which holds all the details of the actual world lines of the
-quantum particles. An Action object is created based on the Potential which
-holds an approximation of the action to be discretized in the path integral
-decomposition of the partition function. Finally, the main operating object of
-the program, of type PathIntegralMonteCarlo is created, which requires both the
-Path and the [Action](@ref ActionBase).  This object performs the actual
-simulation via a series of [Moves](@ref MoveBase), all of which generate trial
-world line configurations that exactly sample the kinetic part of the density
-matrix.  All measurements are made via specific [Estimators](@ref EstimatorBase)
-with the results being output to disk.
+As discussed above, the driver file for this PIMC program is called pdrive.cpp.  It takes a series of command line options, which are used by the Setup class to initialize ConstantParameters, Container, LookupTable and Communicator objects.  Next, a Potential object is created which describes the potential environment (any walls etc.) and the interactions between bosons. A Path object is then instantiated which holds all the details of the actual world lines of the quantum particles. An Action object is created based on the Potential which holds an approximation of the action to be discretized in the path integral decomposition of the partition function. Finally, the main operating object of the program, of type PathIntegralMonteCarlo is created, which requires both the Path and the [Action](https://code.delmaestro.org/classActionBase.html).  This object performs the actual simulation via a series of [Moves](https://code.delmaestro.org/classMoveBase.html), all of which generate trial world line configurations that exactly sample the kinetic part of the density matrix.  All measurements are made via specific [Estimators](https://code.delmaestro.org/classEstimatorBase.html) with the results being output to disk.
 
-The main kernel of this program should remain relatively untouched, as it has
-been extensively tested and optimized.  Generality can come from modifying just
-a few things.  For example, in order to implement a new type of measurement,
-one would need to write a derived [Estimator](@ref EstimatorBase) class along
-with modifying the Communicator class to define an output path.  New types of
-particles and external environments can be added by adding new
-[Potential](@ref PotentialBase) then updating Setup to allow for their
-specification at the command line.  Finally, radically different systems can be
-studied by modifying the [Container](@ref Container) class.
+The main kernel of this program should remain relatively untouched, as it has been extensively tested and optimized.  Generality can come from modifying just a few things.  For example, in order to implement a new type of measurement, one would need to write a derived [Estimator](https://code.delmaestro.org/classEstimatorBase.html) class along with modifying the Communicator class to define an output path.  New types of particles and external environments can be added by adding new [Potential](https://code.delmaestro.org/classPotentialBase.html) then updating Setup to allow for their specification at the command line.  Finally, radically different systems can be studied by modifying the [Container](https://code.delmaestro.org/classContainer.html) class.
