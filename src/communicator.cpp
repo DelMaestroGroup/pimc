@@ -6,7 +6,7 @@
  */
 
 #include "communicator.h"
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -34,7 +34,7 @@ File::File(string _type, string _data, string ensemble, string outDir) {
     bakname = str(format("%s/%s-%s-%s.bak") % outDir % ensemble % _type % _data);
 
     /* Determine if the file already exists */
-    exists_ = boost::filesystem::exists(name);
+    exists_ = filesystem::exists(name);
 }
 
 /**************************************************************************//**
@@ -107,19 +107,18 @@ void File::reset() {
 /**************************************************************************//**
  *  Rename a file.
  *  
- *  After we have performed a write to a .bak file, we rename it to the .dat
- *  file using boost::filesystem.
+ *  After we have performed a write to a .bak file, we rename it to .dat
 ******************************************************************************/
 void File::rename() {
 
     close();
 
-    /* Create the filesystem paths */
-    boost::filesystem::path datpath(name);
-    boost::filesystem::path bakpath(bakname);
+    /* /1* Create the filesystem paths *1/ */
+    /* boost::filesystem::path datpath(name); */
+    /* boost::filesystem::path bakpath(bakname); */
 
     /* Perform the rename */
-    boost::filesystem::rename(bakpath, datpath);
+    filesystem::rename(bakname.c_str(), name.c_str());
 }
 
 // ---------------------------------------------------------------------------
@@ -143,32 +142,33 @@ void Communicator::init(double _tau, bool outputWorldline, string _initName,
     baseDir = "OUTPUT"; 
     initName = _initName;
     fixedName = _fixedName;
+    tau = _tau;
+
 
     /* Determine the ensemble and unique parameter file string or dataname */
     if (!constants()->canonical()) {
         ensemble = "gce";
         dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%s") % constants()->T() 
-                % constants()->L() % constants()->mu() % _tau % constants()->id());
+                % constants()->L() % constants()->mu() % tau % constants()->id());
     }
     else {
         ensemble = "ce";
         dataName = str(format("%06.3f-%04d-%06.3f-%7.5f-%s") % constants()->T()
                 % constants()->initialNumParticles() 
                 % (1.0*constants()->initialNumParticles()/constants()->V()) 
-                % _tau % constants()->id());
+                % tau % constants()->id());
     }
 
     /* Check to make sure the correct directory structure for OUTPUT files is
-     * in place.  We do this using boost::filesystem */
-    boost::filesystem::path outputPath(baseDir);
-    boost::filesystem::create_directory(outputPath);
+     * in place. */ 
+    filesystem::path outputPath(baseDir);
+    filesystem::create_directory(outputPath);
 
     /* If we have cylinder output files, add the required directory. */
     if (constants()->extPotentialType().find("tube") != string::npos) {
-        boost::filesystem::path cylPath(baseDir + "/CYLINDER");
-        boost::filesystem::create_directory(cylPath);
+        filesystem::path cylPath(baseDir + "/CYLINDER");
+        filesystem::create_directory(cylPath);
     }
-
 
     /* A header line for the files */
     header =  str(format("# PIMCID: %s\n") % constants()->id());
@@ -234,7 +234,40 @@ void Communicator::initFile(string type) {
     }
 }
 
+/**************************************************************************//**
+ * Update the data name and rename any existing files
+******************************************************************************/
+void Communicator::updateNames() {
 
+    /* We create a new dataName based on the posibility of updated paramters. */
+
+    /* Determine the ensemble and unique parameter file string or dataname */
+    if (!constants()->canonical()) {
+        dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%s") % constants()->T() 
+                % constants()->L() % constants()->mu() % tau % constants()->id());
+    }
+    else {
+        dataName = str(format("%06.3f-%04d-%06.3f-%7.5f-%s") % constants()->T()
+                % constants()->initialNumParticles() 
+                % (1.0*constants()->initialNumParticles()/constants()->V()) 
+                % tau % constants()->id());
+    }
+
+    /* Perform the rename for each file in the map */
+    for (auto const& [key, filePtr] : file_)
+    {
+
+        string oldName(filePtr->name);
+
+        /* Replace with the new data name, we need to do this for both name and
+         * backup name. */
+        filePtr->name.replace(filePtr->name.end()-dataName.length()-4,filePtr->name.end()-4,dataName);
+        filePtr->bakname.replace(filePtr->bakname.end()-dataName.length()-4,filePtr->bakname.end()-4,dataName);
+
+        /* Perform the rename */
+        filesystem::rename(oldName.c_str(), filePtr->name.c_str());
+    }
+}
 /**************************************************************************//**
  *  This public method gets an instance of the Communicator object,  only one
  *  can ever exist at a time.

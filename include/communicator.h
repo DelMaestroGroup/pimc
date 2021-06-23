@@ -88,6 +88,8 @@ class Communicator
             return &file_.at(type);
         }
 
+        void updateNames();
+
     protected:
         Communicator() {}                                   
         Communicator(const Communicator&);              ///< Copy constructor
@@ -103,6 +105,8 @@ class Communicator
         string initName;      // A possible initial file name
         string fixedName;     // A posible fixed file name
         string baseDir;       // The output base directory
+
+        double tau;          // A local copy of the actual imaginary time step.
 
         boost::ptr_map<string,File> file_; // The file map
 

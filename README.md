@@ -26,7 +26,7 @@ This program has been successfully compiled and run on both Intel and AMD system
 
 The code is written in c++ and makes use of both the <a href="https://github.com/blitzpp/blitz">blitz++</a> and <a href="http://www.boost.org/">boost</a> libraries.  You should be able to grab `blitz` from github and compile from source via the instructions below.
 
-We use many of the boost header-only libraries, but two libraries will need to be compiled: boost_program_options and boost_filesystem libraries.  Let us assume that you will be installing both blitz and boost in the folder `$HOME/local` using the GNU C++ compiler.  For icpc or clang, the changes should be obvious, and in particular for the Intel compiler you will need to use `intel-linux` as the toolset while for clang you will use `darwin`.
+We use many of the boost header-only libraries, but two libraries will need to be compiled: boost_program_options and boost_serialization libraries.  Let us assume that you will be installing both blitz and boost in the folder `$HOME/local` using the GNU C++ compiler.  For icpc or clang, the changes should be obvious, and in particular for the Intel compiler you will need to use `intel-linux` as the toolset while for clang you will use `darwin`.
 
 If you don't have a `$HOME/local` you should create this directory now via
 
@@ -76,19 +76,18 @@ For detailed instructions on installing boost with compiled libraries please see
 If you want to compile for a specific toolset you could add `--with-toolset=gcc`.  Now you are ready to install.  Execute
 
     ```bash
-    ./b2 install --prefix=PREFIX --with-program_options --with-filesystem --with-system --with-serialization cxxflags="-std=c++14" linkflags="-std=c++14"
+    ./b2 install --prefix=PREFIX --with-program_options --with-serialization cxxflags="-std=c++17" linkflags="-std=c++17"
     ```
     or if you are using the `clang` compiler on mac os
 
     ```bash
-    ./b2 install --prefix=PREFIX --toolset=darwin --with-program_options --with-filesystem --with-system --with-serialization cxxflags="-std=c++14 -stdlib=libc++" linkflags="-std=c++14 -stdlib=libc++" 
+    ./b2 install --prefix=PREFIX --toolset=darwin --with-program_options --with-serialization cxxflags="-std=c++17 -stdlib=libc++" linkflags="-std=c++17 -stdlib=libc++" 
     ```
 
 4. If you want to have multiple versions of the library compiled with different compilers you can use the `--layout=versioned` flag above, or you could add `option.set layout : versioned ;` to your `project-config.jam`.  Note: you may have to rename the `$HOME/include/blitz_VER` directory to remove the version number.
 5. You should now have a `PREFIX/include` directory containing the header files for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain the following files (the `.dylib` files will only appear on Mac OS X)
     ```bash
-    libblitz.a   libboost_filesystem.a      libboost_program_options.a     libboost_system.a 
-    libblitz.la  libboost_filesystem.dylib  libboost_program_options.dylib libboost_system.dylib
+    libblitz.a   libboost_program_options.a  libblitz.la  libboost_program_options.dylib 
     ```
 
 6. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on mac os) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` e.g.

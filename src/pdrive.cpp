@@ -182,6 +182,12 @@ int main (int argc, char *argv[]) {
         for (uint32 n = 0; n < constants()->numEqSteps(); n++) 
             pimc.equilStep(n,setup.params("relax"),setup.params("relaxmu"));
 
+        /* If we have relaxed the chemical potential, need to update file names 
+         * in the grand canonical ensemble */
+        if (!setup.params("canonical") && setup.params("relaxmu")) {
+            communicate()->updateNames();
+        }
+
         /* Output simulation details/parameters */
         setup.outputOptions(argc,argv,seed,boxPtr,lookupPtrVec.front().getNumNNGrid());
     }

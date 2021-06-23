@@ -146,7 +146,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Find Boost
-find_package( Boost 1.71.0 REQUIRED COMPONENTS program_options filesystem serialization )
+find_package( Boost 1.71.0 REQUIRED COMPONENTS program_options serialization )
 
 # Find Blitz
 find_package( Blitz REQUIRED )
