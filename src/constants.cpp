@@ -114,6 +114,7 @@ void ConstantParameters::initConstants(po::variables_map &params) {
     V_             = params["volume"].as<double>();
     L_             = params["side"].as<dVec>()[NDIM-1];
     numEqSteps_    = params["number_eq_steps"].as<uint32>();
+    binSize_       = params["bin_size"].as<int>();
 
     graphenelut3d_file_prefix_ = params["graphenelut3d_file_prefix"].as<string>();
     virialWindow_  = params["virial_window"].as<int>();

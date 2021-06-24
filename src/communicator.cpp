@@ -35,6 +35,9 @@ File::File(string _type, string _data, string ensemble, string outDir) {
 
     /* Determine if the file already exists */
     exists_ = filesystem::exists(name);
+
+    /* Has the file been prepared for writing? */
+    prepared_ = false;
 }
 
 /**************************************************************************//**

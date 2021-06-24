@@ -171,6 +171,8 @@ class EnergyEstimator: public EstimatorBase {
     
     private:
         void accumulate();      // Accumulate values
+                                
+        uint32 numPPAccumulated; ///< The number of per particle (PP) accumulated values
 
 };
 
@@ -208,6 +210,7 @@ class VirialEnergyEstimator: public EstimatorBase {
 
     private:
         void accumulate();      // Accumulate values
+        uint32 numPPAccumulated; ///< The number of per particle (PP) accumulated values
 
 };
 
@@ -424,9 +427,12 @@ class SuperfluidFractionEstimator: public EstimatorBase {
         string getName() const {return name;}
 
     private:
-        int windMax;            // The maximum winding number considered
+        int windMax;             // The maximum winding number considered
+        double W2Norm;           // A local normalizer for the winding superfluid fraction
+        double ANorm;            // A local normalizer for the area superfluid fraction
+        uint32 numPPAccumulated; // The number of per particle (PP) accumulated values
 
-        void accumulate();      // Accumulate values
+        void accumulate();       // Accumulate values
 
 };
 

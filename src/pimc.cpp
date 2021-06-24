@@ -383,12 +383,13 @@ bool PathIntegralMonteCarlo::equilStepRelaxmu() {
                     }
                 }
 
-                cout << format("Shifting %5s:%10.2f%10.2f%10d%10d%10d") % method % 
-                    constants()->mu() % mu % PN(N0-1) % PN(N0) % PN(N0+1);
+                /* Some optional debugging messages */
+                /* cout << format("Shifting %5s:%10.2f%10.2f%10d%10d%10d") % method % */ 
+                /*     constants()->mu() % mu % PN(N0-1) % PN(N0) % PN(N0+1); */
 
                 constants()->setmu(mu);
 
-                cout << format("%12d%12d%12d\n") % peakN % aveN % path.getTrueNumParticles();
+                /* cout << format("%12d%12d%12d\n") % peakN % aveN % path.getTrueNumParticles(); */
 
                 numNAttempted = 0;
                 PN = 0;

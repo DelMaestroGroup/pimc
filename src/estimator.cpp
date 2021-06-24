@@ -219,7 +219,6 @@ void EstimatorBase::initialize(vector<string> estLabel) {
         estIndex[estLabel[i]] = i;
 
     /* write the header string */
-    estLabel.front() = str(format("#%15s") % estLabel.front());
     header = "";
     for (const auto& label : estLabel)
         header += str(format("%16s") % label);
@@ -248,9 +247,17 @@ void EstimatorBase::prepare() {
         /* Write the header to disk if we are not restarting or if this is
          * a new estimator. */
         if (!constants()->restart() || (!communicate()->file(label)->exists())) {
+            /* Check to see if the header has already been written to. 
+             * Required for scalar estimators combined into one file. */
+            if (!communicate()->file(label)->prepared()) {
+                header.replace(header.begin(),header.begin()+1,"#");
+                communicate()->file(label)->prepare();
+            }
+             
             (*outFilePtr) << header;
             if (endLine)
                 (*outFilePtr) << endl;
+
         }
     }
 }
@@ -342,10 +349,8 @@ TimeEstimator::TimeEstimator (const Path &_path,
         int _frequency, string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
-    /* Set estimator name and header */
-    header = str(format("%16s%16s") % "us" % "mcsteps");
     endLine = false;
-    initialize(2);
+    initialize({"us","mcsteps"});
 }
 
 /*************************************************************************//**
@@ -412,6 +417,8 @@ EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
 
     endLine = false;
     initialize({"K","V","V_ext","V_int","E","E_mu","K/N","V/N","E/N"});
+
+    numPPAccumulated = 0;
 }
 
 /*************************************************************************//**
@@ -496,13 +503,23 @@ void EnergyEstimator::accumulate() {
     estimator(estIndex["E"]) += totK + totV;
     estimator(estIndex["E_mu"]) += totK + totV - constants()->mu()*numParticles;
 
-    /* ToDo: This is broken for the cases where numParticles == 0.  Need to add
-     * a special accumulator and renormalize these measruements.  To study this
-     * case, just divide separately by <N> (error bars may be too small). */
+    /* Measure "per particle" estimators in the GCE */
     if (numParticles > 0) {
+        numPPAccumulated += 1;
+
         estimator(estIndex["K/N"]) += totK/(1.0*numParticles);
         estimator(estIndex["V/N"]) += totV/(1.0*numParticles);
         estimator(estIndex["E/N"]) += (totK + totV)/(1.0*numParticles);
+    }
+
+    /* We have to modify the normalization in this case as we don't 
+     * necessrily measure every time accumulate is called */
+    if (numAccumulated == constants()->binSize()) {
+        norm(estIndex["K/N"]) = 1.0*numAccumulated/numPPAccumulated;
+        norm(estIndex["V/N"]) = 1.0*numAccumulated/numPPAccumulated;
+        norm(estIndex["E/N"]) = 1.0*numAccumulated/numPPAccumulated;
+
+        numPPAccumulated = 0;
     }
 }
 
@@ -526,11 +543,17 @@ VirialEnergyEstimator::VirialEnergyEstimator (const Path &_path, ActionBase *_ac
 
     /* Set estimator name and header, we will always report the energy
      * first, hence the comment symbol*/
-    header = str(format("#%15s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s") 
-            % "K_op" % "K_cv" % "V_op" % "V_cv" % "E" % "E_mu" % "K_op/N" % "K_cv/N" % "V_op/N"
-            % " V_cv/N" % "E/N" % "EEcv*Beta^2"% "Ecv*Beta" % "dEdB" % "CvCov1"
-            % "CvCov2" % "CvCov3" % "E_th" % "P");
-    initialize(19);
+    /* header = str(format("#%15s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s") */ 
+    /*         % "K_op" % "K_cv" % "V_op" % "V_cv" % "E" % "E_mu" % "K_op/N" % "K_cv/N" % "V_op/N" */
+    /*         % " V_cv/N" % "E/N" % "EEcv*Beta^2"% "Ecv*Beta" % "dEdB" % "CvCov1" */
+    /*         % "CvCov2" % "CvCov3" % "E_th" % "P"); */
+    /* initialize(19); */
+
+    initialize({"K_op","K_cv","V_op","V_cv","E","E_mu","K_op/N","K_cv/N","V_op/N",
+            "V_cv/N","E/N","EEcv*Beta^2","Ecv*Beta","dEdB","CvCov1", "CvCov2","CvCov3",
+            "E_th","P"});
+
+    numPPAccumulated = 0;
 }
 
 /*************************************************************************//**
@@ -676,32 +699,49 @@ void VirialEnergyEstimator::accumulate() {
     dEdB *= beta*beta/(1.0*numTimeSlices);
 
     /* accumulate all energy estimators. */
-    estimator(0) += totEcv - totVop; // operator kinetic energy
-    estimator(1) += Kcv; // centroid virial kinetic energy
-    estimator(2) += totVop; // operator potential energy
-    estimator(3) += totEcv - Kcv; //centroid virial potential energy
-    estimator(4) += totEcv; // total energy
-    estimator(5) += totEcv - constants()->mu()*numParticles;
-    estimator(6) += (totEcv - totVop)/(1.0*numParticles);
-    estimator(7) += Kcv/(1.0*numParticles);
-    estimator(8) += totVop/(1.0*numParticles);
-    estimator(9) += (totEcv - Kcv)/(1.0*numParticles);
-    estimator(10) += totEcv/(1.0*numParticles);
+    estimator(estIndex["K_op"]) += totEcv - totVop; // operator kinetic energy
+    estimator(estIndex["K_cv"]) += Kcv; // centroid virial kinetic energy
+    estimator(estIndex["V_op"]) += totVop; // operator potential energy
+    estimator(estIndex["V_cv"]) += totEcv - Kcv; //centroid virial potential energy
+    estimator(estIndex["E"]) += totEcv; // total energy
+    estimator(estIndex["E_mu"]) += totEcv - constants()->mu()*numParticles;
+
+    /* Measure "per particle" estimators */
+    if (numParticles > 0) {
+        numPPAccumulated += 1;
+
+        estimator(estIndex["K_op/N"]) += (totEcv - totVop)/(1.0*numParticles);
+        estimator(estIndex["K_cv/N"]) += Kcv/(1.0*numParticles);
+        estimator(estIndex["V_op/N"]) += totVop/(1.0*numParticles);
+        estimator(estIndex["V_cv/N"]) += (totEcv - Kcv)/(1.0*numParticles);
+        estimator(estIndex["E/N"]) += totEcv/(1.0*numParticles);
+    }
+
+    /* We have to modify the normalization in this case as we don't 
+     * necessrily measure every time accumulate is called */
+    if (numAccumulated == constants()->binSize()) {
+        norm(estIndex["K_op/N"]) = 1.0*numAccumulated/numPPAccumulated;
+        norm(estIndex["K_cv/N"]) = 1.0*numAccumulated/numPPAccumulated;
+        norm(estIndex["V_op/N"]) = 1.0*numAccumulated/numPPAccumulated;
+        norm(estIndex["V_cv/N"]) = 1.0*numAccumulated/numPPAccumulated;
+        norm(estIndex["E/N"]) = 1.0*numAccumulated/numPPAccumulated;
+
+        numPPAccumulated = 0;
+    }
 
     /* accumulate specific heat estimators. */
-    estimator(11) += totEcv*thermE*beta*beta;
-    estimator(12) += totEcv*beta;
-    estimator(13) += dEdB;
-    estimator(14) += totEcv*thermE*beta*beta*totEcv*beta;
-    estimator(15) += totEcv*beta*dEdB;
-    estimator(16) += totEcv*thermE*beta*beta*dEdB;
+    estimator(estIndex["EEcv*Beta^2"]) += totEcv*thermE*beta*beta;
+    estimator(estIndex["Ecv*Beta"]) += totEcv*beta;
+    estimator(estIndex["dEdB"]) += dEdB;
+    estimator(estIndex["CvCov1"]) += totEcv*thermE*beta*beta*totEcv*beta;
+    estimator(estIndex["cVCov2"]) += totEcv*beta*dEdB;
+    estimator(estIndex["CvCov3"]) += totEcv*thermE*beta*beta*dEdB;
 
     /* thermodynamic energy */
-    estimator(17) += thermE;
+    estimator(estIndex["E_th"]) += thermE;
 
     /* Pressure */
-    estimator(18) += Pressure;
-
+    estimator(estIndex["P"]) += Pressure;
 }
 
 // ---------------------------------------------------------------------------
@@ -722,9 +762,8 @@ NumberParticlesEstimator::NumberParticlesEstimator (const Path &_path,
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* Set estimator name and header */
-    header = str(format("%16s%16s%16s") % "N" % "N^2" % "density");
     endLine = false;
-    initialize(3);
+    initialize({"N","N^2","density"});
 }
 
 /*************************************************************************//**
@@ -1307,15 +1346,15 @@ SuperfluidFractionEstimator::SuperfluidFractionEstimator (const Path &_path,
     initialize(4 + 2*windMax + 1 + 1);
 
     header = str(format("#%15s%16s%16s%16s") % "rho_s/rho" % "W^2(x)" % "W^2(y)" % "W^2(z)");
-    for (int w = -windMax; w <= windMax; w++)
-        header += str(format("%11sP(%+1d)") % " " % w);
+    for (int w = -windMax; w <= windMax; w++) 
+        header += str(format("%16s") % str(format("P(%+2d)") % w));
     header += str(format("%16s") % "Area_rho_s");
 
     /* The pre-factor for the superfluid density is always the same */
-    norm(0) = constants()->T() / (2.0 * sum(path.boxPtr->periodic) * constants()->lambda());
+    W2Norm = constants()->T() / (2.0 * sum(path.boxPtr->periodic) * constants()->lambda());
 
     /* The pre-factor for the area esimator */
-    norm(5+2*windMax) = 0.5*constants()->T()*constants()->numTimeSlices()/constants()->lambda();
+    ANorm = 0.5*constants()->T()*constants()->numTimeSlices()/constants()->lambda();
 }
 
 /*************************************************************************//**
@@ -1367,8 +1406,23 @@ void SuperfluidFractionEstimator::accumulate() {
     /* Compute the locally scaled W^2/N */
     locW2oN = dot(W,W)/(1.0*path.getTrueNumParticles());
 
-    /* The average winding number squared */
-    estimator(0) += locW2oN;
+    if (path.getTrueNumParticles() > 0) {
+        numPPAccumulated += 1;
+
+        /* The average winding number squared */
+        estimator(0) += locW2oN;
+
+        /* The Area Estimator */
+        estimator(5+2*windMax) += Az*Az/I;
+    }
+
+    /* We need to re-normalize as it may not be measured everytime
+     * for small numbers of particles */
+    if (numAccumulated == constants()->binSize()) {
+        norm(0) = W2Norm*numAccumulated/numPPAccumulated;
+        norm(5+2*windMax) = ANorm*numAccumulated/numPPAccumulated;
+        numPPAccumulated = 0;
+    }
 
     /* Scale by the length of the system in each dimension*/
     W *= path.boxPtr->sideInv;
@@ -1388,9 +1442,6 @@ void SuperfluidFractionEstimator::accumulate() {
             estimator(4+n) += 1.0;
         ++n;
     }
-
-    /* The Area Estimator */
-    estimator(5+2*windMax) += Az*Az/I;
 }
 
 // ---------------------------------------------------------------------------

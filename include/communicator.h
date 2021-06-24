@@ -41,6 +41,8 @@ class File
         /* Reset and rename the primary file */
         void reset();
         void rename();
+        void prepare() {prepared_ = true;}
+        bool prepared() {return prepared_;}
 
         /* Close the file if open */
         void close();       
@@ -54,6 +56,7 @@ class File
         string bakname;     // The backup name
 
         bool exists_;       // Does the file exist? Check on creation.
+        bool prepared_;      // Has the file already been prepared for writing?
 
         fstream rwfile;     // The i/o file object
 
