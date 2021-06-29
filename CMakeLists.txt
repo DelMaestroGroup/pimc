@@ -165,6 +165,12 @@ if((CMAKE_BUILD_TYPE MATCHES Debug) OR (CMAKE_BUILD_TYPE MATCHES PIGSDebug))
     target_link_libraries (${exe} ${Blitz_LIBRARIES} )
 endif()
 
+# Link filesystem library -lstdc++fs for old compilers
+if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0))
+    message("Linking filesystem libraries -lstdc++fs for older compilers")
+    target_link_libraries(${exe} stdc++fs)
+endif()
+
 # 'make install' to the correct locations (provided by GNUInstallDirs).
 install(TARGETS ${exe} EXPORT ${exe}Config
     ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}

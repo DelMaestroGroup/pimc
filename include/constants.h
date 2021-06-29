@@ -105,7 +105,7 @@ class ConstantParameters
         double spatialSubregion() {return spatialSubregion_;}          //< Get size of subregion
         bool spatialSubregionOn() {return spatialSubregionOn_;}           //< Get subregion on/off
         int Npaths() {return Npaths_;}                  //< Get number of paths
-        int binSize() {return binSize_;}                //< Get the number of measurments per bin.
+        uint32 binSize() {return binSize_;}                //< Get the number of measurments per bin.
 
         string intPotentialType() const {return intPotentialType_;} ///< Get interaction potential type
         string extPotentialType() const {return extPotentialType_;} ///< Get external potential type
@@ -189,7 +189,7 @@ class ConstantParameters
 
         int virialWindow_;        // Window size for centroid virial estimator
         int maxWind_;             // The maximum winding number sampled
-        int binSize_;               // The number of measurments per bin.
+        uint32 binSize_;               // The number of measurments per bin.
 
         bool saveStateFiles_;       // Are we saving a state file every MC bin?
         string graphenelut3d_file_prefix_; // GrapheneLUT3D file prefix <prefix>_{V,gradV,grad2V}.npy 

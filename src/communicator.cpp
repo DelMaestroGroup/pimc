@@ -6,7 +6,18 @@
  */
 
 #include "communicator.h"
-#include <filesystem>
+
+/* Filesystem is tricky as it is not yet widely supported.  We try to address
+ * that here. */
+#if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 8))
+    #include <filesystem>
+    namespace fs = std::filesystem;
+#else
+#if defined(__GNUC__) && (__GNUC__ > 6)
+        #include <experimental/filesystem>
+        namespace fs = std::experimental::filesystem;
+#endif
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -34,7 +45,7 @@ File::File(string _type, string _data, string ensemble, string outDir) {
     bakname = str(format("%s/%s-%s-%s.bak") % outDir % ensemble % _type % _data);
 
     /* Determine if the file already exists */
-    exists_ = filesystem::exists(name);
+    exists_ = fs::exists(name);
 
     /* Has the file been prepared for writing? */
     prepared_ = false;
@@ -116,12 +127,8 @@ void File::rename() {
 
     close();
 
-    /* /1* Create the filesystem paths *1/ */
-    /* boost::filesystem::path datpath(name); */
-    /* boost::filesystem::path bakpath(bakname); */
-
     /* Perform the rename */
-    filesystem::rename(bakname.c_str(), name.c_str());
+    fs::rename(bakname.c_str(), name.c_str());
 }
 
 // ---------------------------------------------------------------------------
@@ -164,13 +171,13 @@ void Communicator::init(double _tau, bool outputWorldline, string _initName,
 
     /* Check to make sure the correct directory structure for OUTPUT files is
      * in place. */ 
-    filesystem::path outputPath(baseDir);
-    filesystem::create_directory(outputPath);
+    fs::path outputPath(baseDir);
+    fs::create_directory(outputPath);
 
     /* If we have cylinder output files, add the required directory. */
     if (constants()->extPotentialType().find("tube") != string::npos) {
-        filesystem::path cylPath(baseDir + "/CYLINDER");
-        filesystem::create_directory(cylPath);
+        fs::path cylPath(baseDir + "/CYLINDER");
+        fs::create_directory(cylPath);
     }
 
     /* A header line for the files */
@@ -268,7 +275,7 @@ void Communicator::updateNames() {
         filePtr->bakname.replace(filePtr->bakname.end()-dataName.length()-4,filePtr->bakname.end()-4,dataName);
 
         /* Perform the rename */
-        filesystem::rename(oldName.c_str(), filePtr->name.c_str());
+        fs::rename(oldName.c_str(), filePtr->name.c_str());
     }
 }
 /**************************************************************************//**

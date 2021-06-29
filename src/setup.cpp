@@ -407,7 +407,7 @@ void Setup::initParameters() {
     oClass = "measurement";
     params.add<uint32>("number_eq_steps,E", "number of equilibration steps",oClass,1);
     params.add<int>("number_bins_stored,S", "number of estimator bins stored",oClass,1);
-    params.add<int>("bin_size", "number of updates per bin",oClass,100);
+    params.add<uint32>("bin_size", "number of updates per bin",oClass,100);
     params.add<double>("estimator_radius,w", "maximum radius for cylinder estimators",oClass,2.0); 
     params.add<int>("virial_window,V", "centroid virial energy estimator window",oClass,5);
     params.add<int>("number_broken", "number of broken world-lines",oClass,0);
@@ -1707,7 +1707,7 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
     communicate()->file("log")->stream() << 
         format("%-24s\t:\t%7.5f\n") % "Potential Cutoff Length" % params["potential_cutoff"].as<double>();
     communicate()->file("log")->stream() <<
-        format("%-24s\t:\t%d\n") % "Bin Size" % params["bin_size"].as<int>();
+        format("%-24s\t:\t%d\n") % "Bin Size" % params["bin_size"].as<uint32>();
     communicate()->file("log")->stream() << 
         format("%-24s\t:\t%d\n") % "Number EQ Steps" % params["number_eq_steps"].as<uint32>();
     communicate()->file("log")->stream() << 
