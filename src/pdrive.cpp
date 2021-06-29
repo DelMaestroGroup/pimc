@@ -151,8 +151,7 @@ int main (int argc, char *argv[]) {
 
     /* Setup the pimc object */
     PathIntegralMonteCarlo pimc(pathPtrVec,random,movesPtrVec,estimatorsPtrVec,
-                                !setup.params["start_with_state"].as<string>().empty(),
-                                setup.params["bin_size"].as<int>());
+                                !setup.params["start_with_state"].as<string>().empty());
 
     /* A silly banner */
     if (PIGS)

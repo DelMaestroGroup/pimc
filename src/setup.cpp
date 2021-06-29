@@ -407,7 +407,7 @@ void Setup::initParameters() {
     oClass = "measurement";
     params.add<uint32>("number_eq_steps,E", "number of equilibration steps",oClass,1);
     params.add<int>("number_bins_stored,S", "number of estimator bins stored",oClass,1);
-    params.add<uint32>("bin_size", "number of updates per bin",oClass,100);
+    params.add<uint32>("bin_size", "number of updates per bin",oClass,uint32{100});
     params.add<double>("estimator_radius,w", "maximum radius for cylinder estimators",oClass,2.0); 
     params.add<int>("virial_window,V", "centroid virial energy estimator window",oClass,5);
     params.add<int>("number_broken", "number of broken world-lines",oClass,0);

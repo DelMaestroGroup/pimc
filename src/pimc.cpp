@@ -26,10 +26,9 @@
 ******************************************************************************/
 PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPtrVec,
         MTRand &_random, boost::ptr_vector<move_vector> &_movePtrVec,
-        boost::ptr_vector<estimator_vector> &_estimatorPtrVec,
-        const bool _startWithState,uint32 _binSize) :
+        boost::ptr_vector<estimator_vector> &_estimatorPtrVec, const bool _startWithState) :
     random(_random),
-    binSize(_binSize),
+    binSize(constants()->binSize()),
     Npaths(_pathPtrVec.size()),
     pathPtrVec(_pathPtrVec),
     path(pathPtrVec.front()),

@@ -37,7 +37,7 @@ typedef boost::ptr_vector<MoveBase> move_vector;
 class PathIntegralMonteCarlo {
     public:
         PathIntegralMonteCarlo (boost::ptr_vector<Path> &,MTRand &, boost::ptr_vector<move_vector> &,
-                                boost::ptr_vector<estimator_vector> &, const bool, uint32 binSize=100);
+                                boost::ptr_vector<estimator_vector> &, const bool);
         ~PathIntegralMonteCarlo ();
 
 
