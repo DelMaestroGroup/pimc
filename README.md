@@ -73,7 +73,7 @@ For detailed instructions on installing boost with compiled libraries please see
 1. Download and decompress boost into `$HOME/local/src/`
 2. Change to the boost source directory
 3. Execute `bootstrap.sh`
-If you want to compile for a specific toolset you could add `--with-toolset=gcc`.  Now you are ready to install.  Execute
+If you want to compile for a specific toolset you could add `--with-toolset=clang`.  Now you are ready to install.  Execute
 
     ```bash
     ./b2 install --prefix=PREFIX --with-program_options --with-serialization cxxflags="-std=c++17" linkflags="-std=c++17"
@@ -81,7 +81,7 @@ If you want to compile for a specific toolset you could add `--with-toolset=gcc`
     or if you are using the `clang` compiler on mac os
 
     ```bash
-    ./b2 install --prefix=PREFIX --toolset=darwin --with-program_options --with-serialization cxxflags="-std=c++17 -stdlib=libc++" linkflags="-std=c++17 -stdlib=libc++" 
+    ./b2 install --prefix=PREFIX --toolset=clang --with-program_options --with-serialization cxxflags="-std=c++17 -stdlib=libc++" linkflags="-std=c++17 -stdlib=libc++" 
     ```
 
 4. If you want to have multiple versions of the library compiled with different compilers you can use the `--layout=versioned` flag above, or you could add `option.set layout : versioned ;` to your `project-config.jam`.  Note: you may have to rename the `$HOME/include/blitz_VER` directory to remove the version number.
