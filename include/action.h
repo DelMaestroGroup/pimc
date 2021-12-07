@@ -135,6 +135,7 @@ class ActionBase {
         beadLocator bead2,bead3;        // Bead indexers
         dVec sep,sep2;                  // The spatial separation between beads.
         double dSep;                    // The discretization for the separation histogram
+        double dPerSep;                 // The PBC discretization for the separation histogram 
 
         /* Update the separation histogram */
         void updateSepHist(const dVec &);   

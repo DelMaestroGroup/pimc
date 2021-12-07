@@ -2574,7 +2574,7 @@ PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path,
 
     /* The normalization factor for the pair correlation function depends 
      * on the dimensionality, and container type */
-    if (path.boxPtr->name == "Cylinder") {
+    if (path.boxPtr->name == "XXX") {
         for (int n = 0; n < NPCFSEP; n++)
             norm(n) = 0.5*path.boxPtr->side[NDIM-1] / dR;
     }

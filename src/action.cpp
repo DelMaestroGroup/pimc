@@ -43,7 +43,8 @@ ActionBase::ActionBase (const Path &_path, LookupTable &_lookup,
     sepHist = 0;
     cylSepHist.resize(NPCFSEP);
     cylSepHist = 0;
-    dSep = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
+    dSep = 0.5*sqrt(NDIM)*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
+    dPerSep = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
 
     /* Needed for canonical ensemble weighting */
     canonical = constants()->canonical();
@@ -70,9 +71,11 @@ ActionBase::~ActionBase() {
 ******************************************************************************/
 inline void ActionBase::updateSepHist(const dVec &_sep) {
     dVec psep;
-    psep = path.boxPtr->periodic*_sep;
+    /* Temporarly computing full radial g(r) */
+    /* psep = path.boxPtr->periodic*_sep; */
+    psep = _sep;
     int nR = int(sqrt(dot(psep,psep))/dSep);
-    if (nR < NPCFSEP)
+    if (nR >= 0 && nR < NPCFSEP)
         ++sepHist(nR);
 }
 
@@ -658,7 +661,7 @@ double LocalAction::V(const int slice, const double maxR) {
 
                 sep = path.getSeparation(bead2,bead1);
                 if (r2sq < maxR*maxR) {
-                    int nR = int(abs(sep[2])/dSep);
+                    int nR = int(abs(sep[2])/dPerSep);
                     if (nR < NPCFSEP)
                         ++cylSepHist(nR);
                 }
