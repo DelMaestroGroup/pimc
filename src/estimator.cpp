@@ -2618,6 +2618,68 @@ void PairCorrelationEstimator::accumulate() {
 // STATIC STRUCTURE FACTOR ESTIMATOR CLASS -----------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
+//
+//StaticStructureFactorEstimator::StaticStructureFactorEstimator(
+//        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
+//        double _maxR, int _frequency, string _label) :
+//    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+//{
+//
+//    /* hard-coded number of q-vector magnitudes */
+//    numq = 20; 
+//
+//    /* initialize the number of vectors with each magnitude */
+//    numqVecs.resize(numq);               
+//    numqVecs = 0;
+//
+//    /* initialize the magnitude array */
+//    qMag.resize(numq);
+//    qMag = 0.0;
+//
+//    /* The maximum q-vector magnitude to consider (hard-coded for now) */
+//    double qmax = 4.0; // 1/A
+//    double dq = qmax/(numq-1);
+//
+//    /* Determine the set of magnitudes */
+//    Array <double, 1> qMag(numq);         // the q-vector magnitudes
+//    for (int nq = 0; nq < numq; nq++)
+//        qMag(nq) = nq*dq;
+//
+//    /* Determine the set of q-vectors that have these magintudes */
+//    for (int nq = 0; nq < numq; nq++)
+//    {
+//        double cq = qMag(nq);
+//        vector <dVec> qvecs;
+//
+//        int maxComp = ceil(cq*blitz::max(path.boxPtr->side)/(2.0*M_PI))+1;
+//        int maxNumQ = ipow(2*maxComp + 1,NDIM);
+//        
+//        iVec qi;
+//        for (int n = 0; n < maxNumQ; n++) {
+//            for (int i = 0; i < NDIM; i++) {
+//                int scale = 1;
+//                for (int j = i+1; j < NDIM; j++) 
+//                    scale *= (2*maxComp + 1);
+//                qi[i] = (n/scale) % (2*maxComp + 1);
+//
+//                /* Wrap into the appropriate set of integers*/
+//                qi[i] -= (qi[i] > maxComp)*(2*maxComp + 1);
+//            }
+//
+//            dVec qd = 2.0*M_PI*qi/path.boxPtr->side;
+//
+//            /* Store the winding number */
+//            double cqMag = sqrt(dot(qd,qd));
+//            if ( ( (abs(cq) < EPS) && (cqMag < EPS) ) ||
+//                 ( (abs(cq) >= EPS) && (cqMag > (cq-dq)) && (cqMag <= cq) ) ) 
+//            {
+//                qvecs.push_back(qd);
+//                numqVecs(nq)++;
+//            }
+//        }
+//        
+//        q.push_back(qvecs);
+//    }
 
 /*************************************************************************//**
  *  Constructor.
@@ -2630,8 +2692,11 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
-    /* hard-coded number of q-vector magnitudes */
-    numq = 20; 
+    /* The maximum q-vector magnitude to consider (hard-coded for now) */
+    double qMax = 4.0; // 1/Å
+
+    /* Determine how many q-vectors we have */
+    numq = int(qMax*path.boxPtr->side[NDIM-1]/(2.0*M_PI));
 
     /* initialize the number of vectors with each magnitude */
     numqVecs.resize(numq);               
@@ -2641,48 +2706,55 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
     qMag.resize(numq);
     qMag = 0.0;
 
-    /* The maximum q-vector magnitude to consider (hard-coded for now) */
-    double qmax = 4.0; // 1/A
-    double dq = qmax/(numq-1);
+    double dq = 2.0*M_PI/path.boxPtr->side[NDIM-1];
 
     /* Determine the set of magnitudes */
     Array <double, 1> qMag(numq);         // the q-vector magnitudes
     for (int nq = 0; nq < numq; nq++)
         qMag(nq) = nq*dq;
 
-    /* Determine the set of q-vectors that have these magintudes */
+    int numTheta = 10; // The number of theta values per qmag
+    double dtheta = 0.5*M_PI/numTheta;
+
+    /* Determine the set of q-vectors that have these magintudes. We take them
+     * to be equally distributed on a sphere.*/
     for (int nq = 0; nq < numq; nq++)
     {
         double cq = qMag(nq);
         vector <dVec> qvecs;
 
-        int maxComp = ceil(cq*blitz::max(path.boxPtr->side)/(2.0*M_PI))+1;
-        int maxNumQ = ipow(2*maxComp + 1,NDIM);
-        
-        iVec qi;
-        for (int n = 0; n < maxNumQ; n++) {
-            for (int i = 0; i < NDIM; i++) {
-                int scale = 1;
-                for (int j = i+1; j < NDIM; j++) 
-                    scale *= (2*maxComp + 1);
-                qi[i] = (n/scale) % (2*maxComp + 1);
-
-                /* Wrap into the appropriate set of integers*/
-                qi[i] -= (qi[i] > maxComp)*(2*maxComp + 1);
-            }
-
-            dVec qd = 2.0*M_PI*qi/path.boxPtr->side;
-
-            /* Store the winding number */
-            double cqMag = sqrt(dot(qd,qd));
-            if ( ( (abs(cq) < EPS) && (cqMag < EPS) ) ||
-                 ( (abs(cq) >= EPS) && (cqMag > (cq-dq)) && (cqMag <= cq) ) ) 
-            {
-                qvecs.push_back(qd);
-                numqVecs(nq)++;
-            }
+        /* cq = 0.0 */
+        if (abs(cq) < EPS) {
+            dVec qd = 0.0;
+            qvecs.push_back(qd);
+            numqVecs(nq)++;
         }
-        
+
+        /* cq > 0.0 */
+        else {
+
+            for (double theta = 0.0; theta < 0.5*M_PI; theta += dtheta) {
+                double dphi = dtheta/cos(theta);
+                for (double phi = 0.0; phi <= M_PI+EPS; phi += dphi) {
+
+                    dVec qd;
+                    qd[0] = cq*cos(theta)*cos(phi);
+                    qd[1] = cq*cos(theta)*sin(phi);
+                    qd[2] = cq*sin(theta);
+
+                    qvecs.push_back(qd);
+                    numqVecs(nq)++;
+                }
+            }
+
+            /* Now do the θ = π/2 and ϕ = 0 special case */
+            dVec qd = 0.0;
+            qd[2] = cq;
+            qvecs.push_back(qd);
+            numqVecs(nq)++;
+        }
+
+        /* Add the entire list of q-vecs at this magnitude */
         q.push_back(qvecs);
     }
 
@@ -2693,6 +2765,9 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
     /*     for (const auto &cqvec : q[nq]) */ 
     /*         cout << cqvec << endl; */
     /* } */
+    cout << "Full: " << blitz::sum(numqVecs) << endl;
+
+    /* exit(-1); */
 
     /* Make sure we have some q-vectors */
     if ( blitz::sum(numqVecs) < 1) {
@@ -2702,9 +2777,6 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
         exit(0);
     }
 
-    cout << "Full: " << blitz::sum(numqVecs) << endl;
-
-    /* exit(-1); */
 
     /* Initialize the accumulator intermediate scattering function*/
     sf.resize(numq);
@@ -2716,16 +2788,17 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
     /* The magnitude of q */
     header = str(format("#%15.6E") % 0.0);
     for (int nq = 1; nq < numq; nq++) 
-        header.append(str(format("%16.6E") % (qMag(nq)-0.5*dq)));
+        header.append(str(format("%16.6E") % (qMag(nq))));
+        /* header.append(str(format("%16.6E") % (qMag(nq)-0.5*dq))); */
 
     /* Utilize imaginary time translational symmetry */
     norm = 1.0/constants()->numTimeSlices();
 
     /* Normalize by the number of q-vecs (except when there are none) */
-    for (int nq = 0; nq < numq; nq++) {
-        if (numqVecs(nq) > 0)
-            norm(nq) /= numqVecs(nq);
-    }
+    /* for (int nq = 0; nq < numq; nq++) { */
+    /*     if (numqVecs(nq) > 0) */
+    /*         norm(nq) /= numqVecs(nq); */
+    /* } */
 }
 
 /*************************************************************************//**
