@@ -65,6 +65,7 @@ REGISTER_ESTIMATOR("cylinder pair correlation function",CylinderPairCorrelationE
 REGISTER_ESTIMATOR("cylinder radial potential",CylinderRadialPotentialEstimator);
 REGISTER_ESTIMATOR("cylinder linear potential",CylinderLinearPotentialEstimator);
 REGISTER_ESTIMATOR("cylinder potential energy",PotentialEnergyEstimator);
+REGISTER_ESTIMATOR("cylinder static structure factor",CylinderStaticStructureFactorEstimator);
 REGISTER_ESTIMATOR("pigs kinetic energy",KineticEnergyEstimator);
 REGISTER_ESTIMATOR("pigs total energy",TotalEnergyEstimator);
 REGISTER_ESTIMATOR("pigs thermodynamic potential energy",ThermoPotentialEnergyEstimator);
@@ -2605,10 +2606,9 @@ PairCorrelationEstimator::~PairCorrelationEstimator() {
 void PairCorrelationEstimator::accumulate() {
     int numParticles = path.getTrueNumParticles();
     double lnorm = 1.0*(numParticles-1)/(1.0*numParticles);
-    if (numParticles > 1) {
-        estimator += lnorm*(1.0*actionPtr->sepHist / 
-            (1.0*sum(actionPtr->sepHist)));
-    }
+    double tot = 1.0*sum(actionPtr->sepHist);
+    if ((numParticles > 1) && (tot > 0.0)) 
+        estimator += lnorm*(1.0*actionPtr->sepHist / tot );
     else
         estimator += 0.0;
 }
@@ -2622,8 +2622,7 @@ void PairCorrelationEstimator::accumulate() {
 /*************************************************************************//**
  *  Constructor.
  * 
- *  Compute the static structure factor for a fixed set of q vectors.
- *  N.B. BROKEN: Doesn't work in general dimensions. 
+ *  Compute the static structure factor for a fixed set of q vector magnitude.
 ******************************************************************************/
 StaticStructureFactorEstimator::StaticStructureFactorEstimator(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
@@ -2631,10 +2630,81 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
-    numq = 10;
-    q.resize(numq);
-    for (int n = 0; n < numq; n++)
-        q(n) = (2.0*M_PI/path.boxPtr->side[0])*n;
+    /* hard-coded number of q-vector magnitudes */
+    numq = 20; 
+
+    /* initialize the number of vectors with each magnitude */
+    numqVecs.resize(numq);               
+    numqVecs = 0;
+
+    /* initialize the magnitude array */
+    qMag.resize(numq);
+    qMag = 0.0;
+
+    /* The maximum q-vector magnitude to consider (hard-coded for now) */
+    double qmax = 4.0; // 1/A
+    double dq = qmax/(numq-1);
+
+    /* Determine the set of magnitudes */
+    Array <double, 1> qMag(numq);         // the q-vector magnitudes
+    for (int nq = 0; nq < numq; nq++)
+        qMag(nq) = nq*dq;
+
+    /* Determine the set of q-vectors that have these magintudes */
+    for (int nq = 0; nq < numq; nq++)
+    {
+        double cq = qMag(nq);
+        vector <dVec> qvecs;
+
+        int maxComp = ceil(cq*blitz::max(path.boxPtr->side)/(2.0*M_PI))+1;
+        int maxNumQ = ipow(2*maxComp + 1,NDIM);
+        
+        iVec qi;
+        for (int n = 0; n < maxNumQ; n++) {
+            for (int i = 0; i < NDIM; i++) {
+                int scale = 1;
+                for (int j = i+1; j < NDIM; j++) 
+                    scale *= (2*maxComp + 1);
+                qi[i] = (n/scale) % (2*maxComp + 1);
+
+                /* Wrap into the appropriate set of integers*/
+                qi[i] -= (qi[i] > maxComp)*(2*maxComp + 1);
+            }
+
+            dVec qd = 2.0*M_PI*qi/path.boxPtr->side;
+
+            /* Store the winding number */
+            double cqMag = sqrt(dot(qd,qd));
+            if ( ( (abs(cq) < EPS) && (cqMag < EPS) ) ||
+                 ( (abs(cq) >= EPS) && (cqMag > (cq-dq)) && (cqMag <= cq) ) ) 
+            {
+                qvecs.push_back(qd);
+                numqVecs(nq)++;
+            }
+        }
+        
+        q.push_back(qvecs);
+    }
+
+    /* output */
+    /* for (int nq = 0; nq < numq; nq++) { */
+    /*     cout << "qmag = " << qMag(nq) << endl << endl; */
+    /*     /1* q-vectors *1/ */
+    /*     for (const auto &cqvec : q[nq]) */ 
+    /*         cout << cqvec << endl; */
+    /* } */
+
+    /* Make sure we have some q-vectors */
+    if ( blitz::sum(numqVecs) < 1) {
+        cerr << "\nERROR: Intermediate Scattering function: "
+            << "No valid q-vectors were added to the list for measurment." 
+            << endl << "Action: modify q-magintudes." << endl;
+        exit(0);
+    }
+
+    cout << "Full: " << blitz::sum(numqVecs) << endl;
+
+    /* exit(-1); */
 
     /* Initialize the accumulator intermediate scattering function*/
     sf.resize(numq);
@@ -2645,17 +2715,28 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
 
     /* The magnitude of q */
     header = str(format("#%15.6E") % 0.0);
-    for (int n = 1; n < numq; n++) 
-        header.append(str(format("%16.6E") % q(n)));
+    for (int nq = 1; nq < numq; nq++) 
+        header.append(str(format("%16.6E") % (qMag(nq)-0.5*dq)));
 
     /* Utilize imaginary time translational symmetry */
     norm = 1.0/constants()->numTimeSlices();
+
+    /* Normalize by the number of q-vecs (except when there are none) */
+    for (int nq = 0; nq < numq; nq++) {
+        if (numqVecs(nq) > 0)
+            norm(nq) /= numqVecs(nq);
+    }
 }
 
 /*************************************************************************//**
  *  Destructor.
 ******************************************************************************/
 StaticStructureFactorEstimator::~StaticStructureFactorEstimator() { 
+
+    sf.free();
+    qMag.free();
+    numqVecs.free();
+
 }
 
 /*************************************************************************//**
@@ -2671,34 +2752,34 @@ void StaticStructureFactorEstimator::accumulate() {
 
     beadLocator bead1,bead2;  // The bead locator
     sf = 0.0; // initialize
+    dVec sep;
 
-    dVec pos1,pos2;      // The two bead positions
-    dVec lq;             // The value of the wave-vector
-    lq = 0.0;
-    
+    /* q-magnitudes */
     for (int nq = 0; nq < numq; nq++) {
-        lq[0] = q(nq);
 
-        /* Average over all initial time slices */
-        for (int slice = 0; slice < numTimeSlices; slice++) {
+        /* q-vectors with that q-magnitude*/
+        for (const auto &cqvec : q[nq]) {
+    
+            /* Average over all time slices */
+            for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
 
-            bead1[0] = bead2[0] = slice;
+                /* This is an equal imaginary time estimator */
+                bead2[0] = bead1[0];
 
-            for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(slice); bead1[1]++) {
+                for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(bead1[0]); bead1[1]++) {
 
-                pos1 = path(bead1);
-                double lq1 = dot(lq,pos1);
+                    /* for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) { */
+                    sf(nq) += 1.0;
 
-                for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(slice); bead2[1]++) {
+                    for (bead2[1] = bead1[1]+1; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
 
-                    pos2 = path(bead2);
-                    double lq2 = dot(lq,pos2);
+                        sep = path.getSeparation(bead1,bead2);
+                        sf(nq) += 2*cos(dot(sep,cqvec));
 
-                    sf(nq) += cos(lq1)*cos(lq2) + sin(lq1)*sin(lq2);
-
-                } // bead2[1]
-            } // bead1[1]
-        } //slice
+                    } // bead2[1]
+                } // bead1[1]
+            } //bead1[0]
+        } // q
     } // nq
 
     estimator += sf/numParticles; 
@@ -3876,6 +3957,183 @@ void CylinderRadialPotentialEstimator::accumulate1() {
     radPot /= (1.0*numFound1);
     estimator += radPot;
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// CYLINDER STATIC STRUCTURE FACTOR ESTIMATOR CLASS --------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  Compute the static structure factor for a fixed set of q vector magnitude.
+******************************************************************************/
+CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
+        double _maxR, int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
+
+    /* hard-coded number of q-vector magnitudes */
+    numq = 20; 
+
+    /* initialize the number of vectors with each magnitude */
+    numqVecs.resize(numq);               
+    numqVecs = 0;
+
+    /* initialize the magnitude array */
+    qMag.resize(numq);
+    qMag = 0.0;
+
+    /* The maximum q-vector magnitude to consider (hard-coded for now) */
+    double qmax = 4.0; // 1/Å
+    double dq = qmax/(numq-1);
+
+    /* Determine the set of magnitudes */
+    Array <double, 1> qMag(numq);         // the q-vector magnitudes
+    for (int nq = 0; nq < numq; nq++)
+        qMag(nq) = nq*dq;
+
+    /* Determine the set of q-vectors that have these magintudes */
+    for (int nq = 0; nq < numq; nq++)
+    {
+        double cq = qMag(nq);
+        vector <dVec> qvecs;
+
+        int maxnz = ceil(cq*path.boxPtr->side[NDIM-1]/(2.0*M_PI))+1;
+        
+        iVec qi = 0;
+        for (qi[NDIM-1] = -maxnz; qi[NDIM-1] <= maxnz; qi[NDIM-1]++) {
+
+            dVec qd = 2.0*M_PI*qi/path.boxPtr->side;
+
+            /* Store the q-vector */
+            double cqMag = sqrt(dot(qd,qd));
+            if ( ( (abs(cq) < EPS) && (cqMag < EPS) ) ||
+                 ( (abs(cq) >= EPS) && (cqMag > (cq-dq)) && (cqMag <= cq) ) ) 
+            {
+                qvecs.push_back(qd);
+                numqVecs(nq)++;
+            }
+        }
+        
+        q.push_back(qvecs);
+    }
+
+    /* Make sure we have some q-vectors */
+    if ( blitz::sum(numqVecs) < 1) {
+        cerr << "\nERROR: Intermediate Scattering function: "
+            << "No valid q-vectors were added to the list for measurment." 
+            << endl << "Action: modify q-magintudes." << endl;
+        exit(0);
+    }
+
+    /* output */
+    /* for (int nq = 0; nq < numq; nq++) { */
+    /*     cout << "qmag = " << qMag(nq) << endl << endl; */
+    /*     /1* q-vectors *1/ */
+    /*     for (const auto &cqvec : q[nq]) */ 
+    /*         cout << cqvec << endl; */
+    /* } */
+    /* cout << "Cylinder: " << blitz::sum(numqVecs) << endl; */
+    /* exit(-1); */
+
+    /* Initialize the accumulator intermediate scattering function*/
+    sf.resize(numq);
+    sf = 0.0;
+
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numq);
+
+    /* The magnitude of q */
+    header = str(format("#%15.6E") % 0.0);
+    for (int nq = 1; nq < numq; nq++) 
+        header.append(str(format("%16.6E") % (qMag(nq)-0.5*dq)));
+
+    /* Utilize imaginary time translational symmetry */
+    norm = 1.0/constants()->numTimeSlices();
+
+    /* Normalize by the number of q-vecs (except when there are none) */
+    for (int nq = 0; nq < numq; nq++) {
+        if (numqVecs(nq) > 0)
+            norm(nq) /= numqVecs(nq);
+    }
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+CylinderStaticStructureFactorEstimator::~CylinderStaticStructureFactorEstimator() { 
+
+    sf.free();
+    qMag.free();
+    numqVecs.free();
+}
+
+/*************************************************************************//**
+ *  measure the intermediate scattering function for each value of the 
+ *  imaginary time separation tau.
+ *
+ *  We only compute this for N > 1 due to the normalization.
+******************************************************************************/
+void CylinderStaticStructureFactorEstimator::accumulate() {
+
+    int numParticles = num1DParticles(path,maxR);
+    int numTimeSlices = constants()->numTimeSlices();
+
+    beadLocator bead1,bead2;  // The bead locator
+    sf = 0.0; // initialize
+    dVec sep;
+
+    /* q-magnitudes */
+    for (int nq = 0; nq < numq; nq++) {
+
+        /* q-vectors with that q-magnitude*/
+        for (const auto &cqvec : q[nq]) {
+    
+            /* Average over all time slices */
+            for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
+
+                /* This is an equal imaginary time estimator */
+                bead2[0] = bead1[0];
+
+                for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(bead1[0]); bead1[1]++) {
+
+                    if (include(path(bead1),maxR)) {
+                        sf(nq) += 1.0;
+
+                        for (bead2[1] = bead1[1]+1; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
+                            if (include(path(bead2),maxR)) {
+                                sep = path.getSeparation(bead1,bead2);
+                                sf(nq) += 2*cos(dot(sep,cqvec));
+                            } //include bead2
+                        } // bead2[1]
+                    } //include bead1
+                } // bead1[1]
+            } //bead1[0]
+        } // q
+    } // nq
+
+    estimator += sf/numParticles; 
+}
+
+/**************************************************************************//**
+ *  Sample the estimator.
+ * 
+ *  Here we overload the cylinder static structure factor estimator, as
+ *  we only measure when we have some relevant particle separations.
+******************************************************************************/
+void CylinderStaticStructureFactorEstimator::sample() {
+    numSampled++;
+
+    if ( baseSample() && (num1DParticles(path,maxR)> 0) ) {
+        totNumAccumulated++;
+        numAccumulated++;
+        accumulate();
+    }
+}
+
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // BEGIN PIGS ESTIMATORS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//

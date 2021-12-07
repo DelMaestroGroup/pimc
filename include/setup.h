@@ -31,6 +31,8 @@ class EstimatorBase;
 
 ostream& operator<<(ostream&, const vector<string>&);
 
+string getList (const vector<string> &, char sep=' ');
+
 // ========================================================================  
 // Parameters Class
 // ========================================================================  

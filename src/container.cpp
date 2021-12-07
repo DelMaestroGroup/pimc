@@ -403,7 +403,7 @@ dVec Cylinder::randUpdateSmall (MTRand &random, const dVec &pos) const {
     return randPos;
 }
 /**************************************************************************//**
- *  Make sure that a suplied vector is put inside the cylinder.
+ *  Make sure that a supplied vector is put inside the cylinder.
 ******************************************************************************/
 void Cylinder::putInside(dVec &r) const {
 

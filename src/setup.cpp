@@ -22,11 +22,12 @@
  * @param option the stl vector of options
  * @return a comma separated list of options
 ******************************************************************************/
-string getList(const vector<string> &options) {
+string getList(const vector<string> &options, char sep) {
 
     ostringstream optionList;
+    char separator[3] = {',',sep};
     std::copy(options.begin(),options.end()-1, 
-            std::ostream_iterator<string>(optionList, ", "));
+            std::ostream_iterator<string>(optionList, separator));
     optionList << options.back();
     return optionList.str();
 }
@@ -295,7 +296,7 @@ Setup::Setup() :
     vector<string> multiEstimatorName = multiEstimatorFactory()->getNames();
     estimatorName.insert(estimatorName.end(), multiEstimatorName.begin(), 
             multiEstimatorName.end());
-    estimatorNames = getList(estimatorName);
+    estimatorNames = getList(estimatorName,'\n');
 
     /* Get the allowed move names */
     moveName = moveFactory()->getNames(); 

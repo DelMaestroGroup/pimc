@@ -727,8 +727,10 @@ class StaticStructureFactorEstimator: public EstimatorBase {
     private:
         void accumulate();              // Accumulate values
         Array <double,1> sf;            // structure factor
-        Array <double,1> q;             // the q values
+        Array <double,1> qMag;         // the q-vector magnitudes
         int numq;                       // number of q values
+        Array <int,1> numqVecs;         // the number of q-vectors with a given magnitude
+        vector <vector<dVec> > q;       // the q-vectors
 };
 
 // ========================================================================  
@@ -1042,6 +1044,32 @@ class CylinderRadialPotentialEstimator: public EstimatorBase {
 
         void accumulate();              // Accumulate values
         void accumulate1();             // Accumulate values
+};
+
+// ========================================================================  
+// Cylinder Static Structure Factor Estimator Class
+// ========================================================================  
+/** 
+ * Compute the static structure factor S(q)
+ */
+class CylinderStaticStructureFactorEstimator: public EstimatorBase {
+
+    public:
+        CylinderStaticStructureFactorEstimator(const Path &, ActionBase *, 
+                const MTRand &, double, int _frequency=1, string _label="cyl_ssf");
+        ~CylinderStaticStructureFactorEstimator();
+    
+        static const string name;
+        string getName() const {return name;}
+        void sample();              // Sample the estimator
+
+    private:
+        void accumulate();              // Accumulate values
+        Array <double,1> sf;            // structure factor
+        Array <double,1> qMag;         // the q-vector magnitudes
+        int numq;                       // number of q values
+        Array <int,1> numqVecs;         // the number of q-vectors with a given magnitude
+        vector <vector<dVec> > q;       // the q-vectors
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
