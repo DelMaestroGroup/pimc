@@ -83,7 +83,8 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
     /* Setup the free density matrix arrays for sampling different
      * winding sectors.  We will sample w = -maxWind ... maxWind */
     maxWind = constants()->maxWind();
-    numWind = ipow(2*maxWind + 1,NDIM);
+    /* numWind = ipow(2*maxWind + 1,NDIM); */
+    numWind = ipow(2*maxWind + 1,blitz::sum(path.boxPtr->periodic));
 
     /* initialize the cumulative probability distribution */
     cumrho0.resize(numWind);
@@ -92,20 +93,19 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
      * vector and append to a matrix */
     iVec wind;
     for (int n = 0; n < numWind; n++ ) {
+        wind = 0;
         for (int i = 0; i < NDIM; i++) {
-            int scale = 1;
-            for (int j = i+1; j < NDIM; j++) 
-                scale *= (2*maxWind + 1);
-            wind[i] = (n/scale) % (2*maxWind + 1);
 
-            /* Wrap into the appropriate winding sector */
-            wind[i] -= (wind[i] > maxWind)*(2*maxWind + 1);
-        }
+            /* We only need to compute widing in periodic directions */
+            if (path.boxPtr->periodic[i]) {
+                int scale = 1;
+                for (int j = i+1; j < NDIM; j++) 
+                    scale *= (2*maxWind + 1);
+                wind[i] = (n/scale) % (2*maxWind + 1);
 
-        /* Adjust for any non-periodic boundary conditions */
-        for (int i = 0; i < NDIM; i++) {
-            if (!path.boxPtr->periodic[i])
-                wind[i] = 0;
+                /* Wrap into the appropriate winding sector */
+                wind[i] -= (wind[i] > maxWind)*(2*maxWind + 1);
+            }
         }
 
         /* Store the winding number */
@@ -120,16 +120,10 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
         /* return (blitz::dot(w1,w1) < blitz::dot(w2,w2)); */
     });
 
-    /* Now we determine the indices of the different winding sectors.  These
-     * are used for optimization purposes during tower sampling */
-    for (int n = 0; n < numWind-1; n++) {
-        /* if (abs(dot(winding(n),winding(n)) - dot(winding(n+1),winding(n+1))) > EPS) */
-        if ( abs( max(abs(winding[n+1])) - max(abs(winding[n])) ) > EPS)
-            windingSector.push_back(n);
-    }
-    /* Add the last index */
-    if (windingSector.back() != numWind-1)
-        windingSector.push_back(numWind-1);
+    /* output */
+    /* for (const auto &_wind : winding) */ 
+    /*     cout << _wind << endl; */
+
 }
 
 /*************************************************************************//**
@@ -384,9 +378,6 @@ iVec MoveBase::sampleWindingSector(const beadLocator &startBead, const beadLocat
     /* Normalize the cumulative probability */
     for (auto& crho0 : cumrho0)
         crho0 /= totalrho0;
-
-    /* for (uint32 n = 0; n < cumrho0.size(); ++n) */
-    /*    cumrho0[n] /= totalrho0; */
 
     /* Perform tower sampling to select the winding vector */
     int index;

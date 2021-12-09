@@ -98,7 +98,6 @@ class MoveBase {
         Array <dVec,1> newPos;          ///< New particle positions
         
         vector <iVec> winding;          ///< The winding vectors         
-        vector <int> windingSector;     ///< Used to index different winding sectors
         vector <double> cumrho0;        ///< Used for tower-sampling winding sectors
 
         int maxWind;                    ///< The largest winding number

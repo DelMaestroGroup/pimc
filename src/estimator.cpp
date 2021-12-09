@@ -334,6 +334,87 @@ void EstimatorBase::appendLabel(string append) {
     label = label + append;
 }
 
+/*************************************************************************//**
+*  Get q-vectors for scattering calculations
+*  
+*  Based on the geometry of the system and a user-defined choice, return a
+*  list of q-vectors where scattering will be computed
+******************************************************************************/
+vector <vector<dVec> > EstimatorBase::getQVectors(double dq, int numq, 
+        string qGeometry) {
+
+    /* The q-vectors will end up in this array to be returned by value. */
+    vector <vector<dVec> > q;
+
+    double dtheta;
+    if (qGeometry == "line") 
+        dtheta = M_PI;
+    else if (qGeometry == "sphere") {
+
+        /* Number of θ values per q-magnitude, hard-coded for now */
+        int numTheta = 12; 
+        dtheta = 0.5*M_PI/numTheta;
+    } 
+    else {
+        cerr << "\nERROR: A valid geometry wasn't chosen for q-space."
+            << endl << "Action: choose \"line\" or \"sphere\"" << endl;
+        exit(0);
+    }
+
+    /* Determine the set of q-vectors that have these magnitudes.  */
+    for (int nq = 0; nq < numq; nq++)
+    {
+        double cq = nq*dq;
+        vector <dVec> qvecs;
+
+        /* cq = 0.0 */
+        if (abs(cq) < EPS) {
+            dVec qd = 0.0;
+            qvecs.push_back(qd);
+        }
+
+        /* cq > 0.0 */
+        else {
+
+            /* First do θ = 0, i.e. along the z-direction */
+            dVec qd = 0.0;
+            qd[2] = cq;
+            qvecs.push_back(qd);
+
+            /* Now do the rest of the θ values */
+            for (double theta = dtheta; theta <= 0.5*M_PI + EPS; theta += dtheta) {
+                double dphi = dtheta/sin(theta);
+                for (double phi = 0.0; phi <= 0.5*M_PI+EPS; phi += dphi) {
+
+                    dVec qd;
+                    qd[0] = cq*sin(theta)*cos(phi);
+                    qd[1] = cq*sin(theta)*sin(phi);
+                    qd[2] = cq*cos(theta);
+
+                    qvecs.push_back(qd);
+                } // phi
+            } // theta
+        } // non-zero q-mags
+
+        /* Add the list of q-vectors at this magnitude */
+        q.push_back(qvecs);
+    } //q-mags
+
+    /* output */
+    /* int totalNumQVecs = 0; */
+    /* for (auto [nq,cq] : enumerate(q)) { */
+    /*     double qMag = sqrt(blitz::dot(cq.front(),cq.front())); */
+    /*     cout << endl << endl << "qmag = " << qMag << endl; */
+    /*     for (const auto &cqvec : cq) */ 
+    /*         cout << cqvec << endl; */
+    /*     totalNumQVecs += cq.size(); */
+    /* } */
+    /* cout << "Full: " << totalNumQVecs << endl; */
+    /* exit(-1); */
+
+    return q;
+}
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // TIME ESTIMATOR CLASS ------------------------------------------------------
@@ -2680,6 +2761,8 @@ void PairCorrelationEstimator::accumulate() {
 //        
 //        q.push_back(qvecs);
 //    }
+//
+//
 
 /*************************************************************************//**
  *  Constructor.
@@ -2695,88 +2778,14 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
     /* The maximum q-vector magnitude to consider (hard-coded for now) */
     double qMax = 4.0; // 1/Å
 
-    /* Determine how many q-vectors we have */
-    numq = int(qMax*path.boxPtr->side[NDIM-1]/(2.0*M_PI));
-
-    /* initialize the number of vectors with each magnitude */
-    numqVecs.resize(numq);               
-    numqVecs = 0;
-
-    /* initialize the magnitude array */
-    qMag.resize(numq);
-    qMag = 0.0;
-
+    /* We choose dq from the smallest possible q-vector, set by PBC */
     double dq = 2.0*M_PI/path.boxPtr->side[NDIM-1];
 
-    /* Determine the set of magnitudes */
-    Array <double, 1> qMag(numq);         // the q-vector magnitudes
-    for (int nq = 0; nq < numq; nq++)
-        qMag(nq) = nq*dq;
-
-    int numTheta = 10; // The number of theta values per qmag
-    double dtheta = 0.5*M_PI/numTheta;
-
-    /* Determine the set of q-vectors that have these magintudes. We take them
-     * to be equally distributed on a sphere.*/
-    for (int nq = 0; nq < numq; nq++)
-    {
-        double cq = qMag(nq);
-        vector <dVec> qvecs;
-
-        /* cq = 0.0 */
-        if (abs(cq) < EPS) {
-            dVec qd = 0.0;
-            qvecs.push_back(qd);
-            numqVecs(nq)++;
-        }
-
-        /* cq > 0.0 */
-        else {
-
-            for (double theta = 0.0; theta < 0.5*M_PI; theta += dtheta) {
-                double dphi = dtheta/cos(theta);
-                for (double phi = 0.0; phi <= M_PI+EPS; phi += dphi) {
-
-                    dVec qd;
-                    qd[0] = cq*cos(theta)*cos(phi);
-                    qd[1] = cq*cos(theta)*sin(phi);
-                    qd[2] = cq*sin(theta);
-
-                    qvecs.push_back(qd);
-                    numqVecs(nq)++;
-                }
-            }
-
-            /* Now do the θ = π/2 and ϕ = 0 special case */
-            dVec qd = 0.0;
-            qd[2] = cq;
-            qvecs.push_back(qd);
-            numqVecs(nq)++;
-        }
-
-        /* Add the entire list of q-vecs at this magnitude */
-        q.push_back(qvecs);
-    }
-
-    /* output */
-    /* for (int nq = 0; nq < numq; nq++) { */
-    /*     cout << "qmag = " << qMag(nq) << endl << endl; */
-    /*     /1* q-vectors *1/ */
-    /*     for (const auto &cqvec : q[nq]) */ 
-    /*         cout << cqvec << endl; */
-    /* } */
-    cout << "Full: " << blitz::sum(numqVecs) << endl;
-
-    /* exit(-1); */
-
-    /* Make sure we have some q-vectors */
-    if ( blitz::sum(numqVecs) < 1) {
-        cerr << "\nERROR: Intermediate Scattering function: "
-            << "No valid q-vectors were added to the list for measurment." 
-            << endl << "Action: modify q-magintudes." << endl;
-        exit(0);
-    }
-
+    /* Determine how many q-vector magnitudes  we have */
+    int numq = int(qMax/dq) + 1;
+    
+    /* Get the desired q-vectors */
+    q = getQVectors(dq,numq,"sphere");
 
     /* Initialize the accumulator intermediate scattering function*/
     sf.resize(numq);
@@ -2787,36 +2796,32 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
 
     /* The magnitude of q */
     header = str(format("#%15.6E") % 0.0);
-    for (int nq = 1; nq < numq; nq++) 
-        header.append(str(format("%16.6E") % (qMag(nq))));
+    for (int nq = 1; nq < numq; nq++)  {
+        double qMag = sqrt(blitz::dot(q[nq][0],q[nq][0]));
+        header.append(str(format("%16.6E") % (qMag)));
+    }
         /* header.append(str(format("%16.6E") % (qMag(nq)-0.5*dq))); */
 
     /* Utilize imaginary time translational symmetry */
     norm = 1.0/constants()->numTimeSlices();
 
     /* Normalize by the number of q-vecs (except when there are none) */
-    /* for (int nq = 0; nq < numq; nq++) { */
-    /*     if (numqVecs(nq) > 0) */
-    /*         norm(nq) /= numqVecs(nq); */
-    /* } */
+    for (int nq = 0; nq < numq; nq++) {
+        if (q[nq].size() > 0)
+            norm(nq) /= q[nq].size();
+    }
 }
 
 /*************************************************************************//**
  *  Destructor.
 ******************************************************************************/
 StaticStructureFactorEstimator::~StaticStructureFactorEstimator() { 
-
     sf.free();
-    qMag.free();
-    numqVecs.free();
-
 }
 
 /*************************************************************************//**
- *  measure the intermediate scattering function for each value of the 
- *  imaginary time separation tau.
+ *  Measure the static structure factor for each value for each q-magnitude
  *
- *  We only compute this for N > 1 due to the normalization.
 ******************************************************************************/
 void StaticStructureFactorEstimator::accumulate() {
 
@@ -2825,13 +2830,12 @@ void StaticStructureFactorEstimator::accumulate() {
 
     beadLocator bead1,bead2;  // The bead locator
     sf = 0.0; // initialize
-    dVec sep;
 
     /* q-magnitudes */
-    for (int nq = 0; nq < numq; nq++) {
+    for (auto [nq,cq] : enumerate(q)) {
 
         /* q-vectors with that q-magnitude*/
-        for (const auto &cqvec : q[nq]) {
+        for (const auto &cqvec : cq) {
     
             /* Average over all time slices */
             for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
@@ -2841,19 +2845,17 @@ void StaticStructureFactorEstimator::accumulate() {
 
                 for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(bead1[0]); bead1[1]++) {
 
-                    /* for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) { */
+                    /* The bead1 = bead2 part */
                     sf(nq) += 1.0;
 
                     for (bead2[1] = bead1[1]+1; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
-
-                        sep = path.getSeparation(bead1,bead2);
-                        sf(nq) += 2*cos(dot(sep,cqvec));
-
+                        sf(nq) += 2*cos(dot(path.getSeparation(bead1,bead2),cqvec));
                     } // bead2[1]
                 } // bead1[1]
             } //bead1[0]
-        } // q
-    } // nq
+
+        } // q-vectors
+    } // q-magnitudes
 
     estimator += sf/numParticles; 
 }
@@ -4047,70 +4049,17 @@ CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
         double _maxR, int _frequency, string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
-
-    /* hard-coded number of q-vector magnitudes */
-    numq = 20; 
-
-    /* initialize the number of vectors with each magnitude */
-    numqVecs.resize(numq);               
-    numqVecs = 0;
-
-    /* initialize the magnitude array */
-    qMag.resize(numq);
-    qMag = 0.0;
-
     /* The maximum q-vector magnitude to consider (hard-coded for now) */
-    double qmax = 4.0; // 1/Å
-    double dq = qmax/(numq-1);
+    double qMax = 4.0; // 1/Å
 
-    /* Determine the set of magnitudes */
-    Array <double, 1> qMag(numq);         // the q-vector magnitudes
-    for (int nq = 0; nq < numq; nq++)
-        qMag(nq) = nq*dq;
+    /* We choose dq from the smallest possible q-vector, set by PBC */
+    double dq = 2.0*M_PI/path.boxPtr->side[NDIM-1];
 
-    /* Determine the set of q-vectors that have these magintudes */
-    for (int nq = 0; nq < numq; nq++)
-    {
-        double cq = qMag(nq);
-        vector <dVec> qvecs;
-
-        int maxnz = ceil(cq*path.boxPtr->side[NDIM-1]/(2.0*M_PI))+1;
-        
-        iVec qi = 0;
-        for (qi[NDIM-1] = -maxnz; qi[NDIM-1] <= maxnz; qi[NDIM-1]++) {
-
-            dVec qd = 2.0*M_PI*qi/path.boxPtr->side;
-
-            /* Store the q-vector */
-            double cqMag = sqrt(dot(qd,qd));
-            if ( ( (abs(cq) < EPS) && (cqMag < EPS) ) ||
-                 ( (abs(cq) >= EPS) && (cqMag > (cq-dq)) && (cqMag <= cq) ) ) 
-            {
-                qvecs.push_back(qd);
-                numqVecs(nq)++;
-            }
-        }
-        
-        q.push_back(qvecs);
-    }
-
-    /* Make sure we have some q-vectors */
-    if ( blitz::sum(numqVecs) < 1) {
-        cerr << "\nERROR: Intermediate Scattering function: "
-            << "No valid q-vectors were added to the list for measurment." 
-            << endl << "Action: modify q-magintudes." << endl;
-        exit(0);
-    }
-
-    /* output */
-    /* for (int nq = 0; nq < numq; nq++) { */
-    /*     cout << "qmag = " << qMag(nq) << endl << endl; */
-    /*     /1* q-vectors *1/ */
-    /*     for (const auto &cqvec : q[nq]) */ 
-    /*         cout << cqvec << endl; */
-    /* } */
-    /* cout << "Cylinder: " << blitz::sum(numqVecs) << endl; */
-    /* exit(-1); */
+    /* Determine how many q-vector magnitudes  we have */
+    int numq = int(qMax/dq) + 1;
+    
+    /* Get the desired q-vectors */
+    q = getQVectors(dq,numq,"line");
 
     /* Initialize the accumulator intermediate scattering function*/
     sf.resize(numq);
@@ -4121,34 +4070,31 @@ CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
 
     /* The magnitude of q */
     header = str(format("#%15.6E") % 0.0);
-    for (int nq = 1; nq < numq; nq++) 
-        header.append(str(format("%16.6E") % (qMag(nq)-0.5*dq)));
+    for (int nq = 1; nq < numq; nq++)  {
+        double qMag = sqrt(blitz::dot(q[nq][0],q[nq][0]));
+        header.append(str(format("%16.6E") % (qMag)));
+    }
 
     /* Utilize imaginary time translational symmetry */
     norm = 1.0/constants()->numTimeSlices();
 
     /* Normalize by the number of q-vecs (except when there are none) */
     for (int nq = 0; nq < numq; nq++) {
-        if (numqVecs(nq) > 0)
-            norm(nq) /= numqVecs(nq);
+        if (q[nq].size() > 0)
+            norm(nq) /= q[nq].size();
     }
+
 }
 
 /*************************************************************************//**
  *  Destructor.
 ******************************************************************************/
 CylinderStaticStructureFactorEstimator::~CylinderStaticStructureFactorEstimator() { 
-
     sf.free();
-    qMag.free();
-    numqVecs.free();
 }
 
 /*************************************************************************//**
- *  measure the intermediate scattering function for each value of the 
- *  imaginary time separation tau.
- *
- *  We only compute this for N > 1 due to the normalization.
+ *  Measure the static structure factor for each value for each q-magnitude
 ******************************************************************************/
 void CylinderStaticStructureFactorEstimator::accumulate() {
 
@@ -4157,13 +4103,12 @@ void CylinderStaticStructureFactorEstimator::accumulate() {
 
     beadLocator bead1,bead2;  // The bead locator
     sf = 0.0; // initialize
-    dVec sep;
 
     /* q-magnitudes */
-    for (int nq = 0; nq < numq; nq++) {
+    for (auto [nq,cq] : enumerate(q)) {
 
-        /* q-vectors with that q-magnitude*/
-        for (const auto &cqvec : q[nq]) {
+        /* q-vectors with a fixed q-magnitude*/
+        for (const auto &cqvec : cq) {
     
             /* Average over all time slices */
             for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
@@ -4174,19 +4119,22 @@ void CylinderStaticStructureFactorEstimator::accumulate() {
                 for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(bead1[0]); bead1[1]++) {
 
                     if (include(path(bead1),maxR)) {
+                        /* The bead1 = bead2 part */
                         sf(nq) += 1.0;
 
                         for (bead2[1] = bead1[1]+1; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
+
                             if (include(path(bead2),maxR)) {
-                                sep = path.getSeparation(bead1,bead2);
-                                sf(nq) += 2*cos(dot(sep,cqvec));
+                                sf(nq) += 2*cos(dot(path.getSeparation(bead1,bead2),cqvec));
                             } //include bead2
+
                         } // bead2[1]
                     } //include bead1
                 } // bead1[1]
             } //bead1[0]
-        } // q
-    } // nq
+
+        } // q-vectors
+    } // q-magnitudes
 
     estimator += sf/numParticles; 
 }

@@ -115,6 +115,9 @@ class EstimatorBase {
         /* Initialize the estimator */
         void initialize(int);
         void initialize(vector<string>);
+
+        /* generate q-vectors needed for momentum space estimators */
+        vector <vector<dVec> > getQVectors(double, int, string);
 };
 
 // ========================================================================  
@@ -727,9 +730,6 @@ class StaticStructureFactorEstimator: public EstimatorBase {
     private:
         void accumulate();              // Accumulate values
         Array <double,1> sf;            // structure factor
-        Array <double,1> qMag;         // the q-vector magnitudes
-        int numq;                       // number of q values
-        Array <int,1> numqVecs;         // the number of q-vectors with a given magnitude
         vector <vector<dVec> > q;       // the q-vectors
 };
 
@@ -1066,9 +1066,6 @@ class CylinderStaticStructureFactorEstimator: public EstimatorBase {
     private:
         void accumulate();              // Accumulate values
         Array <double,1> sf;            // structure factor
-        Array <double,1> qMag;         // the q-vector magnitudes
-        int numq;                       // number of q values
-        Array <int,1> numqVecs;         // the number of q-vectors with a given magnitude
         vector <vector<dVec> > q;       // the q-vectors
 };
 
