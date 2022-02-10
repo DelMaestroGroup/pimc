@@ -262,6 +262,28 @@ class ParticlePositionEstimator: public EstimatorBase {
 };
 
 // ========================================================================  
+// Commensurate Order Parameter Class
+// ========================================================================  
+/**
+ * A Commensurate/Incommensurate Order Parameter.  Eq. (12) of
+ * @see https://journals.aps.org/prb/abstract/10.1103/PhysRevB.73.085422
+ */
+class CommensurateOrderParameterEstimator: public EstimatorBase {
+
+    public:
+        CommensurateOrderParameterEstimator(const Path &, ActionBase *, 
+                const MTRand &, double, int _frequency=1, string _label="scom");
+        ~CommensurateOrderParameterEstimator();
+
+        static const string name;
+        string getName() const {return name;}
+    
+    private:
+        void accumulate();          ///< Accumulate values
+        vector<dVec> g;             ///< the g-vector set
+};
+
+// ========================================================================  
 // BIPARTITION DENSITY ESTIMATOR CLASS 
 // ========================================================================  
 /** 

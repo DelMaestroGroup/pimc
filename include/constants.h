@@ -52,6 +52,7 @@ class ConstantParameters
         double L() const {return L_;}                   ///< Get maximum side length
         double comDelta() const {return comDelta_;}     ///< Get center of mass shift
         double displaceDelta() const {return displaceDelta_;}       ///< Get center of mass shift
+        double aCC() const {return aCC_;}                    // The graphene/graphite carbon-carbon distance
         int virialWindow() const {return virialWindow_;}    ///< Get centroid virial window size.
 
         /** Get deBroglie wavelength */
@@ -155,6 +156,7 @@ class ConstantParameters
         double C_;              // Worm normalization factor
         double V_;              // The volume of the system
         double L_;              // The linear 'length' of the system 
+        double aCC_;            // The graphene/graphite carbon-carbon distance
 
         int Mbar_;                // Maximum worm algorithm trial length
         int b_;                   // The maximum number of levels

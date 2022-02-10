@@ -107,6 +107,7 @@ void ConstantParameters::initConstants(po::variables_map &params) {
     rc2_            = rc_*rc_;
     C0_             = params["worm_constant"].as<double>();
     numTimeSlices_  = params["number_time_slices"].as<int>();
+    aCC_            = params["carbon_carbon_dist"].as<double>();
     if (PIGS)
         tau_       = 1.0/((numTimeSlices_-1)*T_);
     else

@@ -35,6 +35,7 @@ REGISTER_ESTIMATOR("number particles",NumberParticlesEstimator);
 REGISTER_ESTIMATOR("number distribution",NumberDistributionEstimator);
 REGISTER_ESTIMATOR("time",TimeEstimator);
 REGISTER_ESTIMATOR("particle position",ParticlePositionEstimator);
+REGISTER_ESTIMATOR("commensurate order parameter",CommensurateOrderParameterEstimator);
 REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
 REGISTER_ESTIMATOR("linear density rho",LinearParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density rho",PlaneParticlePositionEstimator);
@@ -862,6 +863,91 @@ void NumberParticlesEstimator::accumulate() {
     estimator(0) += 1.0*numParticles;
     estimator(1) += 1.0*numParticles*numParticles;
     estimator(2) += 1.0*numParticles/path.boxPtr->volume;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// COMMENSURATE ORDER PARAMETER ESTIMATOR CLASS ------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  We measure the average static structure factor at a finite-set of wave-
+ *  vectors that correspond to the first shell of reciprocal lattice vectors.
+ *
+ *  @see https://journals.aps.org/prb/abstract/10.1103/PhysRevB.73.085422
+ *  
+******************************************************************************/
+CommensurateOrderParameterEstimator::CommensurateOrderParameterEstimator (
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
+
+    /* Get the current carbon-carbon distance */
+    double aCC = constants()->aCC();
+
+    /* The reciprocal lattice vectors*/
+    dVec G1,G2;
+    G1[0] = 2.0*M_PI/(sqrt(3.0)*aCC);
+    G1[1] = 2.0*M_PI/(3.0*aCC);
+    G1[2] = 0.0;
+
+    G2[0] = -G1[0];
+    G2[1] = G1[1];
+    G2[2] = 0.0;
+
+    /* For now we hard-code the g-vectors for graphene */
+    g.push_back(G1);
+    g.push_back(G2);
+    g.push_back(G1+G2);
+
+    /* Set estimator name and header */
+    endLine = true;
+    initialize({"Scom"});
+
+    norm = 1.0/(g.size()*constants()->numTimeSlices());
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+CommensurateOrderParameterEstimator::~CommensurateOrderParameterEstimator() { 
+}
+
+/*************************************************************************//**
+ * Accumulate the number of Commensurate order parameter
+******************************************************************************/
+void CommensurateOrderParameterEstimator::accumulate() {
+
+    int numParticles = path.getTrueNumParticles();
+    int numTimeSlices = constants()->numTimeSlices();
+
+    double _norm = 1.0;
+
+    if (numParticles > 0)
+        _norm /= numParticles;
+
+    beadLocator beadIndex;  // The bead locator
+    double Scom = 0.0; // initialize
+    dVec pos;
+
+    /* Average over all time slices */
+    for (beadIndex[0] = 0; beadIndex[0] < numTimeSlices; beadIndex[0]++) {
+
+        /* Average over all beads */
+        for (beadIndex[1] = 0; beadIndex[1] < path.numBeadsAtSlice(beadIndex[0]); beadIndex[1]++) {
+            pos = path(beadIndex);
+
+            for (const auto &cg : g) {
+                Scom += cos(dot(cg,pos));
+            }
+
+        } // beadIndex[1]
+    } //beadIndex[0]
+
+    estimator(0) += Scom*_norm;
 }
 
 // ---------------------------------------------------------------------------
