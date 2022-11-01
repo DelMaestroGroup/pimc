@@ -2,6 +2,8 @@
 
 # Documentation  
 
+Additional information about the code can be found at https://code.delmaestro.org
+
 ## Introduction 
 
 This webpage contains the details of a worm algorithm path integral quantum Monte Carlo (WA-PIMC) code actively developed in c++ since 2008 in the [Del Maestro group](http://delmaestro.org/adrian) based on:
