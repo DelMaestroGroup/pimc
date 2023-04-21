@@ -366,6 +366,10 @@ void Setup::initParameters() {
 
     /* These are graphene potential options */
     params.add<double>("strain","strain of graphene lattice in y-direction",oClass,0.00);
+    params.add<int>("k_max,k", "maximum number of G-vectors used for computing graphene potential, will finish shell",oClass,10000);
+    params.add<int>("zres", "resolution of the z-direction of the 3D lookup table", oClass, 1001);
+    params.add<int>("xres", "resolution of the x-direction of the 3D lookup table", oClass, 101);
+    params.add<int>("yres", "resolution of the y-direction of the 3D lookup table", oClass, 101);
     params.add<double>("poisson","Poisson's ratio for graphene",oClass,0.165);
     params.add<double>("carbon_carbon_dist,A","Carbon-Carbon distance for graphene",oClass,1.42);
     params.add<string>("graphenelut3d_file_prefix","GrapheneLUT3D file prefix <prefix>serialized.{dat|txt}",oClass,"");
@@ -1119,6 +1123,10 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
             params["carbon_carbon_dist"].as<double>(),
             params["lj_sigma"].as<double>(),
             params["lj_epsilon"].as<double>(),
+	    params["k_max"].as<int>(),
+	    params["xres"].as<int>(),
+	    params["yres"].as<int>(),
+	    params["zres"].as<int>(),
             boxPtr
         );
     else if (constants()->extPotentialType() == "graphenelut3dtobinary") 
