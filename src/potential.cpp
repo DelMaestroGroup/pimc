@@ -1442,10 +1442,10 @@ Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr,
      */
 	for (int n = 0; n < numParticles; n++) {
 
-            /* Uniform position along the pore */
+            /* Random uniform position along the pore */
             pos[NDIM-1] = L*(-0.5 + random.rand());
 
-            /* Uniform position in a disk of z-dependent radius*/
+            /* Random uniform position in a disk of z-dependent radius*/
             double theta = 2.0*M_PI*random.rand();
             double r = (Rtanh(pos[NDIM-1]) - sigma)*sqrt(random.rand());
 

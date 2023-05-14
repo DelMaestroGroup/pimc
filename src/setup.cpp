@@ -123,6 +123,8 @@ void Parameters::setupCommandLine(boost::ptr_map<string,po::options_description>
             option.add_options()(label.c_str(),initValue<uint32>(key),helpMessage[key].c_str());
         else if (type.at(key) == typeid(string))
             option.add_options()(label.c_str(),initValue<string>(key),helpMessage[key].c_str());
+        else if (type.at(key) == typeid(dVec))
+            option.add_options()(label.c_str(),initValue<dVec>(key),helpMessage[key].c_str());
         else if (type.at(key) == typeid(vector<string>)) {
 
             if (state[key] == DEFAULTED) {
@@ -358,7 +360,7 @@ void Setup::initParameters() {
     params.add<double>("lj_width","Radial with of LJ plated cylinder material [angstroms]",oClass);
     params.add<double>("lj_density","Density LJ plated cylinder material [angstroms^(-3)]",oClass);
     params.add<double>("hourglass_radius","differential radius for hourglass potential [angstroms]",oClass,0.0);
-    params.add<double>("hourglass_width","constriction width for hourglass potential [angstroms]",oClass,0.0);
+    params.add<double>("hourglass_width","full constriction width for hourglass potential [angstroms]",oClass,0.0);
     params.add<string>("fixed,f","input file name for fixed atomic positions.",oClass,"");
     params.add<double>("potential_cutoff,l","interaction potential cutoff length [angstroms]",oClass);
     params.add<double>("empty_width_y,y","how much space (in y-) around Gasparini barrier",oClass);
@@ -450,7 +452,7 @@ string Setup::getXMLOptionList(const vector<string> &options, const string tag) 
 
     string optionList = "";
     for(auto name : options)
-        optionList += str(format("<%s>\n    %s\n<\\%s>\n") % tag % name % tag);
+        optionList += str(format("<%s>\n    %s\n</\%s>\n") % tag % name % tag);
     return optionList;
 }
 
@@ -568,6 +570,14 @@ bool Setup::parseOptions() {
         cerr << endl << "ERROR: Invalid simulation cell type." << endl << endl;
         cerr << "Action: change cell (b) to one of:" << endl
             << "\t[prism,cylinder]" << endl;
+        return true;
+    }
+    
+    /* Make sure we haven't specified a negative hourglass_radius */
+    if ( (params["external"].as<string>() == "hg_tube") && 
+            (params["hourglass_radius"].as<double>() < 0) ) {
+        cerr << endl << "ERROR: Invalid negative hourglass_radius." <<  endl;
+        cerr << "Action: change hourglass_radius to be non-negative real number." <<  endl;
         return true;
     }
 
@@ -778,12 +788,6 @@ Container * Setup::cell() {
     if (params["geometry"].as<string>() == "cylinder") {
 
         double radius = params["radius"].as<double>();
-
-        /* We need to adjust the maximal possible radius for a hour glass
-         * potential that bows outwards */
-        if ( (params["external"].as<string>() == "hg_tube") && 
-             (params["hourglass_radius"].as<double>() > 0) )
-            radius += params["hourglass_radius"].as<double>();
 
 
         if (definedCell && params("number_particles"))
@@ -1672,6 +1676,14 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
     }
     communicate()->file("log")->stream() << 
         format("%-24s\t:\t%s\n") % "Container Type" % boxPtr->name;
+
+    if (params["geometry"].as<string>() == "cylinder") { 
+        communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Cylinder Radius" 
+            % params["radius"].as<double>();
+        communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Estimator Radius" 
+            % params["estimator_radius"].as<double>();
+    }
+
     communicate()->file("log")->stream() << format("%-24s\t:\t") % "Container Dimensions";
     for (int i = 0; i < NDIM; i++) {
         communicate()->file("log")->stream() << format("%7.5f") % boxPtr->side[i];
@@ -1722,6 +1734,11 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
         communicate()->file("log")->stream() << 
             format("%-24s\t:\t%d\n") % "Virial Window" % params["virial_window"].as<int>();
     }
+
+    if (!params["label"].as<string>().empty())
+        communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "PIMCID Label" 
+            % params["label"].as<string>();
+
     communicate()->file("log")->stream() << endl;
     communicate()->file("log")->stream() << "---------- End Simulation Parameters ------------" << endl;
 }

@@ -47,6 +47,9 @@ class EstimatorBase {
         /* Output a flat average estimator */
         virtual void outputFlat();                  
 
+        /* Output a histogram average estimator */
+        virtual void outputHist();                  
+
         /** Ouptut the fooder to disk */
         virtual void outputFooter() {};
 
@@ -259,28 +262,6 @@ class ParticlePositionEstimator: public EstimatorBase {
     private:
         void accumulate();          // Accumulate values
         vector<string> diffLabels;  ///< The axis differential labels
-};
-
-// ========================================================================  
-// Commensurate Order Parameter Class
-// ========================================================================  
-/**
- * A Commensurate/Incommensurate Order Parameter.  Eq. (12) of
- * @see https://journals.aps.org/prb/abstract/10.1103/PhysRevB.73.085422
- */
-class CommensurateOrderParameterEstimator: public EstimatorBase {
-
-    public:
-        CommensurateOrderParameterEstimator(const Path &, ActionBase *, 
-                const MTRand &, double, int _frequency=1, string _label="scom");
-        ~CommensurateOrderParameterEstimator();
-
-        static const string name;
-        string getName() const {return name;}
-    
-    private:
-        void accumulate();          ///< Accumulate values
-        vector<dVec> g;             ///< the g-vector set
 };
 
 // ========================================================================  
@@ -1035,12 +1016,15 @@ class CylinderLinearPotentialEstimator: public EstimatorBase {
         static const string name;
         string getName() const {return name;}
 
+        void output() {outputHist();}  // overload the output
+
     private:
         
         double dz;                      // The discretization
         double Lz;                      // The length of the cylinder
 
         void accumulate();              // Accumulate values
+        void accumulate1();              // Accumulate values
 };
 
 // ========================================================================  

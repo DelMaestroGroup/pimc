@@ -35,7 +35,6 @@ REGISTER_ESTIMATOR("number particles",NumberParticlesEstimator);
 REGISTER_ESTIMATOR("number distribution",NumberDistributionEstimator);
 REGISTER_ESTIMATOR("time",TimeEstimator);
 REGISTER_ESTIMATOR("particle position",ParticlePositionEstimator);
-REGISTER_ESTIMATOR("commensurate order parameter",CommensurateOrderParameterEstimator);
 REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
 REGISTER_ESTIMATOR("linear density rho",LinearParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density rho",PlaneParticlePositionEstimator);
@@ -326,6 +325,30 @@ void EstimatorBase::outputFlat() {
             (norm(n)*estimator(n)/totNumAccumulated);
 
     communicate()->file(label)->rename();
+}
+
+/*************************************************************************//**
+ *  Output a histogram-style estimator value to disk.
+ *
+ *  Normalization works differently here and we need to make sure there is at
+ *  least 1 measurement per histogram bin.
+******************************************************************************/
+void EstimatorBase::outputHist() {
+
+    /* Now write the estimator to disk */
+    for (int n = 0; n < numEst; n++) { 
+        if (abs(norm(n)) > 0.0)
+            (*outFilePtr) << format("%16.8E") % (estimator(n)/norm(n));
+        else
+            (*outFilePtr) << format("%16.8E") % 0.0;
+    }
+
+    if (endLine)
+        (*outFilePtr) << endl;
+
+    /* Reset all values */
+    norm = 0.0;
+    reset();
 }
 
 /*************************************************************************//**
@@ -867,91 +890,6 @@ void NumberParticlesEstimator::accumulate() {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// COMMENSURATE ORDER PARAMETER ESTIMATOR CLASS ------------------------------
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-
-/*************************************************************************//**
- *  Constructor.
- * 
- *  We measure the average static structure factor at a finite-set of wave-
- *  vectors that correspond to the first shell of reciprocal lattice vectors.
- *
- *  @see https://journals.aps.org/prb/abstract/10.1103/PhysRevB.73.085422
- *  
-******************************************************************************/
-CommensurateOrderParameterEstimator::CommensurateOrderParameterEstimator (
-        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
-    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
-
-    /* Get the current carbon-carbon distance */
-    double aCC = constants()->aCC();
-
-    /* The reciprocal lattice vectors*/
-    dVec G1,G2;
-    G1[0] = 2.0*M_PI/(sqrt(3.0)*aCC);
-    G1[1] = 2.0*M_PI/(3.0*aCC);
-    G1[2] = 0.0;
-
-    G2[0] = -G1[0];
-    G2[1] = G1[1];
-    G2[2] = 0.0;
-
-    /* For now we hard-code the g-vectors for graphene */
-    g.push_back(G1);
-    g.push_back(G2);
-    g.push_back(G1+G2);
-
-    /* Set estimator name and header */
-    endLine = true;
-    initialize({"Scom"});
-
-    norm = 1.0/(g.size()*constants()->numTimeSlices());
-}
-
-/*************************************************************************//**
- *  Destructor.
-******************************************************************************/
-CommensurateOrderParameterEstimator::~CommensurateOrderParameterEstimator() { 
-}
-
-/*************************************************************************//**
- * Accumulate the number of Commensurate order parameter
-******************************************************************************/
-void CommensurateOrderParameterEstimator::accumulate() {
-
-    int numParticles = path.getTrueNumParticles();
-    int numTimeSlices = constants()->numTimeSlices();
-
-    double _norm = 1.0;
-
-    if (numParticles > 0)
-        _norm /= numParticles;
-
-    beadLocator beadIndex;  // The bead locator
-    double Scom = 0.0; // initialize
-    dVec pos;
-
-    /* Average over all time slices */
-    for (beadIndex[0] = 0; beadIndex[0] < numTimeSlices; beadIndex[0]++) {
-
-        /* Average over all beads */
-        for (beadIndex[1] = 0; beadIndex[1] < path.numBeadsAtSlice(beadIndex[0]); beadIndex[1]++) {
-            pos = path(beadIndex);
-
-            for (const auto &cg : g) {
-                Scom += cos(dot(cg,pos));
-            }
-
-        } // beadIndex[1]
-    } //beadIndex[0]
-
-    estimator(0) += Scom*_norm;
-}
-
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
 // NUMBER DISTRIBUTION ESTIMATOR CLASS ---------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -1193,7 +1131,6 @@ LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_p
 LinearParticlePositionEstimator::~LinearParticlePositionEstimator() { 
 }
 
-
 /*************************************************************************//**
  *  Accumulate a histogram of all particle positions, with output 
  *  being the running average of the density per grid space.
@@ -1218,7 +1155,6 @@ void LinearParticlePositionEstimator::accumulate() {
         }
     }
 }
-
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -2018,7 +1954,6 @@ LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
 
     locA2.resize(numGrid);
     locA2 = 0.0;
-
 }
 
 /*************************************************************************//**
@@ -3924,7 +3859,7 @@ CylinderLinearPotentialEstimator::~CylinderLinearPotentialEstimator() {
 /*************************************************************************//**
  *  We determine what the effective potential along the axis of the pore.
 ******************************************************************************/
-void CylinderLinearPotentialEstimator::accumulate() {
+void CylinderLinearPotentialEstimator::accumulate1() {
 
     double totV = 0.0;
     dVec r1,r2;         // The two bead positions
@@ -3941,26 +3876,19 @@ void CylinderLinearPotentialEstimator::accumulate() {
         /* Get the external potential */
         totV = 0.0;
 
-        /* We sum up the interaction energy over all slices*/
-        int numBeads = 0;
-        for (int slice = 0; slice < path.numTimeSlices; slice++) {
-            bead2[0] = slice;
+        /* We only take slice 0 */
+        bead2[0] = 0;
 
-            /* Sum over particles */
-            for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(slice); bead2[1]++) {
+        /* Sum over particles at slice 0 */
+        for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
 
-                r2 = path(bead2);
-                if (!include(r2,maxR)) {
-                    sep = r2 - r1;
-                    path.boxPtr->putInBC(sep);
-                    totV += actionPtr->interactionPtr->V(sep);
-                    numBeads++;
-
-                } // bead2 is outside maxR
-            } // bead2
-        } // slice
-
-        totV /= 1.0*numBeads;
+            r2 = path(bead2);
+            if (!include(r2,maxR)) {
+                sep = r2 - r1;
+                path.boxPtr->putInBC(sep);
+                totV += actionPtr->interactionPtr->V(sep);
+            } // bead2 is inside  maxR
+        } // bead2
 
         /* Add the constant piece from the external potential */
         totV += actionPtr->externalPtr->V(r1);
@@ -3969,6 +3897,65 @@ void CylinderLinearPotentialEstimator::accumulate() {
     } // n
 }
 
+/*************************************************************************//**
+ *  We determine what the effective potential along the axis of the pore.
+ *
+ *  This method creates a spatially resolved histogram of the total potential
+ *  felt by partices in the inner core, removing any self-interactions inside
+ *  the cut-off radius.
+******************************************************************************/
+void CylinderLinearPotentialEstimator::accumulate() {
+
+    double totV = 0.0;
+    dVec r1,r2;         // The two bead positions
+
+    dVec sep;           // The bead separation
+    beadLocator bead1,bead2;  // The bead locators
+
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+        bead1[0] = slice;
+
+        for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(slice); bead1[1]++) {
+
+            /* Location of bead 1 */
+            r1 = path(bead1);
+
+            /* If we are inside the cutoff cylinder, accumulate the potential */
+            if (include(r1,maxR)) {
+
+                totV = 0.0;
+
+                /* Sum over particles */
+                bead2[0] = slice;
+
+                for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
+
+                    r2 = path(bead2);
+
+                    /* Make sure r2 is not inside the central core */
+                    if (!include(r2,maxR)) {
+                        sep = r2 - r1;
+                        path.boxPtr->putInBC(sep);
+                        totV += actionPtr->interactionPtr->V(sep);
+                    } // bead2 is not inside the core
+                } //bead2
+
+                /* Add the contribution of the external potential energy */
+                totV += actionPtr->externalPtr->V(r1);
+
+                /* determine the z-index of bead 1 */
+                int k = int((0.5*Lz + r1[NDIM-1])/dz);
+                if (k < NRADSEP) {
+                    estimator(k) += totV; // /constants()->numTimeSlices();
+                    norm(k) += 1.0;
+                }
+
+            } // bead1 is inside the core
+
+        } // bead1
+
+    } // slice
+}
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

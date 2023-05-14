@@ -203,6 +203,10 @@ void Parameters::set(const string& key, const Ttype val) {
 
         /* insert the type */
         type.emplace(pair<string,const type_info&>(key,typeid(Ttype)));
+
+        /* Stores the function signature to print an element */
+        extract.emplace(pair<string,void(*)(const po::variable_value &)>
+                (key,[](const po::variable_value& v) {cout << v.as<Ttype>();}));
     }
 
     state[key] = SET;
