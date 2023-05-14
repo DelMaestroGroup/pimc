@@ -1,4 +1,8 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7271913.svg)](https://doi.org/10.5281/zenodo.7271913)
+
 # Documentation  
+
+Additional information about the code can be found at https://code.delmaestro.org
 
 ## Introduction 
 

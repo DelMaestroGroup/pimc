@@ -1424,7 +1424,7 @@ class GrapheneLUT3DPotentialGenerate: public PotentialBase  {
     public:
         GrapheneLUT3DPotentialGenerate(
                 const double, const double, const double, const double,
-                const double, const Container*);
+                const double, const int, const int, const int, const int, const Container*);
         ~GrapheneLUT3DPotentialGenerate();
         
     private:
@@ -1439,6 +1439,7 @@ class GrapheneLUT3DPotentialGenerate: public PotentialBase  {
         /* dimensions of the lookup tables */
         /* double zmin; */
         double zmax;
+	int k_max;
         /* double V_zmin; */
         
         double Vz_64( double, double, double, int );
