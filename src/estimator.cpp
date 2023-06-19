@@ -3078,7 +3078,7 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
     int numTimeSlices = constants()->numTimeSlices();
 
     dVec q;
-    string input = constants()->isf_input_type();
+    string input = constants()->isf_input();
     char * cstr = new char [input.length()+1];
     std::strcpy (cstr, input.c_str());
     char *token = strtok(cstr, " ");
@@ -3305,10 +3305,10 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
     //header.append("\n");
 
     /* The imaginary time values */
-    header.append(str(format("#%15.6E") % 0.0));
-    for (int n = 1; n < (int(numTimeSlices/2) + 1); n++) 
-        header.append(str(format("%16.6E") % (constants()->tau()*n)));
-
+    header = str(format("#%15d") % 0);
+    for (int n = 1; n < isf.size(); n++) {
+        header.append(str(format("%16d") % n));
+    }
     /* utilize imaginary time translational symmetry */
     norm = 0.5;
 
