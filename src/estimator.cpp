@@ -13,14 +13,14 @@
 #include "factory.h"
 #ifdef GPU_BLOCK_SIZE
     #ifndef USE_CUDA
-        #include "estimator.hip.hpp"
+        #include "estimator.hip.h"
     #endif
     #ifdef USE_CUDA
         #include "estimator.cuh"
     #endif
 #endif
 #ifndef GPU_BLOCK_SIZE
-    #include "special_functions.hpp"
+    #include "special_functions.h"
 #endif
 
 
@@ -3123,7 +3123,7 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
             }
         }
         
-        iVec _q_int[3];
+        iVec _q_int[NDIM];
         int n_q = 1;
         for (int i = 0; i < NDIM; i++) {
             n_q *= 2*q_int[i] + 1;
@@ -3162,10 +3162,10 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
             }
         }
         
-        iVec _q_int[3];
+        iVec _q_int[NDIM];
         int n_q = 1;
         for (int i = 0; i < NDIM; i++) {
-            q_int[i] = static_cast<int>(q_mag_max*path.boxPtr->side[i]/2.0/M_PI);
+            q_int[i] = 1 + static_cast<int>(q_mag_max*path.boxPtr->side[i]/2.0/M_PI);
             n_q *= 2*q_int[i] + 1;
             _q_int[i] = -q_int[i];
             q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
