@@ -419,6 +419,8 @@ void Setup::initParameters() {
     params.add<int>("virial_window,V", "centroid virial energy estimator window",oClass,5);
     params.add<int>("number_broken", "number of broken world-lines",oClass,0);
     params.add<double>("spatial_subregion", "define a spatial subregion",oClass);
+    params.add<string>("isf_input","input for intermediate scattering function (set isf_input_type to corresponding type)",oClass,"");
+    params.add<string>("isf_input_type","type for isf_input (set to 'help' for more details)",oClass,"");
 
     /* The updates, measurement defaults, and ensemble can depend on PIGS vs PIMC */
     vector<string> estimatorsToMeasure;
