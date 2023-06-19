@@ -77,6 +77,9 @@
 #define PIGS false
 #endif
 
+/* Include common gpu headers */
+#include "common_gpu.h"
+
 /* Used for getting the repo version number into the code */
 #ifndef REPO_VERSION
 #define REPO_VERSION "none"
