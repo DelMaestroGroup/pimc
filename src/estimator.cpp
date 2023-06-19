@@ -3123,7 +3123,7 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
             }
         }
         
-        iVec _q_int[NDIM];
+        int _q_int[NDIM];
         int n_q = 1;
         for (int i = 0; i < NDIM; i++) {
             n_q *= 2*q_int[i] + 1;
@@ -3153,7 +3153,7 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
     if (constants()->isf_input_type() == "max-float") {
         std::cout << "isf_input_type = max-float" << std::endl;
         iVec q_int;
-        double q_mag_max;
+        double q_mag_max = 0.0;
         double q_mag;
         while(token) {
             for (int i=0; (i<NDIM) && token; i++) {
@@ -3162,7 +3162,7 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
             }
         }
         
-        iVec _q_int[NDIM];
+        int _q_int[NDIM];
         int n_q = 1;
         for (int i = 0; i < NDIM; i++) {
             q_int[i] = 1 + static_cast<int>(q_mag_max*path.boxPtr->side[i]/2.0/M_PI);
