@@ -712,6 +712,7 @@ class PairCorrelationEstimator: public EstimatorBase {
     private:
         void accumulate();              // Accumulate values
         double dR;                      // The discretization
+        int PCFBins;                    // Number of PCF bins
 };
 
 // ========================================================================  

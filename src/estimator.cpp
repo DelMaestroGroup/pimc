@@ -2644,7 +2644,7 @@ void OneBodyDensityMatrixEstimator::outputFooter() {
 /*************************************************************************//**
  *  Constructor.
  * 
- *  For the pair correlation function, we measure NPCFSEP positions to get
+ *  For the pair correlation function, we measure PCFBins positions to get
  *  high enough data density to observe possible osscilations.  The normalization
  *  depends on dimension.
 ******************************************************************************/
@@ -2653,15 +2653,19 @@ PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path,
         int _frequency, string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
+
+    /* Set the number of bins in the pair correlation function */
+    PCFBins = constants()->numberPCFbins();
+
     /* The spatial discretization */
-    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
+    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*PCFBins);
 
     /* This is a diagonal estimator that gets its own file */
-    initialize(NPCFSEP);
+    initialize(PCFBins);
 
     /* The header is the first line which contains the spatial separations */
     header = str(format("#%15.3E") % 0.0);
-    for (int n = 1; n < NPCFSEP; n++) 
+    for (int n = 1; n < PCFBins; n++) 
         header.append(str(format("%16.3E") % ((n)*dR)));
 
     /* The normalization factor for the pair correlation function depends 
@@ -2671,13 +2675,13 @@ PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path,
 //  gNorm[1] = 1.0/(4.0*M_PI);
 //  gNorm[2] = 1.0/(8.0*M_PI);
 //  norm(0) = 1.0;
-//  for (int n = 1; n < NPCFSEP; n++)
+//  for (int n = 1; n < PCFBins; n++)
 //      norm(n) = (gNorm[NDIM-1]*path.boxPtr->volume) / (dR*pow(n*dR,NDIM-1));
 
     /* The normalization factor for the pair correlation function depends 
      * on the dimensionality, and container type */
     if (path.boxPtr->name == "XXX") {
-        for (int n = 0; n < NPCFSEP; n++)
+        for (int n = 0; n < PCFBins; n++)
             norm(n) = 0.5*path.boxPtr->side[NDIM-1] / dR;
     }
     else {
@@ -2686,7 +2690,7 @@ PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path,
         gNorm[1] = 1.0/(M_PI);
         gNorm[2] = 3.0/(2.0*M_PI);
         double dV;
-        for (int n = 0; n < NPCFSEP; n++) {
+        for (int n = 0; n < PCFBins; n++) {
             dV = pow((n+1)*dR,NDIM)-pow(n*dR,NDIM);
             norm(n) = 0.5*(gNorm[NDIM-1]*path.boxPtr->volume) / dV;
         }

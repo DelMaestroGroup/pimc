@@ -394,6 +394,51 @@ class DipolePotential : public PotentialBase  {
         }
 };
 
+// ========================================================================  
+// LJ Interaction Potential Class
+// ========================================================================  
+/** 
+ */
+class LJPotential : public PotentialBase  {
+    public:
+        LJPotential (double,double);
+        ~LJPotential ();
+
+        /**
+         * Return the dipole potential 1/r^3.
+         */
+        double V(const dVec &r) {
+            double x = sqrt(dot(r,r));
+            if (x < EPS)
+                return LBIG;
+            return 0.0;
+        }
+
+        /**
+         * Return the gradient of the dipole potential.
+         */
+        dVec gradV(const dVec &r) {
+            double x = sqrt(dot(r,r));
+            if (x < EPS)
+                return 0.0;
+            return 0.0;
+        }
+
+        /**
+         * Return the Laplacian of the dipolar potential.
+         */
+        double grad2V(const dVec &r) {
+            double x = sqrt(dot(r,r));
+            if (x < EPS)
+                return 0.0;
+            return 0.0;
+        }
+
+    private:
+        double lj_sigma;       // sigma in angstrom
+        double lj_epsilon;     // epsilon in kelvin
+};
+
 
 // ========================================================================  
 // Hard Cylinder Potential Class

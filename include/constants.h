@@ -107,6 +107,7 @@ class ConstantParameters
         bool spatialSubregionOn() {return spatialSubregionOn_;}           //< Get subregion on/off
         int Npaths() {return Npaths_;}                  //< Get number of paths
         uint32 binSize() {return binSize_;}                //< Get the number of measurments per bin.
+        int numberPCFbins() {return number_PCF_bins_;}  //< return number of bins of the pair correlation function
 
         string intPotentialType() const {return intPotentialType_;} ///< Get interaction potential type
         string extPotentialType() const {return extPotentialType_;} ///< Get external potential type
@@ -166,6 +167,7 @@ class ConstantParameters
         double spatialSubregion_;      // The limits of the spatial sub region for EE
         bool spatialSubregionOn_;     // True if using a spatial subregion for EE
         int Npaths_;                // Number of paths used
+        int number_PCF_bins_;       // Number of bins for the pair correlation function
 
         uint32 numEqSteps_;     // Number of equilibration steps
 

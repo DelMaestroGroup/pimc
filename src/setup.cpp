@@ -272,7 +272,7 @@ Setup::Setup() :
 
     /* Define the allowed interaction potential names */
     interactionPotentialName = {"aziz", "szalewicz", "delta", "lorentzian", "sutherland", 
-        "hard_sphere", "hard_rod", "free", "delta1D", "harmonic", "dipole"};
+        "hard_sphere", "hard_rod", "free", "delta1D", "harmonic", "dipole", "lj"};
     interactionNames = getList(interactionPotentialName);
 
     /* Define the allowed external  potential names */
@@ -415,6 +415,7 @@ void Setup::initParameters() {
     params.add<int>("virial_window,V", "centroid virial energy estimator window",oClass,5);
     params.add<int>("number_broken", "number of broken world-lines",oClass,0);
     params.add<double>("spatial_subregion", "define a spatial subregion",oClass);
+    params.add<int>("number_PCF_bins", "number of bins to be measured in the pair correlation function",oClass,50);
 
     /* The updates, measurement defaults, and ensemble can depend on PIGS vs PIMC */
     vector<string> estimatorsToMeasure;
@@ -1055,6 +1056,8 @@ PotentialBase * Setup::interactionPotential(const Container* boxPtr) {
         interactionPotentialPtr = new HarmonicPotential(params["omega"].as<double>());
     else if (constants()->intPotentialType() == "dipole")
         interactionPotentialPtr = new DipolePotential();
+    else if (constants()->intPotentialType() == "lj")
+        interactionPotentialPtr = new LJPotential(params["lj_sigma"].as<double>(),params["lj_epsilon"].as<double>());
 
     return interactionPotentialPtr;
 }
@@ -1622,6 +1625,15 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
             % "Graphene-Carbon LJ Sigma" % params["lj_sigma"].as<double>();
         communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
             % "Graphene-Carbon LJ Epsilon" % params["lj_epsilon"].as<double>();
+    }
+
+
+    /* Ouptut details of the lennard-Jones potential */
+    if (params["interaction"].as<string>().find("lj") != string::npos) {
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
+            % "LJ Sigma" % params["lj_sigma"].as<double>();
+        communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") 
+            % "LJ Epsilon" % params["lj_epsilon"].as<double>();
     }
 
     /* output possible paramters of the plated LJ cylinder potential */
