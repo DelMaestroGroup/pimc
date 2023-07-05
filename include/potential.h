@@ -856,7 +856,7 @@ class SzalewiczPotential : public PotentialBase, public TabulatedPotential {
         double eta = 4.09423805117871;
         double Pn[3] = {-25.4701669416621, 269.244425630616, -56.3879970402079};
         double Qn[2] = {38.7957487310071, -2.76577136772754};
-        long int factorials[17] = {     1,
+        long long factorials[17] = {    1,
                                         1,
                                         2,
                                         6,

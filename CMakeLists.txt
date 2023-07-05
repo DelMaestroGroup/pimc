@@ -56,7 +56,11 @@ if (NOT DEFAULT_CXX_FLAGS)
     set(DEFAULT_CXX_FLAGS "-Wall -fno-math-errno -O3")
     #set(DEFAULT_CXX_FLAGS "-march=native -Wall -fno-math-errno -O3")
 endif()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEFAULT_CXX_FLAGS}")
+
+if (NOT EXTRA_CXX_FLAGS)
+    set(EXTRA_CXX_FLAGS "/Zc:__cplusplus")
+endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEFAULT_CXX_FLAGS} ${EXTRA_CXX_FLAGS}")
 
 # Determine executable name
 set(exe pimc.e)
@@ -159,10 +163,19 @@ endif()
 include_directories( ${Boost_INCLUDE_DIRS} )
 include_directories( ${Blitz_INCLUDE_DIRS} )
 
+set(use_msvc_libs OFF)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    if ("${CMAKE_CXX_SIMULATE_ID}" STREQUAL "MSVC")
+        set(use_msvc_libs ON)
+    endif ()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    set(use_msvc_libs ON)
+endif ()
+
 # Link libraries
-target_link_libraries (${exe} ${Boost_LIBRARIES} )
+target_link_libraries (${exe} ${Boost_LIBRARIES} $<$<BOOL:${use_msvc_libs}>:bcrypt>)
 if((CMAKE_BUILD_TYPE MATCHES Debug) OR (CMAKE_BUILD_TYPE MATCHES PIGSDebug))
-    target_link_libraries (${exe} ${Blitz_LIBRARIES} )
+    target_link_libraries (${exe} ${Blitz_LIBRARIES})
 endif()
 
 # Link filesystem library -lstdc++fs for old compilers

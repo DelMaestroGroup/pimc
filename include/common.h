@@ -12,10 +12,13 @@
 #ifndef COMMON_H 
 #define COMMON_H
 
+#define _USE_MATH_DEFINES
+
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <cmath>
+
 #include <cassert>
 #include <vector>
 #include <set>

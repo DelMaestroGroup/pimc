@@ -3881,15 +3881,16 @@ GrapheneLUT3DPotentialGenerate::get_g_magnitudes(
             k += 1;
         }
     }
-    int sort_indeces[size_of_arrays];
+    
+    std::vector<int> sort_indeces(size_of_arrays, 0);
     for (int i = 0; i < size_of_arrays; i++) {
         sort_indeces[i] = i;
     }
 
     //std::sort( sort_indeces, sort_indeces + size_of_arrays,
     //        [] (int i, int j) {return g_magnitude_array(i) < g_magnitude_array(j);});
-    std::stable_sort( sort_indeces, sort_indeces + size_of_arrays,
-            [&g_magnitude_array] (int i, int j) {return g_magnitude_array(i) < g_magnitude_array(j);});
+    std::stable_sort(sort_indeces.begin(), sort_indeces.end(),
+        [&g_magnitude_array](int i, int j) {return g_magnitude_array(i) < g_magnitude_array(j); });
     // using std::stable_sort instead of std::sort
     // to avoid unnecessary index re-orderings
     // when g_magnitude_array contains elements of equal values
