@@ -57,10 +57,12 @@ if (NOT DEFAULT_CXX_FLAGS)
     #set(DEFAULT_CXX_FLAGS "-march=native -Wall -fno-math-errno -O3")
 endif()
 
-if (NOT EXTRA_CXX_FLAGS)
-    set(EXTRA_CXX_FLAGS "/Zc:__cplusplus")
-endif()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEFAULT_CXX_FLAGS} ${EXTRA_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEFAULT_CXX_FLAGS}")
+
+#if (NOT EXTRA_CXX_FLAGS)
+#    set(EXTRA_CXX_FLAGS "/Zc:__cplusplus")
+#endif()
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEFAULT_CXX_FLAGS} ${EXTRA_CXX_FLAGS}")
 
 # Determine executable name
 set(exe pimc.e)
@@ -147,6 +149,10 @@ if(NOT CMAKE_BUILD_TYPE)
    set(CMAKE_BUILD_TYPE None
        CACHE STRING "Choose the type of build : None Debug Release PIGS PIGSDebug."
        FORCE)
+endif()
+
+if ((MSVC) AND (MSVC_VERSION GREATER_EQUAL 1914))
+	target_compile_options(${exe} PUBLIC "/Zc:__cplusplus")
 endif()
 
 # Find Boost

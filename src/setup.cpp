@@ -337,6 +337,8 @@ void Setup::initParameters() {
     params.add<string>("rng,G",str(format("random number generator type:\n%s") % randomGeneratorNames).c_str(),oClass,"pimc_mt19937");
     params.add<string>("param_file","a valid path to the parameters input xml file.",oClass);
 
+    params.add<uint32>("seed", "Seed for the random number generator.",oClass,139853);
+
     /* Initialize the cell options */
     oClass = "cell";
     params.add<string>("geometry,b","simulation cell type [prism,cylinder]",oClass,"prism");
