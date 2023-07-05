@@ -59,11 +59,6 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEFAULT_CXX_FLAGS}")
 
-#if (NOT EXTRA_CXX_FLAGS)
-#    set(EXTRA_CXX_FLAGS "/Zc:__cplusplus")
-#endif()
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEFAULT_CXX_FLAGS} ${EXTRA_CXX_FLAGS}")
-
 # Determine executable name
 set(exe pimc.e)
 if(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -150,6 +145,14 @@ if(NOT CMAKE_BUILD_TYPE)
        CACHE STRING "Choose the type of build : None Debug Release PIGS PIGSDebug."
        FORCE)
 endif()
+
+# /Zc:__cplusplus is required to make __cplusplus accurate
+# /Zc:__cplusplus is available starting with Visual Studio 2017 version 15.7
+# (according to https://docs.microsoft.com/en-us/cpp/build/reference/zc-cplusplus)
+# That version is equivalent to _MSC_VER==1914
+# (according to https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=vs-2019)
+# CMake's ${MSVC_VERSION} is equivalent to _MSC_VER
+# (according to https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html#variable:MSVC_VERSION)
 
 if ((MSVC) AND (MSVC_VERSION GREATER_EQUAL 1914))
 	target_compile_options(${exe} PUBLIC "/Zc:__cplusplus")
