@@ -56,6 +56,7 @@ if (NOT DEFAULT_CXX_FLAGS)
     set(DEFAULT_CXX_FLAGS "-Wall -fno-math-errno -O3")
     #set(DEFAULT_CXX_FLAGS "-march=native -Wall -fno-math-errno -O3")
 endif()
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEFAULT_CXX_FLAGS}")
 
 # Determine executable name
@@ -145,6 +146,18 @@ if(NOT CMAKE_BUILD_TYPE)
        FORCE)
 endif()
 
+# /Zc:__cplusplus is required to make __cplusplus accurate
+# /Zc:__cplusplus is available starting with Visual Studio 2017 version 15.7
+# (according to https://docs.microsoft.com/en-us/cpp/build/reference/zc-cplusplus)
+# That version is equivalent to _MSC_VER==1914
+# (according to https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=vs-2019)
+# CMake's ${MSVC_VERSION} is equivalent to _MSC_VER
+# (according to https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html#variable:MSVC_VERSION)
+
+if ((MSVC) AND (MSVC_VERSION GREATER_EQUAL 1914))
+	target_compile_options(${exe} PUBLIC "/Zc:__cplusplus")
+endif()
+
 # Find Boost
 find_package( Boost 1.71.0 REQUIRED COMPONENTS program_options serialization )
 
@@ -159,10 +172,19 @@ endif()
 include_directories( ${Boost_INCLUDE_DIRS} )
 include_directories( ${Blitz_INCLUDE_DIRS} )
 
+set(use_msvc_libs OFF)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    if ("${CMAKE_CXX_SIMULATE_ID}" STREQUAL "MSVC")
+        set(use_msvc_libs ON)
+    endif ()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    set(use_msvc_libs ON)
+endif ()
+
 # Link libraries
-target_link_libraries (${exe} ${Boost_LIBRARIES} )
+target_link_libraries (${exe} ${Boost_LIBRARIES} $<$<BOOL:${use_msvc_libs}>:bcrypt>)
 if((CMAKE_BUILD_TYPE MATCHES Debug) OR (CMAKE_BUILD_TYPE MATCHES PIGSDebug))
-    target_link_libraries (${exe} ${Blitz_LIBRARIES} )
+    target_link_libraries (${exe} ${Blitz_LIBRARIES})
 endif()
 
 # Link filesystem library -lstdc++fs for old compilers

@@ -34,8 +34,6 @@ int main (int argc, char *argv[]) {
     time_t current_time; //current time
     bool wallClockReached = false;
 
-    uint32 seed = 139853;   // The seed for the random number generator
-
     Setup setup;
 
     /* Attempt to parse the command line options */
@@ -53,6 +51,8 @@ int main (int argc, char *argv[]) {
     /* Parse the setup options and possibly exit */
     if (setup.parseOptions())
         return 1;
+
+    uint32 seed = setup.params["seed"].as<uint32>();  // The seed for the random number generator (by default: 139853)
 
     /* The global random number generator, we add the process number to the seed (for
      * use in parallel simulations.*/

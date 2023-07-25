@@ -7,16 +7,12 @@
 
 #include "communicator.h"
 
-/* Filesystem is tricky as it is not yet widely supported.  We try to address
- * that here. */
-#if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 8))
+#if __cplusplus < 201703L
+    #include <experimental/filesystem>
+    namespace fs = std::experimental::filesystem;
+#else
     #include <filesystem>
     namespace fs = std::filesystem;
-#else
-#if defined(__GNUC__) && (__GNUC__ > 6)
-        #include <experimental/filesystem>
-        namespace fs = std::experimental::filesystem;
-#endif
 #endif
 
 // ---------------------------------------------------------------------------
