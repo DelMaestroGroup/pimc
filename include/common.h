@@ -66,15 +66,14 @@
 
 #endif // ifdef PIMC_DEBUG 
 
-/* We either specify the number of dimensions of the simulation at compile time,
- * or it defaults to 1D. */
-#ifndef NDIM
-#define NDIM 1 ///< Number of spatial dimnsions
-#endif
-
 /* Determine if we are performing a PIGS (T=0) or PIMC (T>0) simulation */
 #ifndef PIGS
 #define PIGS false
+#endif
+
+/* Determine if we are studying boltzmannons */
+#ifndef BOLTZMANNONS
+#define BOLTZMANNONS false
 #endif
 
 /* Used for getting the repo version number into the code */

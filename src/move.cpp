@@ -2431,6 +2431,13 @@ bool AdvanceHeadMove::attemptMove() {
     advanceLength = 2*(1 + random.randInt(constants()->Mbar()/2-1));
     numLevels = int (ceil(log(1.0*advanceLength) / log(2.0)-EPS));
 
+#if BOLTZMANNONS
+    /* We don't want to grow paths longer than the number of time slices
+     * if we have distinguishable particles */
+    if ((path.worm.length + advanceLength) > constants()->numTimeSlices())
+        return success;
+#endif
+
     checkMove(0,0.0);
 
     /* Increment the number of advance moves and the total number of moves */
@@ -2947,6 +2954,15 @@ bool RecedeTailMove::attemptMove() {
      * a random number of levels to be used in the bisection algorithm. */
     recedeLength = 2*(1 + random.randInt(constants()->Mbar()/2-1));
     numLevels = int (ceil(log(1.0*recedeLength) / log(2.0)-EPS));
+
+#if BOLTZMANNONS
+    /* We don't want to grow paths longer than the number of time slices
+     * if we have distinguishable particles */
+    if ((path.worm.length + recedeLength) > constants()->numTimeSlices())
+        return success;
+#endif
+
+
 
     checkMove(0,0.0);
 
