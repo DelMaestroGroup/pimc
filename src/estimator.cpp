@@ -11,6 +11,17 @@
 #include "potential.h"
 #include "communicator.h"
 #include "factory.h"
+#ifdef GPU_BLOCK_SIZE
+    #ifndef USE_CUDA
+        #include "estimator.hip.h"
+    #endif
+    #ifdef USE_CUDA
+        #include "estimator.cuh"
+    #endif
+#endif
+#ifndef GPU_BLOCK_SIZE
+    #include "special_functions.h"
+#endif
 
 
 /**************************************************************************//**
@@ -54,6 +65,9 @@ REGISTER_ESTIMATOR("one body density matrix",OneBodyDensityMatrixEstimator);
 REGISTER_ESTIMATOR("pair correlation function",PairCorrelationEstimator);
 REGISTER_ESTIMATOR("static structure factor",StaticStructureFactorEstimator);
 REGISTER_ESTIMATOR("intermediate scattering function",IntermediateScatteringFunctionEstimator);
+#ifdef GPU_BLOCK_SIZE
+REGISTER_ESTIMATOR("intermediate scattering function gpu",IntermediateScatteringFunctionEstimatorGpu);
+#endif
 REGISTER_ESTIMATOR("radial density",RadialDensityEstimator);
 REGISTER_ESTIMATOR("cylinder energy",CylinderEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder number particles",CylinderNumberParticlesEstimator);
@@ -3042,6 +3056,386 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
 
     estimator += isf/numParticles;
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// INTERMEDIATE SCATTERING FUNCTION GPU ESTIMATOR CLASS ----------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  Measure the intermediate scattering function at wavevectors determined
+ *  from isf_input and isf_input_type command line arguments
+******************************************************************************/
+#ifdef GPU_BLOCK_SIZE
+IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstimatorGpu(
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
+        double _maxR, int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
+
+    int numTimeSlices = constants()->numTimeSlices();
+
+    dVec q;
+    string input = constants()->isf_input();
+    char * cstr = new char [input.length()+1];
+    std::strcpy (cstr, input.c_str());
+    char *token = strtok(cstr, " ");
+    // parse isf_input_type to determine how to handle isf_input
+    if (constants()->isf_input_type() == "int") {
+        std::cout << "isf_input_type = int" << std::endl;
+        while(token) {
+            int j = 0;
+            for (int i=0; (i<NDIM) && token; i++) {
+                q[i] = (2.0*M_PI/path.boxPtr->side[i])*std::atoi(token);
+                token = strtok(NULL, " ");
+                j = i;
+            }
+            if (j==(NDIM-1)){
+                qValues.push_back(q);
+            }
+        }
+    }
+
+    if (constants()->isf_input_type() == "float") {
+        std::cout << "isf_input_type = float" << std::endl;
+        while(token) {
+            int j = 0;
+            for (int i=0; (i<NDIM) && token; i++){
+                q[i] = std::atof(token);
+                token = strtok(NULL, " ");
+                j = i;
+            }
+            if (j==(NDIM-1)){
+                qValues.push_back(q);
+            }
+        }
+    }
+
+    if (constants()->isf_input_type() == "max-int") {
+        std::cout << "isf_input_type = max-int" << std::endl;
+        iVec q_int;
+        while(token) {
+            for (int i=0; (i<NDIM) && token; i++) {
+                q_int[i] = std::abs(std::atoi(token));
+                token = strtok(NULL, " ");
+            }
+        }
+        
+        int _q_int[NDIM];
+        int n_q = 1;
+        for (int i = 0; i < NDIM; i++) {
+            n_q *= 2*q_int[i] + 1;
+            _q_int[i] = -q_int[i];
+            q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+        }
+        qValues.push_back(q);
+
+        int pos = NDIM - 1;
+        int count = 0;
+        while (count < n_q - 1) {
+            if (_q_int[pos] == q_int[pos]) {
+                _q_int[pos] = -q_int[pos];
+                pos -= 1;
+            } else {
+                _q_int[pos] += 1;
+                for (int i = 0; i < NDIM; i++) {
+                    q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+                }
+                qValues.push_back(q);
+                count += 1;
+                pos = NDIM - 1; //increment the innermost loop
+            }
+        }
+    }
+
+    if (constants()->isf_input_type() == "max-float") {
+        std::cout << "isf_input_type = max-float" << std::endl;
+        iVec q_int;
+        double q_mag_max = 0.0;
+        double q_mag;
+        while(token) {
+            for (int i=0; (i<NDIM) && token; i++) {
+                q_mag_max = std::atof(token);
+                token = strtok(NULL, " ");
+            }
+        }
+        
+        int _q_int[NDIM];
+        int n_q = 1;
+        for (int i = 0; i < NDIM; i++) {
+            q_int[i] = 1 + static_cast<int>(q_mag_max*path.boxPtr->side[i]/2.0/M_PI);
+            n_q *= 2*q_int[i] + 1;
+            _q_int[i] = -q_int[i];
+            q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+        }
+        q_mag = sqrt(dot(q,q));
+        if (q_mag <= q_mag_max) {
+            qValues.push_back(q);
+        }
+
+        int pos = NDIM - 1;
+        int count = 0;
+        while (count < n_q - 1) {
+            if (_q_int[pos] == q_int[pos]) {
+                _q_int[pos] = -q_int[pos];
+                pos -= 1;
+            } else {
+                _q_int[pos] += 1;
+                for (int i = 0; i < NDIM; i++) {
+                    q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+                }
+                q_mag = sqrt(dot(q,q));
+                if (q_mag <= q_mag_max) {
+                    qValues.push_back(q);
+                }
+                count += 1;
+                pos = NDIM - 1; //increment the innermost loop
+            }
+        }
+    }
+
+    if (constants()->isf_input_type() == "file-int") {
+        std::cout << "isf_input_type = file-int" << std::endl;
+
+        std::ifstream file(input);
+        std::string line;
+        // Read one line at a time into the variable line:
+        while(std::getline(file, line)) {
+            std::vector<int> line_data;
+            std::stringstream line_stream(line);
+        
+            int value;
+            // Read an integer at a time from the line
+            while(line_stream >> value) {
+                // Add the integers from a line to a 1D array (vector)
+                line_data.push_back(value);
+            }
+            PIMC_ASSERT(line_data.size()==NDIM);
+
+            for (int i=0; i < NDIM; i++) {
+                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
+            }
+            qValues.push_back(q);
+        }
+    }
+    if (constants()->isf_input_type() == "file-float") {
+        std::cout << "isf_input_type = file-float" << std::endl;
+
+        std::ifstream file(input);
+        std::string line;
+        // Read one line at a time into the variable line:
+        while(std::getline(file, line)) {
+            std::vector<int> line_data;
+            std::stringstream line_stream(line);
+        
+            int value;
+            // Read an integer at a time from the line
+            while(line_stream >> value) {
+                // Add the integers from a line to a 1D array (vector)
+                line_data.push_back(value);
+            }
+            PIMC_ASSERT(line_data.size()==NDIM);
+
+            for (int i=0; i < NDIM; i++) {
+                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
+            }
+            qValues.push_back(q);
+        }
+    }
+    if (constants()->isf_input_type() == "help") {
+        std::cout << "isf_input_type = help" << std::endl;
+        std::cout << std::endl;
+        std::cout << "The intermediate scattering function behavior is determined by the isf_input and isf_input_type command line arguments." << std::endl;
+        std::cout << "Setting isf_input_type to `help` displays this message." << std::endl;
+        std::cout << "Other available options are:" << std::endl;
+        std::cout << "    int        - set isf_input to an `N*NDIM` space-separated list of integers `i` where the wavevector components are determined by `i*2*pi/L` for the corresponding simulation cell side `L`" << std::endl;
+        std::cout << "    float      - set isf_input to an `N*NDIM` space-separated list of floating point numbers `x`, where sequential values modulo NDIM are the corresponding wavevector components" << std::endl;
+        std::cout << "    max-int    - set isf_input to an `NDIM` space-separated list of integers `i` where the wavevector components are determined by all allowable wavevectors between `-i*2*pi/L` to `i*2*pi/L` for the corresponding simulation cell side `L`" << std::endl;
+        std::cout << "    max-float  - set isf_input to an `NDIM` space-separated list of floating point numbers `x` where wavevector components are dermined for all allowable wavevectors with magnitudes less than the supplied wavevector" << std::endl;
+        std::cout << "    file-int   - set isf_input to the path of a file containing any number of lines with `NDIM` space-separated integers `i` where the wavevector components are determined by `i*2*pi/L` for the corresponding simulation cell side `L`" << std::endl;
+        std::cout << "    file-float - set isf_input to the path of a file containing any number of lines `NDIM` space-separated floating point numbers `x` where the wavevector components are determined by the supplied wavevector on each line" << std::endl;
+        std::cout << std::endl;
+
+        throw "Set argstring_type to: < int | float | max-int | max-float | file-int | file-float >";
+    }
+    if (constants()->isf_input_type() == "") {
+        std::cout << "isf_input_type not set" << std::endl;
+        throw "argstring_type not set (set to: < int | float | max-int | max-float | file-int | file-float | help >)";
+    }
+    delete[] cstr;
+
+    // Write qValues to disk FIXME should be handled by communicator
+    //std::ofstream outFile((format("qValues-ssf-%s.dat") % constants()->id()).str());
+    //for (const auto &e : qValues){
+    //   outFile << e << "\n";
+    //}
+    //outFile.flush();
+    //outFile.close();
+    
+    numq = qValues.size();
+    qValues_dVec.resize(numq);
+    for (int nq = 0; nq < numq; nq++) {
+        qValues_dVec(nq) = qValues[nq];
+    }
+
+    /* Initialize the accumulator for the intermediate scattering function*/
+    isf.resize(numq*(int(numTimeSlices/2) + 1));
+    isf = 0.0;
+
+    // Create multiple gpu streams
+    stream_array.resize(MAX_GPU_STREAMS);
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        #ifndef USE_CUDA
+        HIP_ASSERT(hipStreamCreate(&stream_array(i)));
+        #endif
+        #ifdef USE_CUDA
+        CUDA_ASSERT(cudaStreamCreate(&stream_array(i)));
+        #endif
+    }
+
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numq*(int(numTimeSlices/2) + 1));
+
+    /* the q-values */
+    //header = str(format("#%15.6E") % qMag(0));
+    //for (int n = 1; n < numq; n++)
+    //    header.append(str(format("%16.6E") % qMag(n)));
+    //header.append("\n");
+
+    /* The imaginary time values */
+    header = str(format("#%15d") % 0);
+    for (int n = 1; n < isf.size(); n++) {
+        header.append(str(format("%16d") % n));
+    }
+    /* utilize imaginary time translational symmetry */
+    norm = 0.5;
+
+    bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
+    bytes_isf = isf.size()*sizeof(double);
+    bytes_qvecs = NDIM*numq*sizeof(double);
+    #ifndef USE_CUDA
+        HIP_ASSERT(hipMalloc(&d_isf, bytes_isf)); // Allocate memory for isf on GPU
+        HIP_ASSERT(hipMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
+        HIP_ASSERT(hipMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, hipMemcpyHostToDevice )); // Copy qvecs data to gpu
+    #endif
+    #ifdef USE_CUDA
+        CUDA_ASSERT(cudaMalloc(&d_isf, bytes_isf)); // Allocate memory for isf on GPU
+        CUDA_ASSERT(cudaMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
+        CUDA_ASSERT(cudaMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, cudaMemcpyHostToDevice )); // Copy qvecs data to gpu
+    #endif
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+IntermediateScatteringFunctionEstimatorGpu::~IntermediateScatteringFunctionEstimatorGpu() { 
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        #ifndef USE_CUDA
+            HIP_ASSERT(hipStreamDestroy(stream_array(i)));
+        #endif
+        #ifdef USE_CUDA
+            CUDA_ASSERT(cudaStreamDestroy(stream_array(i)));
+        #endif
+    }
+    isf.free();
+    qValues_dVec.free();
+    stream_array.free();
+
+    // Release device memory
+    #ifndef USE_CUDA
+        HIP_ASSERT(hipFree(d_beads));
+        HIP_ASSERT(hipFree(d_qvecs));
+        HIP_ASSERT(hipFree(d_isf));
+    #endif
+    #ifdef USE_CUDA
+        CUDA_ASSERT(cudaFree(d_beads));
+        CUDA_ASSERT(cudaFree(d_qvecs));
+        CUDA_ASSERT(cudaFree(d_isf));
+    #endif
+}
+
+/*************************************************************************//**
+ *  measure the intermediate scattering function for each value of the 
+ *  imaginary time separation tau.
+ *
+ *  We only compute this for N > 1 due to the normalization.
+******************************************************************************/
+void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
+    int numParticles = path.getTrueNumParticles();
+    int numTimeSlices = constants()->numTimeSlices();
+    int beta_over_two_idx = numTimeSlices/2;
+    int number_of_beads = numParticles*numTimeSlices;
+    int NNM = number_of_beads*numParticles;
+    //int number_of_connections = int(number_of_beads*(number_of_beads + 1)/2);
+
+    double _inorm = 1.0/number_of_beads;
+
+    auto beads_extent = path.get_beads_extent();
+    int full_number_of_beads = beads_extent[0]*beads_extent[1];
+    int full_numTimeSlices = beads_extent[0];
+    int full_numParticles = beads_extent[1];
+
+    //Size, in bytes, of beads array
+    size_t bytes_beads_new = NDIM*full_number_of_beads*sizeof(double);
+
+    #ifndef USE_CUDA
+        if (bytes_beads_new > bytes_beads) {
+            bytes_beads = bytes_beads_new;
+            HIP_ASSERT(hipFree(d_beads));
+            HIP_ASSERT(hipMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
+        }
+        HIP_ASSERT(hipMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, hipMemcpyHostToDevice )); // Copy beads data to gpu
+        HIP_ASSERT(hipMemset(d_isf, 0, bytes_isf)); // Set initial isf data to zero
+    #endif
+    #ifdef USE_CUDA
+        if (bytes_beads_new > bytes_beads) {
+            bytes_beads = bytes_beads_new;
+            CUDA_ASSERT(cudaFree(d_beads));
+            CUDA_ASSERT(cudaMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
+        }
+        CUDA_ASSERT(cudaMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, cudaMemcpyHostToDevice )); // Copy beads data to gpu
+        CUDA_ASSERT(cudaMemset(d_isf, 0, bytes_isf)); // Set initial isf data to zero
+    #endif
+
+    int grid_size = (NNM + GPU_BLOCK_SIZE - 1) / GPU_BLOCK_SIZE;
+
+    int stream_idx;
+    for (int nq = 0; nq < numq; nq++) {
+        for (int Mi = 0; Mi < numTimeSlices; Mi++) {
+            stream_idx = (nq*numTimeSlices + Mi) % MAX_GPU_STREAMS;
+            #ifndef USE_CUDA
+            hipLaunchKernelGGL(gpu_isf2, dim3(grid_size), dim3(GPU_BLOCK_SIZE), 0, stream_array(stream_idx),
+                d_isf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
+                number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
+            #endif
+            #ifdef USE_CUDA
+            cuda_wrapper::gpu_isf2_wrapper(dim3(grid_size), dim3(GPU_BLOCK_SIZE), stream_array(stream_idx),
+                d_isf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
+                number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
+            #endif
+        }
+    }
+    #ifndef USE_CUDA
+        HIP_ASSERT(hipDeviceSynchronize());
+    #endif
+    #ifdef USE_CUDA
+        CUDA_ASSERT(cudaDeviceSynchronize());
+    #endif
+
+    //// Copy isf data back to host
+    #ifndef USE_CUDA
+        HIP_ASSERT(hipMemcpy(isf.data(), d_isf, bytes_isf, hipMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
+    #endif
+    #ifdef USE_CUDA
+        CUDA_ASSERT(cudaMemcpy(isf.data(), d_isf, bytes_isf, cudaMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
+    #endif
+
+    estimator += isf;
+
+}
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
