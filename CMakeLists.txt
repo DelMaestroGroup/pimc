@@ -42,6 +42,11 @@ if (NOT NDIM)
 endif()
 add_definitions(-D NDIM=${NDIM})
 
+# Determine if we want to compile for boltzmannons
+if (BOLTZMANNONS)
+    add_compile_definitions(BOLTZMANNONS)
+endif()
+
 # Check for GPU acceleration
 if (GPU_BLOCK_SIZE)
     add_definitions(-D GPU_BLOCK_SIZE=${GPU_BLOCK_SIZE})

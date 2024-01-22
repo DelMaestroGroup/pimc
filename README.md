@@ -133,6 +133,7 @@ On Windows try:
 As above, and with further details below, but you should consider using the following CMake options with the appropriate value instead of xxx :
 
 - `-D NDIM=1|2|3` the number of spatial dimensions
+- `-D BOLTZMANNONS=1` constrain the simulation to distinguishable quantum particles (i.e. boltzmannons)
 - `-D GPU_BLOCK_SIZE=xxx` equal to the maximum threadblock size and enables GPU acceleration (using [AMD's HIP language](https://github.com/ROCm-Developer-Tools/HIP))
 - `-D MAX_GPU_STREAMS=xxx` equal to maximum number of concurrent streams on GPU device
 - `-D CMAKE_C_COMPILER=xxx` equal to the name of the C99 Compiler you wish to use (or the environment variable `CC`)

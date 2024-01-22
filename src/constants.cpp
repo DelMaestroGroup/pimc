@@ -168,13 +168,13 @@ void ConstantParameters::initConstants(po::variables_map &params) {
         attemptProb_["open"] = 0.4;
         attemptProb_["insert"] = 0.4;
         attemptProb_["close"] = 0.15;
-        attemptProb_["advance head"] = 0.075;
-        attemptProb_["recede head"] = 0.075;
-        attemptProb_["advance tail"] = 0.075;
-        attemptProb_["recede tail"] = 0.075;
+        attemptProb_["advance head"] = 0.075 + 0.05*BOLTZMANNONS;
+        attemptProb_["recede head"] = 0.075 + 0.05*BOLTZMANNONS;
+        attemptProb_["advance tail"] = 0.075 + 0.05*BOLTZMANNONS;
+        attemptProb_["recede tail"] = 0.075 + 0.05*BOLTZMANNONS;
+        attemptProb_["swap head"] = 0.1*(1-BOLTZMANNONS);
+        attemptProb_["swap tail"] = 0.1*(1-BOLTZMANNONS);
         attemptProb_["remove"] = 0.15;
-        attemptProb_["swap head"] = 0.10;
-        attemptProb_["swap tail"] = 0.10;
         attemptProb_["diagonal"] = 0.19;
         attemptProb_["center of mass"] = 0.01;
         attemptProb_["displace"] = 0.0;
@@ -183,6 +183,7 @@ void ConstantParameters::initConstants(po::variables_map &params) {
         attemptProb_["mid staging"] = 0.0;
     }
 
+    // Open + Insert + Diagonal + CoM Probability != 1
     double totProb = attemptProb_["close"] + attemptProb_["advance head"] + attemptProb_["recede head"]
         + attemptProb_["advance tail"] + attemptProb_["recede tail"] + attemptProb_["remove"]
         + attemptProb_["swap head"] + attemptProb_["swap tail"] + attemptProb_["diagonal"] 
