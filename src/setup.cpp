@@ -123,8 +123,6 @@ void Parameters::setupCommandLine(boost::ptr_map<string,po::options_description>
             option.add_options()(label.c_str(),initValue<uint32>(key),helpMessage[key].c_str());
         else if (type.at(key) == typeid(string))
             option.add_options()(label.c_str(),initValue<string>(key),helpMessage[key].c_str());
-        else if (type.at(key) == typeid(dVec))
-            option.add_options()(label.c_str(),initValue<dVec>(key),helpMessage[key].c_str());
         else if (type.at(key) == typeid(vector<string>)) {
 
             if (state[key] == DEFAULTED) {
@@ -359,8 +357,11 @@ void Setup::initParameters() {
     params.add<double>("lj_epsilon","Lennard-Jones energy scale [kelvin]",oClass,16.2463);
     params.add<double>("lj_width","Radial with of LJ plated cylinder material [angstroms]",oClass);
     params.add<double>("lj_density","Density LJ plated cylinder material [angstroms^(-3)]",oClass);
+    params.add<double>("lj_cyl_sigma","Lennard-Jones hard-core radius [angstroms]",oClass,3.405);
+    params.add<double>("lj_cyl_epsilon","Lennard-Jones energy scale [kelvin]",oClass,119.8);
+    params.add<double>("lj_cyl_density","Density of semi-infite LJ cylindrical material [angstroms]",oClass,0.021);
     params.add<double>("hourglass_radius","differential radius for hourglass potential [angstroms]",oClass,0.0);
-    params.add<double>("hourglass_width","full constriction width for hourglass potential [angstroms]",oClass,0.0);
+    params.add<double>("hourglass_width","constriction width for hourglass potential [angstroms]",oClass,0.0);
     params.add<string>("fixed,f","input file name for fixed atomic positions.",oClass,"");
     params.add<double>("potential_cutoff,l","interaction potential cutoff length [angstroms]",oClass);
     params.add<double>("empty_width_y,y","how much space (in y-) around Gasparini barrier",oClass);
@@ -368,10 +369,6 @@ void Setup::initParameters() {
 
     /* These are graphene potential options */
     params.add<double>("strain","strain of graphene lattice in y-direction",oClass,0.00);
-    params.add<int>("k_max,k", "maximum number of G-vectors used for computing graphene potential, will finish shell",oClass,10000);
-    params.add<int>("zres", "resolution of the z-direction of the 3D lookup table", oClass, 1001);
-    params.add<int>("xres", "resolution of the x-direction of the 3D lookup table", oClass, 101);
-    params.add<int>("yres", "resolution of the y-direction of the 3D lookup table", oClass, 101);
     params.add<double>("poisson","Poisson's ratio for graphene",oClass,0.165);
     params.add<double>("carbon_carbon_dist,A","Carbon-Carbon distance for graphene",oClass,1.42);
     params.add<string>("graphenelut3d_file_prefix","GrapheneLUT3D file prefix <prefix>serialized.{dat|txt}",oClass,"");
@@ -419,8 +416,6 @@ void Setup::initParameters() {
     params.add<int>("virial_window,V", "centroid virial energy estimator window",oClass,5);
     params.add<int>("number_broken", "number of broken world-lines",oClass,0);
     params.add<double>("spatial_subregion", "define a spatial subregion",oClass);
-    params.add<string>("isf_input","input for intermediate scattering function (set isf_input_type to corresponding type)",oClass,"");
-    params.add<string>("isf_input_type","type for isf_input (set to 'help' for more details)",oClass,"");
 
     /* The updates, measurement defaults, and ensemble can depend on PIGS vs PIMC */
     vector<string> estimatorsToMeasure;
@@ -458,7 +453,7 @@ string Setup::getXMLOptionList(const vector<string> &options, const string tag) 
 
     string optionList = "";
     for(auto name : options)
-        optionList += str(format("<%s>\n    %s\n</\%s>\n") % tag % name % tag);
+        optionList += str(format("<%s>\n    %s\n<\\%s>\n") % tag % name % tag);
     return optionList;
 }
 
@@ -576,14 +571,6 @@ bool Setup::parseOptions() {
         cerr << endl << "ERROR: Invalid simulation cell type." << endl << endl;
         cerr << "Action: change cell (b) to one of:" << endl
             << "\t[prism,cylinder]" << endl;
-        return true;
-    }
-    
-    /* Make sure we haven't specified a negative hourglass_radius */
-    if ( (params["external"].as<string>() == "hg_tube") && 
-            (params["hourglass_radius"].as<double>() < 0) ) {
-        cerr << endl << "ERROR: Invalid negative hourglass_radius." <<  endl;
-        cerr << "Action: change hourglass_radius to be non-negative real number." <<  endl;
         return true;
     }
 
@@ -794,6 +781,12 @@ Container * Setup::cell() {
     if (params["geometry"].as<string>() == "cylinder") {
 
         double radius = params["radius"].as<double>();
+
+        /* We need to adjust the maximal possible radius for a hour glass
+         * potential that bows outwards */
+        if ( (params["external"].as<string>() == "hg_tube") && 
+             (params["hourglass_radius"].as<double>() > 0) )
+            radius += params["hourglass_radius"].as<double>();
 
 
         if (definedCell && params("number_particles"))
@@ -1089,7 +1082,9 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
                 params["lj_width"].as<double>(), params["lj_sigma"].as<double>(),
                 params["lj_epsilon"].as<double>(), params["lj_density"].as<double>());
     else if (constants()->extPotentialType() == "lj_tube")
-        externalPotentialPtr = new LJCylinderPotential(params["radius"].as<double>());
+        externalPotentialPtr = new LJCylinderPotential(params["radius"].as<double>(),
+		params["lj_cyl_density"].as<double>(), params["lj_cyl_sigma"].as<double>(),
+		params["lj_cyl_epsilon"].as<double>());
     else if (constants()->extPotentialType() == "hard_tube") 
         externalPotentialPtr = new HardCylinderPotential(params["radius"].as<double>());
     else if (constants()->extPotentialType() == "single_well")
@@ -1129,10 +1124,6 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
             params["carbon_carbon_dist"].as<double>(),
             params["lj_sigma"].as<double>(),
             params["lj_epsilon"].as<double>(),
-	    params["k_max"].as<int>(),
-	    params["xres"].as<int>(),
-	    params["yres"].as<int>(),
-	    params["zres"].as<int>(),
             boxPtr
         );
     else if (constants()->extPotentialType() == "graphenelut3dtobinary") 
@@ -1686,14 +1677,6 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
     }
     communicate()->file("log")->stream() << 
         format("%-24s\t:\t%s\n") % "Container Type" % boxPtr->name;
-
-    if (params["geometry"].as<string>() == "cylinder") { 
-        communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Cylinder Radius" 
-            % params["radius"].as<double>();
-        communicate()->file("log")->stream() << format("%-24s\t:\t%7.5f\n") % "Estimator Radius" 
-            % params["estimator_radius"].as<double>();
-    }
-
     communicate()->file("log")->stream() << format("%-24s\t:\t") % "Container Dimensions";
     for (int i = 0; i < NDIM; i++) {
         communicate()->file("log")->stream() << format("%7.5f") % boxPtr->side[i];
@@ -1744,11 +1727,6 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
         communicate()->file("log")->stream() << 
             format("%-24s\t:\t%d\n") % "Virial Window" % params["virial_window"].as<int>();
     }
-
-    if (!params["label"].as<string>().empty())
-        communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "PIMCID Label" 
-            % params["label"].as<string>();
-
     communicate()->file("log")->stream() << endl;
     communicate()->file("log")->stream() << "---------- End Simulation Parameters ------------" << endl;
 }
