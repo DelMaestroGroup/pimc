@@ -53,7 +53,7 @@ Array<dVec,1> PotentialBase::initialConfig(const Container *boxPtr, MTRand &rand
     int totNumGridBoxes = 1;
     iVec numNNGrid;
     dVec sizeNNGrid;
-   
+
     for (int i = 0; i < NDIM; i++) {
         numNNGrid[i] = static_cast<int>(ceil((boxPtr->side[i] / initSide) - EPS));
 
@@ -873,7 +873,9 @@ double PlatedLJCylinderPotential::V_(const double r, const double R,
             8.0*(1.0 - x2)*(1.0 + 7*x2)*(97.0 + 134*x2 + 25*x4)*Kx2);
     double v3 = 2.0*pow(f1,3.0) * ((7.0 + x2)*Ex2 - 4.0*(1.0-x2)*Kx2);
 
-    return ((M_PI*eps*sig*sig*sig*dens/3.0)*(sigoR9*v9 - sigoR3*v3));
+    double valu = (M_PI*eps*sig*sig*sig*dens/3.0)*(sigoR9*v9 - sigoR3*v3);
+    
+    return(valu);
 }
 
 /**************************************************************************//**
@@ -1024,7 +1026,7 @@ Array<dVec,1> PlatedLJCylinderPotential::initialConfig(const Container *boxPtr, 
  *  @see C. Chakravarty J. Phys. Chem. B,  101, 1878 (1997).
  *  @param radius The radius of the cylinder
 ******************************************************************************/
-LJCylinderPotential::LJCylinderPotential(const double radius) : 
+LJCylinderPotential::LJCylinderPotential(const double radius, const double density_, const double sigma_, const double epsilon_) : 
     PotentialBase(),
     TabulatedPotential()
 {
@@ -1033,7 +1035,7 @@ LJCylinderPotential::LJCylinderPotential(const double radius) :
     R = radius;
 
     /* The density of nitrogen in silicon nitride */
-    density = 0.078; // atoms / angstrom^3
+//    density = 0.078; // atoms / angstrom^3
 //  density = 0.008; // atoms / angstrom^3
 
     /* We define the values of epsilon and sigma for N and He */ 
@@ -1048,9 +1050,11 @@ LJCylinderPotential::LJCylinderPotential(const double radius) :
      * silicon-nitride, and thus only consider the Nitrogen.  We use a
      * Kiselov type model to extract the actual parameters.  We assume that
      * silicate and silicon-nitride are roughly equivalent. */
-    epsilon = 10.22;    // Kelvin
-    sigma   = 2.628;    // angstroms
-
+//    epsilon = 10.22;    // Kelvin
+//    sigma   = 2.628;    // angstroms
+    epsilon = epsilon_;
+    sigma = sigma_;
+    density = density_;	    
 //  epsilon = 32;   // Kelvin
 //  sigma   = 3.08; // angstroms
 
@@ -1065,7 +1069,7 @@ LJCylinderPotential::LJCylinderPotential(const double radius) :
         if (lookupV(n) < minV)
             minV = lookupV(n);
     }
-
+    
     /* The extremal values for the lookup table */
     extV = valueV(0.0),valueV(R);
     extdVdr = valuedVdr(0.0),valuedVdr(R);
@@ -1105,7 +1109,9 @@ double LJCylinderPotential::valueV(const double r) {
             8.0*(1.0 - x2)*(1.0 + 7*x2)*(97.0 + 134*x2 + 25*x4)*Kx2);
     double v3 = 2.0*pow(f1,3.0) * ((7.0 + x2)*Ex2 - 4.0*(1.0-x2)*Kx2);
 
-    return ((M_PI*epsilon*sigma*sigma*sigma*density/3.0)*(sigoR9*v9 - sigoR3*v3));
+    double val = (M_PI*epsilon*sigma*sigma*sigma*density/3.0)*(sigoR9*v9 - sigoR3*v3);
+    
+    return (val);
 }
 
 /**************************************************************************//**
@@ -1442,10 +1448,10 @@ Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr,
      */
 	for (int n = 0; n < numParticles; n++) {
 
-            /* Random uniform position along the pore */
+            /* Uniform position along the pore */
             pos[NDIM-1] = L*(-0.5 + random.rand());
 
-            /* Random uniform position in a disk of z-dependent radius*/
+            /* Uniform position in a disk of z-dependent radius*/
             double theta = 2.0*M_PI*random.rand();
             double r = (Rtanh(pos[NDIM-1]) - sigma)*sqrt(random.rand());
 
@@ -3302,7 +3308,7 @@ Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTR
 GrapheneLUT3DPotentialGenerate::GrapheneLUT3DPotentialGenerate ( 
         const double _strain, const double _poisson_ratio,
         const double _carbon_carbon_distance, const double _sigma, 
-        const double _epsilon, const int _k_max, const int _xres, const int _yres, const int _zres, const Container *_boxPtr
+        const double _epsilon, const Container *_boxPtr
         ) : PotentialBase() {
 
     static auto const aflags = boost::archive::no_header | boost::archive::no_tracking;
@@ -3321,19 +3327,16 @@ GrapheneLUT3DPotentialGenerate::GrapheneLUT3DPotentialGenerate (
     
     /* The hard-coded resolution of the lookup table and maximum distance
      * above the sheet */
-    xres = _xres;
-    yres = _yres;
-/* zmax = 10.0;*/
-    zmax = _boxPtr->side[NDIM-1];
-
-    zres = _zres;
-    k_max = _k_max;
-    /*
-    xres = 5;
-    yres = 5;
+    xres = 101;
+    yres = 101;
     zmax = 10.0;
-    zres = 51;
-    */
+    zres = 1001;
+
+    /* xres = 5; */
+    /* yres = 5; */
+    /* zmax = 10.0; */
+    /* zres = 51; */
+    
     auto [ V3d, gradV3d_x, gradV3d_y, gradV3d_z, grad2V3d, xy_x, xy_y, LUTinfo ] = 
         get_V3D_all(strain,sigma,epsilon,xres,yres,zres,zmax);
 
@@ -3503,11 +3506,12 @@ double GrapheneLUT3DPotentialGenerate::V_64(
         double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
         TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
         Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+    int k_max=10000;
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
     TinyVector <double,2> g;
-    double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;    
+    double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
     double _V = 0.0;
     _V += 2*Vz_64(z, sigma);
     double _V_old = 0.0;
@@ -3521,12 +3525,7 @@ double GrapheneLUT3DPotentialGenerate::V_64(
         g_magnitude = g_magnitude_array(k);
         _V += Vg_64(x, y, z, sigma, g_magnitude, g[0], g[1], b_1[0], b_1[1]);
         _V += Vg_64(x, y, z, sigma, g_magnitude, g[0], g[1], b_2[0], b_2[1]);
-	/*
-	_V += Vg_64(0, 0, 2.5, sigma, g_magnitude, g[0], g[1], b_1[0], b_1[1]);
-	_V += Vg_64(0, 0, 2.5, sigma, g_magnitude, g[0], g[1], b_2[0], b_2[1]);
-	std::cout << "k:" << k;
-        std::cout << " g_magnitude: " << g_magnitude;
-        std::cout << " V= " << _V * pf <<std::endl;*/
+
         if ((_V == _V_old) && (g_magnitude != g_magnitude_array(k+1)) && (!flag_1)) {
             _V_old = _V;
             flag_1 = true;
@@ -3559,6 +3558,7 @@ double GrapheneLUT3DPotentialGenerate::gradV_x_64(
         double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
         TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
         Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+    int k_max=10000;
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
@@ -3610,6 +3610,7 @@ double GrapheneLUT3DPotentialGenerate::gradV_y_64(
         double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
         TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
         Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+    int k_max=10000;
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
@@ -3661,6 +3662,7 @@ double GrapheneLUT3DPotentialGenerate::gradV_z_64(
         double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
         TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
         Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+    int k_max=10000;
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
@@ -3712,6 +3714,7 @@ double GrapheneLUT3DPotentialGenerate::grad2V_64(
         double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
         TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
         Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+    int k_max=10000;
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
@@ -3901,7 +3904,6 @@ void GrapheneLUT3DPotentialGenerate::calculate_V3D_64(
     double x;
     double y;
     double z;
- 
     for (int k = 0; k < V3D.shape()[2]; k++) {
         z = z_range(k);
         for (int j = 0; j < V3D.shape()[1]; j++) {
@@ -4062,10 +4064,7 @@ Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
         int z_res, double z_min, double z_max ) {
     auto [A_m, A_n, b_1, b_2, g_m, g_n] = get_graphene_vectors(strain);
     auto [g_i_array, g_j_array, g_magnitude_array] = get_g_magnitudes(g_m,g_n);
-    /* trying to see the gmag
-    communicate()->file("debug")->stream() << g_magnitude_array; 
-    exit(-1);
-    end*/
+    
     double cell_length_a = calculate_magnitude(A_m);
     double cell_length_b = calculate_magnitude(A_n);
     //double cell_length_c = 40.0;
