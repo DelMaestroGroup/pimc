@@ -762,6 +762,46 @@ class IntermediateScatteringFunctionEstimator: public EstimatorBase {
 };
 
 // ========================================================================  
+// Intermediate Scattering Function GPU Estimator Class
+// ========================================================================  
+/** 
+ * Compute the intermediate scattering function F(q,\tau)
+ */
+#ifdef GPU_BLOCK_SIZE
+class IntermediateScatteringFunctionEstimatorGpu: public EstimatorBase {
+
+    public:
+        IntermediateScatteringFunctionEstimatorGpu(const Path &, ActionBase *, 
+                const MTRand &, double, int _frequency=1, string _label="isf");
+        ~IntermediateScatteringFunctionEstimatorGpu();
+    
+        static const string name;
+        string getName() const {return name;}
+
+    private:
+        void accumulate();              // Accumulate values
+        std::vector<dVec> qValues;      // Vector of q values
+        Array<dVec,1> qValues_dVec;     // Vector of q values
+        Array<double,1> isf;           // local intermediate scattering function
+
+        int numq;                        // the number of q vectors
+        size_t bytes_beads;
+        size_t bytes_isf;
+        size_t bytes_qvecs;
+        double *d_beads; // pointer to beads on gpu (device_beads)
+        double *d_isf; // pointer to isf on gpu (device_isf)
+        double *d_qvecs; // pointer to qvecs on gpu (device_qvecs)
+        #ifndef USE_CUDA
+            Array<hipStream_t,1> stream_array; // Store Multiple GPU streams
+        #endif
+        #ifdef USE_CUDA
+            Array<cudaStream_t,1> stream_array; // Store Multiple GPU streams
+        #endif
+        
+};
+#endif
+
+// ========================================================================  
 // Radial Density Estimator Class
 // ========================================================================  
 /** 

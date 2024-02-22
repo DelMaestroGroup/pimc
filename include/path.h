@@ -75,6 +75,12 @@ class Path {
 
         /** Return the separation vector between two particles in the same timeslice */
         dVec getSeparation(const beadLocator&, const beadLocator&) const;
+        
+        /** Return the pointer to the beads array data */
+        auto get_beads_data_pointer() const;
+
+        /** Return the extent of the beads array data */
+        auto get_beads_extent() const;
 
         /** Output bead-link info, used for debugging */
         template<class Tstream> void printLinks(Tstream &);
@@ -193,6 +199,20 @@ inline dVec Path::getVelocity (const beadLocator &beadIndex) const {
     boxPtr->putInBC(vel);
 
     return (vel);
+}
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+/** Return the pointer to the first element in the beads array */
+inline auto Path::get_beads_data_pointer() const {
+    return (*this).beads.data();
+}
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+/** Return the extent of the beads array */
+inline auto Path::get_beads_extent() const {
+    return (*this).beads.extent();
 }
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
