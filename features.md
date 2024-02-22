@@ -51,8 +51,7 @@ DONE: Generic Density Tensor Functionality
 
 ### Outline
 
-We want a generic way to map a d-vec particle position to a bin in a 1d array
-that is independent of dimension or container type
+We want a generic way to map a d-vec particle position to a bin in a 1d array that is independent of dimension or container type
 
 Define:
  * Discretization in each dimension: dx,dy,dz
