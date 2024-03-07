@@ -19,9 +19,12 @@
         #include "estimator.cuh"
     #endif
 #endif
-#ifndef GPU_BLOCK_SIZE
-    #include "special_functions.h"
-#endif
+
+/* This no longer seems to be needed.  Commenting out for now. */
+//#ifndef GPU_BLOCK_SIZE
+//    #include "special_functions.h"
+//#endif
+
 
 
 /**************************************************************************//**
