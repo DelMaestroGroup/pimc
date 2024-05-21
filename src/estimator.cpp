@@ -11,6 +11,7 @@
 #include "potential.h"
 #include "communicator.h"
 #include "factory.h"
+
 #ifdef GPU_BLOCK_SIZE
     #ifndef USE_CUDA
         #include "estimator.hip.h"
@@ -49,6 +50,7 @@ REGISTER_ESTIMATOR("number particles",NumberParticlesEstimator);
 REGISTER_ESTIMATOR("number distribution",NumberDistributionEstimator);
 REGISTER_ESTIMATOR("time",TimeEstimator);
 REGISTER_ESTIMATOR("particle position",ParticlePositionEstimator);
+REGISTER_ESTIMATOR("commensurate order parameter",CommensurateOrderParameterEstimator);
 REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
 REGISTER_ESTIMATOR("linear density rho",LinearParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density rho",PlaneParticlePositionEstimator);
@@ -92,6 +94,10 @@ REGISTER_ESTIMATOR("pigs particle correlations",ParticleCorrelationEstimator);
 REGISTER_ESTIMATOR("pigs velocity",VelocityEstimator);
 REGISTER_ESTIMATOR("pigs subregion occupation",SubregionOccupationEstimator);
 REGISTER_ESTIMATOR("pigs one body density matrix",PIGSOneBodyDensityMatrixEstimator);
+
+#ifdef GPU_BLOCK_SIZE
+REGISTER_ESTIMATOR("static structure factor gpu",StaticStructureFactorGPUEstimator);
+#endif
 
 /**************************************************************************//**
  * Setup the estimator factory for multi path estimators.
@@ -376,13 +382,29 @@ void EstimatorBase::appendLabel(string append) {
 }
 
 /*************************************************************************//**
+* create a "(x,y,z)" string from a dVec for outputting 
+******************************************************************************/
+string EstimatorBase::dVecToString(const dVec& v){
+    string strVec = "(";
+    for (int i = 0; i < NDIM; i++) {
+        strVec += str(format("%+15.8E") % v[i]);
+        if (i < NDIM-1)
+            strVec += ",";
+    }
+    return strVec + ")";
+}
+
+/*************************************************************************//**
 *  Get q-vectors for scattering calculations
 *  
 *  Based on the geometry of the system and a user-defined choice, return a
 *  list of q-vectors where scattering will be computed
 ******************************************************************************/
-vector <vector<dVec> > EstimatorBase::getQVectors(double dq, int numq, 
-        string qGeometry) {
+vector <vector<dVec> > EstimatorBase::getQVectors(double dq, double qMax, 
+        int& numq, string qGeometry) {
+
+    /* initilize the total number of q-vectors */
+    numq = 0;
 
     /* The q-vectors will end up in this array to be returned by value. */
     vector <vector<dVec> > q;
@@ -393,7 +415,7 @@ vector <vector<dVec> > EstimatorBase::getQVectors(double dq, int numq,
     else if (qGeometry == "sphere") {
 
         /* Number of θ values per q-magnitude, hard-coded for now */
-        int numTheta = 12; 
+        int numTheta = 24; 
         dtheta = 0.5*M_PI/numTheta;
     } 
     else {
@@ -403,9 +425,8 @@ vector <vector<dVec> > EstimatorBase::getQVectors(double dq, int numq,
     }
 
     /* Determine the set of q-vectors that have these magnitudes.  */
-    for (int nq = 0; nq < numq; nq++)
+    for (double cq = 0.0; cq <= qMax + EPS; cq += dq)
     {
-        double cq = nq*dq;
         vector <dVec> qvecs;
 
         /* cq = 0.0 */
@@ -419,9 +440,11 @@ vector <vector<dVec> > EstimatorBase::getQVectors(double dq, int numq,
 
             /* First do θ = 0, i.e. along the z-direction */
             dVec qd = 0.0;
-            qd[2] = cq;
+            qd[NDIM-1] = cq;
             qvecs.push_back(qd);
 
+/* Can only do a spherical distribution of q-vectors in 3 spatial dimensions */
+#if NDIM==3
             /* Now do the rest of the θ values */
             for (double theta = dtheta; theta <= 0.5*M_PI + EPS; theta += dtheta) {
                 double dphi = dtheta/sin(theta);
@@ -435,9 +458,12 @@ vector <vector<dVec> > EstimatorBase::getQVectors(double dq, int numq,
                     qvecs.push_back(qd);
                 } // phi
             } // theta
+#endif 
+
         } // non-zero q-mags
 
         /* Add the list of q-vectors at this magnitude */
+        numq += qvecs.size();
         q.push_back(qvecs);
     } //q-mags
 
@@ -452,6 +478,7 @@ vector <vector<dVec> > EstimatorBase::getQVectors(double dq, int numq,
     /* } */
     /* cout << "Full: " << totalNumQVecs << endl; */
     /* exit(-1); */
+    cout << "numQ = " << numq << endl;
 
     return q;
 }
@@ -907,6 +934,91 @@ void NumberParticlesEstimator::accumulate() {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
+// COMMENSURATE ORDER PARAMETER ESTIMATOR CLASS ------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  We measure the average static structure factor at a finite-set of wave-
+ *  vectors that correspond to the first shell of reciprocal lattice vectors.
+ *
+ *  @see https://journals.aps.org/prb/abstract/10.1103/PhysRevB.73.085422
+ *  
+******************************************************************************/
+CommensurateOrderParameterEstimator::CommensurateOrderParameterEstimator (
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
+
+    /* Get the current carbon-carbon distance */
+    double aCC = constants()->aCC();
+
+    /* The reciprocal lattice vectors*/
+    dVec G1,G2;
+    G1[0] = 2.0*M_PI/(sqrt(3.0)*aCC);
+    G1[1] = 2.0*M_PI/(3.0*aCC);
+    G1[2] = 0.0;
+
+    G2[0] = -G1[0];
+    G2[1] = G1[1];
+    G2[2] = 0.0;
+
+    /* For now we hard-code the g-vectors for graphene */
+    g.push_back(G1);
+    g.push_back(G2);
+    g.push_back(G1+G2);
+
+    /* Set estimator name and header */
+    endLine = false;
+    initialize({"Scom"});
+
+    norm = 1.0/(g.size()*constants()->numTimeSlices());
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+CommensurateOrderParameterEstimator::~CommensurateOrderParameterEstimator() { 
+}
+
+/*************************************************************************//**
+ * Accumulate the number of Commensurate order parameter
+******************************************************************************/
+void CommensurateOrderParameterEstimator::accumulate() {
+
+    int numParticles = path.getTrueNumParticles();
+    int numTimeSlices = constants()->numTimeSlices();
+
+    double _norm = 1.0;
+
+    if (numParticles > 0)
+        _norm /= numParticles;
+
+    beadLocator beadIndex;  // The bead locator
+    double Scom = 0.0; // initialize
+    dVec pos;
+
+    /* Average over all time slices */
+    for (beadIndex[0] = 0; beadIndex[0] < numTimeSlices; beadIndex[0]++) {
+
+        /* Average over all beads */
+        for (beadIndex[1] = 0; beadIndex[1] < path.numBeadsAtSlice(beadIndex[0]); beadIndex[1]++) {
+            pos = path(beadIndex);
+
+            for (const auto &cg : g) {
+                Scom += cos(dot(cg,pos));
+            }
+
+        } // beadIndex[1]
+    } //beadIndex[0]
+
+    estimator(0) += Scom*_norm;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // NUMBER DISTRIBUTION ESTIMATOR CLASS ---------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -987,7 +1099,7 @@ ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path,
     diffLabels = {"dx","dy","dz"};
 
     header =  str(format("# PIMCID: %s\n") % constants()->id());
-    header += "# ESTINF:" ;
+    header += "# ESTINF:";
     for (int i = 0; i < NDIM; i++) 
         header += str(format(" %s = %12.6E") % diffLabels[i] % path.boxPtr->gridSize[i]);
     header += str(format(" NGRIDSEP = %d\n") % NGRIDSEP);
@@ -1288,7 +1400,7 @@ PlaneParticleAveragePositionEstimator::PlaneParticleAveragePositionEstimator (
 
     /* The header contains information about the grid  */
     header = str(format("# PIMCID: %s\n") % constants()->id());
-    header = str(format("# ESTINF: dx = %12.6E dy = %12.6E NGRIDSEP = %d\n") 
+    header += str(format("# ESTINF: dx = %12.6E dy = %12.6E NGRIDSEP = %d\n") 
             % dl[0] % dl[1] % numLinearGrid);
     header += str(format("#%15s") % "plane density");
 
@@ -1367,7 +1479,7 @@ PlaneAverageExternalPotentialEstimator::PlaneAverageExternalPotentialEstimator (
 
     /* The header contains information about the grid  */
     header = str(format("# PIMCID: %s\n") % constants()->id());
-    header = str(format("# ESTINF: dx = %12.6E dy = %12.6E NGRIDSEP = %d\n") 
+    header += str(format("# ESTINF: dx = %12.6E dy = %12.6E NGRIDSEP = %d\n") 
             % dl[0] % dl[1] % numLinearGrid);
     header += str(format("#%15s") % "plane external potential");
 
@@ -2819,11 +2931,12 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
     /* We choose dq from the smallest possible q-vector, set by PBC */
     double dq = 2.0*M_PI/path.boxPtr->side[NDIM-1];
 
-    /* Determine how many q-vector magnitudes  we have */
-    int numq = int(qMax/dq) + 1;
-    
     /* Get the desired q-vectors */
-    q = getQVectors(dq,numq,"sphere");
+    int numq = 0;
+    q = getQVectors(dq,qMax,numq,"sphere");
+
+    /* Determine how many q-vector magnitudes  we have */
+    numq = q.size();
 
     /* Initialize the accumulator intermediate scattering function*/
     sf.resize(numq);
@@ -2897,6 +3010,204 @@ void StaticStructureFactorEstimator::accumulate() {
 
     estimator += sf/numParticles; 
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// STATIC STRUCTURE FACTOR GPU ESTIMATOR CLASS -------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  A GPU accelerated static structure factor estimator.
+ *  
+******************************************************************************/
+#ifdef GPU_BLOCK_SIZE
+StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
+        double _maxR, int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
+
+    /* The maximum q-vector magnitude to consider (hard-coded for now) */
+    double qMax = 4.0; // 1/Å
+
+    /* We choose dq from the smallest possible q-vector, set by PBC */
+    double dq = 2.0*M_PI/path.boxPtr->side[NDIM-1];
+
+    /* Get the desired q-vectors */
+    q = getQVectors(dq,qMax,numq,"sphere");
+
+    /* For this estimator we measure the scattering at each vector q-values
+     * so we need to flatten the magnitude ordered list */
+    /* NOTE: I can probably do away with this and simply flatten the 2D array */
+    qValues_dVec.resize(numq);
+    int nq = 0;
+    for (const auto &cq : q) {
+        for (const auto &cqvec : cq) {
+            qValues_dVec(nq) = cqvec;
+            nq += 1;
+        }
+    }
+
+    /* Initialize the accumulator for the static structure factor */
+    ssf.resize(numq);
+    ssf = 0.0;
+
+    // Create multiple gpu streams
+    stream_array.resize(MAX_GPU_STREAMS);
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        #ifndef USE_CUDA
+        HIP_ASSERT(hipStreamCreate(&stream_array(i)));
+        #endif
+        #ifdef USE_CUDA
+        CUDA_ASSERT(cudaStreamCreate(&stream_array(i)));
+        #endif
+    }
+
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numq);
+
+    /* The header consists of an extra line of the possible q-values */
+    header = str(format("# ESTINF: num_q = %d; ") % numq);
+    for (int n = 0; n < numq; n++)
+        header += dVecToString(qValues_dVec(n)) + " ";
+    header += "\n";
+
+    /* We index the q-vectors with an integer */
+    header += str(format("#%15d") % 0);
+    for (int n = 1; n < numq; n++) 
+        header += str(format("%16d") % n);
+
+    /* utilize imaginary time translational symmetry */
+    norm = 0.5/constants()->numTimeSlices();
+
+    bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
+    bytes_ssf = ssf.size()*sizeof(double);
+    bytes_qvecs = NDIM*numq*sizeof(double);
+    #ifndef USE_CUDA
+        HIP_ASSERT(hipMalloc(&d_ssf, bytes_ssf)); // Allocate memory for ssf on GPU
+        HIP_ASSERT(hipMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
+        HIP_ASSERT(hipMemcpy(d_qvecs, qValues.data(), bytes_qvecs, hipMemcpyHostToDevice )); // Copy qvecs data to gpu
+    #endif
+    #ifdef USE_CUDA
+        CUDA_ASSERT(cudaMalloc(&d_ssf, bytes_ssf)); // Allocate memory for ssf on GPU
+        CUDA_ASSERT(cudaMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
+        CUDA_ASSERT(cudaMemcpy(d_qvecs, qValues_dVec.data(), bytes_qvecs, cudaMemcpyHostToDevice )); // Copy qvecs data to gpu
+    #endif
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+StaticStructureFactorGPUEstimator::~StaticStructureFactorGPUEstimator() { 
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        #ifndef USE_CUDA
+            HIP_ASSERT(hipStreamDestroy(stream_array(i)));
+        #endif
+        #ifdef USE_CUDA
+            CUDA_ASSERT(cudaStreamDestroy(stream_array(i)));
+        #endif
+    }
+    ssf.free();
+    stream_array.free();
+
+    // Release device memory
+    #ifndef USE_CUDA
+        HIP_ASSERT(hipFree(d_beads));
+        HIP_ASSERT(hipFree(d_qvecs));
+        HIP_ASSERT(hipFree(d_ssf));
+    #endif
+    #ifdef USE_CUDA
+        CUDA_ASSERT(cudaFree(d_beads));
+        CUDA_ASSERT(cudaFree(d_qvecs));
+        CUDA_ASSERT(cudaFree(d_ssf));
+    #endif
+}
+
+/*************************************************************************//**
+ *  Measure the static structure factor for each q-vector
+ *
+ *  We only compute this for N > 1 due to the normalization.
+******************************************************************************/
+void StaticStructureFactorGPUEstimator::accumulate() {
+
+    int numParticles = path.getTrueNumParticles();
+    int numTimeSlices = constants()->numTimeSlices();
+
+    /* Return to these and check if we need them */
+    int number_of_beads = numParticles*numTimeSlices;
+    int NNM = number_of_beads*numParticles;
+    int beta_over_two_idx = numTimeSlices/2;
+
+    double _inorm = 1.0/numParticles;
+
+    /* We need to copy over the current beads array to the device */
+    auto beads_extent = path.get_beads_extent();
+    int full_number_of_beads = beads_extent[0]*beads_extent[1];
+    int full_numTimeSlices = beads_extent[0];
+    int full_numParticles = beads_extent[1];
+
+    /* Size, in bytes, of beads array */
+    size_t bytes_beads_new = NDIM*full_number_of_beads*sizeof(double);
+
+    #ifndef USE_CUDA
+        if (bytes_beads_new > bytes_beads) {
+            bytes_beads = bytes_beads_new;
+            HIP_ASSERT(hipFree(d_beads));
+            HIP_ASSERT(hipMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
+        }
+        HIP_ASSERT(hipMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, hipMemcpyHostToDevice )); // Copy beads data to gpu
+        HIP_ASSERT(hipMemset(d_ssf, 0, bytes_ssf)); // Set initial ssf data to zero
+    #endif
+    #ifdef USE_CUDA
+        if (bytes_beads_new > bytes_beads) {
+            bytes_beads = bytes_beads_new;
+            CUDA_ASSERT(cudaFree(d_beads));
+            CUDA_ASSERT(cudaMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
+        }
+        CUDA_ASSERT(cudaMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, cudaMemcpyHostToDevice )); // Copy beads data to gpu
+        CUDA_ASSERT(cudaMemset(d_ssf, 0, bytes_ssf)); // Set initial ssf data to zero
+    #endif
+
+    int grid_size = (NNM + GPU_BLOCK_SIZE - 1) / GPU_BLOCK_SIZE;
+
+    int stream_idx;
+    for (int nq = 0; nq < numq; nq++) {
+        int Mi = 0;
+        /* stream_idx = (nq*numTimeSlices + Mi) % MAX_GPU_STREAMS; */
+        stream_idx = (nq + Mi) % MAX_GPU_STREAMS;
+
+        #ifndef USE_CUDA
+        hipLaunchKernelGGL(gpu_isf, dim3(grid_size), dim3(GPU_BLOCK_SIZE), 0, stream_array(stream_idx),
+                d_ssf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
+                number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
+        #endif
+        #ifdef USE_CUDA
+        cuda_wrapper::gpu_isf_wrapper(dim3(grid_size), dim3(GPU_BLOCK_SIZE), stream_array(stream_idx),
+                d_ssf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
+                number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
+        #endif
+    }
+    #ifndef USE_CUDA
+        HIP_ASSERT(hipDeviceSynchronize());
+    #endif
+    #ifdef USE_CUDA
+        CUDA_ASSERT(cudaDeviceSynchronize());
+    #endif
+
+    //// Copy ssf data back to host
+    #ifndef USE_CUDA
+        HIP_ASSERT(hipMemcpy(ssf.data(), d_ssf, bytes_ssf, hipMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
+    #endif
+    #ifdef USE_CUDA
+        CUDA_ASSERT(cudaMemcpy(ssf.data(), d_ssf, bytes_ssf, cudaMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
+    #endif
+
+    estimator += ssf;
+
+}
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -3309,7 +3620,7 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
 
     /* The imaginary time values */
     header = str(format("#%15d") % 0);
-    for (int n = 1; n < isf.size(); n++) {
+    for (unsigned int n = 1; n < isf.size(); n++) {
         header.append(str(format("%16d") % n));
     }
     /* utilize imaginary time translational symmetry */
@@ -3409,12 +3720,12 @@ void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
         for (int Mi = 0; Mi < numTimeSlices; Mi++) {
             stream_idx = (nq*numTimeSlices + Mi) % MAX_GPU_STREAMS;
             #ifndef USE_CUDA
-            hipLaunchKernelGGL(gpu_isf2, dim3(grid_size), dim3(GPU_BLOCK_SIZE), 0, stream_array(stream_idx),
+            hipLaunchKernelGGL(gpu_isf, dim3(grid_size), dim3(GPU_BLOCK_SIZE), 0, stream_array(stream_idx),
                 d_isf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
                 number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
             #endif
             #ifdef USE_CUDA
-            cuda_wrapper::gpu_isf2_wrapper(dim3(grid_size), dim3(GPU_BLOCK_SIZE), stream_array(stream_idx),
+            cuda_wrapper::gpu_isf_wrapper(dim3(grid_size), dim3(GPU_BLOCK_SIZE), stream_array(stream_idx),
                 d_isf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
                 number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
             #endif
@@ -4524,12 +4835,13 @@ CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
 
     /* We choose dq from the smallest possible q-vector, set by PBC */
     double dq = 2.0*M_PI/path.boxPtr->side[NDIM-1];
-
-    /* Determine how many q-vector magnitudes  we have */
-    int numq = int(qMax/dq) + 1;
     
     /* Get the desired q-vectors */
-    q = getQVectors(dq,numq,"line");
+    int numq = 0;
+    q = getQVectors(dq,qMax,numq,"line");
+
+    /* Determine how many q-vector magnitudes  we have */
+    numq = q.size();
 
     /* Initialize the accumulator intermediate scattering function*/
     sf.resize(numq);
