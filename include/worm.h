@@ -81,7 +81,7 @@ class Worm {
         }
 
         /** Return the bead list.*/
-        const Array <unsigned int, 2> & getBeads() const { return beads; }
+        const blitz::Array <unsigned int, 2> & getBeads() const { return beads; }
 
         /* Test whether a given bead is on a worm */
         /** Return the number of active beads. */
@@ -91,13 +91,13 @@ class Worm {
         /** Decrement the number of active beads. */
         void decNumBeadsOn() {--numBeadsOn;}
         /** Reset the number of active beads. */
-        void resetNumBeadsOn() {numBeadsOn = sum(beads);}
+        void resetNumBeadsOn() {numBeadsOn = blitz::sum(beads);}
 
         friend class Path;                      // Path needs access to beads
         friend class PathIntegralMonteCarlo;    // Friends for I/O
 
     private:
-        Array <unsigned int,2> beads;           // Is a bead present?
+	blitz::Array <unsigned int,2> beads;           // Is a bead present?
         int numBeadsOn;                         // How many beads are present
 };
 

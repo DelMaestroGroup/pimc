@@ -91,11 +91,11 @@ class MoveBase {
         static uint32 totAccepted;      ///< The total number of  moves accepted
         static uint32 totAttempted;     ///< The total number of  moves attempted
 
-        Array <uint32,1> numAcceptedLevel;  ///< The number of moves accepted at each level
-        Array <uint32,1> numAttemptedLevel; ///< The number of moves attempted at each level
+	blitz::Array <uint32,1> numAcceptedLevel;  ///< The number of moves accepted at each level
+	blitz::Array <uint32,1> numAttemptedLevel; ///< The number of moves attempted at each level
 
-        Array <dVec,1> originalPos;     ///< The original particle positions
-        Array <dVec,1> newPos;          ///< New particle positions
+	blitz::Array <dVec,1> originalPos;     ///< The original particle positions
+	blitz::Array <dVec,1> newPos;          ///< New particle positions
         
         vector <iVec> winding;          ///< The winding vectors         
         vector <double> cumrho0;        ///< Used for tower-sampling winding sectors
@@ -304,7 +304,7 @@ class BisectionMove: public MoveBase {
         string getName() {return name;}
 
     private:
-        Array <bool,1> include;             // Which beads have been included?
+	blitz::Array <bool,1> include;             // Which beads have been included?
 
         beadLocator startBead,endBead;
 
@@ -368,7 +368,7 @@ class CloseMove: public MoveBase {
         beadLocator headBead,tailBead;  // The temporary head and tail slices
         int numLevels;                      // The 2^numLevels = num slices moved
 
-        Array <int,1> oldBeadOn;        // The old and new bead states
+	blitz::Array <int,1> oldBeadOn;        // The old and new bead states
 
         void undoMove();                // Undo a move
         void keepMove();                // keep the move
@@ -455,8 +455,8 @@ class AdvanceHeadMove: public MoveBase {
         void keepMove();                // keep the move
 
         beadLocator startBead;          
-        Array <dVec,1> newPos;                  // The modified particle positions
-        Array <unsigned int,1> oldBeadOn;       // The old and new bead states
+	blitz::Array <dVec,1> newPos;                  // The modified particle positions
+	blitz::Array <unsigned int,1> oldBeadOn;       // The old and new bead states
 
 };
 
