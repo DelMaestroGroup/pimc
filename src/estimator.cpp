@@ -11,6 +11,20 @@
 #include "potential.h"
 #include "communicator.h"
 #include "factory.h"
+#ifdef GPU_BLOCK_SIZE
+    #ifndef USE_CUDA
+        #include "estimator.hip.h"
+    #endif
+    #ifdef USE_CUDA
+        #include "estimator.cuh"
+    #endif
+#endif
+
+/* This no longer seems to be needed.  Commenting out for now. */
+//#ifndef GPU_BLOCK_SIZE
+//    #include "special_functions.h"
+//#endif
+
 
 
 /**************************************************************************//**
@@ -54,6 +68,9 @@ REGISTER_ESTIMATOR("one body density matrix",OneBodyDensityMatrixEstimator);
 REGISTER_ESTIMATOR("pair correlation function",PairCorrelationEstimator);
 REGISTER_ESTIMATOR("static structure factor",StaticStructureFactorEstimator);
 REGISTER_ESTIMATOR("intermediate scattering function",IntermediateScatteringFunctionEstimator);
+#ifdef GPU_BLOCK_SIZE
+REGISTER_ESTIMATOR("intermediate scattering function gpu",IntermediateScatteringFunctionEstimatorGpu);
+#endif
 REGISTER_ESTIMATOR("radial density",RadialDensityEstimator);
 REGISTER_ESTIMATOR("cylinder energy",CylinderEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder number particles",CylinderNumberParticlesEstimator);
@@ -328,6 +345,30 @@ void EstimatorBase::outputFlat() {
 }
 
 /*************************************************************************//**
+ *  Output a histogram-style estimator value to disk.
+ *
+ *  Normalization works differently here and we need to make sure there is at
+ *  least 1 measurement per histogram bin.
+******************************************************************************/
+void EstimatorBase::outputHist() {
+
+    /* Now write the estimator to disk */
+    for (int n = 0; n < numEst; n++) { 
+        if (abs(norm(n)) > 0.0)
+            (*outFilePtr) << format("%16.8E") % (estimator(n)/norm(n));
+        else
+            (*outFilePtr) << format("%16.8E") % 0.0;
+    }
+
+    if (endLine)
+        (*outFilePtr) << endl;
+
+    /* Reset all values */
+    norm = 0.0;
+    reset();
+}
+
+/*************************************************************************//**
 *  AppendLabel
 ******************************************************************************/
 void EstimatorBase::appendLabel(string append) {
@@ -520,7 +561,7 @@ void EnergyEstimator::accumulate() {
 
     double totK = 0.0;
     double totV = 0.0;
-    TinyVector<double,2> totVop(0.0);
+    blitz::TinyVector<double,2> totVop(0.0);
 
     int numParticles  = path.getTrueNumParticles();
     int numTimeSlices = endSlice - startSlice;
@@ -1029,7 +1070,7 @@ void BipartitionDensityEstimator::accumulate() {
         lside[i] = path.boxPtr->side[i];
 
     /* read in the exclusion lengths */
-    Array<double,1> excLens (actionPtr->externalPtr->getExcLen());
+    blitz::Array<double,1> excLens (actionPtr->externalPtr->getExcLen());
     double excZ = excLens(1);
     
     /* determine volume of film region and bulk region */
@@ -1107,7 +1148,6 @@ LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_p
 LinearParticlePositionEstimator::~LinearParticlePositionEstimator() { 
 }
 
-
 /*************************************************************************//**
  *  Accumulate a histogram of all particle positions, with output 
  *  being the running average of the density per grid space.
@@ -1132,7 +1172,6 @@ void LinearParticlePositionEstimator::accumulate() {
         }
     }
 }
-
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -1932,7 +1971,6 @@ LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
 
     locA2.resize(numGrid);
     locA2 = 0.0;
-
 }
 
 /*************************************************************************//**
@@ -2660,7 +2698,7 @@ PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path,
             norm(n) = 0.5*path.boxPtr->side[NDIM-1] / dR;
     }
     else {
-        TinyVector<double,3> gNorm;
+	blitz::TinyVector<double,3> gNorm;
         gNorm[0] = 1.0;
         gNorm[1] = 1.0/(M_PI);
         gNorm[2] = 3.0/(2.0*M_PI);
@@ -2882,7 +2920,7 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
 
     /* these are the hard-coded q-vectors for now */
     numq = 3;
-    Array <double, 1> qMag(numq);         // the q-vector magnitudes
+    blitz::Array <double, 1> qMag(numq);         // the q-vector magnitudes
     /* qMag.resize(numq); */
     qMag = 0.761,1.75,1.81;
 
@@ -3024,6 +3062,386 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
+// INTERMEDIATE SCATTERING FUNCTION GPU ESTIMATOR CLASS ----------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  Measure the intermediate scattering function at wavevectors determined
+ *  from isf_input and isf_input_type command line arguments
+******************************************************************************/
+#ifdef GPU_BLOCK_SIZE
+IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstimatorGpu(
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
+        double _maxR, int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
+
+    int numTimeSlices = constants()->numTimeSlices();
+
+    dVec q;
+    string input = constants()->isf_input();
+    char * cstr = new char [input.length()+1];
+    std::strcpy (cstr, input.c_str());
+    char *token = strtok(cstr, " ");
+    // parse isf_input_type to determine how to handle isf_input
+    if (constants()->isf_input_type() == "int") {
+        std::cout << "isf_input_type = int" << std::endl;
+        while(token) {
+            int j = 0;
+            for (int i=0; (i<NDIM) && token; i++) {
+                q[i] = (2.0*M_PI/path.boxPtr->side[i])*std::atoi(token);
+                token = strtok(NULL, " ");
+                j = i;
+            }
+            if (j==(NDIM-1)){
+                qValues.push_back(q);
+            }
+        }
+    }
+
+    if (constants()->isf_input_type() == "float") {
+        std::cout << "isf_input_type = float" << std::endl;
+        while(token) {
+            int j = 0;
+            for (int i=0; (i<NDIM) && token; i++){
+                q[i] = std::atof(token);
+                token = strtok(NULL, " ");
+                j = i;
+            }
+            if (j==(NDIM-1)){
+                qValues.push_back(q);
+            }
+        }
+    }
+
+    if (constants()->isf_input_type() == "max-int") {
+        std::cout << "isf_input_type = max-int" << std::endl;
+        iVec q_int;
+        while(token) {
+            for (int i=0; (i<NDIM) && token; i++) {
+                q_int[i] = std::abs(std::atoi(token));
+                token = strtok(NULL, " ");
+            }
+        }
+        
+        int _q_int[NDIM];
+        int n_q = 1;
+        for (int i = 0; i < NDIM; i++) {
+            n_q *= 2*q_int[i] + 1;
+            _q_int[i] = -q_int[i];
+            q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+        }
+        qValues.push_back(q);
+
+        int pos = NDIM - 1;
+        int count = 0;
+        while (count < n_q - 1) {
+            if (_q_int[pos] == q_int[pos]) {
+                _q_int[pos] = -q_int[pos];
+                pos -= 1;
+            } else {
+                _q_int[pos] += 1;
+                for (int i = 0; i < NDIM; i++) {
+                    q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+                }
+                qValues.push_back(q);
+                count += 1;
+                pos = NDIM - 1; //increment the innermost loop
+            }
+        }
+    }
+
+    if (constants()->isf_input_type() == "max-float") {
+        std::cout << "isf_input_type = max-float" << std::endl;
+        iVec q_int;
+        double q_mag_max = 0.0;
+        double q_mag;
+        while(token) {
+            for (int i=0; (i<NDIM) && token; i++) {
+                q_mag_max = std::atof(token);
+                token = strtok(NULL, " ");
+            }
+        }
+        
+        int _q_int[NDIM];
+        int n_q = 1;
+        for (int i = 0; i < NDIM; i++) {
+            q_int[i] = 1 + static_cast<int>(q_mag_max*path.boxPtr->side[i]/2.0/M_PI);
+            n_q *= 2*q_int[i] + 1;
+            _q_int[i] = -q_int[i];
+            q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+        }
+        q_mag = sqrt(dot(q,q));
+        if (q_mag <= q_mag_max) {
+            qValues.push_back(q);
+        }
+
+        int pos = NDIM - 1;
+        int count = 0;
+        while (count < n_q - 1) {
+            if (_q_int[pos] == q_int[pos]) {
+                _q_int[pos] = -q_int[pos];
+                pos -= 1;
+            } else {
+                _q_int[pos] += 1;
+                for (int i = 0; i < NDIM; i++) {
+                    q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+                }
+                q_mag = sqrt(dot(q,q));
+                if (q_mag <= q_mag_max) {
+                    qValues.push_back(q);
+                }
+                count += 1;
+                pos = NDIM - 1; //increment the innermost loop
+            }
+        }
+    }
+
+    if (constants()->isf_input_type() == "file-int") {
+        std::cout << "isf_input_type = file-int" << std::endl;
+
+        std::ifstream file(input);
+        std::string line;
+        // Read one line at a time into the variable line:
+        while(std::getline(file, line)) {
+            std::vector<int> line_data;
+            std::stringstream line_stream(line);
+        
+            int value;
+            // Read an integer at a time from the line
+            while(line_stream >> value) {
+                // Add the integers from a line to a 1D array (vector)
+                line_data.push_back(value);
+            }
+            PIMC_ASSERT(line_data.size()==NDIM);
+
+            for (int i=0; i < NDIM; i++) {
+                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
+            }
+            qValues.push_back(q);
+        }
+    }
+    if (constants()->isf_input_type() == "file-float") {
+        std::cout << "isf_input_type = file-float" << std::endl;
+
+        std::ifstream file(input);
+        std::string line;
+        // Read one line at a time into the variable line:
+        while(std::getline(file, line)) {
+            std::vector<int> line_data;
+            std::stringstream line_stream(line);
+        
+            int value;
+            // Read an integer at a time from the line
+            while(line_stream >> value) {
+                // Add the integers from a line to a 1D array (vector)
+                line_data.push_back(value);
+            }
+            PIMC_ASSERT(line_data.size()==NDIM);
+
+            for (int i=0; i < NDIM; i++) {
+                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
+            }
+            qValues.push_back(q);
+        }
+    }
+    if (constants()->isf_input_type() == "help") {
+        std::cout << "isf_input_type = help" << std::endl;
+        std::cout << std::endl;
+        std::cout << "The intermediate scattering function behavior is determined by the isf_input and isf_input_type command line arguments." << std::endl;
+        std::cout << "Setting isf_input_type to `help` displays this message." << std::endl;
+        std::cout << "Other available options are:" << std::endl;
+        std::cout << "    int        - set isf_input to an `N*NDIM` space-separated list of integers `i` where the wavevector components are determined by `i*2*pi/L` for the corresponding simulation cell side `L`" << std::endl;
+        std::cout << "    float      - set isf_input to an `N*NDIM` space-separated list of floating point numbers `x`, where sequential values modulo NDIM are the corresponding wavevector components" << std::endl;
+        std::cout << "    max-int    - set isf_input to an `NDIM` space-separated list of integers `i` where the wavevector components are determined by all allowable wavevectors between `-i*2*pi/L` to `i*2*pi/L` for the corresponding simulation cell side `L`" << std::endl;
+        std::cout << "    max-float  - set isf_input to an `NDIM` space-separated list of floating point numbers `x` where wavevector components are dermined for all allowable wavevectors with magnitudes less than the supplied wavevector" << std::endl;
+        std::cout << "    file-int   - set isf_input to the path of a file containing any number of lines with `NDIM` space-separated integers `i` where the wavevector components are determined by `i*2*pi/L` for the corresponding simulation cell side `L`" << std::endl;
+        std::cout << "    file-float - set isf_input to the path of a file containing any number of lines `NDIM` space-separated floating point numbers `x` where the wavevector components are determined by the supplied wavevector on each line" << std::endl;
+        std::cout << std::endl;
+
+        throw "Set argstring_type to: < int | float | max-int | max-float | file-int | file-float >";
+    }
+    if (constants()->isf_input_type() == "") {
+        std::cout << "isf_input_type not set" << std::endl;
+        throw "argstring_type not set (set to: < int | float | max-int | max-float | file-int | file-float | help >)";
+    }
+    delete[] cstr;
+
+    // Write qValues to disk FIXME should be handled by communicator
+    //std::ofstream outFile((format("qValues-ssf-%s.dat") % constants()->id()).str());
+    //for (const auto &e : qValues){
+    //   outFile << e << "\n";
+    //}
+    //outFile.flush();
+    //outFile.close();
+    
+    numq = qValues.size();
+    qValues_dVec.resize(numq);
+    for (int nq = 0; nq < numq; nq++) {
+        qValues_dVec(nq) = qValues[nq];
+    }
+
+    /* Initialize the accumulator for the intermediate scattering function*/
+    isf.resize(numq*(int(numTimeSlices/2) + 1));
+    isf = 0.0;
+
+    // Create multiple gpu streams
+    stream_array.resize(MAX_GPU_STREAMS);
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        #ifndef USE_CUDA
+        HIP_ASSERT(hipStreamCreate(&stream_array(i)));
+        #endif
+        #ifdef USE_CUDA
+        CUDA_ASSERT(cudaStreamCreate(&stream_array(i)));
+        #endif
+    }
+
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numq*(int(numTimeSlices/2) + 1));
+
+    /* the q-values */
+    //header = str(format("#%15.6E") % qMag(0));
+    //for (int n = 1; n < numq; n++)
+    //    header.append(str(format("%16.6E") % qMag(n)));
+    //header.append("\n");
+
+    /* The imaginary time values */
+    header = str(format("#%15d") % 0);
+    for (int n = 1; n < isf.size(); n++) {
+        header.append(str(format("%16d") % n));
+    }
+    /* utilize imaginary time translational symmetry */
+    norm = 0.5;
+
+    bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
+    bytes_isf = isf.size()*sizeof(double);
+    bytes_qvecs = NDIM*numq*sizeof(double);
+    #ifndef USE_CUDA
+        HIP_ASSERT(hipMalloc(&d_isf, bytes_isf)); // Allocate memory for isf on GPU
+        HIP_ASSERT(hipMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
+        HIP_ASSERT(hipMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, hipMemcpyHostToDevice )); // Copy qvecs data to gpu
+    #endif
+    #ifdef USE_CUDA
+        CUDA_ASSERT(cudaMalloc(&d_isf, bytes_isf)); // Allocate memory for isf on GPU
+        CUDA_ASSERT(cudaMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
+        CUDA_ASSERT(cudaMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, cudaMemcpyHostToDevice )); // Copy qvecs data to gpu
+    #endif
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+IntermediateScatteringFunctionEstimatorGpu::~IntermediateScatteringFunctionEstimatorGpu() { 
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        #ifndef USE_CUDA
+            HIP_ASSERT(hipStreamDestroy(stream_array(i)));
+        #endif
+        #ifdef USE_CUDA
+            CUDA_ASSERT(cudaStreamDestroy(stream_array(i)));
+        #endif
+    }
+    isf.free();
+    qValues_dVec.free();
+    stream_array.free();
+
+    // Release device memory
+    #ifndef USE_CUDA
+        HIP_ASSERT(hipFree(d_beads));
+        HIP_ASSERT(hipFree(d_qvecs));
+        HIP_ASSERT(hipFree(d_isf));
+    #endif
+    #ifdef USE_CUDA
+        CUDA_ASSERT(cudaFree(d_beads));
+        CUDA_ASSERT(cudaFree(d_qvecs));
+        CUDA_ASSERT(cudaFree(d_isf));
+    #endif
+}
+
+/*************************************************************************//**
+ *  measure the intermediate scattering function for each value of the 
+ *  imaginary time separation tau.
+ *
+ *  We only compute this for N > 1 due to the normalization.
+******************************************************************************/
+void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
+    int numParticles = path.getTrueNumParticles();
+    int numTimeSlices = constants()->numTimeSlices();
+    int beta_over_two_idx = numTimeSlices/2;
+    int number_of_beads = numParticles*numTimeSlices;
+    int NNM = number_of_beads*numParticles;
+    //int number_of_connections = int(number_of_beads*(number_of_beads + 1)/2);
+
+    double _inorm = 1.0/number_of_beads;
+
+    auto beads_extent = path.get_beads_extent();
+    int full_number_of_beads = beads_extent[0]*beads_extent[1];
+    int full_numTimeSlices = beads_extent[0];
+    int full_numParticles = beads_extent[1];
+
+    //Size, in bytes, of beads array
+    size_t bytes_beads_new = NDIM*full_number_of_beads*sizeof(double);
+
+    #ifndef USE_CUDA
+        if (bytes_beads_new > bytes_beads) {
+            bytes_beads = bytes_beads_new;
+            HIP_ASSERT(hipFree(d_beads));
+            HIP_ASSERT(hipMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
+        }
+        HIP_ASSERT(hipMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, hipMemcpyHostToDevice )); // Copy beads data to gpu
+        HIP_ASSERT(hipMemset(d_isf, 0, bytes_isf)); // Set initial isf data to zero
+    #endif
+    #ifdef USE_CUDA
+        if (bytes_beads_new > bytes_beads) {
+            bytes_beads = bytes_beads_new;
+            CUDA_ASSERT(cudaFree(d_beads));
+            CUDA_ASSERT(cudaMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
+        }
+        CUDA_ASSERT(cudaMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, cudaMemcpyHostToDevice )); // Copy beads data to gpu
+        CUDA_ASSERT(cudaMemset(d_isf, 0, bytes_isf)); // Set initial isf data to zero
+    #endif
+
+    int grid_size = (NNM + GPU_BLOCK_SIZE - 1) / GPU_BLOCK_SIZE;
+
+    int stream_idx;
+    for (int nq = 0; nq < numq; nq++) {
+        for (int Mi = 0; Mi < numTimeSlices; Mi++) {
+            stream_idx = (nq*numTimeSlices + Mi) % MAX_GPU_STREAMS;
+            #ifndef USE_CUDA
+            hipLaunchKernelGGL(gpu_isf2, dim3(grid_size), dim3(GPU_BLOCK_SIZE), 0, stream_array(stream_idx),
+                d_isf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
+                number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
+            #endif
+            #ifdef USE_CUDA
+            cuda_wrapper::gpu_isf2_wrapper(dim3(grid_size), dim3(GPU_BLOCK_SIZE), stream_array(stream_idx),
+                d_isf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
+                number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
+            #endif
+        }
+    }
+    #ifndef USE_CUDA
+        HIP_ASSERT(hipDeviceSynchronize());
+    #endif
+    #ifdef USE_CUDA
+        CUDA_ASSERT(cudaDeviceSynchronize());
+    #endif
+
+    //// Copy isf data back to host
+    #ifndef USE_CUDA
+        HIP_ASSERT(hipMemcpy(isf.data(), d_isf, bytes_isf, hipMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
+    #endif
+    #ifdef USE_CUDA
+        CUDA_ASSERT(cudaMemcpy(isf.data(), d_isf, bytes_isf, cudaMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
+    #endif
+
+    estimator += isf;
+
+}
+#endif
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // RADIAL DENSITY ESTIMATOR CLASS --------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -3049,10 +3467,9 @@ RadialDensityEstimator::RadialDensityEstimator (const Path &_path,
     for (int n = 1; n < NRADSEP; n++) 
         header.append(str(format("%16.3E") % ((n)*dR)));
 
-    norm = (actionPtr->period)/ (path.boxPtr->side[NDIM-1]*(endDiagSlice - startSlice));
-    communicate()->file("debug")->stream() << norm << endl;
+    norm = 1.0 / (path.boxPtr->side[NDIM-1]*path.numTimeSlices);
     for (int n = 0; n < NRADSEP; n++) 
-        norm(n) /= (2*M_PI*(n+0.5)*dR*dR);
+        norm(n) /= (M_PI*(2*n+1)*dR*dR);
 }
 
 /*************************************************************************//**
@@ -3069,10 +3486,8 @@ void RadialDensityEstimator::accumulate() {
     dVec pos;
     double rsq;
     beadLocator beadIndex;
-    int flag = 0;
-    for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-	    flag ++;
             beadIndex = slice,ptcl;
             pos = path(beadIndex);
             rsq = 0.0;
@@ -3841,7 +4256,7 @@ CylinderLinearPotentialEstimator::~CylinderLinearPotentialEstimator() {
 /*************************************************************************//**
  *  We determine what the effective potential along the axis of the pore.
 ******************************************************************************/
-void CylinderLinearPotentialEstimator::accumulate() {
+void CylinderLinearPotentialEstimator::accumulate1() {
 
     double totV = 0.0;
     dVec r1,r2;         // The two bead positions
@@ -3858,26 +4273,19 @@ void CylinderLinearPotentialEstimator::accumulate() {
         /* Get the external potential */
         totV = 0.0;
 
-        /* We sum up the interaction energy over all slices*/
-        int numBeads = 0;
-        for (int slice = 0; slice < path.numTimeSlices; slice++) {
-            bead2[0] = slice;
+        /* We only take slice 0 */
+        bead2[0] = 0;
 
-            /* Sum over particles */
-            for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(slice); bead2[1]++) {
+        /* Sum over particles at slice 0 */
+        for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
 
-                r2 = path(bead2);
-                if (!include(r2,maxR)) {
-                    sep = r2 - r1;
-                    path.boxPtr->putInBC(sep);
-                    totV += actionPtr->interactionPtr->V(sep);
-                    numBeads++;
-
-                } // bead2 is outside maxR
-            } // bead2
-        } // slice
-
-        totV /= 1.0*numBeads;
+            r2 = path(bead2);
+            if (!include(r2,maxR)) {
+                sep = r2 - r1;
+                path.boxPtr->putInBC(sep);
+                totV += actionPtr->interactionPtr->V(sep);
+            } // bead2 is inside  maxR
+        } // bead2
 
         /* Add the constant piece from the external potential */
         totV += actionPtr->externalPtr->V(r1);
@@ -3886,6 +4294,65 @@ void CylinderLinearPotentialEstimator::accumulate() {
     } // n
 }
 
+/*************************************************************************//**
+ *  We determine what the effective potential along the axis of the pore.
+ *
+ *  This method creates a spatially resolved histogram of the total potential
+ *  felt by partices in the inner core, removing any self-interactions inside
+ *  the cut-off radius.
+******************************************************************************/
+void CylinderLinearPotentialEstimator::accumulate() {
+
+    double totV = 0.0;
+    dVec r1,r2;         // The two bead positions
+
+    dVec sep;           // The bead separation
+    beadLocator bead1,bead2;  // The bead locators
+
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+        bead1[0] = slice;
+
+        for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(slice); bead1[1]++) {
+
+            /* Location of bead 1 */
+            r1 = path(bead1);
+
+            /* If we are inside the cutoff cylinder, accumulate the potential */
+            if (include(r1,maxR)) {
+
+                totV = 0.0;
+
+                /* Sum over particles */
+                bead2[0] = slice;
+
+                for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
+
+                    r2 = path(bead2);
+
+                    /* Make sure r2 is not inside the central core */
+                    if (!include(r2,maxR)) {
+                        sep = r2 - r1;
+                        path.boxPtr->putInBC(sep);
+                        totV += actionPtr->interactionPtr->V(sep);
+                    } // bead2 is not inside the core
+                } //bead2
+
+                /* Add the contribution of the external potential energy */
+                totV += actionPtr->externalPtr->V(r1);
+
+                /* determine the z-index of bead 1 */
+                int k = int((0.5*Lz + r1[NDIM-1])/dz);
+                if (k < NRADSEP) {
+                    estimator(k) += totV; // /constants()->numTimeSlices();
+                    norm(k) += 1.0;
+                }
+
+            } // bead1 is inside the core
+
+        } // bead1
+
+    } // slice
+}
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
