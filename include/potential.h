@@ -428,6 +428,7 @@ class HardCylinderPotential : public PotentialBase {
 
     private:
         double R;       // Radius of the tube
+
 };
 
 // ========================================================================  
@@ -534,7 +535,7 @@ inline double PlatedLJCylinderPotential::grad2V(const dVec &r) {
  */
 class LJCylinderPotential : public PotentialBase, public TabulatedPotential {
     public:
-        LJCylinderPotential (const double);
+        LJCylinderPotential (const double, const double, const double, const double);
         ~LJCylinderPotential ();
 
         /** The integrated LJ Wall potential. */
@@ -1424,7 +1425,7 @@ class GrapheneLUT3DPotentialGenerate: public PotentialBase  {
     public:
         GrapheneLUT3DPotentialGenerate(
                 const double, const double, const double, const double,
-                const double, const int, const int, const int, const int, const Container*);
+                const double, const Container*);
         ~GrapheneLUT3DPotentialGenerate();
         
     private:
@@ -1439,7 +1440,6 @@ class GrapheneLUT3DPotentialGenerate: public PotentialBase  {
         /* dimensions of the lookup tables */
         /* double zmin; */
         double zmax;
-	int k_max;
         /* double V_zmin; */
         
         double Vz_64( double, double, double, int );
