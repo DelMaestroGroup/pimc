@@ -3134,16 +3134,11 @@ void StaticStructureFactorGPUEstimator::accumulate() {
     int numTimeSlices = constants()->numTimeSlices();
 
     /* Return to these and check if we need them */
-    int number_of_beads = numParticles*numTimeSlices;
-    int NNM = number_of_beads*numParticles;
-    int beta_over_two_idx = numTimeSlices/2;
-
     double _inorm = 1.0/numParticles;
 
     /* We need to copy over the current beads array to the device */
     auto beads_extent = path.get_beads_extent();
     int full_number_of_beads = beads_extent[0]*beads_extent[1];
-    int full_numTimeSlices = beads_extent[0];
     int full_numParticles = beads_extent[1];
 
     /* Size, in bytes, of beads array */
@@ -3168,23 +3163,14 @@ void StaticStructureFactorGPUEstimator::accumulate() {
         CUDA_ASSERT(cudaMemset(d_ssf, 0, bytes_ssf)); // Set initial ssf data to zero
     #endif
 
-    int grid_size = (NNM + GPU_BLOCK_SIZE - 1) / GPU_BLOCK_SIZE;
-
     int stream_idx;
     for (int nq = 0; nq < numq; nq++) {
-        int Mi = 0;
-        /* stream_idx = (nq*numTimeSlices + Mi) % MAX_GPU_STREAMS; */
-        stream_idx = (nq + Mi) % MAX_GPU_STREAMS;
-
+        stream_idx = nq % MAX_GPU_STREAMS;
         #ifndef USE_CUDA
-        hipLaunchKernelGGL(gpu_isf, dim3(grid_size), dim3(GPU_BLOCK_SIZE), 0, stream_array(stream_idx),
-                d_ssf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
-                number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
+            gpu_ssf_wrapper(stream_array(stream_idx), d_ssf + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
         #endif
         #ifdef USE_CUDA
-        cuda_wrapper::gpu_isf_wrapper(dim3(grid_size), dim3(GPU_BLOCK_SIZE), stream_array(stream_idx),
-                d_ssf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
-                number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
+            cuda_wrapper::gpu_ssf_wrapper(stream_array(stream_idx), d_ssf + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
         #endif
     }
     #ifndef USE_CUDA
@@ -3677,16 +3663,13 @@ IntermediateScatteringFunctionEstimatorGpu::~IntermediateScatteringFunctionEstim
 void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
     int numParticles = path.getTrueNumParticles();
     int numTimeSlices = constants()->numTimeSlices();
-    int beta_over_two_idx = numTimeSlices/2;
     int number_of_beads = numParticles*numTimeSlices;
-    int NNM = number_of_beads*numParticles;
     //int number_of_connections = int(number_of_beads*(number_of_beads + 1)/2);
 
     double _inorm = 1.0/number_of_beads;
 
     auto beads_extent = path.get_beads_extent();
     int full_number_of_beads = beads_extent[0]*beads_extent[1];
-    int full_numTimeSlices = beads_extent[0];
     int full_numParticles = beads_extent[1];
 
     //Size, in bytes, of beads array
@@ -3711,23 +3694,15 @@ void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
         CUDA_ASSERT(cudaMemset(d_isf, 0, bytes_isf)); // Set initial isf data to zero
     #endif
 
-    int grid_size = (NNM + GPU_BLOCK_SIZE - 1) / GPU_BLOCK_SIZE;
-
     int stream_idx;
     for (int nq = 0; nq < numq; nq++) {
-        for (int Mi = 0; Mi < numTimeSlices; Mi++) {
-            stream_idx = (nq*numTimeSlices + Mi) % MAX_GPU_STREAMS;
-            #ifndef USE_CUDA
-            hipLaunchKernelGGL(gpu_isf, dim3(grid_size), dim3(GPU_BLOCK_SIZE), 0, stream_array(stream_idx),
-                d_isf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
-                number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
-            #endif
-            #ifdef USE_CUDA
-            cuda_wrapper::gpu_isf_wrapper(dim3(grid_size), dim3(GPU_BLOCK_SIZE), stream_array(stream_idx),
-                d_isf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
-                number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
-            #endif
-        }
+        stream_idx = nq % MAX_GPU_STREAMS;
+        #ifndef USE_CUDA
+            gpu_isf_wrapper(stream_array(stream_idx), d_isf + (numTimeSlices/2 + 1)*nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
+        #endif
+        #ifdef USE_CUDA
+            cuda_wrapper::gpu_isf_wrapper(stream_array(stream_idx), d_isf + (numTimeSlices/2 + 1)*nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
+        #endif
     }
     #ifndef USE_CUDA
         HIP_ASSERT(hipDeviceSynchronize());
