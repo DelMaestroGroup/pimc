@@ -869,6 +869,47 @@ class IntermediateScatteringFunctionEstimatorGpu: public EstimatorBase {
 #endif
 
 // ========================================================================  
+// Elastic Scattering GPU Estimator Class
+// ========================================================================  
+/** 
+ * Compute the elastic scattering S(q, \omega = 0) //FIXME is this true?
+ */
+#ifdef GPU_BLOCK_SIZE
+class ElasticScatteringEstimatorGpu: public EstimatorBase {
+
+    public:
+        ElasticScatteringEstimatorGpu(const Path &, ActionBase *, 
+                const MTRand &, double, int _frequency=1, string _label="es");
+        ~ElasticScatteringEstimatorGpu();
+    
+        static const string name;
+        string getName() const {return name;}
+
+    private:
+        void accumulate();              // Accumulate values
+        std::vector<dVec> qValues;      // Vector of q values
+	blitz::Array<dVec,1> qValues_dVec;     // Vector of q values
+	blitz::Array<double,1> es;           // local intermediate scattering function
+
+        int numq;                        // the number of q vectors
+        size_t bytes_beads;
+        size_t bytes_es;
+        size_t bytes_qvecs;
+        double *d_beads; // pointer to beads on gpu (device_beads)
+        double *d_es; // pointer to es on gpu (device_es)
+        double *d_qvecs; // pointer to qvecs on gpu (device_qvecs)
+        #ifndef USE_CUDA
+	    blitz::Array<hipStream_t,1> stream_array; // Store Multiple GPU streams
+        #endif
+        #ifdef USE_CUDA
+	    blitz::Array<cudaStream_t,1> stream_array; // Store Multiple GPU streams
+        #endif
+        
+};
+#endif
+
+
+// ========================================================================  
 // Radial Density Estimator Class
 // ========================================================================  
 /** 
