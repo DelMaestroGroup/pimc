@@ -69,8 +69,8 @@ __device__ void gpu_reduce(volatile double *sdata, unsigned int thread_idx) {
 
 // GPU Kernel for ISF calculation
 // M timeslices, N particles, N_extent = N + padding
-__global__
-void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+template <bool ZERO_FREQUENCY = false>
+__global__ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
     __shared__ double s_isf[GPU_BLOCK_SIZE]; // temporarily store isf on shared memory of gpu
 
 
@@ -161,7 +161,12 @@ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double *beads
     }
 
     if (threadIdx.x == 0) {
-        isf[blockIdx.x] = 2.0*s_isf[0]*inorm;
+        if (ZERO_FREQUENCY) {
+            //FIXME would like to get rid of this atomic operation
+            atomicAdd(&isf[0], 2.0*s_isf[0]*inorm);
+        else {
+            isf[blockIdx.x] = 2.0*s_isf[0]*inorm;
+        }
     }
 }
 
@@ -181,6 +186,15 @@ void gpu_ssf_wrapper(double* __restrict__ isf, double* __restrict__ qvecs, doubl
 }
 void gpu_ssf_wrapper(hipStream_t s, double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
     hipLaunchKernelGGL(gpu_isf, dim3(1), dim3(GPU_BLOCK_SIZE), 0, 0,
+            isf, qvecs, beads, inorm, M, N, N_extent);
+}
+
+void gpu_es_wrapper(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+    hipLaunchKernelGGL(gpu_isf<true>, dim3(M/2 + 1), dim3(GPU_BLOCK_SIZE), 0, 0,
+            isf, qvecs, beads, inorm, M, N, N_extent);
+}
+void gpu_es_wrapper(hipStream_t s, double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+    hipLaunchKernelGGL(gpu_isf<true>, dim3(M/2 + 1), dim3(GPU_BLOCK_SIZE), 0, 0,
             isf, qvecs, beads, inorm, M, N, N_extent);
 }
 

@@ -8,4 +8,7 @@ namespace cuda_wrapper {
 
     void gpu_ssf_wrapper(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent);
     void gpu_ssf_wrapper(cudaStream_t s, double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent);
+
+    void gpu_es_wrapper(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent);
+    void gpu_es_wrapper(cudaStream_t s, double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent);
 }
