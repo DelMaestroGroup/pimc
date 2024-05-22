@@ -783,8 +783,8 @@ class StaticStructureFactorGPUEstimator: public EstimatorBase {
         void accumulate();              // Accumulate values
         
         vector <vector<dVec> > q;       // the q-vectors
-        Array<dVec,1> qValues_dVec;     // Vector of q values
-        Array<double,1> ssf;           // local intermediate scattering function
+        blitz::Array<dVec,1> qValues_dVec;     // Vector of q values
+        blitz::Array<double,1> ssf;           // local intermediate scattering function
 
         int numq;                        // the number of q vectors
         size_t bytes_beads;
@@ -794,10 +794,10 @@ class StaticStructureFactorGPUEstimator: public EstimatorBase {
         double *d_ssf;                  // pointer to ssf on gpu (device_ssf)
         double *d_qvecs;                // pointer to qvecs on gpu (device_qvecs)
         #ifndef USE_CUDA
-            Array<hipStream_t,1> stream_array; // Store Multiple GPU streams
+            blitz::Array<hipStream_t,1> stream_array; // Store Multiple GPU streams
         #endif
         #ifdef USE_CUDA
-            Array<cudaStream_t,1> stream_array; // Store Multiple GPU streams
+            blitz::Array<cudaStream_t,1> stream_array; // Store Multiple GPU streams
         #endif
 };
 #endif

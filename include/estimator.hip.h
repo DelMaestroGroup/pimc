@@ -68,92 +68,120 @@ __device__ void gpu_reduce(volatile double *sdata, unsigned int thread_idx) {
 }
 
 // GPU Kernel for ISF calculation
+// M timeslices, N particles, N_extent = N + padding
 __global__
-void gpu_isf(double *isf, double *qvecs, double *beads, int qvec_idx, int tau_idx, double inorm,
-        int number_of_qvecs, int number_of_timeslices, int number_of_particles,
-        int number_of_beads, int full_number_of_timeslices, int full_number_of_particles,
-        int full_number_of_beads, int NNM, int beta_over_two_idx) {
-    int i, bead1_idx, bead2_idx, true_bead1_idx, true_bead2_idx, tau_idx_first_bead,
-        particle_idx_first_bead, tau_idx_second_bead, particle_idx_second_bead;
-    double q_dot_sep;
+void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
     __shared__ double s_isf[GPU_BLOCK_SIZE]; // temporarily store isf on shared memory of gpu
-    i = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
-    if (i < NNM) {
-        bead1_idx = int(i/number_of_particles);
-        tau_idx_first_bead = int(bead1_idx/number_of_particles);
-        tau_idx_second_bead = (tau_idx_first_bead + tau_idx) % number_of_timeslices;
-        particle_idx_second_bead = (i - bead1_idx*number_of_particles);
-        bead2_idx = tau_idx_second_bead*number_of_particles + particle_idx_second_bead;
-        if (bead1_idx != bead2_idx) {
-            particle_idx_first_bead = bead1_idx - tau_idx_first_bead*number_of_particles;
 
-            true_bead1_idx = tau_idx_first_bead*full_number_of_particles + particle_idx_first_bead;
-            true_bead2_idx = tau_idx_second_bead*full_number_of_particles + particle_idx_second_bead;
 
-            q_dot_sep = 0.0;
+    int NNM = N*N*M;
+    if (threadIdx.x < NNM) {
+        int bead_idx1 = threadIdx.x/N;     // Bead index for first bead
+        int m_idx1 = bead_idx1/N;          // Imaginary time index for first bead
+        int n_idx1 = bead_idx1 - m_idx1*N; // Particle index for first bead
+
+        int m_idx2 = (m_idx1 + blockIdx.x) % M;   // Imaginary time index for second bead
+        int n_idx2 = (threadIdx.x - bead_idx1*N); // Particle index for second bead
+        int bead_idx2 = m_idx2*N + n_idx2;        // Bead index for second bead
+
+        //Get true bead indices in padded beads array
+        int true_bead_idx1 = m_idx1*N_extent + n_idx1;
+        int true_bead_idx2 = m_idx2*N_extent + n_idx2;
+
+        double q_dot_sep = 0.0;
+        #pragma unroll
+        for (int k = 0; k < NDIM; k++) {
+            q_dot_sep += qvecs[k]*(beads[true_bead_idx2*NDIM + k] - beads[true_bead_idx1*NDIM + k]);
+        }
+
+        s_isf[threadIdx.x] = cos(q_dot_sep);
+    } else {
+        s_isf[threadIdx.x] = 0.0;
+    }
+
+    for (int local_idx = threadIdx.x + GPU_BLOCK_SIZE; local_idx < NNM + GPU_BLOCK_SIZE; local_idx += GPU_BLOCK_SIZE) {
+        if (local_idx < NNM) {
+            int bead_idx1 = local_idx/N;       // Bead index for first bead
+            int m_idx1 = bead_idx1/N;          // Imaginary time index for first bead
+            int n_idx1 = bead_idx1 - m_idx1*N; // Particle index for first bead
+
+            int m_idx2 = (m_idx1 + blockIdx.x) % M; // Imaginary time index for second bead
+            int n_idx2 = (local_idx - bead_idx1*N); // Particle index for second bead
+            int bead_idx2 = m_idx2*N + n_idx2;      // Bead index for second bead
+
+            //Get true bead indices in padded beads array
+            int true_bead_idx1 = m_idx1*N_extent + n_idx1;
+            int true_bead_idx2 = m_idx2*N_extent + n_idx2;
+
+            double q_dot_sep = 0.0;
             #pragma unroll
             for (int k = 0; k < NDIM; k++) {
-                q_dot_sep += qvecs[qvec_idx*NDIM + k]*(beads[true_bead2_idx*NDIM + k] - beads[true_bead1_idx*NDIM + k]);
+                q_dot_sep += qvecs[k]*(beads[true_bead_idx2*NDIM + k] - beads[true_bead_idx1*NDIM + k]);
             }
 
-            s_isf[hipThreadIdx_x] = cos(q_dot_sep)*inorm;
-        } else {
-            s_isf[hipThreadIdx_x] = inorm;
+            s_isf[threadIdx.x] += cos(q_dot_sep);
         }
-    } else {
-        s_isf[hipThreadIdx_x] = 0.0;
     }
     __syncthreads();
-
+    
+    //FIXME This can be abstracted
     // NEED TO REDUCE isf ON SHARED MEMORY AND ADD TO GLOBAL isf
     if (GPU_BLOCK_SIZE >= 1024) {
-        if (hipThreadIdx_x < 512) {
-            s_isf[hipThreadIdx_x] += s_isf[hipThreadIdx_x + 512];
+        if (threadIdx.x < 512) {
+            s_isf[threadIdx.x] += s_isf[threadIdx.x + 512];
         }
         __syncthreads();
     } 
 
     if (GPU_BLOCK_SIZE >= 512) {
-        if (hipThreadIdx_x < 256) {
-            s_isf[hipThreadIdx_x] += s_isf[hipThreadIdx_x + 256];
+        if (threadIdx.x < 256) {
+            s_isf[threadIdx.x] += s_isf[threadIdx.x + 256];
         }
         __syncthreads();
     } 
 
     if (GPU_BLOCK_SIZE >= 256) {
-        if (hipThreadIdx_x < 128) {
-            s_isf[hipThreadIdx_x] += s_isf[hipThreadIdx_x + 128];
+        if (threadIdx.x < 128) {
+            s_isf[threadIdx.x] += s_isf[threadIdx.x + 128];
         }
         __syncthreads();
     } 
 
     if (warpSize == 32) {
         if (GPU_BLOCK_SIZE >= 128) {
-            if (hipThreadIdx_x < 64) {
-                s_isf[hipThreadIdx_x] += s_isf[hipThreadIdx_x + 64];
+            if (threadIdx.x < 64) {
+                s_isf[threadIdx.x] += s_isf[threadIdx.x + 64];
             }
             __syncthreads();
         } 
     }
 
-    if (hipThreadIdx_x < warpSize) {
-        warp_reduce(s_isf, hipThreadIdx_x);
+    if (threadIdx.x < warpSize) {
+        warp_reduce(s_isf, threadIdx.x);
     }
 
-    if (hipThreadIdx_x == 0) {
-        //NOTE: May see some performance gain here if temporarily store results
-        // to some global device variable and then launch a separate kernel to
-        // again reduce those results i.e.
-        // tmp_isf[hipBlockIdx_x] = s_isf[0];
-        // ^-- reduce on this, but this may get too bloated with multiple qvecs
-        // and multiple kernel lanuches per tau_idx (imaginary time separation)
-        if ((tau_idx == 0) || (tau_idx == beta_over_two_idx)) {
-            atomicAdd(&isf[tau_idx*number_of_qvecs + qvec_idx], 2.0*s_isf[0]);
-        } else {
-            int _tau_idx = tau_idx > beta_over_two_idx ? number_of_timeslices - tau_idx : tau_idx; 
-            atomicAdd(&isf[_tau_idx*number_of_qvecs + qvec_idx], s_isf[0]);
-        }
+    if (threadIdx.x == 0) {
+        isf[blockIdx.x] = 2.0*s_isf[0]*inorm;
     }
+}
+
+// GPU Kernel Launch Wrappers
+void gpu_isf_wrapper(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+    hipLaunchKernelGGL(gpu_isf, dim3(M/2 + 1), dim3(GPU_BLOCK_SIZE), 0, 0,
+            isf, qvecs, beads, inorm, M, N, N_extent);
+}
+void gpu_isf_wrapper(hipStream_t s, double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+    hipLaunchKernelGGL(gpu_isf, dim3(M/2 + 1), dim3(GPU_BLOCK_SIZE), 0, 0,
+            isf, qvecs, beads, inorm, M, N, N_extent);
+}
+
+void gpu_ssf_wrapper(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+    hipLaunchKernelGGL(gpu_isf, dim3(1), dim3(GPU_BLOCK_SIZE), 0, 0,
+            isf, qvecs, beads, inorm, M, N, N_extent);
+}
+void gpu_ssf_wrapper(hipStream_t s, double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+    hipLaunchKernelGGL(gpu_isf, dim3(1), dim3(GPU_BLOCK_SIZE), 0, 0,
+            isf, qvecs, beads, inorm, M, N, N_extent);
 }
 
 #endif
