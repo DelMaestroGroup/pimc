@@ -159,7 +159,7 @@ __global__ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, do
         if (ZERO_FREQUENCY) {
             //FIXME would like to get rid of this atomic operation
             atomicAdd(&isf[0], 2.0*s_isf[0]*inorm);
-        else {
+        } else {
             isf[blockIdx.x] = 2.0*s_isf[0]*inorm;
         }
     }

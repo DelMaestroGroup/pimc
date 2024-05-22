@@ -4237,10 +4237,10 @@ void ElasticScatteringEstimatorGpu::accumulate() {
     for (int nq = 0; nq < numq; nq++) {
         stream_idx = nq % MAX_GPU_STREAMS;
         #ifndef USE_CUDA
-            gpu_es_wrapper(stream_array(stream_idx), d_es + (numTimeSlices/2 + 1)*nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
+            gpu_es_wrapper(stream_array(stream_idx), d_es + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
         #endif
         #ifdef USE_CUDA
-            cuda_wrapper::gpu_es_wrapper(stream_array(stream_idx), d_es + (numTimeSlices/2 + 1)*nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
+            cuda_wrapper::gpu_es_wrapper(stream_array(stream_idx), d_es + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
         #endif
     }
     #ifndef USE_CUDA
