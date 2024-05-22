@@ -1396,7 +1396,7 @@ boost::ptr_vector<EstimatorBase> * Setup::estimators(Path &path,
     /* We determine where a line break is needed for all estimators writing to
      * a common estimator file */
     for (const auto & common : {"estimator","cyl_estimator"}) {
-        auto ePtr = find_if(estimatorPtr->rbegin(), estimatorPtr->rend(), 
+        auto ePtr = std::find_if(estimatorPtr->rbegin(), estimatorPtr->rend(), 
                 [common](EstimatorBase &e) { return e.getLabel() == common; });
         if (ePtr != estimatorPtr->rend()) 
             ePtr->addEndLine();
