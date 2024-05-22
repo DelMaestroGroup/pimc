@@ -460,7 +460,7 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
 
     if ((inputType == "max_int") || (inputType == "max_float")) {
         iVec q_max_int, _q_int;
-        dVec q_max;
+        dVec q_max = 0.0;
 
         while(token) {
             for (int i=0; (i<NDIM) && token; i++) {
@@ -468,16 +468,22 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
                     q_max_int[i] = std::abs(std::atoi(token));
                     q_max[i] = q_max_int[i]*2.0*M_PI/path.boxPtr->side[i];
                 }
-                else {
+                else 
                     q_max[i] = std::atof(token);
-                    q_max_int[i] = 1 + static_cast<int>(q_max[i]*path.boxPtr->side[i]/2.0/M_PI);
-                }
+
                 token = strtok(NULL, " ");
             }
         }
 
-        double q_mag_max = sqrt(dot(q,q));
+        double q_mag_max = sqrt(dot(q_max,q_max));
         double q_mag;
+
+        if (inputType == "max_float") {
+            for (int i=0; i < NDIM; i++)
+                q_max_int[i] = 1 + static_cast<int>(q_mag_max*path.boxPtr->side[i]/2.0/M_PI);
+        }
+
+        cout << q_mag_max << " " << q_max_int << endl;
 
         int n_q = 1;
         /* these are the negative maximal wavevectors */
@@ -488,7 +494,7 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
         }
 
         q_mag = sqrt(dot(q,q));
-        if (q_mag <= q_mag_max+EPS)
+        if (q_mag <= q_mag_max)
             qValues.push_back(q);
 
         int pos = NDIM - 1;
@@ -559,6 +565,188 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
         }
     }
 
+}
+
+/*************************************************************************//**
+*  Get q-vectors for scattering calculations
+*  
+*  Based on the geometry of the system and a user-defined choice, 
+*  (wavevector and wavevector_type command line arguments) return a
+*  list of q-vectors where scattering will be computed.
+*  
+******************************************************************************/
+void EstimatorBase::getQVectorsNN(std::vector<dVec> &qValues) {
+
+    dVec q;
+    string input = constants()->wavevector();
+    char * cstr = new char [input.length()+1];
+    std::strcpy (cstr, input.c_str());
+    char *token = strtok(cstr, " ");
+    // parse wavevectorType to determine how to handle isf_input
+    if (constants()->wavevectorType() == "int") {
+        std::cout << "wavevectorType = int" << std::endl;
+        while(token) {
+            int j = 0;
+            for (int i=0; (i<NDIM) && token; i++) {
+                q[i] = (2.0*M_PI/path.boxPtr->side[i])*std::atoi(token);
+                token = strtok(NULL, " ");
+                j = i;
+            }
+            if (j==(NDIM-1)){
+                qValues.push_back(q);
+            }
+        }
+    }
+
+    if (constants()->wavevectorType() == "float") {
+        std::cout << "wavevectorType = float" << std::endl;
+        while(token) {
+            int j = 0;
+            for (int i=0; (i<NDIM) && token; i++){
+                q[i] = std::atof(token);
+                token = strtok(NULL, " ");
+                j = i;
+            }
+            if (j==(NDIM-1)){
+                qValues.push_back(q);
+            }
+        }
+    }
+
+    if (constants()->wavevectorType() == "max_int") {
+        std::cout << "wavevectorType = max-int" << std::endl;
+        iVec q_int;
+        while(token) {
+            for (int i=0; (i<NDIM) && token; i++) {
+                q_int[i] = std::abs(std::atoi(token));
+                token = strtok(NULL, " ");
+            }
+        }
+
+        int _q_int[NDIM];
+        int n_q = 1;
+        for (int i = 0; i < NDIM; i++) {
+            n_q *= 2*q_int[i] + 1;
+            _q_int[i] = -q_int[i];
+            q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+        }
+        qValues.push_back(q);
+
+        cout << sqrt(blitz::dot(q,q)) << " " << q_int << endl;
+
+        int pos = NDIM - 1;
+        int count = 0;
+        while (count < n_q - 1) {
+            if (_q_int[pos] == q_int[pos]) {
+                _q_int[pos] = -q_int[pos];
+                pos -= 1;
+            } else {
+                _q_int[pos] += 1;
+                for (int i = 0; i < NDIM; i++) {
+                    q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+                }
+                qValues.push_back(q);
+                count += 1;
+                pos = NDIM - 1; //increment the innermost loop
+            }
+        }
+    }
+
+    if (constants()->wavevectorType() == "max_float") {
+        std::cout << "wavevectorType = max-float" << std::endl;
+        iVec q_int;
+        double q_mag_max = 0.0;
+        double q_mag;
+        while(token) {
+            for (int i=0; (i<NDIM) && token; i++) {
+                q_mag_max = std::atof(token);
+                token = strtok(NULL, " ");
+            }
+        }
+        
+        int _q_int[NDIM];
+        int n_q = 1;
+        for (int i = 0; i < NDIM; i++) {
+            q_int[i] = 1 + static_cast<int>(q_mag_max*path.boxPtr->side[i]/2.0/M_PI);
+            n_q *= 2*q_int[i] + 1;
+            _q_int[i] = -q_int[i];
+            q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+        }
+        q_mag = sqrt(dot(q,q));
+        if (q_mag <= q_mag_max) {
+            qValues.push_back(q);
+        }
+        cout << q_mag_max << " " << q_int << endl;
+
+        int pos = NDIM - 1;
+        int count = 0;
+        while (count < n_q - 1) {
+            if (_q_int[pos] == q_int[pos]) {
+                _q_int[pos] = -q_int[pos];
+                pos -= 1;
+            } else {
+                _q_int[pos] += 1;
+                for (int i = 0; i < NDIM; i++) {
+                    q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+                }
+                q_mag = sqrt(dot(q,q));
+                if (q_mag <= q_mag_max) {
+                    qValues.push_back(q);
+                }
+                count += 1;
+                pos = NDIM - 1; //increment the innermost loop
+            }
+        }
+    }
+
+    if (constants()->wavevectorType() == "file_int") {
+        std::cout << "wavevectorType = file-int" << std::endl;
+
+        std::ifstream file(input);
+        std::string line;
+        // Read one line at a time into the variable line:
+        while(std::getline(file, line)) {
+            std::vector<int> line_data;
+            std::stringstream line_stream(line);
+        
+            int value;
+            // Read an integer at a time from the line
+            while(line_stream >> value) {
+                // Add the integers from a line to a 1D array (vector)
+                line_data.push_back(value);
+            }
+            PIMC_ASSERT(line_data.size()==NDIM);
+
+            for (int i=0; i < NDIM; i++) {
+                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
+            }
+            qValues.push_back(q);
+        }
+    }
+    if (constants()->wavevectorType() == "file_float") {
+        std::cout << "wavevectorType = file-float" << std::endl;
+
+        std::ifstream file(input);
+        std::string line;
+        // Read one line at a time into the variable line:
+        while(std::getline(file, line)) {
+            std::vector<int> line_data;
+            std::stringstream line_stream(line);
+        
+            int value;
+            // Read an integer at a time from the line
+            while(line_stream >> value) {
+                // Add the integers from a line to a 1D array (vector)
+                line_data.push_back(value);
+            }
+            PIMC_ASSERT(line_data.size()==NDIM);
+
+            for (int i=0; i < NDIM; i++) {
+                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
+            }
+            qValues.push_back(q);
+        }
+    }
 }
 
 /*************************************************************************//**
@@ -3198,25 +3386,13 @@ StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
-    /* The maximum q-vector magnitude to consider (hard-coded for now) */
-    double qMax = 4.0; // 1/Å
+    /* Get the desired q-vectors (specified at command line)*/
+    getQVectors(qValues);
 
-    /* We choose dq from the smallest possible q-vector, set by PBC */
-    double dq = 2.0*M_PI/path.boxPtr->side[NDIM-1];
-
-    /* Get the desired q-vectors */
-    q = getQVectors2(dq,qMax,numq,"sphere");
-
-    /* For this estimator we measure the scattering at each vector q-values
-     * so we need to flatten the magnitude ordered list */
-    /* NOTE: I can probably do away with this and simply flatten the 2D array */
+    numq = qValues.size();
     qValues_dVec.resize(numq);
-    int nq = 0;
-    for (const auto &cq : q) {
-        for (const auto &cqvec : cq) {
-            qValues_dVec(nq) = cqvec;
-            nq += 1;
-        }
+    for (int nq = 0; nq < numq; nq++) {
+        qValues_dVec(nq) = qValues[nq];
     }
 
     /* Initialize the accumulator for the static structure factor */
@@ -3546,202 +3722,17 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
 
     int numTimeSlices = constants()->numTimeSlices();
 
-    dVec q;
-    string input = constants()->wavevector();
-    char * cstr = new char [input.length()+1];
-    std::strcpy (cstr, input.c_str());
-    char *token = strtok(cstr, " ");
-    // parse wavevectorType to determine how to handle wavevector
-    if (constants()->wavevectorType() == "int") {
-        std::cout << "wavevectorType = int" << std::endl;
-        while(token) {
-            int j = 0;
-            for (int i=0; (i<NDIM) && token; i++) {
-                q[i] = (2.0*M_PI/path.boxPtr->side[i])*std::atoi(token);
-                token = strtok(NULL, " ");
-                j = i;
-            }
-            if (j==(NDIM-1)){
-                qValues.push_back(q);
-            }
-        }
-    }
+    /* getQVectors */
+    getQVectors(qValues);
 
-    if (constants()->wavevectorType() == "float") {
-        std::cout << "wavevectorType = float" << std::endl;
-        while(token) {
-            int j = 0;
-            for (int i=0; (i<NDIM) && token; i++){
-                q[i] = std::atof(token);
-                token = strtok(NULL, " ");
-                j = i;
-            }
-            if (j==(NDIM-1)){
-                qValues.push_back(q);
-            }
-        }
-    }
-
-    if (constants()->wavevectorType() == "max_int") {
-        std::cout << "wavevectorType = max-int" << std::endl;
-        iVec q_int;
-        while(token) {
-            for (int i=0; (i<NDIM) && token; i++) {
-                q_int[i] = std::abs(std::atoi(token));
-                token = strtok(NULL, " ");
-            }
-        }
-        
-        int _q_int[NDIM];
-        int n_q = 1;
-        for (int i = 0; i < NDIM; i++) {
-            n_q *= 2*q_int[i] + 1;
-            _q_int[i] = -q_int[i];
-            q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
-        }
-        qValues.push_back(q);
-
-        int pos = NDIM - 1;
-        int count = 0;
-        while (count < n_q - 1) {
-            if (_q_int[pos] == q_int[pos]) {
-                _q_int[pos] = -q_int[pos];
-                pos -= 1;
-            } else {
-                _q_int[pos] += 1;
-                for (int i = 0; i < NDIM; i++) {
-                    q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
-                }
-                qValues.push_back(q);
-                count += 1;
-                pos = NDIM - 1; //increment the innermost loop
-            }
-        }
-    }
-
-    if (constants()->wavevectorType() == "max_float") {
-        std::cout << "wavevectorType = max-float" << std::endl;
-        iVec q_int;
-        double q_mag_max = 0.0;
-        double q_mag;
-        while(token) {
-            for (int i=0; (i<NDIM) && token; i++) {
-                q_mag_max = std::atof(token);
-                token = strtok(NULL, " ");
-            }
-        }
-        
-        int _q_int[NDIM];
-        int n_q = 1;
-        for (int i = 0; i < NDIM; i++) {
-            q_int[i] = 1 + static_cast<int>(q_mag_max*path.boxPtr->side[i]/2.0/M_PI);
-            n_q *= 2*q_int[i] + 1;
-            _q_int[i] = -q_int[i];
-            q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
-        }
-        q_mag = sqrt(dot(q,q));
-        if (q_mag <= q_mag_max) {
-            qValues.push_back(q);
-        }
-
-        int pos = NDIM - 1;
-        int count = 0;
-        while (count < n_q - 1) {
-            if (_q_int[pos] == q_int[pos]) {
-                _q_int[pos] = -q_int[pos];
-                pos -= 1;
-            } else {
-                _q_int[pos] += 1;
-                for (int i = 0; i < NDIM; i++) {
-                    q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
-                }
-                q_mag = sqrt(dot(q,q));
-                if (q_mag <= q_mag_max) {
-                    qValues.push_back(q);
-                }
-                count += 1;
-                pos = NDIM - 1; //increment the innermost loop
-            }
-        }
-    }
-
-    if (constants()->wavevectorType() == "file_int") {
-        std::cout << "wavevectorType = file-int" << std::endl;
-
-        std::ifstream file(input);
-        std::string line;
-        // Read one line at a time into the variable line:
-        while(std::getline(file, line)) {
-            std::vector<int> line_data;
-            std::stringstream line_stream(line);
-        
-            int value;
-            // Read an integer at a time from the line
-            while(line_stream >> value) {
-                // Add the integers from a line to a 1D array (vector)
-                line_data.push_back(value);
-            }
-            PIMC_ASSERT(line_data.size()==NDIM);
-
-            for (int i=0; i < NDIM; i++) {
-                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
-            }
-            qValues.push_back(q);
-        }
-    }
-    if (constants()->wavevectorType() == "file_float") {
-        std::cout << "wavevectorType = file-float" << std::endl;
-
-        std::ifstream file(input);
-        std::string line;
-        // Read one line at a time into the variable line:
-        while(std::getline(file, line)) {
-            std::vector<int> line_data;
-            std::stringstream line_stream(line);
-        
-            int value;
-            // Read an integer at a time from the line
-            while(line_stream >> value) {
-                // Add the integers from a line to a 1D array (vector)
-                line_data.push_back(value);
-            }
-            PIMC_ASSERT(line_data.size()==NDIM);
-
-            for (int i=0; i < NDIM; i++) {
-                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
-            }
-            qValues.push_back(q);
-        }
-    }
-    if (constants()->wavevectorType() == "help") {
-        std::cout << "wavevectorType = help" << std::endl;
-        std::cout << std::endl;
-        std::cout << "The intermediate scattering function behavior is determined by the wavevector and wavevectorType command line arguments." << std::endl;
-        std::cout << "Setting wavevectorType to `help` displays this message." << std::endl;
-        std::cout << "Other available options are:" << std::endl;
-        std::cout << "    int        - set wavevector to an `N*NDIM` space-separated list of integers `i` where the wavevector components are determined by `i*2*pi/L` for the corresponding simulation cell side `L`" << std::endl;
-        std::cout << "    float      - set wavevector to an `N*NDIM` space-separated list of floating point numbers `x`, where sequential values modulo NDIM are the corresponding wavevector components" << std::endl;
-        std::cout << "    max-int    - set wavevector to an `NDIM` space-separated list of integers `i` where the wavevector components are determined by all allowable wavevectors between `-i*2*pi/L` to `i*2*pi/L` for the corresponding simulation cell side `L`" << std::endl;
-        std::cout << "    max-float  - set wavevector to an `NDIM` space-separated list of floating point numbers `x` where wavevector components are dermined for all allowable wavevectors with magnitudes less than the supplied wavevector" << std::endl;
-        std::cout << "    file-int   - set wavevector to the path of a file containing any number of lines with `NDIM` space-separated integers `i` where the wavevector components are determined by `i*2*pi/L` for the corresponding simulation cell side `L`" << std::endl;
-        std::cout << "    file-float - set wavevector to the path of a file containing any number of lines `NDIM` space-separated floating point numbers `x` where the wavevector components are determined by the supplied wavevector on each line" << std::endl;
-        std::cout << std::endl;
-
-        throw "Set argstring_type to: < int | float | max-int | max-float | file-int | file-float >";
-    }
-    if (constants()->wavevectorType() == "") {
-        std::cout << "wavevectorType not set" << std::endl;
-        throw "argstring_type not set (set to: < int | float | max-int | max-float | file-int | file-float | help >)";
-    }
-    delete[] cstr;
-
-    // Write qValues to disk FIXME should be handled by communicator
+    /* // Write qValues to disk FIXME should be handled by communicator */
     /* std::ofstream outFile((format("qValues-ssf-%s.dat") % constants()->id()).str()); */
     /* for (const auto &e : qValues){ */
     /*    outFile << e << "\n"; */
     /* } */
     /* outFile.flush(); */
     /* outFile.close(); */
+
     
     numq = qValues.size();
     qValues_dVec.resize(numq);
