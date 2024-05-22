@@ -123,7 +123,8 @@ class EstimatorBase {
         void initialize(vector<string>);
 
         /* generate q-vectors needed for momentum space estimators */
-        vector <vector<dVec> > getQVectors(double, double, int&, string);
+        void getQVectors(std::vector<dVec>&);
+        vector <vector<dVec> > getQVectors2(double, double, int&, string);
 };
 
 // ========================================================================  

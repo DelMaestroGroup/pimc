@@ -30,8 +30,8 @@ class MoveBase;
 class EstimatorBase;
 
 ostream& operator<<(ostream&, const vector<string>&);
-
 string getList (const vector<string> &, char sep=' ');
+bool isStringInVector(const string, const vector<string>&);
 
 // ========================================================================  
 // Parameters Class
@@ -316,6 +316,7 @@ class Setup {
         vector<string> estimatorName;               ///< The allowed estimator names
         vector<string> moveName;                    ///< The allowed move names
         vector<string> optionClassNames;            ///< The allowed option class names
+        vector<string> wavevectorTypeName;          ///< The allowed wavevector type names
 
         string interactionNames;                    ///< The interaction output list
         string externalNames;                       ///< The external output list
@@ -324,6 +325,7 @@ class Setup {
         string actionNames;                         ///< The action output list
         string estimatorNames;                      ///< The estimator list
         string moveNames;                           ///< The move list
+        string wavevectorTypeNames;                 ///< The wavevector types list
 
         /* The factories needed to instantiate objects */
         MoveFactory moveFactory;                    

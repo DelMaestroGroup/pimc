@@ -114,8 +114,8 @@ class ConstantParameters
         double endFactor() const {return endFactor_;}                                 ///< Get end factor
         string actionType() const {return actionType_;}                               ///< Get wave action type
         string graphenelut3d_file_prefix() const {return graphenelut3d_file_prefix_;} ///< Get GrapheneLUT3D file prefix <prefix>_serialized.{dat|txt}
-        string isf_input() const {return isf_input_;}                                 ///< Get input for intermediate scattering function
-        string isf_input_type() const {return isf_input_type_;}                       ///< Get type for input to intermediate scattering function
+        string wavevector() const {return wavevector_;}                               ///< Get wavevectors for scattering functions
+        string wavevectorType() const {return wavevectorType_;}                       ///< Get wavevector types for scattering functions
 
         /* Trial wave funciton parameters */
         double R_LL_wfn() const {return R_LL_wfn_;}        ///< Get Lieb-Liniger length scale
@@ -197,8 +197,8 @@ class ConstantParameters
 
         bool saveStateFiles_;              // Are we saving a state file every MC bin?
         string graphenelut3d_file_prefix_; // GrapheneLUT3D file prefix <prefix>_{V,gradV,grad2V}.npy 
-        string isf_input_;                 // Input for intermediate scattering function
-        string isf_input_type_;            // Type of input for intermediate scattering function
+        string wavevector_;                // Input for wavevectors 
+        string wavevectorType_;            // Type of input for wavevectors
         
         map <string,double> attemptProb_;   // The move attempt probabilities
 };

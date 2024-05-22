@@ -118,9 +118,9 @@ void ConstantParameters::initConstants(po::variables_map &params) {
     binSize_       = params["bin_size"].as<uint32>();
 
     graphenelut3d_file_prefix_ = params["graphenelut3d_file_prefix"].as<string>();
-    isf_input_                 = params["isf_input"].as<string>();
-    isf_input_type_            = params["isf_input_type"].as<string>();
     virialWindow_              = params["virial_window"].as<int>();
+    wavevector_                = params["wavevector"].as<string>();
+    wavevectorType_            = params["wavevector_type"].as<string>();
     
     initialNumParticles_ = params["number_particles"].as<int>();
     numBroken_ = params["number_broken"].as<int>();
