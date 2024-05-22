@@ -33,6 +33,22 @@ string getList(const vector<string> &options, char sep) {
 }
 
 /**************************************************************************//**
+ * Determine if a given string appears in any of the elements of a vector of
+ * strings. Can be a partial match.
+ *
+ * @param stringToMatch the string to be tested
+ * @param names the vector of strings
+ * @return true/false depending on whether we find it. 
+******************************************************************************/
+bool isStringInVector(const string stringToMatch, const vector<string> &names){
+    for (string name : names) {
+        if (name.find(stringToMatch) != string::npos)
+            return true;
+    }
+    return false;
+}
+
+/**************************************************************************//**
  * Overload << to print a vector of strings to the terminal 
 ******************************************************************************/
 ostream& operator<<(ostream& os, const vector<string>& vals)
@@ -281,6 +297,10 @@ Setup::Setup() :
          "graphenelut3d", "graphenelut3dgenerate", "graphenelut3dtobinary", "graphenelut3dtotext"};
     externalNames = getList(externalPotentialName);
 
+    /* Define the allowed wavevector type names */ 
+    wavevectorTypeName = {"int","float","max_int", "max_float", "file_int", "file_float", "help"};
+    wavevectorTypeNames = getList(wavevectorTypeName);
+
     /* Define the allowed action names */
     actionName = {"primitive", "li_broughton", "gsf", "pair_product"};
     actionNames = getList(actionName);
@@ -419,8 +439,8 @@ void Setup::initParameters() {
     params.add<int>("virial_window,V", "centroid virial energy estimator window",oClass,5);
     params.add<int>("number_broken", "number of broken world-lines",oClass,0);
     params.add<double>("spatial_subregion", "define a spatial subregion",oClass);
-    params.add<string>("isf_input","input for intermediate scattering function (set isf_input_type to corresponding type)",oClass,"");
-    params.add<string>("isf_input_type","type for isf_input (set to 'help' for more details)",oClass,"");
+    params.add<string>("wavevector","input for wavevectors (set --wavevector_type=help for more info)",oClass);
+    params.add<string>("wavevector_type",str(format("wavevctor input types:\n%s") % wavevectorTypeNames).c_str(),oClass);
 
     /* The updates, measurement defaults, and ensemble can depend on PIGS vs PIMC */
     vector<string> estimatorsToMeasure;
@@ -705,10 +725,60 @@ bool Setup::parseOptions() {
     /* If a list of estimators has been supplied, we need to verify */
     for (string name : params["estimator"].as<vector<string>>()){
         if (std::find(estimatorName.begin(), estimatorName.end(), name) == estimatorName.end()) {
-            cerr << "ERROR: Tried to measure a non-existent estimator: " << name << endl;
+            cerr << endl << "ERROR: Tried to measure a non-existent estimator: " << name << endl;
             cerr << "Action: set estimator to one of:" << endl
                 << "\t[" << estimatorNames<< "]" <<  endl;
             return true;
+        }
+    }
+
+    /* If we are measuring some type of scattering function, we need to supply the correct wavevector options. */
+    if ( isStringInVector("intermediate scattering function",params["estimator"].as<vector<string>>()) || 
+         isStringInVector("static structure factor",params["estimator"].as<vector<string>>()) ) {
+
+        if (!(params("wavevector") && params("wavevector_type"))) {
+            cerr << endl << "ERROR: you didn't include wavevectors that are needed for your scattering-type estimator: " << endl << endl;
+            cerr << "Action: Both wavevector and wavevector_type must be set!" << endl; 
+            cerr << "Action: set wavevector_type=help to see instructions" << endl << endl;
+            return true;
+        }
+        else if (params("wavevector_type")) {
+            if (std::find(wavevectorTypeName.begin(), wavevectorTypeName.end(), 
+                        params["wavevector_type"].as<string>()) == wavevectorTypeName.end()) {
+                cerr << endl << "ERROR: Invalid wavevector_type!" << endl << endl;
+                cerr << "Action: set wavevector_type to one of:" << endl
+                    << "\t[" << wavevectorTypeNames << "]" <<  endl;
+                cerr << endl << "Action: set wavevector_type=help to see instructions." << endl << endl;
+                return true;
+            }
+            else if (params["wavevector_type"].as<string>() == "help") {
+                cerr << endl;
+                cerr << "The wavevectors at which we measure certain estimators is controlled by the wavevector and wavevector_type command line arguments."; 
+                cerr << endl; 
+                cerr << "Setting wavevector_type=help displays this message." << endl << endl;
+                cerr << "Other acceptable options are:" << endl;
+                cerr << "    int        - set wavevector to an `N*NDIM` space-separated list of integers " << endl;
+                cerr << "                 `i` where the wavevector components are determined by `i*2*pi/L`" << endl;
+                cerr << "                 for the corresponding simulation cell side `L`" << endl;
+                cerr << "    float      - set wavevector to an `N*NDIM` space-separated list " << endl;
+                cerr << "                 of floating point numbers `x`, where sequential values " << endl; 
+                cerr << "                 modulo NDIM are the corresponding wavevector components" << endl;
+                cerr << "    max_int    - set wavevector to an `NDIM` space-separated list of integers " << endl;
+                cerr << "                 `i` where the wavevector components are determined by all " << endl;
+                cerr << "                 allowable wavevectors between `-i*2*pi/L` to `i*2*pi/L` for " << endl;
+                cerr << "                 the corresponding simulation cell side `L`" << endl;
+                cerr << "    max_float  - set wavevector to an `NDIM` space-separated list of floating " << endl;
+                cerr << "                 point numbers `x` where wavevector components are dermined for " << endl;
+                cerr << "                 all allowable wavevectors with magnitudes less than the supplied wavevector" << endl;
+                cerr << "    file_int   - set wavevector to the path of a file containing any number of lines " << endl;
+                cerr << "                 with `NDIM` space-separated integers `i` where the wavevector components " << endl;
+                cerr << "                 are determined by `i*2*pi/L` for the corresponding simulation cell side `L`" << endl;
+                cerr << "    file_float - set wavevector to the path of a file containing any number of " << endl;
+                cerr << "                 lines `NDIM` space-separated floating point numbers `x` where " << endl;
+                cerr << "                 the wavevector components are determined by the supplied wavevector on each line" << endl;
+                cerr << endl;
+                return true;
+            }
         }
     }
 
@@ -764,6 +834,7 @@ bool Setup::parseOptions() {
         cerr << "Action: remove --validate flag to proceed with simulation." << endl;
         return true;
     }
+
 
     return false;
 }

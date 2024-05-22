@@ -68,9 +68,6 @@ REGISTER_ESTIMATOR("one body density matrix",OneBodyDensityMatrixEstimator);
 REGISTER_ESTIMATOR("pair correlation function",PairCorrelationEstimator);
 REGISTER_ESTIMATOR("static structure factor",StaticStructureFactorEstimator);
 REGISTER_ESTIMATOR("intermediate scattering function",IntermediateScatteringFunctionEstimator);
-#ifdef GPU_BLOCK_SIZE
-REGISTER_ESTIMATOR("intermediate scattering function gpu",IntermediateScatteringFunctionEstimatorGpu);
-#endif
 REGISTER_ESTIMATOR("radial density",RadialDensityEstimator);
 REGISTER_ESTIMATOR("cylinder energy",CylinderEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder number particles",CylinderNumberParticlesEstimator);
@@ -93,7 +90,9 @@ REGISTER_ESTIMATOR("pigs velocity",VelocityEstimator);
 REGISTER_ESTIMATOR("pigs subregion occupation",SubregionOccupationEstimator);
 REGISTER_ESTIMATOR("pigs one body density matrix",PIGSOneBodyDensityMatrixEstimator);
 
+/* GPU accelerated estimators */
 #ifdef GPU_BLOCK_SIZE
+REGISTER_ESTIMATOR("intermediate scattering function gpu",IntermediateScatteringFunctionEstimatorGpu);
 REGISTER_ESTIMATOR("static structure factor gpu",StaticStructureFactorGPUEstimator);
 #endif
 
