@@ -93,7 +93,7 @@ void LookupTable::setupNNGrid() {
     }
 
     /* Resize and initialize the numLabels array*/
-    TinyVector <int,NDIM+1> initNumLabels;
+    blitz::TinyVector <int,NDIM+1> initNumLabels;
     for (int i = 0; i < NDIM; i++) 
         initNumLabels[i] = numNNGrid[i];
     initNumLabels[NDIM] = constants()->numTimeSlices();
@@ -105,7 +105,7 @@ void LookupTable::setupNNGrid() {
      * to take into account that we may have periodic boundary conditions */
     numNN = ipow(3,NDIM);                           // The total number of NN
     numUniqueNN = (int) floor(0.5*(numNN-1) + EPS); // The unique NN
-    TinyVector <int,NDIM+1> init;
+    blitz::TinyVector <int,NDIM+1> init;
 
     /* Get the init vector used to resize data structures */
     for (int i = 0; i < NDIM; i++) 
@@ -120,10 +120,10 @@ void LookupTable::setupNNGrid() {
     /* This is somewhat complicated.  Basically we want to construct the list of 
      * nearest neighbors of a given grid box for general dimension.  This consists
      * of moving 'forward', 'zero' and 'back' in each dimension */
-    Array <iVec,1> nnShift(numNN);
+    blitz::Array <iVec,1> nnShift(numNN);
     nnShift = 0; 
     /* The shift vector */
-    TinyVector<int,3> shift;
+    blitz::TinyVector<int,3> shift;
     shift = -1,0,1;
 
     /* For each of the unique nearest neighbors, we construct shift vectors 
@@ -283,12 +283,12 @@ void LookupTable::printGrid() {
  *  Update the full nearest neighbor for a set of fixed particles, which are
  *  never updated and have the same position at all time slices.
 ******************************************************************************/
-void LookupTable::updateGrid(const Array <dVec,1> &fixedPos) {
+void LookupTable::updateGrid(const blitz::Array <dVec,1> &fixedPos) {
 
     numLabels = 0;
     beadLocator beadIndex;
     beadIndex[0] = 0;
-    for (int n = 0; n < fixedPos.extent(firstDim); ++n) {
+    for (int n = 0; n < fixedPos.extent(blitz::firstDim); ++n) {
         beadIndex[1] = n;
 
         /* First we figure out which grid box the particle is currently in */

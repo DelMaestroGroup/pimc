@@ -26,7 +26,7 @@ class Container {
         Container();
         virtual ~Container();
 
-        TinyVector <unsigned int, NDIM> periodic;   ///< Determines which dimensions have periodic bc
+	blitz::TinyVector <unsigned int, NDIM> periodic;   ///< Determines which dimensions have periodic bc
 
         dVec side;                          ///< The linear dimensions of the box
         dVec sideInv;                       ///< The inverse box dimensions

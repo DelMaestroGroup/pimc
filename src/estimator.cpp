@@ -12,6 +12,11 @@
 #include "communicator.h"
 #include "factory.h"
 
+/* This no longer seems to be needed.  Commenting out for now. */
+//#ifndef GPU_BLOCK_SIZE
+//    #include "special_functions.h"
+//#endif
+
 #ifdef GPU_BLOCK_SIZE
     #ifndef USE_CUDA
         #include "estimator.hip.h"
@@ -20,12 +25,6 @@
         #include "estimator.cuh"
     #endif
 #endif
-
-/* This no longer seems to be needed.  Commenting out for now. */
-//#ifndef GPU_BLOCK_SIZE
-//    #include "special_functions.h"
-//#endif
-
 
 /**************************************************************************//**
  * Setup the estimator factory.
@@ -69,6 +68,9 @@ REGISTER_ESTIMATOR("one body density matrix",OneBodyDensityMatrixEstimator);
 REGISTER_ESTIMATOR("pair correlation function",PairCorrelationEstimator);
 REGISTER_ESTIMATOR("static structure factor",StaticStructureFactorEstimator);
 REGISTER_ESTIMATOR("intermediate scattering function",IntermediateScatteringFunctionEstimator);
+#ifdef GPU_BLOCK_SIZE
+REGISTER_ESTIMATOR("intermediate scattering function gpu",IntermediateScatteringFunctionEstimatorGpu);
+#endif
 REGISTER_ESTIMATOR("radial density",RadialDensityEstimator);
 REGISTER_ESTIMATOR("cylinder energy",CylinderEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder number particles",CylinderNumberParticlesEstimator);
@@ -347,6 +349,30 @@ void EstimatorBase::outputFlat() {
 }
 
 /*************************************************************************//**
+ *  Output a histogram-style estimator value to disk.
+ *
+ *  Normalization works differently here and we need to make sure there is at
+ *  least 1 measurement per histogram bin.
+******************************************************************************/
+void EstimatorBase::outputHist() {
+
+    /* Now write the estimator to disk */
+    for (int n = 0; n < numEst; n++) { 
+        if (abs(norm(n)) > 0.0)
+            (*outFilePtr) << format("%16.8E") % (estimator(n)/norm(n));
+        else
+            (*outFilePtr) << format("%16.8E") % 0.0;
+    }
+
+    if (endLine)
+        (*outFilePtr) << endl;
+
+    /* Reset all values */
+    norm = 0.0;
+    reset();
+}
+
+/*************************************************************************//**
 *  AppendLabel
 ******************************************************************************/
 void EstimatorBase::appendLabel(string append) {
@@ -560,7 +586,7 @@ void EnergyEstimator::accumulate() {
 
     double totK = 0.0;
     double totV = 0.0;
-    TinyVector<double,2> totVop(0.0);
+    blitz::TinyVector<double,2> totVop(0.0);
 
     int numParticles  = path.getTrueNumParticles();
     int numTimeSlices = endSlice - startSlice;
@@ -1154,7 +1180,7 @@ void BipartitionDensityEstimator::accumulate() {
         lside[i] = path.boxPtr->side[i];
 
     /* read in the exclusion lengths */
-    Array<double,1> excLens (actionPtr->externalPtr->getExcLen());
+    blitz::Array<double,1> excLens (actionPtr->externalPtr->getExcLen());
     double excZ = excLens(1);
     
     /* determine volume of film region and bulk region */
@@ -1232,7 +1258,6 @@ LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_p
 LinearParticlePositionEstimator::~LinearParticlePositionEstimator() { 
 }
 
-
 /*************************************************************************//**
  *  Accumulate a histogram of all particle positions, with output 
  *  being the running average of the density per grid space.
@@ -1257,7 +1282,6 @@ void LinearParticlePositionEstimator::accumulate() {
         }
     }
 }
-
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -2057,7 +2081,6 @@ LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
 
     locA2.resize(numGrid);
     locA2 = 0.0;
-
 }
 
 /*************************************************************************//**
@@ -2785,7 +2808,7 @@ PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path,
             norm(n) = 0.5*path.boxPtr->side[NDIM-1] / dR;
     }
     else {
-        TinyVector<double,3> gNorm;
+	blitz::TinyVector<double,3> gNorm;
         gNorm[0] = 1.0;
         gNorm[1] = 1.0/(M_PI);
         gNorm[2] = 3.0/(2.0*M_PI);
@@ -3206,7 +3229,7 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
 
     /* these are the hard-coded q-vectors for now */
     numq = 3;
-    Array <double, 1> qMag(numq);         // the q-vector magnitudes
+    blitz::Array <double, 1> qMag(numq);         // the q-vector magnitudes
     /* qMag.resize(numq); */
     qMag = 0.761,1.75,1.81;
 
@@ -3753,10 +3776,9 @@ RadialDensityEstimator::RadialDensityEstimator (const Path &_path,
     for (int n = 1; n < NRADSEP; n++) 
         header.append(str(format("%16.3E") % ((n)*dR)));
 
-    norm = (actionPtr->period)/ (path.boxPtr->side[NDIM-1]*(endDiagSlice - startSlice));
-    communicate()->file("debug")->stream() << norm << endl;
+    norm = 1.0 / (path.boxPtr->side[NDIM-1]*path.numTimeSlices);
     for (int n = 0; n < NRADSEP; n++) 
-        norm(n) /= (2*M_PI*(n+0.5)*dR*dR);
+        norm(n) /= (M_PI*(2*n+1)*dR*dR);
 }
 
 /*************************************************************************//**
@@ -3773,10 +3795,8 @@ void RadialDensityEstimator::accumulate() {
     dVec pos;
     double rsq;
     beadLocator beadIndex;
-    int flag = 0;
-    for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-	    flag ++;
             beadIndex = slice,ptcl;
             pos = path(beadIndex);
             rsq = 0.0;
@@ -4545,7 +4565,7 @@ CylinderLinearPotentialEstimator::~CylinderLinearPotentialEstimator() {
 /*************************************************************************//**
  *  We determine what the effective potential along the axis of the pore.
 ******************************************************************************/
-void CylinderLinearPotentialEstimator::accumulate() {
+void CylinderLinearPotentialEstimator::accumulate1() {
 
     double totV = 0.0;
     dVec r1,r2;         // The two bead positions
@@ -4562,26 +4582,19 @@ void CylinderLinearPotentialEstimator::accumulate() {
         /* Get the external potential */
         totV = 0.0;
 
-        /* We sum up the interaction energy over all slices*/
-        int numBeads = 0;
-        for (int slice = 0; slice < path.numTimeSlices; slice++) {
-            bead2[0] = slice;
+        /* We only take slice 0 */
+        bead2[0] = 0;
 
-            /* Sum over particles */
-            for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(slice); bead2[1]++) {
+        /* Sum over particles at slice 0 */
+        for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
 
-                r2 = path(bead2);
-                if (!include(r2,maxR)) {
-                    sep = r2 - r1;
-                    path.boxPtr->putInBC(sep);
-                    totV += actionPtr->interactionPtr->V(sep);
-                    numBeads++;
-
-                } // bead2 is outside maxR
-            } // bead2
-        } // slice
-
-        totV /= 1.0*numBeads;
+            r2 = path(bead2);
+            if (!include(r2,maxR)) {
+                sep = r2 - r1;
+                path.boxPtr->putInBC(sep);
+                totV += actionPtr->interactionPtr->V(sep);
+            } // bead2 is inside  maxR
+        } // bead2
 
         /* Add the constant piece from the external potential */
         totV += actionPtr->externalPtr->V(r1);
@@ -4590,6 +4603,65 @@ void CylinderLinearPotentialEstimator::accumulate() {
     } // n
 }
 
+/*************************************************************************//**
+ *  We determine what the effective potential along the axis of the pore.
+ *
+ *  This method creates a spatially resolved histogram of the total potential
+ *  felt by partices in the inner core, removing any self-interactions inside
+ *  the cut-off radius.
+******************************************************************************/
+void CylinderLinearPotentialEstimator::accumulate() {
+
+    double totV = 0.0;
+    dVec r1,r2;         // The two bead positions
+
+    dVec sep;           // The bead separation
+    beadLocator bead1,bead2;  // The bead locators
+
+    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+        bead1[0] = slice;
+
+        for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(slice); bead1[1]++) {
+
+            /* Location of bead 1 */
+            r1 = path(bead1);
+
+            /* If we are inside the cutoff cylinder, accumulate the potential */
+            if (include(r1,maxR)) {
+
+                totV = 0.0;
+
+                /* Sum over particles */
+                bead2[0] = slice;
+
+                for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
+
+                    r2 = path(bead2);
+
+                    /* Make sure r2 is not inside the central core */
+                    if (!include(r2,maxR)) {
+                        sep = r2 - r1;
+                        path.boxPtr->putInBC(sep);
+                        totV += actionPtr->interactionPtr->V(sep);
+                    } // bead2 is not inside the core
+                } //bead2
+
+                /* Add the contribution of the external potential energy */
+                totV += actionPtr->externalPtr->V(r1);
+
+                /* determine the z-index of bead 1 */
+                int k = int((0.5*Lz + r1[NDIM-1])/dz);
+                if (k < NRADSEP) {
+                    estimator(k) += totV; // /constants()->numTimeSlices();
+                    norm(k) += 1.0;
+                }
+
+            } // bead1 is inside the core
+
+        } // bead1
+
+    } // slice
+}
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

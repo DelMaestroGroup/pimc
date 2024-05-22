@@ -97,7 +97,7 @@ class PathIntegralMonteCarlo {
 
         int sgnAveN;                ///< What is the relative sign betwen aveN and N0?
 
-        Array<int,1> PN;            ///< Number probability distribution (used in relaxmu)
+	blitz::Array<int,1> PN;            ///< Number probability distribution (used in relaxmu)
         bool relaxmuMessage;        ///< For printing a message when μ relaxation begins
         bool relaxC0Message;        ///< For printing a message when μ relaxation begins
         bool equilMessage;          ///< For printing a message when equilibration begins
@@ -145,8 +145,8 @@ class PathIntegralMonteCarlo {
         void loadState();
 
         /* Load classical or quantum initial states */
-        void loadClassicalState(Array <dVec,2>&, Array <unsigned int, 2>&, int);
-        void loadQuantumState(Array <dVec,2>&, Array <beadLocator,2>&, Array<beadLocator,2>&, int, int);
+        void loadClassicalState(blitz::Array <dVec,2>&, blitz::Array <unsigned int, 2>&, int);
+        void loadQuantumState(blitz::Array <dVec,2>&, blitz::Array <beadLocator,2>&, blitz::Array<beadLocator,2>&, int, int);
 
         /* Shuffle the offDiag move list, returning it in moves*/
         void shuffleMoves();
