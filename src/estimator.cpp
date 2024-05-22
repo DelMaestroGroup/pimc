@@ -3385,25 +3385,13 @@ StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
-    /* The maximum q-vector magnitude to consider (hard-coded for now) */
-    double qMax = 4.0; // 1/Å
+    /* Get the desired q-vectors (specified at command line)*/
+    getQVectors(qValues);
 
-    /* We choose dq from the smallest possible q-vector, set by PBC */
-    double dq = 2.0*M_PI/path.boxPtr->side[NDIM-1];
-
-    /* Get the desired q-vectors */
-    q = getQVectors2(dq,qMax,numq,"sphere");
-
-    /* For this estimator we measure the scattering at each vector q-values
-     * so we need to flatten the magnitude ordered list */
-    /* NOTE: I can probably do away with this and simply flatten the 2D array */
+    numq = qValues.size();
     qValues_dVec.resize(numq);
-    int nq = 0;
-    for (const auto &cq : q) {
-        for (const auto &cqvec : cq) {
-            qValues_dVec(nq) = cqvec;
-            nq += 1;
-        }
+    for (int nq = 0; nq < numq; nq++) {
+        qValues_dVec(nq) = qValues[nq];
     }
 
     /* Initialize the accumulator for the static structure factor */

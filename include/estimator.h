@@ -783,9 +783,9 @@ class StaticStructureFactorGPUEstimator: public EstimatorBase {
     private:
         void accumulate();              // Accumulate values
         
-        vector <vector<dVec> > q;       // the q-vectors
-        blitz::Array<dVec,1> qValues_dVec;     // Vector of q values
-        blitz::Array<double,1> ssf;           // local intermediate scattering function
+        std::vector<dVec> qValues;              // Vector of q values
+        blitz::Array<dVec,1> qValues_dVec;      // Vector of q values
+        blitz::Array<double,1> ssf;             // local intermediate scattering function
 
         int numq;                        // the number of q vectors
         size_t bytes_beads;
