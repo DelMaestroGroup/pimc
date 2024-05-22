@@ -3236,9 +3236,12 @@ Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTR
     side_ = boxPtr->side;
 
     /* The first particle is randomly placed inside the box */
-    for (int i = 0; i < NDIM-1; i++)
-        initialPos(0)[i] = side_[i]*(-0.5 + random.rand());
-    initialPos(0)[NDIM-1] = -0.5*side_[NDIM-1]+zmin + (zWall-zmin)*random.rand();
+    for (int i = 0; i < NDIM-1; i++){
+        if (numParticles ==0)
+            break;
+        initialPos(0)[i] = side_[i]*(-0.5 + random.rand());}
+    if (numParticles != 0)
+        initialPos(0)[NDIM-1] = -0.5*side_[NDIM-1]+zmin + (zWall-zmin)*random.rand();
 
     double hardCoreRadius = 1.00;
 
