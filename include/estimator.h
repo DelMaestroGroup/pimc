@@ -11,6 +11,13 @@
 #ifndef ESTIMATOR_H 
 #define ESTIMATOR_H
 
+#ifdef USE_HIP
+    #include "estimator_gpu.hip.h"
+#endif
+#ifdef USE_CUDA
+    #include "estimator_gpu.cuh"
+#endif
+
 class Path;
 class ActionBase;
 class Potential;
@@ -764,13 +771,13 @@ class StaticStructureFactorEstimator: public EstimatorBase {
         vector <vector<dVec> > q;       // the q-vectors
 };
 
+#ifdef USE_GPU
 // ========================================================================  
 // GPU Accellerated Static Structure Factor
 // ========================================================================  
 /** 
  * Compute the intermediate scattering function F(q,\tau)
  */
-#ifdef GPU_BLOCK_SIZE
 class StaticStructureFactorGPUEstimator: public EstimatorBase {
 
     public: StaticStructureFactorGPUEstimator(const Path &, ActionBase *, 
@@ -828,13 +835,13 @@ class IntermediateScatteringFunctionEstimator: public EstimatorBase {
         vector <vector<dVec> > q;       // the q-vectors
 };
 
+#ifdef USE_GPU
 // ========================================================================  
 // Intermediate Scattering Function GPU Estimator Class
 // ========================================================================  
 /** 
  * Compute the intermediate scattering function F(q,\tau)
  */
-#ifdef GPU_BLOCK_SIZE
 class IntermediateScatteringFunctionEstimatorGpu: public EstimatorBase {
 
     public:
@@ -868,13 +875,13 @@ class IntermediateScatteringFunctionEstimatorGpu: public EstimatorBase {
 };
 #endif
 
+#ifdef USE_GPU
 // ========================================================================  
 // Elastic Scattering GPU Estimator Class
 // ========================================================================  
 /** 
  * Compute the elastic scattering S(q, \omega = 0) //FIXME is this true?
  */
-#ifdef GPU_BLOCK_SIZE
 class ElasticScatteringEstimatorGpu: public EstimatorBase {
 
     public:

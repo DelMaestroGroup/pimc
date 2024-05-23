@@ -12,20 +12,6 @@
 #include "communicator.h"
 #include "factory.h"
 
-/* This no longer seems to be needed.  Commenting out for now. */
-//#ifndef GPU_BLOCK_SIZE
-//    #include "special_functions.h"
-//#endif
-
-#ifdef GPU_BLOCK_SIZE
-    #ifndef USE_CUDA
-        #include "estimator.hip.h"
-    #endif
-    #ifdef USE_CUDA
-        #include "estimator.cuh"
-    #endif
-#endif
-
 /**************************************************************************//**
  * Setup the estimator factory.
 ******************************************************************************/
@@ -91,10 +77,10 @@ REGISTER_ESTIMATOR("pigs subregion occupation",SubregionOccupationEstimator);
 REGISTER_ESTIMATOR("pigs one body density matrix",PIGSOneBodyDensityMatrixEstimator);
 
 /* GPU accelerated estimators */
-#ifdef GPU_BLOCK_SIZE
-REGISTER_ESTIMATOR("intermediate scattering function gpu",IntermediateScatteringFunctionEstimatorGpu);
-REGISTER_ESTIMATOR("elastic scattering gpu", ElasticScatteringEstimatorGpu);
-REGISTER_ESTIMATOR("static structure factor gpu",StaticStructureFactorGPUEstimator);
+#ifdef USE_GPU 
+    REGISTER_ESTIMATOR("intermediate scattering function gpu",IntermediateScatteringFunctionEstimatorGpu);
+    REGISTER_ESTIMATOR("elastic scattering gpu", ElasticScatteringEstimatorGpu);
+    REGISTER_ESTIMATOR("static structure factor gpu",StaticStructureFactorGPUEstimator);
 #endif
 
 /**************************************************************************//**
@@ -3368,6 +3354,7 @@ void StaticStructureFactorEstimator::accumulate() {
     estimator += sf/numParticles; 
 }
 
+#ifdef USE_GPU
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // STATIC STRUCTURE FACTOR GPU ESTIMATOR CLASS -------------------------------
@@ -3379,7 +3366,6 @@ void StaticStructureFactorEstimator::accumulate() {
  *  A GPU accelerated static structure factor estimator.
  *  
 ******************************************************************************/
-#ifdef GPU_BLOCK_SIZE
 StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
         double _maxR, int _frequency, string _label) :
@@ -3403,10 +3389,10 @@ StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
     stream_array.resize(MAX_GPU_STREAMS);
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
         #ifndef USE_CUDA
-        HIP_ASSERT(hipStreamCreate(&stream_array(i)));
+        GPU_ASSERT(hipStreamCreate(&stream_array(i)));
         #endif
         #ifdef USE_CUDA
-        CUDA_ASSERT(cudaStreamCreate(&stream_array(i)));
+        GPU_ASSERT(cudaStreamCreate(&stream_array(i)));
         #endif
     }
 
@@ -3431,14 +3417,14 @@ StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
     bytes_ssf = ssf.size()*sizeof(double);
     bytes_qvecs = NDIM*numq*sizeof(double);
     #ifndef USE_CUDA
-        HIP_ASSERT(hipMalloc(&d_ssf, bytes_ssf)); // Allocate memory for ssf on GPU
-        HIP_ASSERT(hipMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
-        HIP_ASSERT(hipMemcpy(d_qvecs, qValues.data(), bytes_qvecs, hipMemcpyHostToDevice )); // Copy qvecs data to gpu
+        GPU_ASSERT(hipMalloc(&d_ssf, bytes_ssf)); // Allocate memory for ssf on GPU
+        GPU_ASSERT(hipMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
+        GPU_ASSERT(hipMemcpy(d_qvecs, qValues.data(), bytes_qvecs, hipMemcpyHostToDevice )); // Copy qvecs data to gpu
     #endif
     #ifdef USE_CUDA
-        CUDA_ASSERT(cudaMalloc(&d_ssf, bytes_ssf)); // Allocate memory for ssf on GPU
-        CUDA_ASSERT(cudaMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
-        CUDA_ASSERT(cudaMemcpy(d_qvecs, qValues_dVec.data(), bytes_qvecs, cudaMemcpyHostToDevice )); // Copy qvecs data to gpu
+        GPU_ASSERT(cudaMalloc(&d_ssf, bytes_ssf)); // Allocate memory for ssf on GPU
+        GPU_ASSERT(cudaMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
+        GPU_ASSERT(cudaMemcpy(d_qvecs, qValues_dVec.data(), bytes_qvecs, cudaMemcpyHostToDevice )); // Copy qvecs data to gpu
     #endif
 }
 
@@ -3448,10 +3434,10 @@ StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
 StaticStructureFactorGPUEstimator::~StaticStructureFactorGPUEstimator() { 
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
         #ifndef USE_CUDA
-            HIP_ASSERT(hipStreamDestroy(stream_array(i)));
+            GPU_ASSERT(hipStreamDestroy(stream_array(i)));
         #endif
         #ifdef USE_CUDA
-            CUDA_ASSERT(cudaStreamDestroy(stream_array(i)));
+            GPU_ASSERT(cudaStreamDestroy(stream_array(i)));
         #endif
     }
     ssf.free();
@@ -3459,14 +3445,14 @@ StaticStructureFactorGPUEstimator::~StaticStructureFactorGPUEstimator() {
 
     // Release device memory
     #ifndef USE_CUDA
-        HIP_ASSERT(hipFree(d_beads));
-        HIP_ASSERT(hipFree(d_qvecs));
-        HIP_ASSERT(hipFree(d_ssf));
+        GPU_ASSERT(hipFree(d_beads));
+        GPU_ASSERT(hipFree(d_qvecs));
+        GPU_ASSERT(hipFree(d_ssf));
     #endif
     #ifdef USE_CUDA
-        CUDA_ASSERT(cudaFree(d_beads));
-        CUDA_ASSERT(cudaFree(d_qvecs));
-        CUDA_ASSERT(cudaFree(d_ssf));
+        GPU_ASSERT(cudaFree(d_beads));
+        GPU_ASSERT(cudaFree(d_qvecs));
+        GPU_ASSERT(cudaFree(d_ssf));
     #endif
 }
 
@@ -3494,45 +3480,45 @@ void StaticStructureFactorGPUEstimator::accumulate() {
     #ifndef USE_CUDA
         if (bytes_beads_new > bytes_beads) {
             bytes_beads = bytes_beads_new;
-            HIP_ASSERT(hipFree(d_beads));
-            HIP_ASSERT(hipMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
+            GPU_ASSERT(hipFree(d_beads));
+            GPU_ASSERT(hipMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
         }
-        HIP_ASSERT(hipMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, hipMemcpyHostToDevice )); // Copy beads data to gpu
-        HIP_ASSERT(hipMemset(d_ssf, 0, bytes_ssf)); // Set initial ssf data to zero
+        GPU_ASSERT(hipMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, hipMemcpyHostToDevice )); // Copy beads data to gpu
+        GPU_ASSERT(hipMemset(d_ssf, 0, bytes_ssf)); // Set initial ssf data to zero
     #endif
     #ifdef USE_CUDA
         if (bytes_beads_new > bytes_beads) {
             bytes_beads = bytes_beads_new;
-            CUDA_ASSERT(cudaFree(d_beads));
-            CUDA_ASSERT(cudaMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
+            GPU_ASSERT(cudaFree(d_beads));
+            GPU_ASSERT(cudaMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
         }
-        CUDA_ASSERT(cudaMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, cudaMemcpyHostToDevice )); // Copy beads data to gpu
-        CUDA_ASSERT(cudaMemset(d_ssf, 0, bytes_ssf)); // Set initial ssf data to zero
+        GPU_ASSERT(cudaMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, cudaMemcpyHostToDevice )); // Copy beads data to gpu
+        GPU_ASSERT(cudaMemset(d_ssf, 0, bytes_ssf)); // Set initial ssf data to zero
     #endif
 
     int stream_idx;
     for (int nq = 0; nq < numq; nq++) {
         stream_idx = nq % MAX_GPU_STREAMS;
         #ifndef USE_CUDA
-            gpu_ssf_wrapper(stream_array(stream_idx), d_ssf + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
+            gpu_ssf_launcher(stream_array(stream_idx), d_ssf + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
         #endif
         #ifdef USE_CUDA
-            cuda_wrapper::gpu_ssf_wrapper(stream_array(stream_idx), d_ssf + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
+            gpu_ssf_launcher(stream_array(stream_idx), d_ssf + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
         #endif
     }
     #ifndef USE_CUDA
-        HIP_ASSERT(hipDeviceSynchronize());
+        GPU_ASSERT(hipDeviceSynchronize());
     #endif
     #ifdef USE_CUDA
-        CUDA_ASSERT(cudaDeviceSynchronize());
+        GPU_ASSERT(cudaDeviceSynchronize());
     #endif
 
     //// Copy ssf data back to host
     #ifndef USE_CUDA
-        HIP_ASSERT(hipMemcpy(ssf.data(), d_ssf, bytes_ssf, hipMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
+        GPU_ASSERT(hipMemcpy(ssf.data(), d_ssf, bytes_ssf, hipMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
     #endif
     #ifdef USE_CUDA
-        CUDA_ASSERT(cudaMemcpy(ssf.data(), d_ssf, bytes_ssf, cudaMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
+        GPU_ASSERT(cudaMemcpy(ssf.data(), d_ssf, bytes_ssf, cudaMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
     #endif
 
     estimator += ssf;
@@ -3702,6 +3688,7 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
     estimator += isf/numParticles;
 }
 
+#ifdef USE_GPU
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // INTERMEDIATE SCATTERING FUNCTION GPU ESTIMATOR CLASS ----------------------
@@ -3714,7 +3701,6 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
  *  Measure the intermediate scattering function at wavevectors determined
  *  from the wavevector and wavevector_type command line arguments
 ******************************************************************************/
-#ifdef GPU_BLOCK_SIZE
 IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstimatorGpu(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
         double _maxR, int _frequency, string _label) :
@@ -3748,10 +3734,10 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
     stream_array.resize(MAX_GPU_STREAMS);
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
         #ifndef USE_CUDA
-        HIP_ASSERT(hipStreamCreate(&stream_array(i)));
+        GPU_ASSERT(hipStreamCreate(&stream_array(i)));
         #endif
         #ifdef USE_CUDA
-        CUDA_ASSERT(cudaStreamCreate(&stream_array(i)));
+        GPU_ASSERT(cudaStreamCreate(&stream_array(i)));
         #endif
     }
 
@@ -3776,14 +3762,14 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
     bytes_isf = isf.size()*sizeof(double);
     bytes_qvecs = NDIM*numq*sizeof(double);
     #ifndef USE_CUDA
-        HIP_ASSERT(hipMalloc(&d_isf, bytes_isf)); // Allocate memory for isf on GPU
-        HIP_ASSERT(hipMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
-        HIP_ASSERT(hipMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, hipMemcpyHostToDevice )); // Copy qvecs data to gpu
+        GPU_ASSERT(hipMalloc(&d_isf, bytes_isf)); // Allocate memory for isf on GPU
+        GPU_ASSERT(hipMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
+        GPU_ASSERT(hipMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, hipMemcpyHostToDevice )); // Copy qvecs data to gpu
     #endif
     #ifdef USE_CUDA
-        CUDA_ASSERT(cudaMalloc(&d_isf, bytes_isf)); // Allocate memory for isf on GPU
-        CUDA_ASSERT(cudaMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
-        CUDA_ASSERT(cudaMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, cudaMemcpyHostToDevice )); // Copy qvecs data to gpu
+        GPU_ASSERT(cudaMalloc(&d_isf, bytes_isf)); // Allocate memory for isf on GPU
+        GPU_ASSERT(cudaMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
+        GPU_ASSERT(cudaMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, cudaMemcpyHostToDevice )); // Copy qvecs data to gpu
     #endif
 }
 
@@ -3793,10 +3779,10 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
 IntermediateScatteringFunctionEstimatorGpu::~IntermediateScatteringFunctionEstimatorGpu() { 
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
         #ifndef USE_CUDA
-            HIP_ASSERT(hipStreamDestroy(stream_array(i)));
+            GPU_ASSERT(hipStreamDestroy(stream_array(i)));
         #endif
         #ifdef USE_CUDA
-            CUDA_ASSERT(cudaStreamDestroy(stream_array(i)));
+            GPU_ASSERT(cudaStreamDestroy(stream_array(i)));
         #endif
     }
     isf.free();
@@ -3805,14 +3791,14 @@ IntermediateScatteringFunctionEstimatorGpu::~IntermediateScatteringFunctionEstim
 
     // Release device memory
     #ifndef USE_CUDA
-        HIP_ASSERT(hipFree(d_beads));
-        HIP_ASSERT(hipFree(d_qvecs));
-        HIP_ASSERT(hipFree(d_isf));
+        GPU_ASSERT(hipFree(d_beads));
+        GPU_ASSERT(hipFree(d_qvecs));
+        GPU_ASSERT(hipFree(d_isf));
     #endif
     #ifdef USE_CUDA
-        CUDA_ASSERT(cudaFree(d_beads));
-        CUDA_ASSERT(cudaFree(d_qvecs));
-        CUDA_ASSERT(cudaFree(d_isf));
+        GPU_ASSERT(cudaFree(d_beads));
+        GPU_ASSERT(cudaFree(d_qvecs));
+        GPU_ASSERT(cudaFree(d_isf));
     #endif
 }
 
@@ -3840,45 +3826,45 @@ void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
     #ifndef USE_CUDA
         if (bytes_beads_new > bytes_beads) {
             bytes_beads = bytes_beads_new;
-            HIP_ASSERT(hipFree(d_beads));
-            HIP_ASSERT(hipMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
+            GPU_ASSERT(hipFree(d_beads));
+            GPU_ASSERT(hipMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
         }
-        HIP_ASSERT(hipMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, hipMemcpyHostToDevice )); // Copy beads data to gpu
-        HIP_ASSERT(hipMemset(d_isf, 0, bytes_isf)); // Set initial isf data to zero
+        GPU_ASSERT(hipMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, hipMemcpyHostToDevice )); // Copy beads data to gpu
+        GPU_ASSERT(hipMemset(d_isf, 0, bytes_isf)); // Set initial isf data to zero
     #endif
     #ifdef USE_CUDA
         if (bytes_beads_new > bytes_beads) {
             bytes_beads = bytes_beads_new;
-            CUDA_ASSERT(cudaFree(d_beads));
-            CUDA_ASSERT(cudaMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
+            GPU_ASSERT(cudaFree(d_beads));
+            GPU_ASSERT(cudaMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
         }
-        CUDA_ASSERT(cudaMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, cudaMemcpyHostToDevice )); // Copy beads data to gpu
-        CUDA_ASSERT(cudaMemset(d_isf, 0, bytes_isf)); // Set initial isf data to zero
+        GPU_ASSERT(cudaMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, cudaMemcpyHostToDevice )); // Copy beads data to gpu
+        GPU_ASSERT(cudaMemset(d_isf, 0, bytes_isf)); // Set initial isf data to zero
     #endif
 
     int stream_idx;
     for (int nq = 0; nq < numq; nq++) {
         stream_idx = nq % MAX_GPU_STREAMS;
         #ifndef USE_CUDA
-            gpu_isf_wrapper(stream_array(stream_idx), d_isf + (numTimeSlices/2 + 1)*nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
+            gpu_isf_launcher(stream_array(stream_idx), d_isf + (numTimeSlices/2 + 1)*nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
         #endif
         #ifdef USE_CUDA
-            cuda_wrapper::gpu_isf_wrapper(stream_array(stream_idx), d_isf + (numTimeSlices/2 + 1)*nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
+            gpu_isf_launcher(stream_array(stream_idx), d_isf + (numTimeSlices/2 + 1)*nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
         #endif
     }
     #ifndef USE_CUDA
-        HIP_ASSERT(hipDeviceSynchronize());
+        GPU_ASSERT(hipDeviceSynchronize());
     #endif
     #ifdef USE_CUDA
-        CUDA_ASSERT(cudaDeviceSynchronize());
+        GPU_ASSERT(cudaDeviceSynchronize());
     #endif
 
     //// Copy isf data back to host
     #ifndef USE_CUDA
-        HIP_ASSERT(hipMemcpy(isf.data(), d_isf, bytes_isf, hipMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
+        GPU_ASSERT(hipMemcpy(isf.data(), d_isf, bytes_isf, hipMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
     #endif
     #ifdef USE_CUDA
-        CUDA_ASSERT(cudaMemcpy(isf.data(), d_isf, bytes_isf, cudaMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
+        GPU_ASSERT(cudaMemcpy(isf.data(), d_isf, bytes_isf, cudaMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
     #endif
 
     estimator += isf;
@@ -3886,6 +3872,7 @@ void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
 }
 #endif
 
+#ifdef USE_GPU
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // ELASTIC SCATTERING GPU ESTIMATOR CLASS ------------------------------------
@@ -3898,7 +3885,6 @@ void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
  *  Measure the intermediate scattering function at wavevectors determined
  *  from the wavevector and wavevector_type command line arguments
 ******************************************************************************/
-#ifdef GPU_BLOCK_SIZE
 ElasticScatteringEstimatorGpu::ElasticScatteringEstimatorGpu(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
         double _maxR, int _frequency, string _label) :
@@ -3930,10 +3916,10 @@ ElasticScatteringEstimatorGpu::ElasticScatteringEstimatorGpu(
     stream_array.resize(MAX_GPU_STREAMS);
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
         #ifndef USE_CUDA
-        HIP_ASSERT(hipStreamCreate(&stream_array(i)));
+        GPU_ASSERT(hipStreamCreate(&stream_array(i)));
         #endif
         #ifdef USE_CUDA
-        CUDA_ASSERT(cudaStreamCreate(&stream_array(i)));
+        GPU_ASSERT(cudaStreamCreate(&stream_array(i)));
         #endif
     }
 
@@ -3958,14 +3944,14 @@ ElasticScatteringEstimatorGpu::ElasticScatteringEstimatorGpu(
     bytes_es = es.size()*sizeof(double);
     bytes_qvecs = NDIM*numq*sizeof(double);
     #ifndef USE_CUDA
-        HIP_ASSERT(hipMalloc(&d_es, bytes_es)); // Allocate memory for es on GPU
-        HIP_ASSERT(hipMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
-        HIP_ASSERT(hipMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, hipMemcpyHostToDevice )); // Copy qvecs data to gpu
+        GPU_ASSERT(hipMalloc(&d_es, bytes_es)); // Allocate memory for es on GPU
+        GPU_ASSERT(hipMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
+        GPU_ASSERT(hipMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, hipMemcpyHostToDevice )); // Copy qvecs data to gpu
     #endif
     #ifdef USE_CUDA
-        CUDA_ASSERT(cudaMalloc(&d_es, bytes_es)); // Allocate memory for es on GPU
-        CUDA_ASSERT(cudaMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
-        CUDA_ASSERT(cudaMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, cudaMemcpyHostToDevice )); // Copy qvecs data to gpu
+        GPU_ASSERT(cudaMalloc(&d_es, bytes_es)); // Allocate memory for es on GPU
+        GPU_ASSERT(cudaMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
+        GPU_ASSERT(cudaMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, cudaMemcpyHostToDevice )); // Copy qvecs data to gpu
     #endif
 }
 
@@ -3975,10 +3961,10 @@ ElasticScatteringEstimatorGpu::ElasticScatteringEstimatorGpu(
 ElasticScatteringEstimatorGpu::~ElasticScatteringEstimatorGpu() { 
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
         #ifndef USE_CUDA
-            HIP_ASSERT(hipStreamDestroy(stream_array(i)));
+            GPU_ASSERT(hipStreamDestroy(stream_array(i)));
         #endif
         #ifdef USE_CUDA
-            CUDA_ASSERT(cudaStreamDestroy(stream_array(i)));
+            GPU_ASSERT(cudaStreamDestroy(stream_array(i)));
         #endif
     }
     es.free();
@@ -3987,14 +3973,14 @@ ElasticScatteringEstimatorGpu::~ElasticScatteringEstimatorGpu() {
 
     // Release device memory
     #ifndef USE_CUDA
-        HIP_ASSERT(hipFree(d_beads));
-        HIP_ASSERT(hipFree(d_qvecs));
-        HIP_ASSERT(hipFree(d_es));
+        GPU_ASSERT(hipFree(d_beads));
+        GPU_ASSERT(hipFree(d_qvecs));
+        GPU_ASSERT(hipFree(d_es));
     #endif
     #ifdef USE_CUDA
-        CUDA_ASSERT(cudaFree(d_beads));
-        CUDA_ASSERT(cudaFree(d_qvecs));
-        CUDA_ASSERT(cudaFree(d_es));
+        GPU_ASSERT(cudaFree(d_beads));
+        GPU_ASSERT(cudaFree(d_qvecs));
+        GPU_ASSERT(cudaFree(d_es));
     #endif
 }
 
@@ -4021,45 +4007,45 @@ void ElasticScatteringEstimatorGpu::accumulate() {
     #ifndef USE_CUDA
         if (bytes_beads_new > bytes_beads) {
             bytes_beads = bytes_beads_new;
-            HIP_ASSERT(hipFree(d_beads));
-            HIP_ASSERT(hipMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
+            GPU_ASSERT(hipFree(d_beads));
+            GPU_ASSERT(hipMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
         }
-        HIP_ASSERT(hipMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, hipMemcpyHostToDevice )); // Copy beads data to gpu
-        HIP_ASSERT(hipMemset(d_es, 0, bytes_es)); // Set initial es data to zero
+        GPU_ASSERT(hipMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, hipMemcpyHostToDevice )); // Copy beads data to gpu
+        GPU_ASSERT(hipMemset(d_es, 0, bytes_es)); // Set initial es data to zero
     #endif
     #ifdef USE_CUDA
         if (bytes_beads_new > bytes_beads) {
             bytes_beads = bytes_beads_new;
-            CUDA_ASSERT(cudaFree(d_beads));
-            CUDA_ASSERT(cudaMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
+            GPU_ASSERT(cudaFree(d_beads));
+            GPU_ASSERT(cudaMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
         }
-        CUDA_ASSERT(cudaMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, cudaMemcpyHostToDevice )); // Copy beads data to gpu
-        CUDA_ASSERT(cudaMemset(d_es, 0, bytes_es)); // Set initial es data to zero
+        GPU_ASSERT(cudaMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, cudaMemcpyHostToDevice )); // Copy beads data to gpu
+        GPU_ASSERT(cudaMemset(d_es, 0, bytes_es)); // Set initial es data to zero
     #endif
 
     int stream_idx;
     for (int nq = 0; nq < numq; nq++) {
         stream_idx = nq % MAX_GPU_STREAMS;
         #ifndef USE_CUDA
-            gpu_es_wrapper(stream_array(stream_idx), d_es + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
+            gpu_es_launcher(stream_array(stream_idx), d_es + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
         #endif
         #ifdef USE_CUDA
-            cuda_wrapper::gpu_es_wrapper(stream_array(stream_idx), d_es + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
+            gpu_es_launcher(stream_array(stream_idx), d_es + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
         #endif
     }
     #ifndef USE_CUDA
-        HIP_ASSERT(hipDeviceSynchronize());
+        GPU_ASSERT(hipDeviceSynchronize());
     #endif
     #ifdef USE_CUDA
-        CUDA_ASSERT(cudaDeviceSynchronize());
+        GPU_ASSERT(cudaDeviceSynchronize());
     #endif
 
     //// Copy es data back to host
     #ifndef USE_CUDA
-        HIP_ASSERT(hipMemcpy(es.data(), d_es, bytes_es, hipMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
+        GPU_ASSERT(hipMemcpy(es.data(), d_es, bytes_es, hipMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
     #endif
     #ifdef USE_CUDA
-        CUDA_ASSERT(cudaMemcpy(es.data(), d_es, bytes_es, cudaMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
+        GPU_ASSERT(cudaMemcpy(es.data(), d_es, bytes_es, cudaMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
     #endif
 
     estimator += es;
