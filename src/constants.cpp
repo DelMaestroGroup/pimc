@@ -119,8 +119,11 @@ void ConstantParameters::initConstants(po::variables_map &params) {
 
     graphenelut3d_file_prefix_ = params["graphenelut3d_file_prefix"].as<string>();
     virialWindow_              = params["virial_window"].as<int>();
-    wavevector_                = params["wavevector"].as<string>();
-    wavevectorType_            = params["wavevector_type"].as<string>();
+
+    if (!params["wavevector"].empty() && !params["wavevector_type"].empty()) { 
+        wavevector_                = params["wavevector"].as<string>();
+        wavevectorType_            = params["wavevector_type"].as<string>();
+    }
     
     initialNumParticles_ = params["number_particles"].as<int>();
     numBroken_ = params["number_broken"].as<int>();
