@@ -1024,7 +1024,7 @@ blitz::Array<dVec,1> PlatedLJCylinderPotential::initialConfig(const Container *b
  *  @see C. Chakravarty J. Phys. Chem. B,  101, 1878 (1997).
  *  @param radius The radius of the cylinder
 ******************************************************************************/
-LJCylinderPotential::LJCylinderPotential(const double radius) : 
+LJCylinderPotential::LJCylinderPotential(const double radius, const double density_, const double sigma_, const double epsilon_) : 
     PotentialBase(),
     TabulatedPotential()
 {
@@ -1033,7 +1033,7 @@ LJCylinderPotential::LJCylinderPotential(const double radius) :
     R = radius;
 
     /* The density of nitrogen in silicon nitride */
-    density = 0.078; // atoms / angstrom^3
+//    density = 0.078; // atoms / angstrom^3
 //  density = 0.008; // atoms / angstrom^3
 
     /* We define the values of epsilon and sigma for N and He */ 
@@ -1048,9 +1048,11 @@ LJCylinderPotential::LJCylinderPotential(const double radius) :
      * silicon-nitride, and thus only consider the Nitrogen.  We use a
      * Kiselov type model to extract the actual parameters.  We assume that
      * silicate and silicon-nitride are roughly equivalent. */
-    epsilon = 10.22;    // Kelvin
-    sigma   = 2.628;    // angstroms
-
+//    epsilon = 10.22;    // Kelvin
+//    sigma   = 2.628;    // angstroms
+    epsilon = epsilon_;
+    sigma = sigma_;
+    density = density_;	    
 //  epsilon = 32;   // Kelvin
 //  sigma   = 3.08; // angstroms
 
