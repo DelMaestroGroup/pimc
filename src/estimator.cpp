@@ -3946,7 +3946,7 @@ RadialDensityEstimator::RadialDensityEstimator (const Path &_path,
     for (int n = 1; n < NRADSEP; n++) 
         header.append(str(format("%16.3E") % ((n)*dR)));
 
-    norm = 1.0 / (path.boxPtr->side[NDIM-1]*path.numTimeSlices);
+    norm = (actionPtr->period)/ (path.boxPtr->side[NDIM-1]*(endDiagSlice - startSlice));
     for (int n = 0; n < NRADSEP; n++) 
         norm(n) /= (M_PI*(2*n+1)*dR*dR);
 }
@@ -3965,7 +3965,7 @@ void RadialDensityEstimator::accumulate() {
     dVec pos;
     double rsq;
     beadLocator beadIndex;
-    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+    for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
             beadIndex = slice,ptcl;
             pos = path(beadIndex);
