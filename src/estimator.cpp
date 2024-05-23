@@ -81,6 +81,7 @@ REGISTER_ESTIMATOR("pigs one body density matrix",PIGSOneBodyDensityMatrixEstima
     REGISTER_ESTIMATOR("intermediate scattering function gpu",IntermediateScatteringFunctionEstimatorGpu);
     REGISTER_ESTIMATOR("elastic scattering gpu", ElasticScatteringEstimatorGpu);
     REGISTER_ESTIMATOR("static structure factor gpu",StaticStructureFactorGPUEstimator);
+    REGISTER_ESTIMATOR("cylinder static structure factor gpu",CylinderStaticStructureFactorGPUEstimator);
 #endif
 
 /**************************************************************************//**
@@ -3478,6 +3479,146 @@ void StaticStructureFactorGPUEstimator::accumulate() {
 }
 #endif
 
+#ifdef USE_GPU
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// STATIC STRUCTURE FACTOR CYL GPU ESTIMATOR CLASS ---------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  A GPU accelerated static structure factor estimator.
+ *  
+******************************************************************************/
+CylinderStaticStructureFactorGPUEstimator::CylinderStaticStructureFactorGPUEstimator(
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
+        double _maxR, int _frequency, string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
+
+    /* Get the desired q-vectors (specified at command line)*/
+    getQVectors(qValues);
+
+    numq = qValues.size();
+    qValues_dVec.resize(numq);
+    for (int nq = 0; nq < numq; nq++) {
+        qValues_dVec(nq) = qValues[nq];
+    }
+
+    /* Initialize the accumulator for the static structure factor */
+    ssf.resize(numq);
+    ssf = 0.0;
+
+    // Create multiple gpu streams
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        GPU_ASSERT(gpu_stream_create(stream_array[i]));
+    }
+
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numq);
+
+    /* The header consists of an extra line of the possible q-values */
+    header = str(format("# ESTINF: num_q = %d; ") % numq);
+    for (int n = 0; n < numq; n++)
+        header += dVecToString(qValues_dVec(n)) + " ";
+    header += "\n";
+
+    /* We index the q-vectors with an integer */
+    header += str(format("#%15d") % 0);
+    for (int n = 1; n < numq; n++) 
+        header += str(format("%16d") % n);
+
+    /* utilize imaginary time translational symmetry */
+    norm = 0.5/constants()->numTimeSlices();
+
+    bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
+    bytes_ssf = ssf.size()*sizeof(double);
+    bytes_qvecs = NDIM*numq*sizeof(double);
+
+    gpu_malloc_device(double, d_ssf, ssf.size(), stream_array[0]);
+    gpu_malloc_device(double, d_qvecs, NDIM*numq, stream_array[0]);
+    gpu_memcpy_host_to_device(d_qvecs, qValues.data(), bytes_qvecs, stream_array[0]);
+    gpu_wait(stream_array[0]);
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+CylinderStaticStructureFactorGPUEstimator::~CylinderStaticStructureFactorGPUEstimator() { 
+    ssf.free();
+
+    // Release device memory
+    GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
+    GPU_ASSERT(gpu_free(d_qvecs, stream_array[0]));
+    GPU_ASSERT(gpu_free(d_ssf, stream_array[0]));
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        GPU_ASSERT(gpu_stream_destroy(stream_array[i]));
+    }
+}
+
+/*************************************************************************//**
+ *  Measure the static structure factor for each q-vector
+ *
+ *  We only compute this for N > 1 due to the normalization.
+******************************************************************************/
+void CylinderStaticStructureFactorGPUEstimator::accumulate() {
+
+    int numParticles = path.getTrueNumParticles();
+    int numTimeSlices = constants()->numTimeSlices();
+
+    /* Return to these and check if we need them */
+    double _inorm = 1.0/numParticles;
+
+    /* We need to copy over the current beads array to the device */
+    auto beads_extent = path.get_beads_extent();
+    int full_number_of_beads = beads_extent[0]*beads_extent[1];
+    int full_numParticles = beads_extent[1];
+
+    /* Size, in bytes, of beads array */
+    size_t bytes_beads_new = NDIM*full_number_of_beads*sizeof(double);
+
+    if (bytes_beads_new > bytes_beads) {
+        bytes_beads = bytes_beads_new;
+        GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
+        GPU_ASSERT(gpu_malloc_device(double, d_beads, NDIM*full_number_of_beads, stream_array[0])); // Allocate memory for beads on GPU
+        GPU_ASSERT(gpu_wait(stream_array[0]));
+    }
+    GPU_ASSERT(gpu_memcpy_host_to_device(d_beads, path.get_beads_data_pointer(), bytes_beads, stream_array[0])); // Copy beads data to gpu
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+
+    gpu_ssf_cyl_launcher(stream_array[0], d_ssf, d_qvecs, d_beads, _inorm, _maxR, _numTimeSlices, numParticles, full_numParticles, numq);
+
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        GPU_ASSERT(gpu_wait(stream_array[i]));
+    }
+
+    //// Copy ssf data back to host
+    GPU_ASSERT(gpu_memcpy_device_to_host(ssf.data(), d_ssf, bytes_ssf, stream_array[0])); //Only copy up to beta/2 back to host
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+
+    estimator += ssf;
+
+}
+
+/**************************************************************************//**
+ *  Sample the estimator.
+ * 
+ *  Here we overload the cylinder static structure factor gpu estimator, as
+ *  we only measure when we have some relevant particle separations.
+******************************************************************************/
+void CylinderStaticStructureFactorEstimator::sample() {
+    numSampled++;
+
+    if ( baseSample() && (num1DParticles(path,maxR)> 0) ) {
+        totNumAccumulated++;
+        numAccumulated++;
+        accumulate();
+    }
+}
+#endif
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // INTERMEDIATE SCATTERING FUNCTION ESTIMATOR CLASS --------------------------
@@ -5100,7 +5241,6 @@ void CylinderStaticStructureFactorEstimator::sample() {
         accumulate();
     }
 }
-
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // BEGIN PIGS ESTIMATORS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
