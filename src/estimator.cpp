@@ -444,6 +444,9 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
         }
     }
 
+    /* Here we specify NDIM integers "1 3 1" or NDIM floats "0.0 0.0 4.0"
+     * which determine the maximum possible q-vector and construct up to
+     * that one. */
     if ((inputType == "max_int") || (inputType == "max_float")) {
         iVec q_max_int, _q_int;
         dVec q_max = 0.0;
@@ -469,8 +472,6 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
                 q_max_int[i] = 1 + static_cast<int>(q_mag_max*path.boxPtr->side[i]/2.0/M_PI);
         }
 
-        cout << q_mag_max << " " << q_max_int << endl;
-
         int n_q = 1;
         /* these are the negative maximal wavevectors */
         for (int i = 0; i < NDIM; i++) {
@@ -483,6 +484,7 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
         if (q_mag <= q_mag_max)
             qValues.push_back(q);
 
+        /* This generates all possible vectors */
         int pos = NDIM - 1;
         int count = 0;
         while (count < n_q - 1) {
