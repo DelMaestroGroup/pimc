@@ -166,6 +166,101 @@ __global__ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, do
     }
 }
 
+// GPU Kernel for SSF calculation
+__global__ void gpu_ssf(double* __restrict__ ssf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+    __shared__ double s_ssf[GPU_BLOCK_SIZE]; // temporarily store ssf on shared memory of gpu
+
+    int NNM = N*N*M;
+    if (threadIdx.x < NNM) {
+        int bead_idx1 = threadIdx.x/N;     // Bead index for first bead
+        int m_idx1 = bead_idx1/N;          // Imaginary time index for first bead
+        int n_idx1 = bead_idx1 - m_idx1*N; // Particle index for first bead
+
+        int m_idx2 = m_idx1;                      // Imaginary time index for second bead
+        int n_idx2 = (threadIdx.x - bead_idx1*N); // Particle index for second bead
+        int bead_idx2 = m_idx2*N + n_idx2;        // Bead index for second bead
+
+        //Get true bead indices in padded beads array
+        int true_bead_idx1 = m_idx1*N_extent + n_idx1;
+        int true_bead_idx2 = m_idx2*N_extent + n_idx2;
+
+        double q_dot_sep = 0.0;
+        #pragma unroll
+        for (int k = 0; k < NDIM; k++) {
+            q_dot_sep += qvecs[NDIM*blockIdx.x + k]*(beads[true_bead_idx2*NDIM + k] - beads[true_bead_idx1*NDIM + k]);
+        }
+
+        s_ssf[threadIdx.x] = cos(q_dot_sep);
+    } else {
+        s_ssf[threadIdx.x] = 0.0;
+    }
+
+    for (int local_idx = threadIdx.x + GPU_BLOCK_SIZE; local_idx < NNM + GPU_BLOCK_SIZE; local_idx += GPU_BLOCK_SIZE) {
+        if (local_idx < NNM) {
+            int bead_idx1 = local_idx/N;       // Bead index for first bead
+            int m_idx1 = bead_idx1/N;          // Imaginary time index for first bead
+            int n_idx1 = bead_idx1 - m_idx1*N; // Particle index for first bead
+
+            int m_idx2 = m_idx1;                    // Imaginary time index for second bead
+            int n_idx2 = (local_idx - bead_idx1*N); // Particle index for second bead
+            int bead_idx2 = m_idx2*N + n_idx2;      // Bead index for second bead
+
+            //Get true bead indices in padded beads array
+            int true_bead_idx1 = m_idx1*N_extent + n_idx1;
+            int true_bead_idx2 = m_idx2*N_extent + n_idx2;
+
+            double q_dot_sep = 0.0;
+            #pragma unroll
+            for (int k = 0; k < NDIM; k++) {
+                q_dot_sep += qvecs[NDIM*blockIdx.x + k]*(beads[true_bead_idx2*NDIM + k] - beads[true_bead_idx1*NDIM + k]);
+            }
+
+            s_ssf[threadIdx.x] += cos(q_dot_sep);
+        }
+    }
+    __syncthreads();
+    
+    //FIXME This can be abstracted
+    // NEED TO REDUCE ssf ON SHARED MEMORY AND ADD TO GLOBAL ssf
+    if (GPU_BLOCK_SIZE >= 1024) {
+        if (threadIdx.x < 512) {
+            s_ssf[threadIdx.x] += s_ssf[threadIdx.x + 512];
+        }
+        __syncthreads();
+    } 
+
+    if (GPU_BLOCK_SIZE >= 512) {
+        if (threadIdx.x < 256) {
+            s_ssf[threadIdx.x] += s_ssf[threadIdx.x + 256];
+        }
+        __syncthreads();
+    } 
+
+    if (GPU_BLOCK_SIZE >= 256) {
+        if (threadIdx.x < 128) {
+            s_ssf[threadIdx.x] += s_ssf[threadIdx.x + 128];
+        }
+        __syncthreads();
+    } 
+
+    if (warpSize == 32) {
+        if (GPU_BLOCK_SIZE >= 128) {
+            if (threadIdx.x < 64) {
+                s_ssf[threadIdx.x] += s_ssf[threadIdx.x + 64];
+            }
+            __syncthreads();
+        } 
+    }
+
+    if (threadIdx.x < warpSize) {
+        warp_reduce(s_ssf, threadIdx.x);
+    }
+
+    if (threadIdx.x == 0) {
+        ssf[blockIdx.x] = 2.0*s_ssf[0]*inorm;
+    }
+}
+
 // GPU Kernel Launchers
 void gpu_isf_launcher(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
     hipLaunchKernelGGL(gpu_isf, dim3(M/2 + 1), dim3(GPU_BLOCK_SIZE), 0, 0,
@@ -176,13 +271,13 @@ void gpu_isf_launcher(hipStream_t s, double* __restrict__ isf, double* __restric
             isf, qvecs, beads, inorm, M, N, N_extent);
 }
 
-void gpu_ssf_launcher(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
-    hipLaunchKernelGGL(gpu_isf, dim3(1), dim3(GPU_BLOCK_SIZE), 0, 0,
-            isf, qvecs, beads, inorm, M, N, N_extent);
+void gpu_ssf_launcher(double* __restrict__ ssf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent, int n_qvecs) {
+    hipLaunchKernelGGL(gpu_ssf, dim3(1), dim3(GPU_BLOCK_SIZE), 0, 0,
+            ssf, qvecs, beads, inorm, M, N, N_extent, n_qvecs);
 }
-void gpu_ssf_launcher(hipStream_t s, double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
-    hipLaunchKernelGGL(gpu_isf, dim3(1), dim3(GPU_BLOCK_SIZE), 0, 0,
-            isf, qvecs, beads, inorm, M, N, N_extent);
+void gpu_ssf_launcher(hipStream_t s, double* __restrict__ ssf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent, int n_qvecs) {
+    hipLaunchKernelGGL(gpu_ssf, dim3(1), dim3(GPU_BLOCK_SIZE), 0, 0,
+            ssf, qvecs, beads, inorm, M, N, N_extent, n_qvecs);
 }
 
 void gpu_es_launcher(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {

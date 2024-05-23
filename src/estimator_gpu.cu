@@ -266,7 +266,7 @@ __global__ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, do
     }
 }
 
-template <bool ZERO_FREQUENCY = false>
+// GPU Kernel for SSF calculation
 __global__ void gpu_ssf(double* __restrict__ ssf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
     __shared__ double s_ssf[GPU_BLOCK_SIZE]; // temporarily store ssf on shared memory of gpu
 
