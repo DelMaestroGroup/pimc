@@ -801,12 +801,9 @@ class StaticStructureFactorGPUEstimator: public EstimatorBase {
         double *d_beads;                // pointer to beads on gpu (device_beads)
         double *d_ssf;                  // pointer to ssf on gpu (device_ssf)
         double *d_qvecs;                // pointer to qvecs on gpu (device_qvecs)
-        #ifndef USE_CUDA
-            blitz::Array<hipStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
-        #ifdef USE_CUDA
-            blitz::Array<cudaStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
+
+        //FIXME stream handling needs to be moved out of estimators
+        gpu_stream_t stream_array[MAX_GPU_STREAMS]; // Store Multiple GPU streams
 };
 #endif
 
@@ -865,12 +862,9 @@ class IntermediateScatteringFunctionEstimatorGpu: public EstimatorBase {
         double *d_beads; // pointer to beads on gpu (device_beads)
         double *d_isf; // pointer to isf on gpu (device_isf)
         double *d_qvecs; // pointer to qvecs on gpu (device_qvecs)
-        #ifndef USE_CUDA
-	    blitz::Array<hipStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
-        #ifdef USE_CUDA
-	    blitz::Array<cudaStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
+
+        //FIXME stream handling needs to be moved out of estimators
+        gpu_stream_t stream_array[MAX_GPU_STREAMS]; // Store Multiple GPU streams
         
 };
 #endif
@@ -905,13 +899,9 @@ class ElasticScatteringEstimatorGpu: public EstimatorBase {
         double *d_beads; // pointer to beads on gpu (device_beads)
         double *d_es; // pointer to es on gpu (device_es)
         double *d_qvecs; // pointer to qvecs on gpu (device_qvecs)
-        #ifndef USE_CUDA
-	    blitz::Array<hipStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
-        #ifdef USE_CUDA
-	    blitz::Array<cudaStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
-        
+
+        //FIXME stream handling needs to be moved out of estimators
+        gpu_stream_t stream_array[MAX_GPU_STREAMS]; // Store Multiple GPU streams
 };
 #endif
 
