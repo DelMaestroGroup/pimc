@@ -807,6 +807,44 @@ class StaticStructureFactorGPUEstimator: public EstimatorBase {
 };
 #endif
 
+#ifdef USE_GPU
+// ========================================================================  
+// GPU Accellerated Cylinder Static Structure Factor Estimator Class
+// ========================================================================  
+/** 
+ * Compute the static structure factor S(q)
+ */
+class CylinderStaticStructureFactorGPUEstimator: public EstimatorBase {
+
+    public: CylinderStaticStructureFactorGPUEstimator(const Path &, ActionBase *, 
+                const MTRand &, double, int _frequency=1, string _label="cyl_ssfq");
+        ~CylinderStaticStructureFactorGPUEstimator();
+    
+        static const string name;
+        string getName() const {return name;}
+        void sample();              // Sample the estimator
+
+
+    private:
+        void accumulate();              // Accumulate values
+        
+        std::vector<dVec> qValues;              // Vector of q values
+        blitz::Array<dVec,1> qValues_dVec;      // Vector of q values
+        blitz::Array<double,1> ssf;             // local intermediate scattering function
+
+        int numq;                        // the number of q vectors
+        size_t bytes_beads;
+        size_t bytes_ssf;
+        size_t bytes_qvecs;
+        double *d_beads;                // pointer to beads on gpu (device_beads)
+        double *d_ssf;                  // pointer to ssf on gpu (device_ssf)
+        double *d_qvecs;                // pointer to qvecs on gpu (device_qvecs)
+
+        //FIXME stream handling needs to be moved out of estimators
+        gpu_stream_t stream_array[MAX_GPU_STREAMS]; // Store Multiple GPU streams
+};
+#endif
+
 // ========================================================================  
 // Intermediate Scattering Function Estimator Class
 // ========================================================================  

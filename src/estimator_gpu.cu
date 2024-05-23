@@ -186,8 +186,8 @@ __global__ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs
         double q_dot_sep = 0.0;
         #pragma unroll
         for (int k = 0; k < NDIM; k++) {
-            double _bead1 = beads[true_bead_idx1*NDIM + k]
-            double _bead2 = beads[true_bead_idx2*NDIM + k]
+            double _bead1 = beads[true_bead_idx1*NDIM + k];
+            double _bead2 = beads[true_bead_idx2*NDIM + k];
             q_dot_sep += qvecs[NDIM*blockIdx.x + k]*(_bead2 - _bead1);
         }
 
@@ -195,13 +195,13 @@ __global__ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs
         double mag_bead2 = 0.0;
         #pragma unroll
         for (int k = 0; k < NDIM - 1; k++) {
-            double _bead1 = beads[true_bead_idx1*NDIM + k]
-            double _bead2 = beads[true_bead_idx2*NDIM + k]
+            double _bead1 = beads[true_bead_idx1*NDIM + k];
+            double _bead2 = beads[true_bead_idx2*NDIM + k];
             mag_bead1 += _bead1*_bead1;
             mag_bead2 += _bead2*_bead2;
         }
 
-        s_ssf[threadIdx.x] = ((mag_bead1 > maxR*maxR) || (mag_bead2 > maxR*maxR)) 0.0 : cos(q_dot_sep);
+        s_ssf[threadIdx.x] = ((mag_bead1 > maxR*maxR) || (mag_bead2 > maxR*maxR)) ? 0.0 : cos(q_dot_sep);
     } else {
         s_ssf[threadIdx.x] = 0.0;
     }
@@ -223,8 +223,8 @@ __global__ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs
             double q_dot_sep = 0.0;
             #pragma unroll
             for (int k = 0; k < NDIM; k++) {
-                double _bead1 = beads[true_bead_idx1*NDIM + k]
-                double _bead2 = beads[true_bead_idx2*NDIM + k]
+                double _bead1 = beads[true_bead_idx1*NDIM + k];
+                double _bead2 = beads[true_bead_idx2*NDIM + k];
                 q_dot_sep += qvecs[NDIM*blockIdx.x + k]*(_bead2 - _bead1);
             }
 
@@ -232,13 +232,13 @@ __global__ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs
             double mag_bead2 = 0.0;
             #pragma unroll
             for (int k = 0; k < NDIM - 1; k++) {
-                double _bead1 = beads[true_bead_idx1*NDIM + k]
-                double _bead2 = beads[true_bead_idx2*NDIM + k]
+                double _bead1 = beads[true_bead_idx1*NDIM + k];
+                double _bead2 = beads[true_bead_idx2*NDIM + k];
                 mag_bead1 += _bead1*_bead1;
                 mag_bead2 += _bead2*_bead2;
             }
 
-            s_ssf[threadIdx.x] = ((mag_bead1 > maxR*maxR) || (mag_bead2 > maxR*maxR)) 0.0 : cos(q_dot_sep);
+            s_ssf[threadIdx.x] = ((mag_bead1 > maxR*maxR) || (mag_bead2 > maxR*maxR)) ? 0.0 : cos(q_dot_sep);
         }
     }
     __syncthreads();
