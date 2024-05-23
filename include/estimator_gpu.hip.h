@@ -203,7 +203,7 @@ __global__ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs
             mag_bead2 += _bead2*_bead2;
         }
 
-        s_ssf[threadIdx.x] = ((mag_bead1 > maxR*maxR) || (mag_bead2 > maxR*maxR)) ? 0.0 : cos(q_dot_sep);
+        s_ssf[threadIdx.x] = ((mag_bead1 < maxR*maxR) || (mag_bead2 < maxR*maxR)) ? 0.0 : cos(q_dot_sep);
     } else {
         s_ssf[threadIdx.x] = 0.0;
     }
@@ -240,7 +240,7 @@ __global__ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs
                 mag_bead2 += _bead2*_bead2;
             }
 
-            s_ssf[threadIdx.x] = ((mag_bead1 > maxR*maxR) || (mag_bead2 > maxR*maxR)) ? 0.0 : cos(q_dot_sep);
+            s_ssf[threadIdx.x] = ((mag_bead1 < maxR*maxR) || (mag_bead2 < maxR*maxR)) ? 0.0 : cos(q_dot_sep);
         }
     }
     __syncthreads();
