@@ -379,6 +379,9 @@ void Setup::initParameters() {
     params.add<double>("lj_epsilon","Lennard-Jones energy scale [kelvin]",oClass,16.2463);
     params.add<double>("lj_width","Radial with of LJ plated cylinder material [angstroms]",oClass);
     params.add<double>("lj_density","Density LJ plated cylinder material [angstroms^(-3)]",oClass);
+    params.add<double>("lj_cyl_sigma","Lennard-Jones hard-core radius [angstroms]",oClass,3.405);
+    params.add<double>("lj_cyl_epsilon","Lennard-Jones energy scale [kelvin]",oClass,119.8);
+    params.add<double>("lj_cyl_density","Density of semi-infite LJ cylindrical material [angstroms]",oClass,0.021);
     params.add<double>("hourglass_radius","differential radius for hourglass potential [angstroms]",oClass,0.0);
     params.add<double>("hourglass_width","full constriction width for hourglass potential [angstroms]",oClass,0.0);
     params.add<string>("fixed,f","input file name for fixed atomic positions.",oClass,"");
@@ -1160,7 +1163,9 @@ PotentialBase * Setup::externalPotential(const Container* boxPtr) {
                 params["lj_width"].as<double>(), params["lj_sigma"].as<double>(),
                 params["lj_epsilon"].as<double>(), params["lj_density"].as<double>());
     else if (constants()->extPotentialType() == "lj_tube")
-        externalPotentialPtr = new LJCylinderPotential(params["radius"].as<double>());
+        externalPotentialPtr = new LJCylinderPotential(params["radius"].as<double>(),
+		params["lj_cyl_density"].as<double>(), params["lj_cyl_sigma"].as<double>(),
+		params["lj_cyl_epsilon"].as<double>());
     else if (constants()->extPotentialType() == "hard_tube") 
         externalPotentialPtr = new HardCylinderPotential(params["radius"].as<double>());
     else if (constants()->extPotentialType() == "single_well")
