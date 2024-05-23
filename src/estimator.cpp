@@ -3463,11 +3463,7 @@ void StaticStructureFactorGPUEstimator::accumulate() {
     GPU_ASSERT(gpu_memcpy_host_to_device(d_beads, path.get_beads_data_pointer(), bytes_beads, stream_array[0])); // Copy beads data to gpu
     GPU_ASSERT(gpu_wait(stream_array[0]));
 
-    int stream_idx;
-    for (int nq = 0; nq < numq; nq++) {
-        stream_idx = nq % MAX_GPU_STREAMS;
-        gpu_ssf_launcher(stream_array[stream_idx], d_ssf + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
-    }
+    gpu_ssf_launcher(stream_array[0], d_ssf, d_qvecs, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles, numq);
 
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
         GPU_ASSERT(gpu_wait(stream_array[i]));
