@@ -11,6 +11,13 @@
 #ifndef ESTIMATOR_H 
 #define ESTIMATOR_H
 
+#ifdef USE_HIP
+    #include "estimator_gpu.hip.h"
+#endif
+#ifdef USE_CUDA
+    #include "estimator_gpu.cuh"
+#endif
+
 class Path;
 class ActionBase;
 class Potential;
@@ -764,13 +771,13 @@ class StaticStructureFactorEstimator: public EstimatorBase {
         vector <vector<dVec> > q;       // the q-vectors
 };
 
+#ifdef USE_GPU
 // ========================================================================  
 // GPU Accellerated Static Structure Factor
 // ========================================================================  
 /** 
  * Compute the intermediate scattering function F(q,\tau)
  */
-#ifdef GPU_BLOCK_SIZE
 class StaticStructureFactorGPUEstimator: public EstimatorBase {
 
     public: StaticStructureFactorGPUEstimator(const Path &, ActionBase *, 
@@ -794,12 +801,9 @@ class StaticStructureFactorGPUEstimator: public EstimatorBase {
         double *d_beads;                // pointer to beads on gpu (device_beads)
         double *d_ssf;                  // pointer to ssf on gpu (device_ssf)
         double *d_qvecs;                // pointer to qvecs on gpu (device_qvecs)
-        #ifndef USE_CUDA
-            blitz::Array<hipStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
-        #ifdef USE_CUDA
-            blitz::Array<cudaStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
+
+        //FIXME stream handling needs to be moved out of estimators
+        gpu_stream_t stream_array[MAX_GPU_STREAMS]; // Store Multiple GPU streams
 };
 #endif
 
@@ -828,13 +832,13 @@ class IntermediateScatteringFunctionEstimator: public EstimatorBase {
         vector <vector<dVec> > q;       // the q-vectors
 };
 
+#ifdef USE_GPU
 // ========================================================================  
 // Intermediate Scattering Function GPU Estimator Class
 // ========================================================================  
 /** 
  * Compute the intermediate scattering function F(q,\tau)
  */
-#ifdef GPU_BLOCK_SIZE
 class IntermediateScatteringFunctionEstimatorGpu: public EstimatorBase {
 
     public:
@@ -858,23 +862,20 @@ class IntermediateScatteringFunctionEstimatorGpu: public EstimatorBase {
         double *d_beads; // pointer to beads on gpu (device_beads)
         double *d_isf; // pointer to isf on gpu (device_isf)
         double *d_qvecs; // pointer to qvecs on gpu (device_qvecs)
-        #ifndef USE_CUDA
-	    blitz::Array<hipStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
-        #ifdef USE_CUDA
-	    blitz::Array<cudaStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
+
+        //FIXME stream handling needs to be moved out of estimators
+        gpu_stream_t stream_array[MAX_GPU_STREAMS]; // Store Multiple GPU streams
         
 };
 #endif
 
+#ifdef USE_GPU
 // ========================================================================  
 // Elastic Scattering GPU Estimator Class
 // ========================================================================  
 /** 
  * Compute the elastic scattering S(q, \omega = 0) //FIXME is this true?
  */
-#ifdef GPU_BLOCK_SIZE
 class ElasticScatteringEstimatorGpu: public EstimatorBase {
 
     public:
@@ -898,13 +899,9 @@ class ElasticScatteringEstimatorGpu: public EstimatorBase {
         double *d_beads; // pointer to beads on gpu (device_beads)
         double *d_es; // pointer to es on gpu (device_es)
         double *d_qvecs; // pointer to qvecs on gpu (device_qvecs)
-        #ifndef USE_CUDA
-	    blitz::Array<hipStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
-        #ifdef USE_CUDA
-	    blitz::Array<cudaStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
-        
+
+        //FIXME stream handling needs to be moved out of estimators
+        gpu_stream_t stream_array[MAX_GPU_STREAMS]; // Store Multiple GPU streams
 };
 #endif
 

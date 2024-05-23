@@ -6,19 +6,13 @@
  * @brief Estimator GPU kernels using HIP.
  */
 
-#include "common_gpu.h"
-
-#ifndef ESTIMATOR_HIP_H 
-#define ESTIMATOR_HIP_H
+#include "estimator_gpu.cuh"
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // GPU KERNELS ---------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-
-#ifdef GPU_BLOCK_SIZE
-// GPU Kernel for ISF calculation
 
 // GPU Kernel for reduction using warp (uses appropriate warp for NVIDIA vs AMD devices i. e. "portable wave aware code")
 __device__ void warp_reduce(volatile double *sdata, unsigned int thread_idx) {
@@ -170,33 +164,28 @@ __global__ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, do
     }
 }
 
-// GPU Kernel Launch Wrappers
-void gpu_isf_wrapper(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
-    hipLaunchKernelGGL(gpu_isf, dim3(M/2 + 1), dim3(GPU_BLOCK_SIZE), 0, 0,
-            isf, qvecs, beads, inorm, M, N, N_extent);
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// GPU KERNEL WRAPPER --------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+void gpu_isf_launcher(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+    gpu_isf<<<dim3(M/2 + 1), dim3(GPU_BLOCK_SIZE), 0, 0>>>(isf, qvecs, beads, inorm, M, N, N_extent);
 }
-void gpu_isf_wrapper(hipStream_t s, double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
-    hipLaunchKernelGGL(gpu_isf, dim3(M/2 + 1), dim3(GPU_BLOCK_SIZE), 0, 0,
-            isf, qvecs, beads, inorm, M, N, N_extent);
-}
-
-void gpu_ssf_wrapper(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
-    hipLaunchKernelGGL(gpu_isf, dim3(1), dim3(GPU_BLOCK_SIZE), 0, 0,
-            isf, qvecs, beads, inorm, M, N, N_extent);
-}
-void gpu_ssf_wrapper(hipStream_t s, double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
-    hipLaunchKernelGGL(gpu_isf, dim3(1), dim3(GPU_BLOCK_SIZE), 0, 0,
-            isf, qvecs, beads, inorm, M, N, N_extent);
+void gpu_isf_launcher(cudaStream_t s, double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+    gpu_isf<<<dim3(M/2 + 1), dim3(GPU_BLOCK_SIZE), 0, s>>>(isf, qvecs, beads, inorm, M, N, N_extent);
 }
 
-void gpu_es_wrapper(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
-    hipLaunchKernelGGL(gpu_isf<true>, dim3(M/2 + 1), dim3(GPU_BLOCK_SIZE), 0, 0,
-            isf, qvecs, beads, inorm, M, N, N_extent);
+void gpu_ssf_launcher(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+    gpu_isf<<<dim3(1), dim3(GPU_BLOCK_SIZE), 0, 0>>>(isf, qvecs, beads, inorm, M, N, N_extent);
 }
-void gpu_es_wrapper(hipStream_t s, double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
-    hipLaunchKernelGGL(gpu_isf<true>, dim3(M/2 + 1), dim3(GPU_BLOCK_SIZE), 0, 0,
-            isf, qvecs, beads, inorm, M, N, N_extent);
+void gpu_ssf_launcher(cudaStream_t s, double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+    gpu_isf<<<dim3(1), dim3(GPU_BLOCK_SIZE), 0, s>>>(isf, qvecs, beads, inorm, M, N, N_extent);
 }
 
-#endif
-#endif
+void gpu_es_launcher(double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+    gpu_isf<true><<<dim3(M/2 + 1), dim3(GPU_BLOCK_SIZE), 0, 0>>>(isf, qvecs, beads, inorm, M, N, N_extent);
+}
+void gpu_es_launcher(cudaStream_t s, double* __restrict__ isf, double* __restrict__ qvecs, double *beads, double inorm, int M, int N, int N_extent) {
+    gpu_isf<true><<<dim3(M/2 + 1), dim3(GPU_BLOCK_SIZE), 0, s>>>(isf, qvecs, beads, inorm, M, N, N_extent);
+}

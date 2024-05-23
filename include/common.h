@@ -71,9 +71,6 @@
 #define PIGS false
 #endif
 
-/* Include common gpu headers */
-#include "common_gpu.h"
-
 /* Determine if we are studying boltzmannons */
 #ifndef BOLTZMANNONS
 #define BOLTZMANNONS false

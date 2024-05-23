@@ -1,11 +1,6 @@
 cmake_minimum_required(VERSION 3.18.1)
 
-if (USE_CUDA)
-    project(pimc.e LANGUAGES CXX CUDA)
-    add_definitions(-D USE_CUDA=${USE_CUDA})
-else()
-    project(pimc.e LANGUAGES CXX)
-endif()
+project(pimc.e LANGUAGES CXX)
 
 # Must use GNUInstallDirs to install libraries into correct
 # locations on all platforms.
@@ -17,14 +12,47 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/modules)
 # Set c++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_STANDARD_REQUIRED TRUE)
-if (USE_CUDA)
-    set(CMAKE_CUDA_STANDARD 14)
-    set(CMAKE_CUDA_STANDARD_REQUIRED TRUE)
-    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-        set(CMAKE_CUDA_ARCHITECTURES 70)
+
+# Enable GPU support
+set(GPU_BACKEND "none" CACHE STRING "Enable gpu accleration: cuda, hip, sycl, none (default: none)")
+if (NOT ${GPU_BACKEND} STREQUAL "none")
+    add_definitions(-D USE_GPU=1)
+    if (${GPU_BACKEND} STREQUAL "cuda")
+        add_definitions(-D USE_CUDA=1)
+        set(CMAKE_CUDA_STANDARD 17)
+        set(CMAKE_CUDA_STANDARD_REQUIRED TRUE)
+        if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+            set(CMAKE_CUDA_ARCHITECTURES 80)
+        endif()
+        message("CUDA architectures set to ${CMAKE_CUDA_ARCHITECTURES}.")
+        enable_language(CUDA)
+        include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
+    elseif(${GPU_BACKEND} STREQUAL "hip")
+        add_definitions(-D USE_HIP=1)
+    elseif(${GPU_BACKEND} STREQUAL "sycl")
+        add_definitions(-D USE_SYCL=1)
+    else()
+        message(FATAL_ERROR "Unknown GPU implementation '${GPU_BACKEND}',"
+            " please select from 'cuda, hip, sycl, none'.")
     endif()
-    message("CUDA architectures set to ${CMAKE_CUDA_ARCHITECTURES}.")
 endif()
+
+# Set number of threads per block
+set(GPU_BLOCK_SIZE "1024" CACHE STRING "Set gpu block size (default: 1024)")
+add_definitions(-D GPU_BLOCK_SIZE=${GPU_BLOCK_SIZE})
+
+# Set sub-group size (warpsize/wavefront/SIMD lanes/etc.)
+if(${GPU_BACKEND} STREQUAL "hip")
+    set(SUB_GROUP_SIZE "64" CACHE STRING "Set sub-group size (default: 32)")
+    message("HIP detected. Set SUB_GROUP_SIZE to ${SUB_GROUP_SIZE}.")
+else()
+    set(SUB_GROUP_SIZE "32" CACHE STRING "Set sub-group size (default: 32)")
+endif()
+add_definitions(-D SUB_GROUP_SIZE=${SUB_GROUP_SIZE})
+
+# Set number of GPU streams
+set(MAX_GPU_STREAMS "1" CACHE STRING "Set number of gpu streams (default: 1)")
+add_definitions(-D MAX_GPU_STREAMS=${MAX_GPU_STREAMS})
 
 # Check for static build
 if(STATIC)
@@ -47,15 +75,6 @@ if (BOLTZMANNONS)
     add_compile_definitions(BOLTZMANNONS)
 endif()
 
-# Check for GPU acceleration
-if (GPU_BLOCK_SIZE)
-    add_definitions(-D GPU_BLOCK_SIZE=${GPU_BLOCK_SIZE})
-    if (NOT MAX_GPU_STREAMS)
-        set(MAX_GPU_STREAMS 1)
-    endif()
-    add_definitions(-D MAX_GPU_STREAMS=${MAX_GPU_STREAMS})
-endif()
-
 # Set default build flags
 if (NOT DEFAULT_CXX_FLAGS)
     set(DEFAULT_CXX_FLAGS "-Wall -fno-math-errno -O3")
@@ -75,7 +94,7 @@ endif()
 
 # Find source files ( better to list explicitly https://stackoverflow.com/questions/1027247/specify-source-files-globally-with-glob )
 file( GLOB PIMC_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp )
-if(USE_CUDA)
+if (${GPU_BACKEND} STREQUAL "cuda")
     file( GLOB PIMC_CUDA ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu )
     add_executable(${exe} ${PIMC_SRC} ${PIMC_CUDA})
     set_target_properties( ${exe} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
