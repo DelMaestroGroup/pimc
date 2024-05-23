@@ -534,7 +534,7 @@ inline double PlatedLJCylinderPotential::grad2V(const dVec &r) {
  */
 class LJCylinderPotential : public PotentialBase, public TabulatedPotential {
     public:
-        LJCylinderPotential (const double);
+        LJCylinderPotential (const double, const double, const double, const double);
         ~LJCylinderPotential ();
 
         /** The integrated LJ Wall potential. */
