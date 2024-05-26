@@ -22,7 +22,7 @@
 ******************************************************************************/
 ActionBase::ActionBase (const Path &_path, LookupTable &_lookup, 
         PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
-        WaveFunctionBase *_waveFunctionPtr, bool _local, string _name, 
+        WaveFunctionBase *_waveFunctionPtr, bool _local, std::string _name, 
         double _endFactor, int _period) :
     local(_local), 
     period(_period),
@@ -177,7 +177,7 @@ double ActionBase::kineticAction (const beadLocator &beadIndex) {
  *  Return the kinetic action for wlLength time slices starting at the 
  *  bead given by beadIndex.  
  *
- *  The total kinetic action for a string of connected beads all on the same
+ *  The total kinetic action for a std::string of connected beads all on the same
  *  worldline.
 ******************************************************************************/
 double ActionBase::kineticAction (const beadLocator &beadIndex, int wlLength) {
@@ -262,7 +262,7 @@ double ActionBase::potentialAction (const beadLocator &startBead,
 LocalAction::LocalAction (const Path &_path, LookupTable &_lookup, 
         PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
         WaveFunctionBase *_waveFunctionPtr, const blitz::TinyVector<double,2> &_VFactor, 
-        const blitz::TinyVector<double,2> & _gradVFactor, bool _local, string _name,
+        const blitz::TinyVector<double,2> & _gradVFactor, bool _local, std::string _name,
         double _endFactor, int _period) :
     ActionBase(_path,_lookup,_externalPtr,_interactionPtr,_waveFunctionPtr,
             _local,_name,_endFactor,_period), 
@@ -1494,7 +1494,7 @@ dVec LocalAction::gradU(const int slice) {
 ******************************************************************************/
 NonLocalAction::NonLocalAction (const Path &_path, LookupTable &_lookup, 
         PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
-        WaveFunctionBase *_waveFunctionPtr, bool _local, string _name) :
+        WaveFunctionBase *_waveFunctionPtr, bool _local, std::string _name) :
     ActionBase(_path,_lookup,_externalPtr,_interactionPtr,_waveFunctionPtr,
             _local,_name) 
 {

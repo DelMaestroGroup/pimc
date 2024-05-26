@@ -250,14 +250,14 @@ void LookupTable::printGrid() {
         iVec tIndex;
         tIndex = gridIndex(n);
         for (int i = 0; i < NDIM; i++) 
-            cout << tIndex[i];
-        cout << "  ";
+            std::cout << tIndex[i];
+        std::cout << "  ";
     }
-    cout << endl;
+    std::cout << std::endl;
 
     for (int n = 0; n < totNumGridBoxes; n++) 
-        cout << "===  ";
-    cout << endl;
+        std::cout << "===  ";
+    std::cout << std::endl;
 
     for (int m = 0; m < numNN; m++) {
         nnIndex[NDIM] = m;
@@ -269,13 +269,13 @@ void LookupTable::printGrid() {
 
             for (int i = 0; i < NDIM; i++) {
                 if (gridNNReduced(nnIndex)[i] == -1)
-                    cout << "x";
+                    std::cout << "x";
                 else
-                    cout << gridNNReduced(nnIndex)[i];
+                    std::cout << gridNNReduced(nnIndex)[i];
             }
-            cout << "  ";
+            std::cout << "  ";
         }
-        cout << endl;
+        std::cout << std::endl;
     }
 }
 

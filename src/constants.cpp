@@ -37,7 +37,7 @@ void ConstantParameters::initConstants(po::variables_map &params) {
         id_ = boost::uuids::to_string(boost::uuids::random_generator()());
 
         /* Add a possible user specified label */
-        string label_ = params["label"].as<string>();
+        std::string label_ = params["label"].as<std::string>();
         if (label_.length() > 12)
             label_ = label_.substr(0,12);
         
@@ -45,12 +45,12 @@ void ConstantParameters::initConstants(po::variables_map &params) {
         restart_ = false;
     }
     else {
-        id_ = params["restart"].as<string>();
+        id_ = params["restart"].as<std::string>();
         restart_ = true;
     }
 
     /* Are we starting from a supplied state file? */
-    startWithState_ = !params["start_with_state"].as<string>().empty();
+    startWithState_ = !params["start_with_state"].as<std::string>().empty();
     
     /* Set the wall clock state */
     if (params["wall_clock"].empty()) {
@@ -117,12 +117,12 @@ void ConstantParameters::initConstants(po::variables_map &params) {
     numEqSteps_    = params["number_eq_steps"].as<uint32>();
     binSize_       = params["bin_size"].as<uint32>();
 
-    graphenelut3d_file_prefix_ = params["graphenelut3d_file_prefix"].as<string>();
+    graphenelut3d_file_prefix_ = params["graphenelut3d_file_prefix"].as<std::string>();
     virialWindow_              = params["virial_window"].as<int>();
 
     if (!params["wavevector"].empty() && !params["wavevector_type"].empty()) { 
-        wavevector_                = params["wavevector"].as<string>();
-        wavevectorType_            = params["wavevector_type"].as<string>();
+        wavevector_                = params["wavevector"].as<std::string>();
+        wavevectorType_            = params["wavevector_type"].as<std::string>();
     }
     
     initialNumParticles_ = params["number_particles"].as<int>();
@@ -135,10 +135,10 @@ void ConstantParameters::initConstants(po::variables_map &params) {
     endFactor_ = params["end_factor"].as<double>();
     Npaths_ = params["number_paths"].as<int>();
 
-    intPotentialType_ = params["interaction"].as<string>();
-    extPotentialType_ = params["external"].as<string>();
-    waveFunctionType_ = params["wavefunction"].as<string>();
-    actionType_       = params["action"].as<string>();
+    intPotentialType_ = params["interaction"].as<std::string>();
+    extPotentialType_ = params["external"].as<std::string>();
+    waveFunctionType_ = params["wavefunction"].as<std::string>();
+    actionType_       = params["action"].as<std::string>();
 
     /* Computed values */
     dBWavelength_ = 2.0*sqrt(M_PI * lambda_ / T_);
@@ -194,9 +194,9 @@ void ConstantParameters::initConstants(po::variables_map &params) {
         + attemptProb_["mid staging"]+attemptProb_["swap break"];
 
     if (abs(totProb - 1.0) > EPS) {
-        cout << "Close + AdvanceHead + RecedeHead + AdvanceTail + RecedeTail + Remove + SwapHead " 
-             << "+ SwapTail + Diagonal + CoM Probability != 1" << endl;
-        cout << totProb << endl;
+        std::cout << "Close + AdvanceHead + RecedeHead + AdvanceTail + RecedeTail + Remove + SwapHead " 
+             << "+ SwapTail + Diagonal + CoM Probability != 1" << std::endl;
+        std::cout << totProb << std::endl;
         exit(EXIT_FAILURE);
     }
     PIMC_ASSERT(totProb-1.0 < EPS);
@@ -206,8 +206,8 @@ void ConstantParameters::initConstants(po::variables_map &params) {
        + attemptProb_["end staging"] + attemptProb_["mid staging"];
     
     if (abs(totProb - 1.0) > EPS) {
-        cout << "Open + Insert + Diagonal + CoM Probability != 1" << endl;
-        cout << totProb << endl;
+        std::cout << "Open + Insert + Diagonal + CoM Probability != 1" << std::endl;
+        std::cout << totProb << std::endl;
         exit(EXIT_FAILURE);
     }
     PIMC_ASSERT(totProb-1.0 < EPS);

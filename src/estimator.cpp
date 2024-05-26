@@ -17,7 +17,7 @@
 ******************************************************************************/
 EstimatorFactory estimatorFactory;
 #define REGISTER_ESTIMATOR(NAME,TYPE) \
-    const string TYPE::name = NAME;\
+    const std::string TYPE::name = NAME;\
     bool reg ## TYPE = estimatorFactory()->Register<TYPE>(TYPE::name); 
 
 /**************************************************************************//**
@@ -88,16 +88,16 @@ REGISTER_ESTIMATOR("pigs one body density matrix",PIGSOneBodyDensityMatrixEstima
  * Setup the estimator factory for multi path estimators.
 ******************************************************************************/
 MultiEstimatorFactory multiEstimatorFactory;
-const string SwapEstimator::name = "pigs multi swap";
+const std::string SwapEstimator::name = "pigs multi swap";
 bool regSwap = multiEstimatorFactory()->Register<SwapEstimator>(SwapEstimator::name);
 
-const string EntPartEstimator::name = "pigs multi entanglement of particles";
+const std::string EntPartEstimator::name = "pigs multi entanglement of particles";
 bool regEntPart = multiEstimatorFactory()->Register<EntPartEstimator>(EntPartEstimator::name);
 
 
-/* These functions recursively generate all vectors {(-max[0], ..., -max[NDIM-1]), ..., (-max[0], ..., -max[NDIM-1])} 
+/* These functions recursively generate all std::vectors {(-max[0], ..., -max[NDIM-1]), ..., (-max[0], ..., -max[NDIM-1])} 
  * and returns the list */
-/* void generateVectors(vector<int>& current, const iVec &max, unsigned int pos, vector<vector<int>>&results) { */
+/* void generateVectors(std::vector<int>& current, const iVec &max, unsigned int pos, std::vector<std::vector<int>>&results) { */
 /*     if (pos == max.size()) { */
 /*         results.push_back(current); */
 /*         return; */
@@ -109,10 +109,10 @@ bool regEntPart = multiEstimatorFactory()->Register<EntPartEstimator>(EntPartEst
 /*     } */
 /* } */
 
-/* vector<vector<int>> generateAllVectors(const iVec &max) { */
-/*     vector<int> current(max.size(), 0); */
+/* std::vector<std::vector<int>> generateAllVectors(const iVec &max) { */
+/*     std::vector<int> current(max.size(), 0); */
 
-/*     vector<vector<int>> results; */
+/*     std::vector<std::vector<int>> results; */
 /*     generateVectors(current, max, 0, results); */
 /*     return results; */
 /* } */
@@ -134,7 +134,7 @@ bool regEntPart = multiEstimatorFactory()->Register<EntPartEstimator>(EntPartEst
  * factory.
 ******************************************************************************/
 EstimatorBase::EstimatorBase(const Path &_path, ActionBase *_actionPtr, 
-        const MTRand &_random, double _maxR, int _frequency, string _label) :
+        const MTRand &_random, double _maxR, int _frequency, std::string _label) :
     path(_path),
     actionPtr(_actionPtr),
     random(_random),
@@ -245,13 +245,13 @@ void EstimatorBase::initialize(int _numEst) {
  *
  *  Initilize the estimator and normalization arrays.
 ******************************************************************************/
-void EstimatorBase::initialize(vector<string> estLabel) {
+void EstimatorBase::initialize(std::vector<std::string> estLabel) {
 
     /* Initialize the map linking names to indices */
     for(size_t i = 0; i < estLabel.size(); ++i) 
         estIndex[estLabel[i]] = i;
 
-    /* write the header string */
+    /* write the header std::string */
     header = "";
     for (const auto& label : estLabel)
         header += str(format("%16s") % label);
@@ -289,7 +289,7 @@ void EstimatorBase::prepare() {
              
             (*outFilePtr) << header;
             if (endLine)
-                (*outFilePtr) << endl;
+                (*outFilePtr) << std::endl;
 
         }
     }
@@ -330,7 +330,7 @@ void EstimatorBase::output() {
         (*outFilePtr) << format("%16.8E") % estimator(n);
 
     if (endLine)
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     /* Reset all values */
     reset();
@@ -349,7 +349,7 @@ void EstimatorBase::outputFlat() {
 
     (*outFilePtr) << header;
     if (endLine)
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     /* Now write the running average of the estimator to disk */
     for (int n = 0; n < numEst; n++) 
@@ -376,7 +376,7 @@ void EstimatorBase::outputHist() {
     }
 
     if (endLine)
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     /* Reset all values */
     norm = 0.0;
@@ -386,15 +386,15 @@ void EstimatorBase::outputHist() {
 /*************************************************************************//**
 *  AppendLabel
 ******************************************************************************/
-void EstimatorBase::appendLabel(string append) {
+void EstimatorBase::appendLabel(std::string append) {
     label = label + append;
 }
 
 /*************************************************************************//**
-* create a "(x,y,z)" string from a dVec for outputting 
+* create a "(x,y,z)" std::string from a dVec for outputting 
 ******************************************************************************/
-string EstimatorBase::dVecToString(const dVec& v){
-    string strVec = "(";
+std::string EstimatorBase::dVecToString(const dVec& v){
+    std::string strVec = "(";
     for (int i = 0; i < NDIM; i++) {
         strVec += str(format("%+15.8E") % v[i]);
         if (i < NDIM-1)
@@ -416,8 +416,8 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
     dVec q;
 
     /* Here we get the text from the command line as tokens */ 
-    string input = constants()->wavevector();
-    string inputType = constants()->wavevectorType();
+    std::string input = constants()->wavevector();
+    std::string inputType = constants()->wavevectorType();
     char *cstr = new char [input.length()+1];
     std::strcpy (cstr, input.c_str());
     char *token = std::strtok(cstr, " ");
@@ -485,7 +485,7 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
         if (q_mag <= q_mag_max)
             qValues.push_back(q);
 
-        /* This generates all possible vectors */
+        /* This generates all possible std::vectors */
         int pos = NDIM - 1;
         int count = 0;
         while (count < n_q - 1) {
@@ -519,7 +519,7 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
             int value;
             // Read an integer at a time from the line
             while(line_stream >> value) {
-                // Add the integers from a line to a 1D array (vector)
+                // Add the integers from a line to a 1D array (std::vector)
                 line_data.push_back(value);
             }
             PIMC_ASSERT(line_data.size()==NDIM);
@@ -542,7 +542,7 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
             int value;
             // Read an integer at a time from the line
             while(line_stream >> value) {
-                // Add the integers from a line to a 1D array (vector)
+                // Add the integers from a line to a 1D array (std::vector)
                 line_data.push_back(value);
             }
             PIMC_ASSERT(line_data.size()==NDIM);
@@ -567,7 +567,7 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
 void EstimatorBase::getQVectorsNN(std::vector<dVec> &qValues) {
 
     dVec q;
-    string input = constants()->wavevector();
+    std::string input = constants()->wavevector();
     char * cstr = new char [input.length()+1];
     std::strcpy (cstr, input.c_str());
     char *token = strtok(cstr, " ");
@@ -621,7 +621,7 @@ void EstimatorBase::getQVectorsNN(std::vector<dVec> &qValues) {
         }
         qValues.push_back(q);
 
-        cout << sqrt(blitz::dot(q,q)) << " " << q_int << endl;
+        std::cout << sqrt(blitz::dot(q,q)) << " " << q_int << std::endl;
 
         int pos = NDIM - 1;
         int count = 0;
@@ -665,7 +665,7 @@ void EstimatorBase::getQVectorsNN(std::vector<dVec> &qValues) {
         if (q_mag <= q_mag_max) {
             qValues.push_back(q);
         }
-        cout << q_mag_max << " " << q_int << endl;
+        std::cout << q_mag_max << " " << q_int << std::endl;
 
         int pos = NDIM - 1;
         int count = 0;
@@ -701,7 +701,7 @@ void EstimatorBase::getQVectorsNN(std::vector<dVec> &qValues) {
             int value;
             // Read an integer at a time from the line
             while(line_stream >> value) {
-                // Add the integers from a line to a 1D array (vector)
+                // Add the integers from a line to a 1D array (std::vector)
                 line_data.push_back(value);
             }
             PIMC_ASSERT(line_data.size()==NDIM);
@@ -725,7 +725,7 @@ void EstimatorBase::getQVectorsNN(std::vector<dVec> &qValues) {
             int value;
             // Read an integer at a time from the line
             while(line_stream >> value) {
-                // Add the integers from a line to a 1D array (vector)
+                // Add the integers from a line to a 1D array (std::vector)
                 line_data.push_back(value);
             }
             PIMC_ASSERT(line_data.size()==NDIM);
@@ -746,14 +746,14 @@ void EstimatorBase::getQVectorsNN(std::vector<dVec> &qValues) {
 *  list of q-vectors where scattering will be computed.
 *  
 ******************************************************************************/
-vector <vector<dVec> > EstimatorBase::getQVectors2(double dq, double qMax, 
-        int& numq, string qGeometry) {
+std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double qMax, 
+        int& numq, std::string qGeometry) {
 
     /* initilize the total number of q-vectors */
     numq = 0;
 
     /* The q-vectors will end up in this array to be returned by value. */
-    vector <vector<dVec> > q;
+    std::vector <std::vector<dVec> > q;
 
     double dtheta;
     if (qGeometry == "line") 
@@ -765,15 +765,15 @@ vector <vector<dVec> > EstimatorBase::getQVectors2(double dq, double qMax,
         dtheta = 0.5*M_PI/numTheta;
     } 
     else {
-        cerr << "\nERROR: A valid geometry wasn't chosen for q-space."
-            << endl << "Action: choose \"line\" or \"sphere\"" << endl;
+        std::cerr << "\nERROR: A valid geometry wasn't chosen for q-space."
+            << std::endl << "Action: choose \"line\" or \"sphere\"" << std::endl;
         exit(0);
     }
 
     /* Determine the set of q-vectors that have these magnitudes.  */
     for (double cq = 0.0; cq <= qMax + EPS; cq += dq)
     {
-        vector <dVec> qvecs;
+        std::vector <dVec> qvecs;
 
         /* cq = 0.0 */
         if (abs(cq) < EPS) {
@@ -817,14 +817,14 @@ vector <vector<dVec> > EstimatorBase::getQVectors2(double dq, double qMax,
     /* int totalNumQVecs = 0; */
     /* for (auto [nq,cq] : enumerate(q)) { */
     /*     double qMag = sqrt(blitz::dot(cq.front(),cq.front())); */
-    /*     cout << endl << endl << "qmag = " << qMag << endl; */
+    /*     std::cout << std::endl << std::endl << "qmag = " << qMag << std::endl; */
     /*     for (const auto &cqvec : cq) */ 
-    /*         cout << cqvec << endl; */
+    /*         std::cout << cqvec << std::endl; */
     /*     totalNumQVecs += cq.size(); */
     /* } */
-    /* cout << "Full: " << totalNumQVecs << endl; */
+    /* std::cout << "Full: " << totalNumQVecs << std::endl; */
     /* exit(-1); */
-    cout << "numQ = " << numq << endl;
+    std::cout << "numQ = " << numq << std::endl;
 
     return q;
 }
@@ -842,7 +842,7 @@ vector <vector<dVec> > EstimatorBase::getQVectors2(double dq, double qMax,
 ******************************************************************************/
 TimeEstimator::TimeEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     endLine = false;
@@ -888,7 +888,7 @@ void TimeEstimator::output() {
         (*outFilePtr) << format("%16.8E") % estimator(n);
 
     if (endLine)
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     /* Reset all values */
     reset();
@@ -908,7 +908,7 @@ void TimeEstimator::output() {
  * estimators.
 ******************************************************************************/
 EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
-        const MTRand &_random, double _maxR, int _frequency, string _label) : 
+        const MTRand &_random, double _maxR, int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     endLine = false;
@@ -1034,7 +1034,7 @@ void EnergyEstimator::accumulate() {
  *
 ******************************************************************************/
 VirialEnergyEstimator::VirialEnergyEstimator (const Path &_path, ActionBase *_actionPtr,
-        const MTRand &_random, double _maxR, int _frequency, string _label) : 
+        const MTRand &_random, double _maxR, int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* Set estimator name and header, we will always report the energy
@@ -1254,7 +1254,7 @@ void VirialEnergyEstimator::accumulate() {
 ******************************************************************************/
 NumberParticlesEstimator::NumberParticlesEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* Set estimator name and header */
@@ -1288,20 +1288,20 @@ void NumberParticlesEstimator::accumulate() {
  *  Constructor.
  * 
  *  We measure the average static structure factor at a finite-set of wave-
- *  vectors that correspond to the first shell of reciprocal lattice vectors.
+ *  std::vectors that correspond to the first shell of reciprocal lattice std::vectors.
  *
  *  @see https://journals.aps.org/prb/abstract/10.1103/PhysRevB.73.085422
  *  
 ******************************************************************************/
 CommensurateOrderParameterEstimator::CommensurateOrderParameterEstimator (
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* Get the current carbon-carbon distance */
     double aCC = constants()->aCC();
 
-    /* The reciprocal lattice vectors*/
+    /* The reciprocal lattice std::vectors*/
     dVec G1,G2;
     G1[0] = 2.0*M_PI/(sqrt(3.0)*aCC);
     G1[1] = 2.0*M_PI/(3.0*aCC);
@@ -1378,12 +1378,12 @@ void CommensurateOrderParameterEstimator::accumulate() {
 ******************************************************************************/
 NumberDistributionEstimator::NumberDistributionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* For now, we assume 50 particles on each side of the mean */
     particleShift = 50;
-    startParticleNumber = max(constants()->initialNumParticles()-particleShift,0);
+    startParticleNumber = std::max(constants()->initialNumParticles()-particleShift,0);
     if (startParticleNumber == 0)
         endParticleNumber = 2*particleShift;
     else
@@ -1435,7 +1435,7 @@ void NumberDistributionEstimator::accumulate() {
 ******************************************************************************/
 ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label)  : 
+        int _frequency, std::string _label)  : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     initialize(path.boxPtr->numGrid);
@@ -1497,7 +1497,7 @@ void ParticlePositionEstimator::accumulate() {
 ******************************************************************************/
 BipartitionDensityEstimator::BipartitionDensityEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* Set estimator name and header*/
@@ -1574,7 +1574,7 @@ void BipartitionDensityEstimator::accumulate() {
 ******************************************************************************/
 LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* Make sure we have a bin centered at 0.0 */
@@ -1646,7 +1646,7 @@ void LinearParticlePositionEstimator::accumulate() {
 ******************************************************************************/
 PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
 
@@ -1729,7 +1729,7 @@ void PlaneParticlePositionEstimator::accumulate() {
 ******************************************************************************/
 PlaneParticleAveragePositionEstimator::PlaneParticleAveragePositionEstimator (
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) : 
+        double _maxR, int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* We choose an odd number to make sure (0,0) is the central 
@@ -1808,7 +1808,7 @@ void PlaneParticleAveragePositionEstimator::accumulate() {
 ******************************************************************************/
 PlaneAverageExternalPotentialEstimator::PlaneAverageExternalPotentialEstimator (
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) : 
+        double _maxR, int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* We choose an odd number to make sure (0,0) is the central 
@@ -1883,7 +1883,7 @@ void PlaneAverageExternalPotentialEstimator::output() {
 
     (*outFilePtr) << header;
     if (endLine)
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     /* Now write the running average of the estimator to disk */
     double Vext = 0.0;
@@ -1914,7 +1914,7 @@ void PlaneAverageExternalPotentialEstimator::output() {
 ******************************************************************************/
 SuperfluidFractionEstimator::SuperfluidFractionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     windMax = 10;
@@ -2039,7 +2039,7 @@ void SuperfluidFractionEstimator::accumulate() {
 ******************************************************************************/
 PlaneWindingSuperfluidDensityEstimator::PlaneWindingSuperfluidDensityEstimator
 (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     numGrid = (2*NGRIDSEP)*(2*NGRIDSEP);
@@ -2128,7 +2128,7 @@ void PlaneWindingSuperfluidDensityEstimator::accumulate() {
 ******************************************************************************/
 PlaneAreaSuperfluidDensityEstimator::PlaneAreaSuperfluidDensityEstimator
 (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     numGrid = (2*NGRIDSEP)*(2*NGRIDSEP);
@@ -2223,7 +2223,7 @@ void PlaneAreaSuperfluidDensityEstimator::accumulate() {
 ******************************************************************************/
 RadialWindingSuperfluidDensityEstimator::RadialWindingSuperfluidDensityEstimator
 (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     numGrid = NGRIDSEP;
@@ -2309,7 +2309,7 @@ void RadialWindingSuperfluidDensityEstimator::accumulate() {
 ******************************************************************************/
 RadialAreaSuperfluidDensityEstimator::RadialAreaSuperfluidDensityEstimator
 (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     numGrid = NGRIDSEP;
@@ -2397,7 +2397,7 @@ void RadialAreaSuperfluidDensityEstimator::accumulate() {
 ******************************************************************************/
 LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
 (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label):
+        int _frequency, std::string _label):
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* This is a 'local' histogram estimator so we use the defined grid */
@@ -2451,14 +2451,14 @@ void LocalSuperfluidDensityEstimator::output() {
 
     (*outFilePtr) << header;
     if (endLine)
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     /* Now write the running average of the estimator to disk */
     for (int n = 0; n < numGrid; n++) {
         for (int i = 0; i < int(numEst/numGrid); i++)
             (*outFilePtr) << format("%16.8E") % 
                 (norm(n+i*numGrid)*estimator(n+i*numGrid)/totNumAccumulated);
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
     }
 
     communicate()->file(label)->rename();
@@ -2543,7 +2543,7 @@ void LocalSuperfluidDensityEstimator::accumulate() {
 ******************************************************************************/
 DiagonalFractionEstimator::DiagonalFractionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     initialize(1);
@@ -2596,7 +2596,7 @@ void DiagonalFractionEstimator::sample() {
 ******************************************************************************/
 WormPropertiesEstimator::WormPropertiesEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* We measure the average worm length, gap and cost.  It is an off-diagonal
@@ -2643,7 +2643,7 @@ void WormPropertiesEstimator::accumulate() {
 ******************************************************************************/
 PermutationCycleEstimator::PermutationCycleEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label)  : 
+        int _frequency, std::string _label)  : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* We just choose arbitrarily to only count cycles including up to 40 particles */
@@ -2690,7 +2690,7 @@ void PermutationCycleEstimator::accumulate() {
     else
         cycleNorm = 0.0;
 
-    /* We create a local vector, which determines whether or not we have
+    /* We create a local std::vector, which determines whether or not we have
      * already included a bead at slice 0*/
     doBead.resize(numWorldlines);
     doBead = true;
@@ -2745,7 +2745,7 @@ void PermutationCycleEstimator::accumulate() {
 ******************************************************************************/
 LocalPermutationEstimator::LocalPermutationEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label)  : 
+        int _frequency, std::string _label)  : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* We just choose arbitrarily to only count cycles including up to 40 particles */
@@ -2755,7 +2755,7 @@ LocalPermutationEstimator::LocalPermutationEstimator (const Path &_path,
      * maxNumCycles permutation cycles */
     initialize(path.boxPtr->numGrid);
 
-    /* vector to hold number of worldlines put into a grid space */
+    /* std::vector to hold number of worldlines put into a grid space */
     numBeadInGrid.resize(estimator.size());
 
     /* Set estimator header */
@@ -2781,7 +2781,7 @@ LocalPermutationEstimator::~LocalPermutationEstimator() {
 
 /*     (*outFilePtr) << header; */
 /*     if (endLine) */
-/*         (*outFilePtr) << endl; */
+/*         (*outFilePtr) << std::endl; */
 
 /*     /1* Now write the running average of the estimator to disk *1/ */
 /*     for (int n = 0; n < numEst; n++) */
@@ -2809,7 +2809,7 @@ void LocalPermutationEstimator::accumulate() {
 
     int numWorldlines = path.numBeadsAtSlice(0);
 
-    /* We create a local vector, which determines whether or not we have
+    /* We create a local std::vector, which determines whether or not we have
      * already included a bead at slice 0*/
     doBead.resize(numWorldlines);
     doBead = true;
@@ -2884,7 +2884,7 @@ void LocalPermutationEstimator::accumulate() {
 ******************************************************************************/
 OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
     lpath(_path)
 {
@@ -2942,10 +2942,10 @@ void OneBodyDensityMatrixEstimator::sample() {
 }
 
 /*************************************************************************//**
- *  Return a dimensionally dependent random vector of length r.  
+ *  Return a dimensionally dependent random std::vector of length r.  
  *
  *  If we are in 3D in a cylinder geometry, we only shift in the z-direction.
- *  @param r The length of the random vector
+ *  @param r The length of the random std::vector
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec OneBodyDensityMatrixEstimator::getRandomVector(const double r) {
@@ -3125,7 +3125,7 @@ void OneBodyDensityMatrixEstimator::outputFooter() {
 ******************************************************************************/
 PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The spatial discretization */
@@ -3198,14 +3198,14 @@ void PairCorrelationEstimator::accumulate() {
 //
 //StaticStructureFactorEstimator::StaticStructureFactorEstimator(
 //        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-//        double _maxR, int _frequency, string _label) :
+//        double _maxR, int _frequency, std::string _label) :
 //    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 //{
 //
 //    /* hard-coded number of q-vector magnitudes */
 //    numq = 20; 
 //
-//    /* initialize the number of vectors with each magnitude */
+//    /* initialize the number of std::vectors with each magnitude */
 //    numqVecs.resize(numq);               
 //    numqVecs = 0;
 //
@@ -3226,7 +3226,7 @@ void PairCorrelationEstimator::accumulate() {
 //    for (int nq = 0; nq < numq; nq++)
 //    {
 //        double cq = qMag(nq);
-//        vector <dVec> qvecs;
+//        std::vector <dVec> qvecs;
 //
 //        int maxComp = ceil(cq*blitz::max(path.boxPtr->side)/(2.0*M_PI))+1;
 //        int maxNumQ = ipow(2*maxComp + 1,NDIM);
@@ -3263,11 +3263,11 @@ void PairCorrelationEstimator::accumulate() {
 /*************************************************************************//**
  *  Constructor.
  * 
- *  Compute the static structure factor for a fixed set of q vector magnitude.
+ *  Compute the static structure factor for a fixed set of q std::vector magnitude.
 ******************************************************************************/
 StaticStructureFactorEstimator::StaticStructureFactorEstimator(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) :
+        double _maxR, int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
@@ -3371,7 +3371,7 @@ void StaticStructureFactorEstimator::accumulate() {
 ******************************************************************************/
 StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) :
+        double _maxR, int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
@@ -3495,7 +3495,7 @@ void StaticStructureFactorGPUEstimator::accumulate() {
 ******************************************************************************/
 IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) :
+        double _maxR, int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
@@ -3507,7 +3507,7 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
     /* qMag.resize(numq); */
     qMag = 0.761,1.75,1.81;
 
-    /* initialize the number of vectors with each magnitude */
+    /* initialize the number of std::vectors with each magnitude */
     numqVecs.resize(numq);               
     numqVecs = 0;
 
@@ -3519,7 +3519,7 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
     for (int nq = 0; nq < numq; nq++)
     {
         double cq = qMag(nq);
-        vector <dVec> qvecs;
+        std::vector <dVec> qvecs;
 
         int maxComp = ceil(cq*blitz::min(path.boxPtr->side)/(2.0*M_PI))+1;
         int maxNumQ = ipow(2*maxComp + 1,NDIM);
@@ -3546,9 +3546,9 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
 
         /* Make sure we have some q-vectors */
         if (qvecs.size() < 1) {
-            cerr << "\nERROR: Intermediate Scattering function: "
+            std::cerr << "\nERROR: Intermediate Scattering function: "
                  << "No valid q-vectors were added to the list for measurment." 
-                 << endl << "Action: modify q-magintudes." << endl;
+                 << std::endl << "Action: modify q-magintudes." << std::endl;
             exit(0);
         }
         
@@ -3658,7 +3658,7 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
 ******************************************************************************/
 IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstimatorGpu(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) :
+        double _maxR, int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     int numTimeSlices = constants()->numTimeSlices();
@@ -3797,10 +3797,8 @@ void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
 ******************************************************************************/
 ElasticScatteringEstimatorGpu::ElasticScatteringEstimatorGpu(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) :
+        double _maxR, int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
-
-    int numTimeSlices = constants()->numTimeSlices();
 
     getQVectors(qValues);
 
@@ -3931,7 +3929,7 @@ void ElasticScatteringEstimatorGpu::accumulate() {
 ******************************************************************************/
 RadialDensityEstimator::RadialDensityEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The spatial discretization */
@@ -4021,7 +4019,7 @@ int num1DParticles(const Path &path, double maxR) {
 ******************************************************************************/
 CylinderEnergyEstimator::CylinderEnergyEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
@@ -4134,7 +4132,7 @@ void CylinderEnergyEstimator::accumulate() {
 ******************************************************************************/
 CylinderNumberParticlesEstimator::CylinderNumberParticlesEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* We compute three diagonal estimators, the total number of particles,
@@ -4176,7 +4174,7 @@ void CylinderNumberParticlesEstimator::accumulate() {
 ******************************************************************************/
 CylinderNumberDistributionEstimator::CylinderNumberDistributionEstimator 
     (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
@@ -4216,12 +4214,12 @@ void CylinderNumberDistributionEstimator::accumulate() {
 /*************************************************************************//**
  *  Constructor.
  * 
- *  Setup a vector estimator which measures the linear density along the 
+ *  Setup a std::vector estimator which measures the linear density along the 
  *  pore axis.
 ******************************************************************************/
 CylinderLinearDensityEstimator::CylinderLinearDensityEstimator
     (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The length of the cylinder */
@@ -4288,7 +4286,7 @@ void CylinderLinearDensityEstimator::accumulate() {
 ******************************************************************************/
 CylinderSuperfluidFractionEstimator::CylinderSuperfluidFractionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
@@ -4336,7 +4334,7 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
 
     int numWorldlines = path.numBeadsAtSlice(0);
 
-    /* We create a local vector, which determines whether or not we have
+    /* We create a local std::vector, which determines whether or not we have
      * already included a bead at slice 0*/
     doBead.resize(numWorldlines);
     doBead = true;
@@ -4431,7 +4429,7 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
 ******************************************************************************/
 CylinderOneBodyDensityMatrixEstimator::CylinderOneBodyDensityMatrixEstimator 
   (Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-   int _frequency, string _label) : 
+   int _frequency, std::string _label) : 
       EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
       lpath(_path)
 {
@@ -4485,10 +4483,10 @@ void CylinderOneBodyDensityMatrixEstimator::sample() {
 }
 
 /*************************************************************************//**
- *  Return a dimensionally dependent random vector of length r.  
+ *  Return a dimensionally dependent random std::vector of length r.  
  *
  *  If we are in 3D in a cylinder geometry, we only shift in the z-direction.
- *  @param r The length of the random vector
+ *  @param r The length of the random std::vector
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec CylinderOneBodyDensityMatrixEstimator::getRandomVector(const double r) {
@@ -4638,7 +4636,7 @@ void CylinderOneBodyDensityMatrixEstimator::accumulate() {
 ******************************************************************************/
 CylinderPairCorrelationEstimator::CylinderPairCorrelationEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The spatial discretization */
@@ -4707,7 +4705,7 @@ void CylinderPairCorrelationEstimator::sample() {
 ******************************************************************************/
 CylinderLinearPotentialEstimator::CylinderLinearPotentialEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The length of the cylinder */
@@ -4845,7 +4843,7 @@ void CylinderLinearPotentialEstimator::accumulate() {
  *  external potential felt by the central chain of particles.
 ******************************************************************************/
 CylinderRadialPotentialEstimator::CylinderRadialPotentialEstimator (const Path &_path, 
-        ActionBase *_actionPtr, const MTRand &_random, double _maxR, int _frequency, string _label) : 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The spatial discretization */
@@ -4990,11 +4988,11 @@ void CylinderRadialPotentialEstimator::accumulate1() {
 /*************************************************************************//**
  *  Constructor.
  * 
- *  Compute the static structure factor for a fixed set of q vector magnitude.
+ *  Compute the static structure factor for a fixed set of q std::vector magnitude.
 ******************************************************************************/
 CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) :
+        double _maxR, int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The maximum q-vector magnitude to consider (hard-coded for now) */
@@ -5118,7 +5116,7 @@ void CylinderStaticStructureFactorEstimator::sample() {
 ******************************************************************************/
 CylinderStaticStructureFactorGPUEstimator::CylinderStaticStructureFactorGPUEstimator(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) :
+        double _maxR, int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
@@ -5262,7 +5260,7 @@ void CylinderStaticStructureFactorGPUEstimator::sample() {
 ******************************************************************************/
 PotentialEnergyEstimator::PotentialEnergyEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* We measure on every other time slice */
@@ -5308,7 +5306,7 @@ void PotentialEnergyEstimator::accumulate() {
  ******************************************************************************/
 KineticEnergyEstimator::KineticEnergyEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -5385,7 +5383,7 @@ void KineticEnergyEstimator::accumulate() {
 ******************************************************************************/
 TotalEnergyEstimator::TotalEnergyEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -5455,7 +5453,7 @@ void TotalEnergyEstimator::accumulate() {
 ******************************************************************************/
 ThermoPotentialEnergyEstimator::ThermoPotentialEnergyEstimator  (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label):
+        int _frequency, std::string _label):
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -5502,7 +5500,7 @@ void ThermoPotentialEnergyEstimator::accumulate() {
 ******************************************************************************/
 PositionEstimator::PositionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
@@ -5552,7 +5550,7 @@ void PositionEstimator::accumulate() {
 ******************************************************************************/
 ParticleResolvedPositionEstimator::ParticleResolvedPositionEstimator(const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label)  :
+        int _frequency, std::string _label)  :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -5609,7 +5607,7 @@ void ParticleResolvedPositionEstimator::accumulate() {
 ******************************************************************************/
 ParticleCorrelationEstimator::ParticleCorrelationEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -5667,7 +5665,7 @@ void ParticleCorrelationEstimator::accumulate() {
 ******************************************************************************/
 VelocityEstimator::VelocityEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -5722,7 +5720,7 @@ void VelocityEstimator::accumulate() {
 ******************************************************************************/
 SubregionOccupationEstimator::SubregionOccupationEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -5769,7 +5767,7 @@ void SubregionOccupationEstimator::accumulate() {
         Z = 0.0;
         pA = 0.0;
         pB = 0.0;
-        cout << "Error!! Invalid configuration for SubregionOccupatoin!!" << endl;
+        std::cout << "Error!! Invalid configuration for SubregionOccupatoin!!" << std::endl;
     }
     
     estimator(0) += Z;
@@ -5794,7 +5792,7 @@ void SubregionOccupationEstimator::accumulate() {
 ******************************************************************************/
 PIGSOneBodyDensityMatrixEstimator::PIGSOneBodyDensityMatrixEstimator (Path &_path,
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
     lpath(_path)
 {
@@ -5851,12 +5849,12 @@ void PIGSOneBodyDensityMatrixEstimator::sample() {
 }
 
 /*************************************************************************//**
- *  Return a dimensionally dependent random vector of length r.
+ *  Return a dimensionally dependent random std::vector of length r.
  *  @see https://mathworld.wolfram.com/SpherePointPicking.html
  *  @see http://extremelearning.com.au/how-to-generate-uniformly-random-points-on-n-spheres-and-n-balls/
  *
  *  If we are in 3D in a cylinder geometry, we only shift in the z-direction.
- *  @param r The length of the random vector
+ *  @param r The length of the random std::vector
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec PIGSOneBodyDensityMatrixEstimator::getRandomVector(const double r) {
@@ -5984,7 +5982,7 @@ void PIGSOneBodyDensityMatrixEstimator::outputFooter() {
 ******************************************************************************/
 DoubledEstimator::DoubledEstimator (const Path &_path, const Path &_path2,
         ActionBase *_actionPtr, ActionBase* _actionPtr2, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label), path2(_path2) 
 {
 }
@@ -6007,7 +6005,7 @@ DoubledEstimator::~DoubledEstimator() {
 ******************************************************************************/
 SwapEstimator::SwapEstimator (Path &_path, Path &_path2, ActionBase *_actionPtr, 
         ActionBase *_actionPtr2, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
 DoubledEstimator(_path,_path2,_actionPtr,_actionPtr2,_random,_maxR,_frequency,_label), 
     lpath(_path),lpath2(_path2),
     actionPtr(_actionPtr), 
@@ -6049,8 +6047,8 @@ void SwapEstimator::accumulateOpen() {
     beadIndexR2[0] = lpath2.breakSlice+1;
     
     /* Old tail positions & potential actions */
-    vector<dVec> oldTailPos(lpath.brokenWorldlinesR.size());
-    vector<dVec> oldTailPos2(lpath2.brokenWorldlinesR.size());
+    std::vector<dVec> oldTailPos(lpath.brokenWorldlinesR.size());
+    std::vector<dVec> oldTailPos2(lpath2.brokenWorldlinesR.size());
 
     for( uint32 i=0; i<lpath.brokenWorldlinesR.size();i++){
         beadIndexR[1] = lpath.brokenWorldlinesR[i];
@@ -6079,8 +6077,8 @@ void SwapEstimator::accumulateOpen() {
     }
     
     
-    /* Initialize permuation vector */
-    vector<int> permutation(lpath.brokenWorldlinesR.size());
+    /* Initialize permuation std::vector */
+    std::vector<int> permutation(lpath.brokenWorldlinesR.size());
     int Nperm = 0;
     double rho0perm;
     for( uint32 i=0; i<permutation.size(); i++)
@@ -6106,7 +6104,7 @@ void SwapEstimator::accumulateOpen() {
         rho0Dir *= 1.0/((double)Nperm);
     }
     
-    /* Re-initialize permuation vector */
+    /* Re-initialize permuation std::vector */
     permutation.resize(lpath2.brokenWorldlinesR.size());
     for( uint32 i=0; i<permutation.size(); i++)
         permutation[i] = i;
@@ -6149,7 +6147,7 @@ void SwapEstimator::accumulateOpen() {
             }
             
             /* Compute the swapped free particle density matrix */
-            /* Re-initialize permuation vector */
+            /* Re-initialize permuation std::vector */
             for( uint32 i=0; i<permutation.size(); i++)
                 permutation[i] = i;
             Nperm = 0;
@@ -6168,7 +6166,7 @@ void SwapEstimator::accumulateOpen() {
             } while (next_permutation(permutation.begin(),permutation.end()));
             rho0Swap*= 1.0/((double)Nperm);
             
-            /* Re-initialize permuation vector */
+            /* Re-initialize permuation std::vector */
             for( uint32 i=0; i<permutation.size(); i++)
                 permutation[i] = i;
             Nperm = 0;
@@ -6308,13 +6306,13 @@ void SwapEstimator::accumulateClosed() {
 EntPartEstimator::EntPartEstimator (Path &_path, Path &_path2,
                               ActionBase *_actionPtr,ActionBase *_actionPtr2,
                               const MTRand &_random, double _maxR,
-                              int _frequency, string _label) :
+                              int _frequency, std::string _label) :
 DoubledEstimator(_path,_path2,_actionPtr, _actionPtr2,_random,_maxR,_frequency,_label), 
     lpath(_path),lpath2(_path2),
     actionPtr(_actionPtr), 
     actionPtr2(_actionPtr2) 
 {
-    stringstream headerSS;
+    std::stringstream headerSS;
     
     /* Set estimator name and header */
     header = str(format("#%15s") % "Z" );
@@ -6351,8 +6349,8 @@ void EntPartEstimator::accumulate() {
     beadIndexR2[0] = lpath2.breakSlice+1;
     
     /* Old tail positions & potential actions */
-    vector<dVec> oldTailPos(lpath.brokenWorldlinesR.size());
-    vector<dVec> oldTailPos2(lpath2.brokenWorldlinesR.size());
+    std::vector<dVec> oldTailPos(lpath.brokenWorldlinesR.size());
+    std::vector<dVec> oldTailPos2(lpath2.brokenWorldlinesR.size());
     
     for( uint32 i=0; i<lpath.brokenWorldlinesR.size();i++){
         beadIndexR[1] = lpath.brokenWorldlinesR[i];
@@ -6381,8 +6379,8 @@ void EntPartEstimator::accumulate() {
     }
     
     
-    /* Initialize permuation vector */
-    vector<int> permutation(lpath.brokenWorldlinesR.size());
+    /* Initialize permuation std::vector */
+    std::vector<int> permutation(lpath.brokenWorldlinesR.size());
     int Nperm = 0;
     double rho0perm;
     for( uint32 i=0; i<permutation.size(); i++)
@@ -6408,7 +6406,7 @@ void EntPartEstimator::accumulate() {
         rho0Dir *= 1.0/((double)Nperm);
     }
     
-    /* Re-initialize permuation vector */
+    /* Re-initialize permuation std::vector */
     permutation.resize(lpath2.brokenWorldlinesR.size());
     for( uint32 i=0; i<permutation.size(); i++)
         permutation[i] = i;
@@ -6424,7 +6422,7 @@ void EntPartEstimator::accumulate() {
             for( uint32 i=0; i<permutation.size(); i++){
                 beadIndexL2[1] = lpath2.brokenWorldlinesL[i];
                 beadIndexR2[1] = lpath2.brokenWorldlinesR[permutation[i]];
-                //cout << beadIndexL2[1] << '\t' << beadIndexR2[1] << '\t' << permutation[i] << endl;
+                //cout << beadIndexL2[1] << '\t' << beadIndexR2[1] << '\t' << permutation[i] << std::endl;
                 rho0perm *= actionPtr2->rho0(beadIndexL2,beadIndexR2,1);
             }
             rho0Dir2 += rho0perm;
@@ -6452,7 +6450,7 @@ void EntPartEstimator::accumulate() {
             }
             
             /* Compute the swapped free particle density matrix */
-            /* Re-initialize permuation vector */
+            /* Re-initialize permuation std::vector */
             for( uint32 i=0; i<permutation.size(); i++)
                 permutation[i] = i;
             Nperm = 0;
@@ -6471,7 +6469,7 @@ void EntPartEstimator::accumulate() {
             } while (next_permutation(permutation.begin(),permutation.end()));
             rho0Swap*= 1.0/((double)Nperm);
             
-            /* Re-initialize permuation vector */
+            /* Re-initialize permuation std::vector */
             for( uint32 i=0; i<permutation.size(); i++)
                 permutation[i] = i;
             Nperm = 0;
@@ -6530,7 +6528,7 @@ void EntPartEstimator::accumulate() {
     //Z = rho0Dir*rho0Dir2*exp(-(oldPotAction+oldPotAction2));
     //S = rho0Swap*rho0Swap2*exp(-(newPotAction+newPotAction2));
     
-    //cout << rho0Dir << '\t' << rho0Dir2 << '\t' << Z << '\t' << S << endl;
+    //cout << rho0Dir << '\t' << rho0Dir2 << '\t' << Z << '\t' << S << std::endl;
     
     estimator(0) += Z;
     if( nMatch ){

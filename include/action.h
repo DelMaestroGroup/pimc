@@ -31,11 +31,11 @@ class ActionBase {
     public:
         ActionBase (const Path &, LookupTable &, PotentialBase *, 
                 PotentialBase *, WaveFunctionBase *, bool _local=true,
-                string _name="Base", double _endFactor=1.0, int _period=1);
+                std::string _name="Base", double _endFactor=1.0, int _period=1);
         virtual ~ActionBase();
 
         /** Returns the action name */
-        string getActionName () { return name; }
+        std::string getActionName () { return name; }
 
         /** The full kinetic Action  */
         double kineticAction ();
@@ -112,7 +112,7 @@ class ActionBase {
 	blitz::Array <int,1> cylSepHist;       ///< A histogram of separations for a cylinder
 
     protected:
-        string name;                    ///< The name of the action
+        std::string name;                    ///< The name of the action
 
         LookupTable &lookup;            ///< We need a non-constant reference for updates
         const Path &path;               ///< A reference to the paths
@@ -153,7 +153,7 @@ class LocalAction : public ActionBase {
     public:
         LocalAction (const Path &, LookupTable &, PotentialBase *, 
                 PotentialBase *, WaveFunctionBase *, const blitz::TinyVector<double,2>&, 
-                const blitz::TinyVector<double,2>&, bool _local=true, string _name="Local",
+                const blitz::TinyVector<double,2>&, bool _local=true, std::string _name="Local",
                 double _endFactor=1.0, int _period=1);
         virtual ~LocalAction();
 
@@ -260,7 +260,7 @@ class NonLocalAction : public ActionBase {
     public:
         NonLocalAction (const Path &, LookupTable &, PotentialBase *, 
                 PotentialBase *, WaveFunctionBase *, bool _local=false,
-                string _name="Non-local");
+                std::string _name="Non-local");
         virtual ~NonLocalAction();
 
         /* The potential Action */
@@ -278,6 +278,6 @@ class NonLocalAction : public ActionBase {
 	blitz::TinyVector<double,2> U(int);
     
     private:
-        vector<bool> NNbead; //Records which beads where already visited for NN operation
+        std::vector<bool> NNbead; //Records which beads where already visited for NN operation
 };
 #endif
