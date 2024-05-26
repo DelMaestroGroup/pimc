@@ -97,8 +97,6 @@
 #define LBIG 69.07755279 ///< The log of a big number
 #define XXX -1          ///< Used to refer to a nonsense beadIndex
 
-using namespace std;
-//using namespace blitz;
 using boost::format;
 
 /** Unsigned integer type, at least 32 bits */

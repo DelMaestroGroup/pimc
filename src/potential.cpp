@@ -197,7 +197,7 @@ void TabulatedPotential::initLookupTable(const double _dr, const double maxSep) 
     /* exit(-1); */
         
 
-//      cout << format("%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E\n") % r % lookupV(n) % valueV(r) % 
+//      std::cout << format("%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E\n") % r % lookupV(n) % valueV(r) % 
 
 //  double rc = constants()->rc();
 //  for (int n = 0; n < tableLength; n++) {
@@ -210,7 +210,7 @@ void TabulatedPotential::initLookupTable(const double _dr, const double maxSep) 
 //          lookupV(n) = 0.0;
 //          lookupdVdr(n) = 0.0;
 //      }
-//      cout << format("%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E\n") % r % lookupV(n) % valueV(r) % 
+//      std::cout << format("%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E\n") % r % lookupV(n) % valueV(r) % 
 //          lookupdVdr(n) % valuedVdr(r) % (lookupV(n) - valueV(r)) % (lookupdVdr(n) - valuedVdr(r));
 //  }
 
@@ -658,7 +658,7 @@ blitz::Array<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, 
     }
 
     /* Reset the file pointer */
-    communicate()->file("fixed")->stream().seekg(0, ios::beg);
+    communicate()->file("fixed")->stream().seekg(0, std::ios::beg);
 
     /* Return the initial Positions */
     return initialPos;
@@ -1682,9 +1682,9 @@ SzalewiczPotential::SzalewiczPotential(const Container *_boxPtr) : PotentialBase
     
     tailV = -t1 - t2;
     tailV *= 315774.65;
-    cout << tailV << endl;
-    cout << t1*315774.65 << endl;
-    cout << t2*315774.65 << endl;
+    std::cout << tailV << std::endl;
+    std::cout << t1*315774.65 << std::endl;
+    std::cout << t2*315774.65 << std::endl;
 
     exit(0);
     */
@@ -2016,14 +2016,14 @@ blitz::Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPt
     }
     /* do we want to output the initial config to disk? */
     bool outToDisk = 1;
-    ofstream OF;
+    std::ofstream OF;
     if (outToDisk){
         OF.open("./OUTPUT/initialConfig.dat");
-        OF<<"# Cartesian Coordinates of initial Positions (X-Y-Z)"<<endl;
-        OF<<"# "<<lside[0]<<"\t"<<lside[1]<<"\t"<<lside[2]<<endl;
-        OF<<"# "<< excY <<"\t"<< excZ <<endl;
+        OF << "# Cartesian Coordinates of initial Positions (X-Y-Z)" << std::endl;
+        OF << "# "<< lside[0]<<"\t"<<lside[1]<<"\t"<<lside[2] << std::endl;
+        OF << "# "<< excY << "\t" << excZ << std::endl;
         for (int i=0; i< int(initialPos.size()); i++)
-            OF<<initialPos(i)(0)<< "\t"<<initialPos(i)(1)<<"\t"<<initialPos(i)(2)<<endl;
+            OF << initialPos(i)(0) << "\t" << initialPos(i)(1) << "\t" << initialPos(i)(2) << std::endl;
         OF.close();
     }
     
@@ -2409,7 +2409,7 @@ double HardRodPotential::V(const dVec &sep1, const dVec &sep2)
     double t1 = -d1*d2/(2.0*constants()->lambda()*constants()->tau());
 
     /* communicate()->file("debug")->stream() << sep1[0] << "\t" << sep2[0] << "\t" */ 
-    /*     << -log(1.0-exp(t1)) << endl; */
+    /*     << -log(1.0-exp(t1)) << std::endl; */
 
     return (-log(1.0 - exp(t1)));
 }
@@ -2749,7 +2749,7 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
     /* } */
 
     /* Create a unique list of all g-vector magnitudes */
-    set<double> uniquegMag;
+    std::set<double> uniquegMag;
 
     /* This gives us the upper half-plane */
     uniquegMag.insert(0.0);
@@ -3005,7 +3005,7 @@ blitz::Array<dVec,1> GrapheneLUTPotential::initialConfig(const Container *boxPtr
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-GrapheneLUT3DPotential::GrapheneLUT3DPotential (string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
+GrapheneLUT3DPotential::GrapheneLUT3DPotential (std::string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
 
     static auto const aflags = boost::archive::no_header | boost::archive::no_tracking;
     /* get a local copy of the system size */
@@ -3203,14 +3203,14 @@ blitz::Array<dVec,1> GrapheneLUT3DPotential::initialConfig1(const Container *box
     }
 
     /* Output for plotting in python */
-    /* cout << "np.array(["; */
+    /* std::cout << "np.array(["; */
     /* for (int n = 0; n < numParticles; n++)  { */
-    /*     cout << "["; */
+    /*     std::cout << "["; */
     /*     for (int i = 0; i < NDIM-1; i++) */
-    /*         cout << initialPos(n)[i] << ", "; */
-    /*     cout << initialPos(n)[NDIM-1] << "]," << endl; */
+    /*         std::cout << initialPos(n)[i] << ", "; */
+    /*     std::cout << initialPos(n)[NDIM-1] << "]," << std::endl; */
     /* } */
-    /* cout << "])" << endl; */
+    /* std::cout << "])" << std::endl; */
     /* exit(-1); */
 
     return initialPos;
@@ -3276,19 +3276,19 @@ blitz::Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxP
     }
 
     if (numAttempts == maxNumAttempts) {
-        cerr << "Could not construct a valid initial configuration." << endl;
+        std::cerr << "Could not construct a valid initial configuration." << std::endl;
         exit(EXIT_FAILURE);
     }
 
     /* Output configuration to terminal suitable for plotting with python */
-    /* cout << "np.array(["; */
+    /* std::cout << "np.array(["; */
     /* for (int n = 0; n < numParticles; n++)  { */
-    /*     cout << "["; */
+    /*     std::cout << "["; */
     /*     for (int i = 0; i < NDIM-1; i++) */
-    /*         cout << initialPos(n)[i] << ", "; */
-    /*     cout << initialPos(n)[NDIM-1] << "]," << endl; */
+    /*         std::cout << initialPos(n)[i] << ", "; */
+    /*     std::cout << initialPos(n)[NDIM-1] << "]," << std::endl; */
     /* } */
-    /* cout << "])" << endl; */
+    /* std::cout << "])" << std::endl; */
     /* exit(EXIT_FAILURE); */
 
     return initialPos;
@@ -3342,7 +3342,7 @@ GrapheneLUT3DPotentialGenerate::GrapheneLUT3DPotentialGenerate (
     auto [ V3d, gradV3d_x, gradV3d_y, gradV3d_z, grad2V3d, xy_x, xy_y, LUTinfo ] = 
         get_V3D_all(strain,sigma,epsilon,xres,yres,zres,zmax);
 
-    string graphenelut3d_file_prefix = str( format( "graphene_%.2f_%.2f_%d_%d_%d_") %
+    std::string graphenelut3d_file_prefix = str( format( "graphene_%.2f_%.2f_%d_%d_%d_") %
             strain % zmax % xres % yres % zres );
 
     // create and open a character archive for output
@@ -4401,7 +4401,7 @@ GrapheneLUT3DPotentialGenerate::~GrapheneLUT3DPotentialGenerate() {
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
+GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (std::string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
 
     static auto const aflags = boost::archive::no_header | boost::archive::no_tracking;
     /* load lookup tables */
@@ -4502,7 +4502,7 @@ GrapheneLUT3DPotentialToBinary::~GrapheneLUT3DPotentialToBinary() {
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
+GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (std::string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
 
     static auto const aflags = boost::archive::no_header | boost::archive::no_tracking;
     /* load lookup tables */

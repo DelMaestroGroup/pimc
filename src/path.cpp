@@ -428,7 +428,7 @@ void Path::removeCenterLink(const beadLocator &beadIndexL) {
     breakLink(beadIndexL);
     
     /* Update lists */
-    vector<int>::iterator itr;
+    std::vector<int>::iterator itr;
     itr = find(closedWorldlines.begin(), closedWorldlines.end(), beadIndexL[1]);
     closedWorldlines.erase(itr);
     brokenWorldlinesL.push_back(beadIndexL[1]);
@@ -444,7 +444,7 @@ void Path::addCenterLink(const beadLocator &beadIndexL,const beadLocator &beadIn
     makeLink(beadIndexL,beadIndexR);
     
     /* Update lists */
-    vector<int>::iterator itr;
+    std::vector<int>::iterator itr;
     itr = find(brokenWorldlinesL.begin(), brokenWorldlinesL.end(), beadIndexL[1]);
     brokenWorldlinesL.erase(itr);
     itr = find(brokenWorldlinesR.begin(), brokenWorldlinesR.end(), beadIndexR[1]);
@@ -462,7 +462,7 @@ void Path::resetBrokenClosedVecs(){
         
         beadLocator beadIndex;
         
-        /* Clear vectors */
+        /* Clear std::vectors */
         brokenWorldlinesL.clear();
         brokenWorldlinesR.clear();
         closedWorldlines.clear();
@@ -523,7 +523,7 @@ bool Path::inSubregionA(const beadLocator &beadIndex) const{
                 ( beads(beadIndex)[0] < constants()->spatialSubregion() ) )
             inA = true;
     }
-    //cout << beadIndex[0] << '\t' << inA << '\t' << beads(beadIndex) << endl;
+    //cout << beadIndex[0] << '\t' << inA << '\t' << beads(beadIndex) << std::endl;
     return inA;
 }
 
@@ -557,8 +557,8 @@ bool Path::checkSubregionLinks() const{
             foundError=true;
         }
         if(foundError){
-            cout << beadIndex[1] << '\t' << beads(beadIndex) << 't' <<
-            inSubregionA(beadIndex) << '\t' << inSubregionB(beadIndex) << endl;
+            std::cout << beadIndex[1] << '\t' << beads(beadIndex) << 't' <<
+            inSubregionA(beadIndex) << '\t' << inSubregionB(beadIndex) << std::endl;
             break;
         }
     }
@@ -745,7 +745,7 @@ void Path::printWormConfig(blitz::Array <beadLocator,1> &wormBeads) {
     int numWorldLines = getNumParticles();
 
     /* A shortform for the output file */
-    fstream *outFilePtr;            
+    std::fstream *outFilePtr;            
     outFilePtr = &(communicate()->file("debug")->stream());
 
     for (int m = numTimeSlices-1; m >= 0; m--) {
@@ -793,7 +793,7 @@ void Path::printWormConfig(blitz::Array <beadLocator,1> &wormBeads) {
                 beadLocator beadIndex;
                 beadIndex = m,n;
                 bool foundWormBead = false;
-                string beadOut;
+                std::string beadOut;
                 for (int k = 0; k < wormBeads.extent(blitz::firstDim); k++) { 
                     
                     if (all(beadIndex==wormBeads(k))) { 
@@ -829,8 +829,8 @@ void Path::printWormConfig(blitz::Array <beadLocator,1> &wormBeads) {
             } // for n
 
         } // isConfigDiagonal
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     } // for int m
-    (*outFilePtr) << endl;
+    (*outFilePtr) << std::endl;
 }

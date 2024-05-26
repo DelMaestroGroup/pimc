@@ -1296,7 +1296,7 @@ class GrapheneLUTPotential: public PotentialBase  {
 class GrapheneLUT3DPotential: public PotentialBase  {
 
     public:
-        GrapheneLUT3DPotential(const string, const Container*);
+        GrapheneLUT3DPotential(const std::string, const Container*);
         ~GrapheneLUT3DPotential();
 
         /* Return the sum of the van der Waals' interaction energy between the supplied
@@ -1625,7 +1625,7 @@ class GrapheneLUT3DPotentialGenerate: public PotentialBase  {
 class GrapheneLUT3DPotentialToBinary: public PotentialBase  {
 
     public:
-        GrapheneLUT3DPotentialToBinary(const string, const Container*);
+        GrapheneLUT3DPotentialToBinary(const std::string, const Container*);
         ~GrapheneLUT3DPotentialToBinary();
 
     private:
@@ -1651,7 +1651,7 @@ class GrapheneLUT3DPotentialToBinary: public PotentialBase  {
 class GrapheneLUT3DPotentialToText: public PotentialBase  {
 
     public:
-        GrapheneLUT3DPotentialToText(const string, const Container*);
+        GrapheneLUT3DPotentialToText(const std::string, const Container*);
         ~GrapheneLUT3DPotentialToText();
 
     private:

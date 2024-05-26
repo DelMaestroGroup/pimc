@@ -19,7 +19,7 @@
  *  Setup the path data members for the constant trial wavefunction.
 ******************************************************************************/
 WaveFunctionBase::WaveFunctionBase (const Path &_path, LookupTable &_lookup,
-        string _name) :
+        std::string _name) :
     name(_name),
     path(_path),
     lookup(_lookup)
@@ -43,7 +43,7 @@ WaveFunctionBase::~WaveFunctionBase() {
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-SechWaveFunction::SechWaveFunction(const Path &_path,LookupTable &_lookup, string _name) :
+SechWaveFunction::SechWaveFunction(const Path &_path,LookupTable &_lookup, std::string _name) :
     WaveFunctionBase(_path,_lookup,_name)
 {
     /* Set the parameter to its optimized value */
@@ -88,7 +88,7 @@ double SechWaveFunction::PsiTrial(const int slice) {
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-JastrowWaveFunction::JastrowWaveFunction(const Path &_path,LookupTable &_lookup, string _name) :
+JastrowWaveFunction::JastrowWaveFunction(const Path &_path,LookupTable &_lookup, std::string _name) :
 WaveFunctionBase(_path,_lookup,_name)
 {
     /* Set the parameter to its optimized value */
@@ -204,7 +204,7 @@ double JastrowWaveFunction::gradSqPsiTrial(const int slice) {
 /**************************************************************************//**
  * Constructor.
  ******************************************************************************/
-LiebLinigerWaveFunction::LiebLinigerWaveFunction(const Path &_path,LookupTable &_lookup, string _name) :
+LiebLinigerWaveFunction::LiebLinigerWaveFunction(const Path &_path,LookupTable &_lookup, std::string _name) :
 WaveFunctionBase(_path,_lookup,_name)
 {
     /* Set the parameter to its optimized value */
@@ -357,7 +357,7 @@ double LiebLinigerWaveFunction::gradSqPsiTrial(const int slice) {
  * Constructor.
  ******************************************************************************/
 SutherlandWaveFunction::SutherlandWaveFunction(const Path &_path, LookupTable &_lookup, 
-        double _lambda, string _name) :
+        double _lambda, std::string _name) :
 WaveFunctionBase(_path,_lookup,_name)
 {
     // The Sutherland model value of the interaction paramter \lambda

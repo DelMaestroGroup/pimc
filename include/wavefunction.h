@@ -26,11 +26,11 @@ class Path;
 class WaveFunctionBase {
 
     public:
-        WaveFunctionBase (const Path &,LookupTable &_lookup, string _name="constant");
+        WaveFunctionBase (const Path &,LookupTable &_lookup, std::string _name="constant");
         virtual ~WaveFunctionBase();
 
         /** Name of the trial wave function */
-        string name;
+        std::string name;
 
         /** The Constant Trial Wave Function*/
         virtual double PsiTrial(const int) { return 1.0; };
@@ -58,7 +58,7 @@ class WaveFunctionBase {
 class SechWaveFunction: public WaveFunctionBase {
 
     public:
-        SechWaveFunction(const Path &,LookupTable &_lookup, string _name="SHO sech");
+        SechWaveFunction(const Path &,LookupTable &_lookup, std::string _name="SHO sech");
         ~SechWaveFunction();
 
         double PsiTrial (const int);
@@ -78,7 +78,7 @@ class SechWaveFunction: public WaveFunctionBase {
 class JastrowWaveFunction: public WaveFunctionBase {
     
 public:
-    JastrowWaveFunction(const Path &, LookupTable &_lookup,string _name="Jastrow");
+    JastrowWaveFunction(const Path &, LookupTable &_lookup, std::string _name="Jastrow");
     ~JastrowWaveFunction();
     
     double PsiTrial (const double);
@@ -107,7 +107,7 @@ private:
 class LiebLinigerWaveFunction: public WaveFunctionBase {
     
 public:
-    LiebLinigerWaveFunction(const Path &, LookupTable &_lookup,string _name="LiebLiniger");
+    LiebLinigerWaveFunction(const Path &, LookupTable &_lookup, std::string _name="LiebLiniger");
     ~LiebLinigerWaveFunction();
     
     double PsiTrial (const double);
@@ -136,7 +136,7 @@ private:
 class SutherlandWaveFunction: public WaveFunctionBase {
     
 public:
-    SutherlandWaveFunction(const Path &, LookupTable &_lookup, double, string _name="Sutherland");
+    SutherlandWaveFunction(const Path &, LookupTable &_lookup, double, std::string _name="Sutherland");
     ~SutherlandWaveFunction();
     
     /** The 2-body trial wavefunction */

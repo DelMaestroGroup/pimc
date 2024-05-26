@@ -21,7 +21,7 @@ uint32 MoveBase::totAccepted = 0;
 /* Factory<MoveBase* (Path &, ActionBase*, MTRand&)> MoveFactory; */
 MoveFactory moveFactory;
 #define REGISTER_MOVE(NAME,TYPE) \
-    const string TYPE::name = NAME;\
+    const std::string TYPE::name = NAME;\
     bool reg ## TYPE = moveFactory()->Register<TYPE>(TYPE::name); 
 
 /**************************************************************************//**
@@ -90,7 +90,7 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
     cumrho0.resize(numWind);
 
     /* For each integer labelling a winding sector, we construct the winding
-     * vector and append to a matrix */
+     * std::vector and append to a matrix */
     iVec wind;
     for (int n = 0; n < numWind; n++ ) {
         wind = 0;
@@ -138,7 +138,7 @@ MoveBase::~MoveBase() {
  *  Print the current worm configuration after a move if DEBUG_WORM is
  *  activated.
 ******************************************************************************/
-inline void MoveBase::printMoveState(string state) {
+inline void MoveBase::printMoveState(std::string state) {
 #ifdef DEBUG_WORM
 
     /* We make a list of all the beads contained in the worm */
@@ -346,7 +346,7 @@ dVec MoveBase::newStagingPosition(const beadLocator &neighborIndex, const beadLo
  * @param startBead The index of the start of the stage
  * @param endBead The index of the final bead in the stage
  * @param stageLength The length of the stage
- * @return A integer NDIM-vector which holds the winding vector to be sampled.
+ * @return A integer NDIM-vector which holds the winding std::vector to be sampled.
 ******************************************************************************/
 iVec MoveBase::sampleWindingSector(const beadLocator &startBead, const beadLocator &endBead, 
         const int stageLength, double &totalrho0) {
@@ -379,7 +379,7 @@ iVec MoveBase::sampleWindingSector(const beadLocator &startBead, const beadLocat
     for (auto& crho0 : cumrho0)
         crho0 /= totalrho0;
 
-    /* Perform tower sampling to select the winding vector */
+    /* Perform tower sampling to select the winding std::vector */
     int index;
     index = std::lower_bound(cumrho0.begin(),cumrho0.end(),random.rand())
             - cumrho0.begin();
@@ -395,7 +395,7 @@ iVec MoveBase::sampleWindingSector(const beadLocator &startBead, const beadLocat
  *
  * @param startBead The index of the start of the stage
  * @param endBead The index of the final bead in the stage
- * @return A integer NDIM-vector which holds the winding vector of the path.
+ * @return A integer NDIM-vector which holds the winding std::vector of the path.
 ******************************************************************************/
 iVec MoveBase::getWindingNumber(const beadLocator &startBead, const beadLocator &endBead) { 
 
@@ -405,7 +405,7 @@ iVec MoveBase::getWindingNumber(const beadLocator &startBead, const beadLocator 
     beadIndex = startBead;
     dVec vel;
     do {
-        /* Get the vector separation */
+        /* Get the std::vector separation */
         vel = path(path.next(beadIndex)) - path(beadIndex);
 
         for (int i = 0; i < NDIM; i++) {
@@ -3122,10 +3122,10 @@ SwapMoveBase::~SwapMoveBase() {
 
 #include<numeric>
 template <typename T>
-vector<size_t> sort_indexes(const vector<T> &v) {
+std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 
   // initialize original index locations
-  vector<size_t> idx(v.size());
+  std::vector<size_t> idx(v.size());
   std::iota(idx.begin(), idx.end(), 0);
 
   // sort indexes based on comparing values in v
@@ -3395,7 +3395,7 @@ bool SwapHeadMove::attemptMove() {
                 /* We now perform a pre-metropolis step on the selected bead. If this 
                  * is not accepted, it is extremely likely that the potential change
                  * will not have any effect, so we don't bother with it. */
-                double PNorm = min(SigmaHead/SigmaSwap,1.0);
+                double PNorm = std::min(SigmaHead/SigmaSwap,1.0);
                 if (random.rand() < PNorm) {
 
                     /* Mark the special beads */
@@ -3632,7 +3632,7 @@ bool SwapTailMove::attemptMove() {
                 /* We now perform a pre-metropolis step on the selected bead. If this 
                  * is not accepted, it is extremely unlikely that the potential change
                  * will have any effect, so we don't bother with it. */
-                double PNorm = min(SigmaTail/SigmaSwap,1.0);
+                double PNorm = std::min(SigmaTail/SigmaSwap,1.0);
                 if (random.rand() < PNorm) {
 
                     /* Mark the swap and pivot as special */

@@ -29,9 +29,9 @@ class LookupTable;
 class MoveBase;
 class EstimatorBase;
 
-ostream& operator<<(ostream&, const vector<string>&);
-string getList (const vector<string> &, char sep=' ');
-bool isStringInVector(const string, const vector<string>&);
+std::ostream& operator<<(std::ostream&, const std::vector<std::string>&);
+std::string getList (const std::vector<std::string> &, char sep=' ');
+bool isStringInVector(const std::string, const std::vector<std::string>&);
 
 // ========================================================================  
 // Parameters Class
@@ -49,23 +49,23 @@ class Parameters {
         
         /** Add a parameter to the map without a default value */
         template <typename Ttype> 
-           void add(string,string,string);
+           void add(std::string, std::string, std::string);
 
         /** Add a parameter to the map with a default value */
         template <typename Ttype> 
-            void add(string,string,string, const Ttype);
+            void add(std::string, std::string, std::string, const Ttype);
 
         /** Set a parameter from a value */
         template<typename Ttype>
-            void set(const string&, const Ttype);
+            void set(const std::string&, const Ttype);
 
         /** Set a parameter from an xml node*/
         template<typename Ttype>
-            void set(const string&, const pt::ptree &);
+            void set(const std::string&, const pt::ptree &);
 
         /** Insert options into the options_description data structure to be
          * read from the command line. */
-        void setupCommandLine(boost::ptr_map<string,po::options_description>&);
+        void setupCommandLine(boost::ptr_map<std::string,po::options_description>&);
 
         /** Update parameters from command line */
         void update(int,char*[],po::options_description&);
@@ -81,32 +81,32 @@ class Parameters {
         po::variables_map& operator()() { return params;}
 
         /** Parmaters(key) returns the existence of a parameter */
-        const bool operator()(const string & key) const { return !(state.at(key) == UNSET); }
+        const bool operator()(const std::string & key) const { return !(state.at(key) == UNSET); }
 
         /** Parmaters[key] returns the variable value at key */
-        const po::variable_value & operator[](const string & key) const {return params[key];}
-        po::variable_value & operator[](const string & key) {return params.at(key);}
+        const po::variable_value & operator[](const std::string & key) const {return params[key];}
+        po::variable_value & operator[](const std::string & key) {return params.at(key);}
 
     private:
 
-        using Extractor = map<string, void(*)(const po::variable_value &)>;
+        using Extractor = std::map<std::string, void(*)(const po::variable_value &)>;
 
         po::variables_map params;                 ///< Parameter map
-        map<string, const type_info&> type;       ///< Parameter types
-        map<string,string> pClass;                ///< Class of the parameters
-        map<string,ParamState> state;             ///< State of a parameter
-        map<string,string> shortName;             ///< Short name of a parameter (optional)
-        map<string,string> helpMessage;           ///< Help message for a parameter
+        std::map<std::string, const std::type_info&> type;       ///< Parameter types
+        std::map<std::string, std::string> pClass;                ///< Class of the parameters
+        std::map<std::string,ParamState> state;             ///< State of a parameter
+        std::map<std::string, std::string> shortName;             ///< Short name of a parameter (optional)
+        std::map<std::string, std::string> helpMessage;           ///< Help message for a parameter
         Extractor extract;                        ///< Stores how to print each element
 
-        /** Split a string at a delimeter */
-        vector<string> split(const string &, char);
+        /** Split a std::string at a delimeter */
+        std::vector<std::string> split(const std::string &, char);
 
         template <typename Ttype> 
-            po::typed_value<Ttype, char>* initValue(const string &);
+            po::typed_value<Ttype, char>* initValue(const std::string &);
 
         /** Get a node from an xml file */
-        bool getNode(const pt::ptree &xmlParams, pt::ptree &node, const string key) {
+        bool getNode(const pt::ptree &xmlParams, pt::ptree &node, const std::string key) {
             boost::optional<const pt::ptree&> child = xmlParams.get_child_optional(key);
             if (!child)
                 return false;
@@ -124,12 +124,12 @@ class Parameters {
  * @param _pClass the class of parameter
 ******************************************************************************/
 template <typename Ttype> 
-void Parameters::add(string _label,string _helpMessage,string _pClass) {
+void Parameters::add(std::string _label, std::string _helpMessage, std::string _pClass) {
 
     /* We break the label up at a possible comma and store the short-name in a
      * map*/
-    vector<string> label = split(_label,',');
-    string key = label[0];
+    std::vector<std::string> label = split(_label,',');
+    std::string key = label[0];
     if (label.size() > 1) 
         shortName.emplace(key,label[1]);
     else 
@@ -142,17 +142,17 @@ void Parameters::add(string _label,string _helpMessage,string _pClass) {
     pClass.emplace(key,_pClass);
 
     /* Add the type to the appropriate map */
-    type.emplace(pair<string,const type_info&>(key,typeid(Ttype)));
+    type.emplace(std::pair<std::string,const std::type_info&>(key,typeid(Ttype)));
 
     /* Stores the function signature to print an element */
-    extract.emplace(pair<string,void(*)(const po::variable_value &)>
-            (key,[](const po::variable_value& v) {cout << v.as<Ttype>();}));
+    extract.emplace(std::pair<std::string,void(*)(const po::variable_value &)>
+            (key,[](const po::variable_value& v) {std::cout << v.as<Ttype>();}));
 
     /* Initialize the parameter state */
     state.emplace(key,UNSET);
 
     /* Insert an empty parameter */
-    params.insert(make_pair(key, po::variable_value())); 
+    params.insert(std::make_pair(key, po::variable_value())); 
 
     /* update the parameters map */
     po::notify(params);
@@ -167,15 +167,15 @@ void Parameters::add(string _label,string _helpMessage,string _pClass) {
  * @param _defaultValue the default value of the parameter
 ******************************************************************************/
 template <typename Ttype> 
-void Parameters::add(string _label,string _helpMessage,string _pClass, 
+void Parameters::add(std::string _label, std::string _helpMessage, std::string _pClass, 
         const Ttype _defaultValue) {
 
     /* We perform a standard initialization */
     add<Ttype>(_label,_helpMessage,_pClass);
 
     /* Get the long name */
-    vector<string> label = split(_label,',');
-    string key = label[0];
+    std::vector<std::string> label = split(_label,',');
+    std::string key = label[0];
 
     /* Insert the default value into the parameter map */
     set<Ttype>(key,_defaultValue);
@@ -191,7 +191,7 @@ void Parameters::add(string _label,string _helpMessage,string _pClass,
  * @param val value of the parameter
 ******************************************************************************/
 template<typename Ttype>
-void Parameters::set(const string& key, const Ttype val) {
+void Parameters::set(const std::string& key, const Ttype val) {
     if (params.count(key)) {
         po::variables_map::iterator it(params.find(key));
         po::variable_value & v(it->second);
@@ -202,11 +202,11 @@ void Parameters::set(const string& key, const Ttype val) {
         po::notify(params);
 
         /* insert the type */
-        type.emplace(pair<string,const type_info&>(key,typeid(Ttype)));
+        type.emplace(std::pair<std::string,const std::type_info&>(key,typeid(Ttype)));
 
         /* Stores the function signature to print an element */
-        extract.emplace(pair<string,void(*)(const po::variable_value &)>
-                (key,[](const po::variable_value& v) {cout << v.as<Ttype>();}));
+        extract.emplace(std::pair<std::string,void(*)(const po::variable_value &)>
+                (key,[](const po::variable_value& v) {std::cout << v.as<Ttype>();}));
     }
 
     state[key] = SET;
@@ -219,7 +219,7 @@ void Parameters::set(const string& key, const Ttype val) {
  * @param xml node
 ******************************************************************************/
 template<typename Ttype>
-void Parameters::set(const string& key, const pt::ptree &xml) {
+void Parameters::set(const std::string& key, const pt::ptree &xml) {
     if (!xml.count(key))
         return;
 
@@ -231,11 +231,11 @@ void Parameters::set(const string& key, const pt::ptree &xml) {
 }
 
 /**************************************************************************//**
- * Get a value string to initialize the command line options.
+ * Get a value std::string to initialize the command line options.
  *
 ******************************************************************************/
 template <typename Ttype> 
-po::typed_value<Ttype, char>* Parameters::initValue(const string& key) {
+po::typed_value<Ttype, char>* Parameters::initValue(const std::string& key) {
     if (state[key] == DEFAULTED)
         return po::value<Ttype>()->default_value(params[key].as<Ttype>());
     else
@@ -308,24 +308,24 @@ class Setup {
         Parameters params;                          ///< All simulation parameters
 
     private:
-        vector<string> interactionPotentialName;    ///< The allowed interaction potential names
-        vector<string> externalPotentialName;       ///< The allowed external potential names
-        vector<string> waveFunctionName;            ///< The allowed trial wave function names
-        vector<string> randomGeneratorName;         ///< The allowed random number generator names
-        vector<string> actionName;                  ///< The allowed action names
-        vector<string> estimatorName;               ///< The allowed estimator names
-        vector<string> moveName;                    ///< The allowed move names
-        vector<string> optionClassNames;            ///< The allowed option class names
-        vector<string> wavevectorTypeName;          ///< The allowed wavevector type names
+        std::vector<std::string> interactionPotentialName;    ///< The allowed interaction potential names
+        std::vector<std::string> externalPotentialName;       ///< The allowed external potential names
+        std::vector<std::string> waveFunctionName;            ///< The allowed trial wave function names
+        std::vector<std::string> randomGeneratorName;         ///< The allowed random number generator names
+        std::vector<std::string> actionName;                  ///< The allowed action names
+        std::vector<std::string> estimatorName;               ///< The allowed estimator names
+        std::vector<std::string> moveName;                    ///< The allowed move names
+        std::vector<std::string> optionClassNames;            ///< The allowed option class names
+        std::vector<std::string> wavevectorTypeName;          ///< The allowed wavevector type names
 
-        string interactionNames;                    ///< The interaction output list
-        string externalNames;                       ///< The external output list
-        string waveFunctionNames;                   ///< The wavefunction output list
-        string randomGeneratorNames;                ///< The random number generator output list
-        string actionNames;                         ///< The action output list
-        string estimatorNames;                      ///< The estimator list
-        string moveNames;                           ///< The move list
-        string wavevectorTypeNames;                 ///< The wavevector types list
+        std::string interactionNames;                    ///< The interaction output list
+        std::string externalNames;                       ///< The external output list
+        std::string waveFunctionNames;                   ///< The wavefunction output list
+        std::string randomGeneratorNames;                ///< The random number generator output list
+        std::string actionNames;                         ///< The action output list
+        std::string estimatorNames;                      ///< The estimator list
+        std::string moveNames;                           ///< The move list
+        std::string wavevectorTypeNames;                 ///< The wavevector types list
 
         /* The factories needed to instantiate objects */
         MoveFactory moveFactory;                    
@@ -334,19 +334,19 @@ class Setup {
 
         bool definedCell;                           ///< The user has physically set the sim. cell
 
-        boost::ptr_map<string,po::options_description> optionClasses; ///< A map of different option types
+        boost::ptr_map<std::string,po::options_description> optionClasses; ///< A map of different option types
         po::options_description cmdLineOptions;     ///< All options combined
 
         /** process and clean up the command line options */
-        void cleanCommandLineOptions(int, char*[], vector<string> &, vector<string> &,
-                vector<string>&);
+        void cleanCommandLineOptions(int, char*[], std::vector<std::string> &, std::vector<std::string> &,
+                std::vector<std::string>&);
         void update(int,char*[],po::options_description&);
 
         /** Initialize all possible parameters*/
         void initParameters();
 
         /* Get a formatted list of xml options */
-        string getXMLOptionList(const vector<string> &, const string);  
+        std::string getXMLOptionList(const std::vector<std::string> &, const std::string);  
 };
 
 #endif

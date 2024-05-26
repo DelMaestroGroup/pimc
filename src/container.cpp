@@ -126,7 +126,7 @@ Prism::Prism(const dVec &_side, const iVec &_periodic) {
     pSide = periodic*side;
 
     /* are there any non-periodic boundary conditions? */
-    fullyPeriodic = all(periodic==1);
+    fullyPeriodic = all(periodic == 1u);
 
     /* Compute the maximum possible separation possible inside the box */
     maxSep = sqrt(dot(side/(periodic + 1.0),side/(periodic + 1.0)));
@@ -230,8 +230,8 @@ Cylinder::Cylinder(const double _rho, const double radius, const int numParticle
 
     /* We can only make a cylinder in 3 dimensions */
     if (NDIM != 3) {
-        cerr << "You can only create a cylinder in 3 dimensions, change NDIM!" 
-            << endl;
+        std::cerr << "You can only create a cylinder in 3 dimensions, change NDIM!" 
+            << std::endl;
         exit(EXIT_FAILURE);
     }
     else {
@@ -241,7 +241,7 @@ Cylinder::Cylinder(const double _rho, const double radius, const int numParticle
 
         /* We check to make sure that our aspect ratio is at least 2:1 */
         if (L < 2.0*radius) 
-            cerr << "L:r is smaller than 2:1!" << endl;
+            std::cerr << "L:r is smaller than 2:1!" << std::endl;
 
         /* Setup the prism size in each of the three dimensions which the 
          * cylinder will be inscribed insde of.  We make it 2R X 2R X L  */
@@ -287,14 +287,14 @@ Cylinder::Cylinder(const double radius, const double L) {
 
     /* We can only make a cylinder in 3 dimensions */
     if (NDIM != 3) {
-        cerr << "You can only create a cylinder in 3 dimensions, change NDIM!" 
-            << endl;
+        std::cerr << "You can only create a cylinder in 3 dimensions, change NDIM!" 
+            << std::endl;
         exit(EXIT_FAILURE);
     }
     else {
         /* We check to make sure that our aspect ratio is at least 2:1 */
         if (L < 2.0*radius)
-            cerr << "L:r is smaller than 2:1!" << endl;
+            std::cerr << "L:r is smaller than 2:1!" << std::endl;
 
         /* Setup the prism size in each of the three dimensions which the 
          * cylinder will be inscribed insde of.  We make it 2R X 2R X L 

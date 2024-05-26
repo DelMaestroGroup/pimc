@@ -243,12 +243,12 @@ void ClassicalMonteCarlo::deleteParticle() {
  *
 ******************************************************************************/
 void ClassicalMonteCarlo::measure(int &numMeasure) {
-    cout << aveEnergy/(numMeasure) << "\t" << aveNumParticles/(numMeasure) 
+    std::cout << aveEnergy/(numMeasure) << "\t" << aveNumParticles/(numMeasure) 
          << "\t" << (3.0/2.0)*constants()->T() + aveEoN/(numMeasure)
          << "\t" << aveNumParticles/(numMeasure*boxPtr->volume)
          << "\t" << 1.0*numMoveAccept/(1.0*numMoveTotal) 
          << "\t" << 1.0*numInsertAccept/(1.0*numInsertTotal)
-         << "\t" << 1.0*numDeleteAccept/(1.0*numDeleteTotal) << endl;
+         << "\t" << 1.0*numDeleteAccept/(1.0*numDeleteTotal) << std::endl;
     aveEnergy = 0.0;
     aveEoN = 0.0;
     aveNumParticles = 0.0;

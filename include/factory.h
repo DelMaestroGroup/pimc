@@ -10,7 +10,7 @@
 #define FACTORY_H
 
 /** 
- * An abstract factory class which creates new object instances based on a string
+ * An abstract factory class which creates new object instances based on a std::string
  * descripter and constructor signature.
  *
  * We use the factory method design pattern 
@@ -33,8 +33,8 @@ class Factory<BaseType (ParamType...)>
     public:
 
         /** The names of all objects instatiated by the factory */
-        vector<string> getNames() const {
-            std::vector<string> names;
+        std::vector<std::string> getNames() const {
+            std::vector<std::string> names;
             for(auto const& createIter: _create)
                 names.push_back(createIter.first);
             return names;
@@ -53,8 +53,8 @@ class Factory<BaseType (ParamType...)>
         Factory<BaseType (ParamType...)> * operator() () { return Instance();}
 
         /** Return an instantiated object with a given name */
-        BaseType Create(string name, ParamType ...param) {
-            typename map<string,CreateObjectFunc>::const_iterator objItr = _create.find(name);
+        BaseType Create(std::string name, ParamType ...param) {
+            typename std::map<std::string,CreateObjectFunc>::const_iterator objItr = _create.find(name);
             if (objItr != _create.end()) {
                 return (objItr->second)(param...);
                 /* auto created = (objItr->second)(param...); */
@@ -64,16 +64,16 @@ class Factory<BaseType (ParamType...)>
             return nullptr;
         }
 
-        /** Register the derived type with a descriptive name in the map */
+        /** Register the derived type with a descriptive name in the std::map */
         template<class DerivedType>
-            bool Register(string name)
+            bool Register(std::string name)
             {
                 _create[name] = &createObj<DerivedType>;
                 return true;
             }
 
     protected:
-        map<string,CreateObjectFunc> _create;        // The name->constructor map
+        std::map<std::string,CreateObjectFunc> _create;        // The name->constructor std::map
 
         /* Create the new object */
         template <class DerivedType>
