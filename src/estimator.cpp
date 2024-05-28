@@ -38,12 +38,6 @@ REGISTER_ESTIMATOR("linear density rho",LinearParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density rho",PlaneParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density average rho",PlaneParticleAveragePositionEstimator);
 REGISTER_ESTIMATOR("planar potential average Vext",PlaneAverageExternalPotentialEstimator);
-REGISTER_ESTIMATOR("superfluid fraction",SuperfluidFractionEstimator);
-REGISTER_ESTIMATOR("planar winding rhos/rho",PlaneWindingSuperfluidDensityEstimator);
-REGISTER_ESTIMATOR("planar area rhos/rho",PlaneAreaSuperfluidDensityEstimator);
-REGISTER_ESTIMATOR("radial winding rhos/rho",RadialWindingSuperfluidDensityEstimator);
-REGISTER_ESTIMATOR("radial area rhos/rho",RadialAreaSuperfluidDensityEstimator);
-REGISTER_ESTIMATOR("local superfluid",LocalSuperfluidDensityEstimator);
 REGISTER_ESTIMATOR("diagonal fraction",DiagonalFractionEstimator);
 REGISTER_ESTIMATOR("worm properties",WormPropertiesEstimator);
 REGISTER_ESTIMATOR("permutation cycle",PermutationCycleEstimator);
@@ -53,6 +47,14 @@ REGISTER_ESTIMATOR("pair correlation function",PairCorrelationEstimator);
 REGISTER_ESTIMATOR("static structure factor",StaticStructureFactorEstimator);
 REGISTER_ESTIMATOR("intermediate scattering function",IntermediateScatteringFunctionEstimator);
 REGISTER_ESTIMATOR("radial density",RadialDensityEstimator);
+#if NDIM > 1
+REGISTER_ESTIMATOR("radial area rhos/rho",RadialAreaSuperfluidDensityEstimator);
+REGISTER_ESTIMATOR("planar area rhos/rho",PlaneAreaSuperfluidDensityEstimator);
+REGISTER_ESTIMATOR("superfluid fraction",SuperfluidFractionEstimator);
+REGISTER_ESTIMATOR("radial winding rhos/rho",RadialWindingSuperfluidDensityEstimator);
+REGISTER_ESTIMATOR("planar winding rhos/rho",PlaneWindingSuperfluidDensityEstimator);
+REGISTER_ESTIMATOR("local superfluid",LocalSuperfluidDensityEstimator);
+#endif
 #if NDIM > 2
 REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
 REGISTER_ESTIMATOR("commensurate order parameter",CommensurateOrderParameterEstimator);
@@ -62,13 +64,15 @@ REGISTER_ESTIMATOR("commensurate order parameter",CommensurateOrderParameterEsti
 REGISTER_ESTIMATOR("cylinder energy",CylinderEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder number particles",CylinderNumberParticlesEstimator);
 REGISTER_ESTIMATOR("cylinder number distribution",CylinderNumberDistributionEstimator);
-REGISTER_ESTIMATOR("cylinder linear density",CylinderLinearDensityEstimator);
 REGISTER_ESTIMATOR("cylinder superfluid fraction",CylinderSuperfluidFractionEstimator);
 REGISTER_ESTIMATOR("cylinder one body density matrix",CylinderOneBodyDensityMatrixEstimator);
 REGISTER_ESTIMATOR("cylinder pair correlation function",CylinderPairCorrelationEstimator);
-REGISTER_ESTIMATOR("cylinder linear potential",CylinderLinearPotentialEstimator);
 REGISTER_ESTIMATOR("cylinder potential energy",PotentialEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder static structure factor",CylinderStaticStructureFactorEstimator);
+#if NDIM > 1
+REGISTER_ESTIMATOR("cylinder linear density",CylinderLinearDensityEstimator);
+REGISTER_ESTIMATOR("cylinder linear potential",CylinderLinearPotentialEstimator);
+#endif
 #if NDIM > 2
 REGISTER_ESTIMATOR("cylinder radial potential",CylinderRadialPotentialEstimator);
 #endif
@@ -412,88 +416,89 @@ std::string EstimatorBase::dVecToString(const dVec& v){
 }
 
 /*************************************************************************//**
-*  Get q-vectors for scattering calculations
+*  Get wavevectors for scattering calculations
 *  
 *  Based on the geometry of the system and a user-defined choice, 
 *  (wavevector and wavevector_type command line arguments) return a
-*  list of q-vectors where scattering will be computed.
+*  list of wavevectors where scattering will be computed.
 *  
 ******************************************************************************/
 void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
+    dVec q;  // Vector to store individual wavevectors
 
-    dVec q;
-
-    /* Here we get the text from the command line as tokens */ 
+    // Retrieve wavevector input string and type
     std::string input = constants()->wavevector();
     std::string inputType = constants()->wavevectorType();
-    char *cstr = new char [input.length()+1];
-    std::strcpy (cstr, input.c_str());
-    char *token = std::strtok(cstr, " ");
 
-    /* Below we go through the various possible command line options to 
-     * create q-vectors and create the list */
+    // Tokenize input string into components
+    std::istringstream iss(input);
+    std::vector<std::string> tokens{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
+    if (tokens.size() < 1) {
+        std::cerr << "\nERROR: EstimatorBase::getQVectors: "
+                  << "No input detected." << std::endl
+                  << "Action: Ensure `wavevector` command line option is set." << std::endl;
+        exit(1);
+    }
 
-    /* Here we have a NDIM-list of q-vectors indexed by integers, 
-     * i.e. "1 0 1" or floats, i.e. "0.3 0 0.3" */
+    // Handle integer and float inputs
     if ((inputType == "int") || (inputType == "float")) {
-        while(token) {
-            int j = 0;
-            for (int i=0; (i<NDIM) && token; i++) {
-                if (inputType == "int")
-                    q[i] = (2.0*M_PI/path.boxPtr->side[i])*std::atoi(token);
-                else
-                    q[i] = std::atof(token);
-
-                token = strtok(NULL, " ");
-                j = i;
+        for (size_t i = 0; i < tokens.size(); i += NDIM) {
+            for (int j = 0; j < NDIM; ++j) {
+                if (inputType == "int") {
+                    // Convert token to integer and scale by box side length
+                    q[j] = (2.0 * M_PI / path.boxPtr->side[j]) * std::stoi(tokens[i + j]);
+                } else {
+                    // Convert token to float
+                    q[j] = std::stof(tokens[i + j]);
+                }
             }
-            if (j==(NDIM-1)){
-                qValues.push_back(q);
-            }
+            // Add wavevector to the list of q-values
+            qValues.push_back(q);
         }
     }
 
-    /* Here we specify NDIM integers "1 3 1" or NDIM floats "0.0 0.0 4.0"
-     * which determine the maximum possible q-vector and construct up to
-     * that one. */
+    // Handle maximum integer and float inputs
     if ((inputType == "max_int") || (inputType == "max_float")) {
-        iVec q_max_int, _q_int;
+        iVec q_max_int = 0;
+        iVec _q_int = 0;
         dVec q_max = 0.0;
 
-        while(token) {
-            for (int i=0; (i<NDIM) && token; i++) {
-                if (inputType == "max_int") {
-                    q_max_int[i] = std::abs(std::atoi(token));
-                    q_max[i] = q_max_int[i]*2.0*M_PI/path.boxPtr->side[i];
-                }
-                else 
-                    q_max[i] = std::atof(token);
-
-                token = strtok(NULL, " ");
+        // Parse maximum wavevector components
+        for (int i = 0; i < NDIM; ++i) {
+            if (inputType == "max_int") {
+                q_max_int[i] = std::abs(std::stoi(tokens[i]));
+                q_max[i] = q_max_int[i] * 2.0 * M_PI / path.boxPtr->side[i];
+            } else {
+                q_max[i] = std::stof(tokens[i]);
             }
         }
 
-        double q_mag_max = sqrt(dot(q_max,q_max));
+        // Calculate maximum wavevector magnitude
+        double q_mag_max = sqrt(dot(q_max, q_max));
         double q_mag;
 
+        // Adjust maximum integer wavevector components for float input
         if (inputType == "max_float") {
-            for (int i=0; i < NDIM; i++)
-                q_max_int[i] = 1 + static_cast<int>(q_mag_max*path.boxPtr->side[i]/2.0/M_PI);
+            for (int i = 0; i < NDIM; ++i) {
+                q_max_int[i] = 1 + static_cast<int>(q_mag_max * path.boxPtr->side[i] / 2.0 / M_PI);
+            }
         }
 
+        // Initialize wavevector generation
         int n_q = 1;
-        /* these are the negative maximal wavevectors */
-        for (int i = 0; i < NDIM; i++) {
-            n_q *= 2*q_max_int[i] + 1;
+        for (int i = 0; i < NDIM; ++i) {
+            n_q *= 2 * q_max_int[i] + 1;
             _q_int[i] = -q_max_int[i];
-            q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+            q[i] = _q_int[i] * 2.0 * M_PI / path.boxPtr->side[i];
         }
 
-        q_mag = sqrt(dot(q,q));
-        if (q_mag <= q_mag_max)
+        // Check initial wavevector magnitude and add if valid
+        q_mag = sqrt(dot(q, q));
+        if (q_mag <= q_mag_max) {
             qValues.push_back(q);
+        }
 
-        /* This generates all possible std::vectors */
+        // Generate all possible wavevectors within specified bounds
         int pos = NDIM - 1;
         int count = 0;
         while (count < n_q - 1) {
@@ -502,74 +507,60 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
                 pos -= 1;
             } else {
                 _q_int[pos] += 1;
-                for (int i = 0; i < NDIM; i++) {
-                    q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+                for (int i = 0; i < NDIM; ++i) {
+                    q[i] = _q_int[i] * 2.0 * M_PI / path.boxPtr->side[i];
                 }
 
-                q_mag = sqrt(dot(q,q));
-                if (q_mag <= q_mag_max) 
+                // Check wavevector magnitude and add if valid
+                q_mag = sqrt(dot(q, q));
+                if (q_mag <= q_mag_max) {
                     qValues.push_back(q);
+                }
                 count += 1;
-                pos = NDIM - 1; //increment the innermost loop
+                pos = NDIM - 1;
             }
         }
     }
 
-    if (constants()->wavevectorType() == "file_int") {
-
+    // Handle file input for integer values
+    if (inputType == "file_int") {
         std::ifstream file(input);
         std::string line;
-        // Read one line at a time into the variable line:
-        while(std::getline(file, line)) {
-            std::vector<int> line_data;
-            std::stringstream line_stream(line);
-        
-            int value;
-            // Read an integer at a time from the line
-            while(line_stream >> value) {
-                // Add the integers from a line to a 1D array (std::vector)
-                line_data.push_back(value);
-            }
-            PIMC_ASSERT(line_data.size()==NDIM);
+        while (std::getline(file, line)) {
+            std::istringstream line_stream(line);
+            std::vector<int> line_data((std::istream_iterator<int>(line_stream)), std::istream_iterator<int>());
+            PIMC_ASSERT(line_data.size() == NDIM);
 
-            for (int i=0; i < NDIM; i++) {
-                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
-            }
-            qValues.push_back(q);
-        }
-    }
-    if (constants()->wavevectorType() == "file_float") {
-
-        std::ifstream file(input);
-        std::string line;
-        // Read one line at a time into the variable line:
-        while(std::getline(file, line)) {
-            std::vector<int> line_data;
-            std::stringstream line_stream(line);
-        
-            int value;
-            // Read an integer at a time from the line
-            while(line_stream >> value) {
-                // Add the integers from a line to a 1D array (std::vector)
-                line_data.push_back(value);
-            }
-            PIMC_ASSERT(line_data.size()==NDIM);
-
-            for (int i=0; i < NDIM; i++) {
-                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
+            for (int i = 0; i < NDIM; ++i) {
+                q[i] = (2.0 * M_PI / path.boxPtr->side[i]) * line_data[i];
             }
             qValues.push_back(q);
         }
     }
 
+    // Handle file input for float values
+    if (inputType == "file_float") {
+        std::ifstream file(input);
+        std::string line;
+        while (std::getline(file, line)) {
+            std::istringstream line_stream(line);
+            std::vector<float> line_data((std::istream_iterator<float>(line_stream)), std::istream_iterator<float>());
+            PIMC_ASSERT(line_data.size() == NDIM);
+
+            for (int i = 0; i < NDIM; ++i) {
+                q[i] = line_data[i];
+            }
+            qValues.push_back(q);
+        }
+    }
 }
 
 /*************************************************************************//**
-*  Get q-vectors for scattering calculations
+*  Get wavevectors for scattering calculations
 *  
 *  Based on the geometry of the system and a user-defined choice, 
 *  (wavevector and wavevector_type command line arguments) return a
-*  list of q-vectors where scattering will be computed.
+*  list of wavevectors where scattering will be computed.
 *  
 ******************************************************************************/
 void EstimatorBase::getQVectorsNN(std::vector<dVec> &qValues) {
@@ -747,20 +738,20 @@ void EstimatorBase::getQVectorsNN(std::vector<dVec> &qValues) {
 }
 
 /*************************************************************************//**
-*  Get q-vectors for scattering calculations
+*  Get wavevectors for scattering calculations
 *  
 *  Based on the geometry of the system and a user-defined choice, 
 *  (wavevector and wavevector_type command line arguments) return a
-*  list of q-vectors where scattering will be computed.
+*  list of wavevectors where scattering will be computed.
 *  
 ******************************************************************************/
 std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double qMax, 
         int& numq, std::string qGeometry) {
 
-    /* initilize the total number of q-vectors */
+    /* initilize the total number of wavevectors */
     numq = 0;
 
-    /* The q-vectors will end up in this array to be returned by value. */
+    /* The wavevectors will end up in this array to be returned by value. */
     std::vector <std::vector<dVec> > q;
 
 
@@ -770,7 +761,7 @@ std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double q
         exit(0);
     }
 
-    /* Determine the set of q-vectors that have these magnitudes.  */
+    /* Determine the set of wavevectors that have these magnitudes.  */
     for (double cq = 0.0; cq <= qMax + EPS; cq += dq) {
         std::vector <dVec> qvecs;
 
@@ -787,7 +778,7 @@ std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double q
             qd[NDIM-1] = cq;
             qvecs.push_back(qd);
 
-            /* Can only do a spherical distribution of q-vectors in 3 spatial dimensions */
+            /* Can only do a spherical distribution of wavevectors in 3 spatial dimensions */
             #if NDIM==3
                 /* Number of θ values per q-magnitude, hard-coded for now */
                 int numTheta = 24; 
@@ -809,7 +800,7 @@ std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double q
             #endif 
         } // non-zero q-mags
 
-        /* Add the list of q-vectors at this magnitude */
+        /* Add the list of wavevectors at this magnitude */
         numq += qvecs.size();
         q.push_back(qvecs);
     } //q-mags
@@ -1903,6 +1894,7 @@ void PlaneAverageExternalPotentialEstimator::output() {
     communicate()->file(label)->rename();
 }
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // SUPERFLUID FRACTION ESTIMATOR CLASS ---------------------------------------
@@ -2027,7 +2019,9 @@ void SuperfluidFractionEstimator::accumulate() {
         ++n;
     }
 }
+#endif
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // PLANE WINDING SUPERFLUID DENSITY ESTIMATOR CLASS --------------------------
@@ -2116,7 +2110,9 @@ void PlaneWindingSuperfluidDensityEstimator::accumulate() {
 
     estimator += locWz*Wz;
 }
+#endif
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // PLANE AREA SUPERFLUID DENSITY ESTIMATOR CLASS -----------------------------
@@ -2211,7 +2207,9 @@ void PlaneAreaSuperfluidDensityEstimator::accumulate() {
 
     estimator += locAz*Az;
 }
+#endif
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // RADIAL WINDING SUPERFLUID DENSITY ESTIMATOR CLASS -------------------------
@@ -2297,7 +2295,9 @@ void RadialWindingSuperfluidDensityEstimator::accumulate() {
 
     estimator += locWz*Wz;
 }
+#endif
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // RADIAL AREA SUPERFLUID DENSITY ESTIMATOR CLASS ----------------------------
@@ -2385,7 +2385,9 @@ void RadialAreaSuperfluidDensityEstimator::accumulate() {
 
     estimator += locAz*Az;
 }
+#endif
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // LOCAL SUPERFLUID DENSITY ESTIMATOR CLASS ----------------------------------
@@ -2533,6 +2535,7 @@ void LocalSuperfluidDensityEstimator::accumulate() {
         estimator(n+2*numGrid) += locA2(n);
     }
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -3207,7 +3210,7 @@ void PairCorrelationEstimator::accumulate() {
 //    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 //{
 //
-//    /* hard-coded number of q-vector magnitudes */
+//    /* hard-coded number of wavevector magnitudes */
 //    numq = 20; 
 //
 //    /* initialize the number of std::vectors with each magnitude */
@@ -3218,16 +3221,16 @@ void PairCorrelationEstimator::accumulate() {
 //    qMag.resize(numq);
 //    qMag = 0.0;
 //
-//    /* The maximum q-vector magnitude to consider (hard-coded for now) */
+//    /* The maximum wavevector magnitude to consider (hard-coded for now) */
 //    double qmax = 4.0; // 1/A
 //    double dq = qmax/(numq-1);
 //
 //    /* Determine the set of magnitudes */
-//    Array <double, 1> qMag(numq);         // the q-vector magnitudes
+//    Array <double, 1> qMag(numq);         // the wavevector magnitudes
 //    for (int nq = 0; nq < numq; nq++)
 //        qMag(nq) = nq*dq;
 //
-//    /* Determine the set of q-vectors that have these magintudes */
+//    /* Determine the set of wavevectors that have these magintudes */
 //    for (int nq = 0; nq < numq; nq++)
 //    {
 //        double cq = qMag(nq);
@@ -3276,17 +3279,17 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
-    /* The maximum q-vector magnitude to consider (hard-coded for now) */
+    /* The maximum wavevector magnitude to consider (hard-coded for now) */
     double qMax = 4.0; // 1/Å
 
-    /* We choose dq from the smallest possible q-vector, set by PBC */
+    /* We choose dq from the smallest possible wavevector, set by PBC */
     double dq = 2.0*M_PI/path.boxPtr->side[NDIM-1];
 
-    /* Get the desired q-vectors */
+    /* Get the desired wavevectors */
     int numq = 0;
     q = getQVectors2(dq,qMax,numq,"sphere");
 
-    /* Determine how many q-vector magnitudes  we have */
+    /* Determine how many wavevector magnitudes  we have */
     numq = q.size();
 
     /* Initialize the accumulator intermediate scattering function*/
@@ -3336,7 +3339,7 @@ void StaticStructureFactorEstimator::accumulate() {
     /* q-magnitudes */
     for (auto [nq,cq] : enumerate(q)) {
 
-        /* q-vectors with that q-magnitude*/
+        /* wavevectors with that q-magnitude*/
         for (const auto &cqvec : cq) {
     
             /* Average over all time slices */
@@ -3356,7 +3359,7 @@ void StaticStructureFactorEstimator::accumulate() {
                 } // bead1[1]
             } //bead1[0]
 
-        } // q-vectors
+        } // wavevectors
     } // q-magnitudes
 
     estimator += sf/numParticles; 
@@ -3380,7 +3383,7 @@ StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
-    /* Get the desired q-vectors (specified at command line)*/
+    /* Get the desired wavevectors (specified at command line)*/
     getQVectors(qValues);
 
     numq = qValues.size();
@@ -3407,7 +3410,7 @@ StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
         header += dVecToString(qValues_dVec(n)) + " ";
     header += "\n";
 
-    /* We index the q-vectors with an integer */
+    /* We index the wavevectors with an integer */
     header += str(format("#%15d") % 0);
     for (int n = 1; n < numq; n++) 
         header += str(format("%16d") % n);
@@ -3442,7 +3445,7 @@ StaticStructureFactorGPUEstimator::~StaticStructureFactorGPUEstimator() {
 }
 
 /*************************************************************************//**
- *  Measure the static structure factor for each q-vector
+ *  Measure the static structure factor for each wavevector
  *
  *  We only compute this for N > 1 due to the normalization.
 ******************************************************************************/
@@ -3506,9 +3509,9 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
 
     int numTimeSlices = constants()->numTimeSlices();
 
-    /* these are the hard-coded q-vectors for now */
+    /* these are the hard-coded wavevectors for now */
     numq = 3;
-    blitz::Array <double, 1> qMag(numq);         // the q-vector magnitudes
+    blitz::Array <double, 1> qMag(numq);         // the wavevector magnitudes
     /* qMag.resize(numq); */
     qMag = 0.761,1.75,1.81;
 
@@ -3516,11 +3519,11 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
     numqVecs.resize(numq);               
     numqVecs = 0;
 
-    /* The allowable error in the q-vector magnitude */
+    /* The allowable error in the wavevector magnitude */
     double eps = 2.0*M_PI/min(path.boxPtr->side)/sqrt(NDIM);
     eps *= eps;
 
-    /* Determine the set of q-vectors that have these magintudes */
+    /* Determine the set of wavevectors that have these magintudes */
     for (int nq = 0; nq < numq; nq++)
     {
         double cq = qMag(nq);
@@ -3549,10 +3552,10 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
             }
         }
 
-        /* Make sure we have some q-vectors */
+        /* Make sure we have some wavevectors */
         if (qvecs.size() < 1) {
             std::cerr << "\nERROR: Intermediate Scattering function: "
-                 << "No valid q-vectors were added to the list for measurment." 
+                 << "No valid wavevectors were added to the list for measurment." 
                  << std::endl << "Action: modify q-magintudes." << std::endl;
             exit(0);
         }
@@ -3616,7 +3619,7 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
     /* q-magnitudes */
     for (int nq = 0; nq < numq; nq++) {
 
-        /* q-vectors */
+        /* wavevectors */
         for (const auto &cqvec : q[nq]) {
 
             /* Average over all initial time slices */
@@ -3642,7 +3645,7 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
                     } // bead1[1]
                 } //tausep   
             } //bead1[0]
-        } //q-vectors
+        } //wavevectors
     } //q-magnitudes
 
     estimator += isf/numParticles;
@@ -4210,6 +4213,7 @@ void CylinderNumberDistributionEstimator::accumulate() {
         estimator(index) += 1.0;
 }
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // CYLINDER LINEAR DENSITY ESTIMATOR CLASS -----------------------------------
@@ -4274,6 +4278,7 @@ void CylinderLinearDensityEstimator::accumulate() {
         }
     }
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -4696,6 +4701,7 @@ void CylinderPairCorrelationEstimator::sample() {
     }
 }
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // CYLINDER LINEAR POTENTIAL ESTIMATOR CLASS ---------------------------------
@@ -4834,6 +4840,7 @@ void CylinderLinearPotentialEstimator::accumulate() {
 
     } // slice
 }
+#endif
 
 #if NDIM > 2
 // ---------------------------------------------------------------------------
@@ -5002,17 +5009,17 @@ CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
         double _maxR, int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
-    /* The maximum q-vector magnitude to consider (hard-coded for now) */
+    /* The maximum wavevector magnitude to consider (hard-coded for now) */
     double qMax = 4.0; // 1/Å
 
-    /* We choose dq from the smallest possible q-vector, set by PBC */
+    /* We choose dq from the smallest possible wavevector, set by PBC */
     double dq = 2.0*M_PI/path.boxPtr->side[NDIM-1];
     
-    /* Get the desired q-vectors */
+    /* Get the desired wavevectors */
     int numq = 0;
     q = getQVectors2(dq,qMax,numq,"line");
 
-    /* Determine how many q-vector magnitudes  we have */
+    /* Determine how many wavevector magnitudes  we have */
     numq = q.size();
 
     /* Initialize the accumulator intermediate scattering function*/
@@ -5061,7 +5068,7 @@ void CylinderStaticStructureFactorEstimator::accumulate() {
     /* q-magnitudes */
     for (auto [nq,cq] : enumerate(q)) {
 
-        /* q-vectors with a fixed q-magnitude*/
+        /* wavevectors with a fixed q-magnitude*/
         for (const auto &cqvec : cq) {
     
             /* Average over all time slices */
@@ -5087,7 +5094,7 @@ void CylinderStaticStructureFactorEstimator::accumulate() {
                 } // bead1[1]
             } //bead1[0]
 
-        } // q-vectors
+        } // wavevectors
     } // q-magnitudes
 
     estimator += sf/numParticles; 
@@ -5127,7 +5134,7 @@ CylinderStaticStructureFactorGPUEstimator::CylinderStaticStructureFactorGPUEstim
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
-    /* Get the desired q-vectors (specified at command line)*/
+    /* Get the desired wavevectors (specified at command line)*/
     getQVectors(qValues);
 
     numq = qValues.size();
@@ -5154,7 +5161,7 @@ CylinderStaticStructureFactorGPUEstimator::CylinderStaticStructureFactorGPUEstim
         header += dVecToString(qValues_dVec(n)) + " ";
     header += "\n";
 
-    /* We index the q-vectors with an integer */
+    /* We index the wavevectors with an integer */
     header += str(format("#%15d") % 0);
     for (int n = 1; n < numq; n++) 
         header += str(format("%16d") % n);
@@ -5189,7 +5196,7 @@ CylinderStaticStructureFactorGPUEstimator::~CylinderStaticStructureFactorGPUEsti
 }
 
 /*************************************************************************//**
- *  Measure the static structure factor for each q-vector
+ *  Measure the static structure factor for each wavevector
  *
  *  We only compute this for N > 1 due to the normalization.
 ******************************************************************************/

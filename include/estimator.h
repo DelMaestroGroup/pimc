@@ -454,6 +454,7 @@ class NumberDistributionEstimator: public EstimatorBase {
         void accumulate();          // Accumulate values
 };
 
+#if NDIM > 1
 // ========================================================================  
 // Superfluid Fraction Estimator Class 
 // ========================================================================  
@@ -480,7 +481,9 @@ class SuperfluidFractionEstimator: public EstimatorBase {
         void accumulate();       // Accumulate values
 
 };
+#endif
 
+#if NDIM > 1
 // ========================================================================  
 // Local Superfluid Density Estimator Class 
 // ========================================================================  
@@ -509,7 +512,9 @@ class LocalSuperfluidDensityEstimator: public EstimatorBase {
         void accumulate();      // Accumulate values
 
 };
+#endif
 
+#if NDIM > 1
 // ========================================================================  
 // Plane Winding Superfluid Density Estimator Class 
 // ========================================================================  
@@ -535,7 +540,9 @@ class PlaneWindingSuperfluidDensityEstimator: public EstimatorBase {
         void accumulate();      // Accumulate values
 
 };
+#endif
 
+#if NDIM > 1
 // ========================================================================  
 // Plane Area Superfluid Density Estimator Class 
 // ========================================================================  
@@ -561,7 +568,9 @@ class PlaneAreaSuperfluidDensityEstimator: public EstimatorBase {
         void accumulate();      // Accumulate values
 
 };
+#endif
 
+#if NDIM > 1
 // ========================================================================  
 // Radial Winding Superfluid Density Estimator Class 
 // ========================================================================  
@@ -585,7 +594,9 @@ class RadialWindingSuperfluidDensityEstimator: public EstimatorBase {
         void accumulate();      // Accumulate values
 
 };
+#endif
 
+#if NDIM > 1
 // ========================================================================  
 // Radial Area Superfluid Density Estimator Class 
 // ========================================================================  
@@ -609,6 +620,7 @@ class RadialAreaSuperfluidDensityEstimator: public EstimatorBase {
         void accumulate();      // Accumulate values
 
 };
+#endif
 
 // ========================================================================  
 // Diagonal Fraction Estimator Class 
@@ -1066,6 +1078,7 @@ class CylinderNumberDistributionEstimator: public EstimatorBase {
         void accumulate();          // Accumulate values
 };
 
+#if NDIM > 1
 // ========================================================================  
 // Cylinder Linear Density Estimator Class 
 // ========================================================================  
@@ -1088,6 +1101,7 @@ class CylinderLinearDensityEstimator: public EstimatorBase {
 
         void accumulate();          // Accumulate values
 };
+#endif
 
 // ========================================================================  
 // Cylinder Superfluid Fraction Estimator Class 
@@ -1187,6 +1201,7 @@ class CylinderPairCorrelationEstimator: public EstimatorBase {
         double dR;                      // The discretization
 };
 
+#if NDIM > 1
 // ========================================================================  
 // Cylinder Linear Potential Estimator Class
 // ========================================================================  
@@ -1213,6 +1228,7 @@ class CylinderLinearPotentialEstimator: public EstimatorBase {
         void accumulate();              // Accumulate values
         void accumulate1();              // Accumulate values
 };
+#endif
 
 #if NDIM > 2
 // ========================================================================  

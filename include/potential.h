@@ -1171,6 +1171,7 @@ class HardRodPotential : public PotentialBase  {
 //      double valuedVdr (const double);                    
 //};
 
+#if NDIM > 2
 // ========================================================================  
 // GraphenePotential Class
 // ========================================================================  
@@ -1218,7 +1219,9 @@ class GraphenePotential: public PotentialBase  {
         double A;
 
 };
+#endif
 
+#if NDIM > 2
 // ========================================================================  
 // GrapheneLUTPotential Class
 // ========================================================================  
@@ -1292,6 +1295,7 @@ class GrapheneLUTPotential: public PotentialBase  {
 	blitz::Array<double,2> vg;
 	blitz::Array<double,2> gradvg;
 };
+#endif
 
 #if NDIM > 2
 // ========================================================================  

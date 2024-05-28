@@ -71,9 +71,9 @@ REGISTER_EXTERNAL_POTENTIAL(                 "free",                  FreePotent
 REGISTER_EXTERNAL_POTENTIAL(             "osc_tube",      HarmonicCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>())
 REGISTER_EXTERNAL_POTENTIAL(          "single_well",            SingleWellPotential,  NO_SETUP())
 REGISTER_EXTERNAL_POTENTIAL(           "fixed_aziz",             FixedAzizPotential, GET_SETUP(), setup.get_cell())
+#if NDIM > 2
 REGISTER_EXTERNAL_POTENTIAL(             "graphene",              GraphenePotential, GET_SETUP(), setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>())
 REGISTER_EXTERNAL_POTENTIAL(          "graphenelut",           GrapheneLUTPotential, GET_SETUP(), setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.get_cell())
-#if NDIM > 2
 REGISTER_EXTERNAL_POTENTIAL(            "hard_tube",          HardCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>())
 REGISTER_EXTERNAL_POTENTIAL(       "plated_lj_tube",      PlatedLJCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["lj_width"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.params["lj_density"].as<double>())
 REGISTER_EXTERNAL_POTENTIAL(              "lj_tube",            LJCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["lj_cyl_density"].as<double>(), setup.params["lj_cyl_sigma"].as<double>(), setup.params["lj_cyl_epsilon"].as<double>())
@@ -2548,6 +2548,7 @@ double HardRodPotential::dVdtau(const dVec &sep1, const dVec &sep2)
     return ((0.5*t1/(exp(t2)-1.0))/(constants()->lambda()*constants()->tau()*constants()->tau()));
 }
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // GraphenePotential Class----------------------------------------------------
@@ -2730,7 +2731,9 @@ blitz::Array<dVec,1> GraphenePotential::initialConfig(const Container *boxPtr, M
     }
     return initialPos;
 }
+#endif
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // GrapheneLUTPotential Class----------------------------------------------------
@@ -3078,6 +3081,7 @@ blitz::Array<dVec,1> GrapheneLUTPotential::initialConfig(const Container *boxPtr
     }
     return initialPos;
 }
+#endif
 
 
 #if NDIM > 2
