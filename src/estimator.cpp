@@ -54,9 +54,11 @@ REGISTER_ESTIMATOR("static structure factor",StaticStructureFactorEstimator);
 REGISTER_ESTIMATOR("intermediate scattering function",IntermediateScatteringFunctionEstimator);
 REGISTER_ESTIMATOR("radial density",RadialDensityEstimator);
 #if NDIM > 2
-    REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
-    REGISTER_ESTIMATOR("commensurate order parameter",CommensurateOrderParameterEstimator);
+REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
+REGISTER_ESTIMATOR("commensurate order parameter",CommensurateOrderParameterEstimator);
 #endif
+
+/* Cylinder estimators */
 REGISTER_ESTIMATOR("cylinder energy",CylinderEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder number particles",CylinderNumberParticlesEstimator);
 REGISTER_ESTIMATOR("cylinder number distribution",CylinderNumberDistributionEstimator);
@@ -68,8 +70,10 @@ REGISTER_ESTIMATOR("cylinder linear potential",CylinderLinearPotentialEstimator)
 REGISTER_ESTIMATOR("cylinder potential energy",PotentialEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder static structure factor",CylinderStaticStructureFactorEstimator);
 #if NDIM > 2
-    REGISTER_ESTIMATOR("cylinder radial potential",CylinderRadialPotentialEstimator);
+REGISTER_ESTIMATOR("cylinder radial potential",CylinderRadialPotentialEstimator);
 #endif
+
+/* PIGS estimators */
 REGISTER_ESTIMATOR("pigs kinetic energy",KineticEnergyEstimator);
 REGISTER_ESTIMATOR("pigs total energy",TotalEnergyEstimator);
 REGISTER_ESTIMATOR("pigs thermodynamic potential energy",ThermoPotentialEnergyEstimator);
@@ -82,10 +86,10 @@ REGISTER_ESTIMATOR("pigs one body density matrix",PIGSOneBodyDensityMatrixEstima
 
 /* GPU accelerated estimators */
 #ifdef USE_GPU 
-    REGISTER_ESTIMATOR("intermediate scattering function gpu",IntermediateScatteringFunctionEstimatorGpu);
-    REGISTER_ESTIMATOR("elastic scattering gpu", ElasticScatteringEstimatorGpu);
-    REGISTER_ESTIMATOR("static structure factor gpu",StaticStructureFactorGPUEstimator);
-    REGISTER_ESTIMATOR("cylinder static structure factor gpu",CylinderStaticStructureFactorGPUEstimator);
+REGISTER_ESTIMATOR("intermediate scattering function gpu",IntermediateScatteringFunctionEstimatorGpu);
+REGISTER_ESTIMATOR("elastic scattering gpu", ElasticScatteringEstimatorGpu);
+REGISTER_ESTIMATOR("static structure factor gpu",StaticStructureFactorGPUEstimator);
+REGISTER_ESTIMATOR("cylinder static structure factor gpu",CylinderStaticStructureFactorGPUEstimator);
 #endif
 
 /**************************************************************************//**

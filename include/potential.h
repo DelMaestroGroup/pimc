@@ -395,6 +395,7 @@ class DipolePotential : public PotentialBase  {
 };
 
 
+#if NDIM > 2
 // ========================================================================  
 // Hard Cylinder Potential Class
 // ========================================================================  
@@ -429,7 +430,9 @@ class HardCylinderPotential : public PotentialBase {
     private:
         double R;       // Radius of the tube
 };
+#endif
 
+#if NDIM > 2
 // ========================================================================  
 // Plated LJ Cylinder Potential Class
 // ========================================================================  
@@ -524,7 +527,9 @@ inline double PlatedLJCylinderPotential::grad2V(const dVec &r) {
         g2V = lookupd2Vdr2(k);
     return g2V;
 }
+#endif
 
+#if NDIM > 2
 // ========================================================================  
 // LJ Cylinder Potential Class
 // ========================================================================  
@@ -611,7 +616,9 @@ inline double LJCylinderPotential::grad2V(const dVec &r) {
         g2V = lookupd2Vdr2(k);
     return g2V;
 }
+#endif
 
+#if NDIM > 2
 // ========================================================================  
 // LJ Hour Glass Potential Class
 // ========================================================================  
@@ -667,6 +674,7 @@ class LJHourGlassPotential : public PotentialBase {
             return (dR*t*t + R - dR);
         }
 };
+#endif
 
 // ========================================================================  
 // Aziz Potential Class
@@ -948,6 +956,7 @@ class FixedAzizPotential : public PotentialBase  {
 
 };
 
+#if NDIM > 2
 // ========================================================================  
 // FixedPositionLJPotential Class
 // ========================================================================  
@@ -977,9 +986,9 @@ class FixedPositionLJPotential: public PotentialBase  {
 	blitz::Array <dVec,1> fixedParticles;      // The location of the fixed particles
         int numFixedParticles;              // The total number of fixed particles
 };
+#endif
 
-
-
+#if NDIM > 2
 // ========================================================================  
 // Excluded Volume Class (volume excluded w/ large potential)
 // ========================================================================  
@@ -1018,6 +1027,7 @@ class Gasparini_1_Potential : public PotentialBase {
         const double excY;      //half amt. of exclusion (y)
         const double V0;        //scales the potential step
 };
+#endif
 
 // ========================================================================  
 // Hard Sphere Potential Class
@@ -1283,6 +1293,7 @@ class GrapheneLUTPotential: public PotentialBase  {
 	blitz::Array<double,2> gradvg;
 };
 
+#if NDIM > 2
 // ========================================================================  
 // GrapheneLUT3DPotential Class
 // ========================================================================  
@@ -1408,7 +1419,9 @@ inline double GrapheneLUT3DPotential::direct_lookup(blitz::Array<double,3> P,dVe
     double c0 = P(xidx,yidx,zidx);
     return c0;
 }
+#endif
 
+#if NDIM > 2
 // ========================================================================  
 // GrapheneLUT3DPotentialGenerate Class
 // ========================================================================  
@@ -1611,7 +1624,9 @@ class GrapheneLUT3DPotentialGenerate: public PotentialBase  {
             blitz::Array<double,2>, blitz::Array<double,1>
             > get_V3D_all( double, double, double, int, int, int, double );
 };
+#endif
 
+#if NDIM > 2
 // ========================================================================
 // GrapheneLUT3DPotentialToBinary Class
 // ========================================================================
@@ -1637,7 +1652,9 @@ class GrapheneLUT3DPotentialToBinary: public PotentialBase  {
 	blitz::Array<double,1> LUTinfo;
 
 };
+#endif
 
+#if NDIM > 2
 // ========================================================================
 // GrapheneLUT3DPotentialToText Class
 // ========================================================================
@@ -1663,6 +1680,6 @@ class GrapheneLUT3DPotentialToText: public PotentialBase  {
 	blitz::Array<double,1> LUTinfo;
 
 };
-
+#endif
 
 #endif
