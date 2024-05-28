@@ -42,6 +42,7 @@ Container::Container() {
 Container::~Container() {
 }
 
+#if NDIM > 1
 /**************************************************************************//**
  *  Given a grid box number, return the associated radius
  *
@@ -65,6 +66,7 @@ double Container::gridRadius2(const int n) const {
     }
     return r2;
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
