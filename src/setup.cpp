@@ -288,15 +288,12 @@ Setup::Setup() :
         "measurement"};
 
     /* Define the allowed interaction potential names */
-    interactionPotentialName = {"aziz", "szalewicz", "delta", "lorentzian", "sutherland", 
-        "hard_sphere", "hard_rod", "free", "delta1D", "harmonic", "dipole"};
-    interactionNames = getList(interactionPotentialName);
+    interactionPotentialName = PotentialFactory::instance().getNames<PotentialFactory::Type::Interaction>();
+    interactionNames = getList(interactionPotentialName,'\n');
 
     /* Define the allowed external  potential names */
-    externalPotentialName = {"free", "harmonic", "osc_tube", "lj_tube", "plated_lj_tube",
-        "hard_tube", "hg_tube", "fixed_aziz", "gasp_prim", "fixed_lj", "graphene", "graphenelut",
-         "graphenelut3d", "graphenelut3dgenerate", "graphenelut3dtobinary", "graphenelut3dtotext"};
-    externalNames = getList(externalPotentialName);
+    externalPotentialName = PotentialFactory::instance().getNames<PotentialFactory::Type::External>();
+    externalNames = getList(externalPotentialName,'\n');
 
     /* Define the allowed wavevector type names */ 
     wavevectorTypeName = {"int","float","max_int", "max_float", "file_int", "file_float", "help"};
@@ -1104,7 +1101,7 @@ void Setup::communicator() {
  * which is returned to the main program.  
 ******************************************************************************/
 PotentialBase * Setup::interactionPotential() {
-    return PotentialFactory::instance().create<PotentialFactory::Type::Internal>(constants()->intPotentialType());
+    return PotentialFactory::instance().create<PotentialFactory::Type::Interaction>(constants()->intPotentialType());
 }
 
 /*************************************************************************//**

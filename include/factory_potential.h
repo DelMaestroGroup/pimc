@@ -10,7 +10,7 @@
 class PotentialFactory {
 public:
     enum class Type {
-        Internal,
+        Interaction,
         External
     };
 
@@ -21,8 +21,8 @@ public:
 
     template<Type T>
     void registerCreator(const std::string& name, std::function<PotentialBase*()> creator) {
-        if constexpr (T == Type::Internal) {
-            creatorsInternal[name] = creator;
+        if constexpr (T == Type::Interaction) {
+            creatorsInteraction[name] = creator;
         } else {
             creatorsExternal[name] = creator;
         }
@@ -30,7 +30,7 @@ public:
 
     template<Type T>
     PotentialBase* create(const std::string& name) const {
-        const auto& creators = (T == Type::Internal) ? creatorsInternal : creatorsExternal;
+        const auto& creators = (T == Type::Interaction) ? creatorsInteraction : creatorsExternal;
         auto it = creators.find(name);
         if (it != creators.end()) {
             return it->second();
@@ -38,9 +38,19 @@ public:
         return nullptr;
     }
 
+    template<Type T>
+    std::vector<std::string> getNames() const {
+        std::vector<std::string> names;
+        const auto& creators = (T == Type::Interaction) ? creatorsInteraction : creatorsExternal;
+        for (const auto& pair : creators) {
+            names.push_back(pair.first);
+        }
+        return names;
+    }
+
 private:
     PotentialFactory() = default;
-    std::map<std::string, std::function<PotentialBase*()>> creatorsInternal;
+    std::map<std::string, std::function<PotentialBase*()>> creatorsInteraction;
     std::map<std::string, std::function<PotentialBase*()>> creatorsExternal;
 };
 
@@ -58,8 +68,8 @@ private:
     }; \
     static TYPE ## _ ## POTENTIAL_TYPE ## _Potential_Register global_##TYPE##_##POTENTIAL_TYPE##_potential_register;
 
-#define REGISTER_INTERNAL_POTENTIAL(NAME, TYPE, WITH_PARAMS, ...) \
-    REGISTER_POTENTIAL(NAME, TYPE, Internal, WITH_PARAMS, __VA_ARGS__)
+#define REGISTER_INTERACTION_POTENTIAL(NAME, TYPE, WITH_PARAMS, ...) \
+    REGISTER_POTENTIAL(NAME, TYPE, Interaction, WITH_PARAMS, __VA_ARGS__)
 
 #define REGISTER_EXTERNAL_POTENTIAL(NAME, TYPE, WITH_PARAMS, ...) \
     REGISTER_POTENTIAL(NAME, TYPE, External, WITH_PARAMS, __VA_ARGS__)

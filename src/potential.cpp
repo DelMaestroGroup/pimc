@@ -14,25 +14,25 @@
 #include <boost/math/special_functions/ellint_1.hpp>
 #include <boost/math/special_functions/ellint_2.hpp>
 
-////////////////////
-//REGISTER INTERNAL POTENTIALS HERE
-///////////////////
+/**************************************************************************//**
+ * Register interaction potentials
+******************************************************************************/
 
-REGISTER_INTERNAL_POTENTIAL(       "free",       FreePotential,  NO_SETUP())
-REGISTER_INTERNAL_POTENTIAL(      "delta",      DeltaPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
-REGISTER_INTERNAL_POTENTIAL( "sutherland", SutherlandPotential, GET_SETUP(), setup.params["interaction_strength"].as<double>())
-REGISTER_INTERNAL_POTENTIAL("hard_sphere", HardSpherePotential, GET_SETUP(), setup.params["scattering_length"].as<double>())
-REGISTER_INTERNAL_POTENTIAL(   "hard_rod",    HardRodPotential, GET_SETUP(), setup.params["scattering_length"].as<double>())
-REGISTER_INTERNAL_POTENTIAL(    "delta1D",    Delta1DPotential, GET_SETUP(), setup.params["delta_strength"].as<double>())
-REGISTER_INTERNAL_POTENTIAL( "lorentzian", LorentzianPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
-REGISTER_INTERNAL_POTENTIAL(       "aziz",       AzizPotential, GET_SETUP(), setup.get_cell())
-REGISTER_INTERNAL_POTENTIAL(  "szalewicz",  SzalewiczPotential, GET_SETUP(), setup.get_cell())
-REGISTER_INTERNAL_POTENTIAL(   "harmonic",   HarmonicPotential, GET_SETUP(), setup.params["omega"].as<double>())
-REGISTER_INTERNAL_POTENTIAL(     "dipole",     DipolePotential,  NO_SETUP())
+REGISTER_INTERACTION_POTENTIAL(       "free",       FreePotential,  NO_SETUP())
+REGISTER_INTERACTION_POTENTIAL(      "delta",      DeltaPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
+REGISTER_INTERACTION_POTENTIAL( "sutherland", SutherlandPotential, GET_SETUP(), setup.params["interaction_strength"].as<double>())
+REGISTER_INTERACTION_POTENTIAL("hard_sphere", HardSpherePotential, GET_SETUP(), setup.params["scattering_length"].as<double>())
+REGISTER_INTERACTION_POTENTIAL(   "hard_rod",    HardRodPotential, GET_SETUP(), setup.params["scattering_length"].as<double>())
+REGISTER_INTERACTION_POTENTIAL(    "delta1D",    Delta1DPotential, GET_SETUP(), setup.params["delta_strength"].as<double>())
+REGISTER_INTERACTION_POTENTIAL( "lorentzian", LorentzianPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
+REGISTER_INTERACTION_POTENTIAL(       "aziz",       AzizPotential, GET_SETUP(), setup.get_cell())
+REGISTER_INTERACTION_POTENTIAL(  "szalewicz",  SzalewiczPotential, GET_SETUP(), setup.get_cell())
+REGISTER_INTERACTION_POTENTIAL(   "harmonic",   HarmonicPotential, GET_SETUP(), setup.params["omega"].as<double>())
+REGISTER_INTERACTION_POTENTIAL(     "dipole",     DipolePotential,  NO_SETUP())
 
-////////////////////
-//REGISTER EXTERNAL POTENTIALS HERE
-///////////////////
+/**************************************************************************//**
+ * Register external potentials
+******************************************************************************/
 
 REGISTER_EXTERNAL_POTENTIAL(             "harmonic",              HarmonicPotential, GET_SETUP(), setup.params["omega"].as<double>())
 REGISTER_EXTERNAL_POTENTIAL(                 "free",                  FreePotential,  NO_SETUP())
