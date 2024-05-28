@@ -34,7 +34,6 @@ REGISTER_ESTIMATOR("number particles",NumberParticlesEstimator);
 REGISTER_ESTIMATOR("number distribution",NumberDistributionEstimator);
 REGISTER_ESTIMATOR("time",TimeEstimator);
 REGISTER_ESTIMATOR("particle position",ParticlePositionEstimator);
-REGISTER_ESTIMATOR("commensurate order parameter",CommensurateOrderParameterEstimator);
 REGISTER_ESTIMATOR("linear density rho",LinearParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density rho",PlaneParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density average rho",PlaneParticleAveragePositionEstimator);
@@ -56,6 +55,7 @@ REGISTER_ESTIMATOR("intermediate scattering function",IntermediateScatteringFunc
 REGISTER_ESTIMATOR("radial density",RadialDensityEstimator);
 #if NDIM > 2
     REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
+    REGISTER_ESTIMATOR("commensurate order parameter",CommensurateOrderParameterEstimator);
 #endif
 REGISTER_ESTIMATOR("cylinder energy",CylinderEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder number particles",CylinderNumberParticlesEstimator);
@@ -1275,6 +1275,7 @@ void NumberParticlesEstimator::accumulate() {
     estimator(2) += 1.0*numParticles/path.boxPtr->volume;
 }
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // COMMENSURATE ORDER PARAMETER ESTIMATOR CLASS ------------------------------
@@ -1359,6 +1360,7 @@ void CommensurateOrderParameterEstimator::accumulate() {
 
     estimator(0) += Scom*_norm;
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

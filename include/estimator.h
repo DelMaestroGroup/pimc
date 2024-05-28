@@ -277,6 +277,7 @@ class ParticlePositionEstimator: public EstimatorBase {
 };
 
 
+#if NDIM > 2
 // ========================================================================  
 // Commensurate Order Parameter Class
 // ========================================================================  
@@ -298,6 +299,7 @@ class CommensurateOrderParameterEstimator: public EstimatorBase {
         void accumulate();          ///< Accumulate values
         std::vector<dVec> g;             ///< the g-vector set
 };
+#endif
 
 #if NDIM > 2
 // ========================================================================  
