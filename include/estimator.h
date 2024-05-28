@@ -1212,6 +1212,7 @@ class CylinderLinearPotentialEstimator: public EstimatorBase {
         void accumulate1();              // Accumulate values
 };
 
+#if NDIM > 2
 // ========================================================================  
 // Cylinder Radial Potential Estimator Class
 // ========================================================================  
@@ -1236,6 +1237,7 @@ class CylinderRadialPotentialEstimator: public EstimatorBase {
         void accumulate();              // Accumulate values
         void accumulate1();             // Accumulate values
 };
+#endif
 
 // ========================================================================  
 // Cylinder Static Structure Factor Estimator Class

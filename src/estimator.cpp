@@ -64,10 +64,12 @@ REGISTER_ESTIMATOR("cylinder linear density",CylinderLinearDensityEstimator);
 REGISTER_ESTIMATOR("cylinder superfluid fraction",CylinderSuperfluidFractionEstimator);
 REGISTER_ESTIMATOR("cylinder one body density matrix",CylinderOneBodyDensityMatrixEstimator);
 REGISTER_ESTIMATOR("cylinder pair correlation function",CylinderPairCorrelationEstimator);
-REGISTER_ESTIMATOR("cylinder radial potential",CylinderRadialPotentialEstimator);
 REGISTER_ESTIMATOR("cylinder linear potential",CylinderLinearPotentialEstimator);
 REGISTER_ESTIMATOR("cylinder potential energy",PotentialEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder static structure factor",CylinderStaticStructureFactorEstimator);
+#if NDIM > 2
+    REGISTER_ESTIMATOR("cylinder radial potential",CylinderRadialPotentialEstimator);
+#endif
 REGISTER_ESTIMATOR("pigs kinetic energy",KineticEnergyEstimator);
 REGISTER_ESTIMATOR("pigs total energy",TotalEnergyEstimator);
 REGISTER_ESTIMATOR("pigs thermodynamic potential energy",ThermoPotentialEnergyEstimator);
@@ -4827,6 +4829,7 @@ void CylinderLinearPotentialEstimator::accumulate() {
     } // slice
 }
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // CYLINDER RADIAL POTENTIAL ESTIMATOR CLASS ---------------------------------
@@ -4975,6 +4978,7 @@ void CylinderRadialPotentialEstimator::accumulate1() {
     radPot /= (1.0*numFound1);
     estimator += radPot;
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
