@@ -15,6 +15,38 @@
 #include <boost/math/special_functions/ellint_2.hpp>
 
 /**************************************************************************//**
+ * Creating and Registering New Potentials
+******************************************************************************/
+ // 1. Declare your potential class inheriting from PotentialBase in the header file (e.g., potential.h).
+ //
+ // Example:
+ // class TestPotential : public PotentialBase {
+ // public:
+ //     TestPotential();
+ // };
+ //
+ // 2. Define your potential class inheriting from PotentialBase in the source file (e.g., potential.cpp).
+ //
+ // Example:
+ // TestPotential::TestPotential() {
+ //     // Constructor implementation
+ // }
+ //
+ // 3. Register your potential using the appropriate macro in the source file.
+ //
+ // For internal potentials:
+ // REGISTER_INTERNAL_POTENTIAL("internalName", TestPotential, NO_SETUP())
+ //
+ // For external potentials:
+ // REGISTER_EXTERNAL_POTENTIAL("externalName", TestPotential, NO_SETUP())
+ //
+ // If setup is needed (e.g., boxPtr and params["param1"]):
+ // REGISTER_INTERNAL_POTENTIAL("internalName", TestPotential, GET_SETUP(), setup.get_cell(), setup.params["param1"])
+ // REGISTER_EXTERNAL_POTENTIAL("externalName", TestPotential, GET_SETUP(), setup.get_cell(), setup.params["param1"])
+ //
+ //////////////////////////////////////////////////////////////////////////////
+
+/**************************************************************************//**
  * Register interaction potentials
 ******************************************************************************/
 
