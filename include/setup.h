@@ -260,6 +260,11 @@ po::typed_value<Ttype, char>* Parameters::initValue(const std::string& key) {
  */
 class Setup {
     public:
+        static Setup& instance() {
+            static Setup setup;
+            return setup;
+        }
+
         Setup();
 
         /* Get the options from the command line */
@@ -271,7 +276,12 @@ class Setup {
         bool worldlines();
 
         /* Setup the physical simulation cell */
-        Container *cell();
+        Container* Setup::set_cell();
+
+        /* Get pointer to physical simulation cell */
+        Container* Setup::get_cell() {
+            return boxPtr;
+        }
 
         /* Setup the simulation constants */
         void setConstants();
@@ -286,10 +296,10 @@ class Setup {
         void outputOptions(int, char*[], const uint32, const Container*, const iVec&);
 
         /* Setup the interaction potential */
-        PotentialBase * interactionPotential(const Container*);
+        PotentialBase * interactionPotential();
 
         /* Setup the external potential */
-        PotentialBase * externalPotential(const Container*);
+        PotentialBase * externalPotential();
     
         /* Setup the trial wave function */
         WaveFunctionBase * waveFunction(const Path &, LookupTable &);
@@ -333,6 +343,7 @@ class Setup {
         MultiEstimatorFactory multiEstimatorFactory;
 
         bool definedCell;                           ///< The user has physically set the sim. cell
+        Container* boxPtr = nullptr;                ///< Pointer to simulation cell
 
         boost::ptr_map<std::string,po::options_description> optionClasses; ///< A map of different option types
         po::options_description cmdLineOptions;     ///< All options combined

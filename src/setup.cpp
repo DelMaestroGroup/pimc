@@ -11,6 +11,7 @@
 #include "constants.h"
 #include "communicator.h"
 #include "potential.h"
+#include "factory_potential.h"
 #include "wavefunction.h"
 #include "action.h"
 #include "move.h"
@@ -859,10 +860,7 @@ uint32 Setup::seed (const uint32 startSeed) {
  * We setup the simulation cell, and return a pointer to a container opject
  * with a type that depends on the specified simulation cell.
 ******************************************************************************/
-Container * Setup::cell() {
-
-    /* Initialize the local box pointer */
-    Container *boxPtr = NULL;
+Container* Setup::set_cell() {
 
     /* Setup a cylindrical simulation cell */
     if (params["geometry"].as<std::string>() == "cylinder") {
@@ -903,11 +901,8 @@ Container * Setup::cell() {
     /* Add the volume to the parameter map */
     params.set<double>("volume",boxPtr->volume);
     params.set<dVec>("side",boxPtr->side);
-
-    return boxPtr;
 }
 
-    /* if ((params["external"].as<std::string>().find("tube") != std::string::npos) && (NDIM != 3)) { */
 /**************************************************************************//**
  * Setup the worldlines.
  *
@@ -1108,35 +1103,8 @@ void Setup::communicator() {
  * Based on the user's choice we create a new interaction potential pointer
  * which is returned to the main program.  
 ******************************************************************************/
-PotentialBase * Setup::interactionPotential(const Container* boxPtr) {
-
-    PotentialBase *interactionPotentialPtr = NULL;
-    if (constants()->intPotentialType() == "free")
-        interactionPotentialPtr = new FreePotential();
-    else if (constants()->intPotentialType() == "delta")
-        interactionPotentialPtr = new DeltaPotential(params["delta_width"].as<double>(),
-                params["delta_strength"].as<double>());
-    else if (constants()->intPotentialType() == "sutherland")
-        interactionPotentialPtr = new SutherlandPotential(params["interaction_strength"].as<double>());
-    else if (constants()->intPotentialType() == "hard_sphere")
-        interactionPotentialPtr = new HardSpherePotential(params["scattering_length"].as<double>());
-    else if (constants()->intPotentialType() == "hard_rod")
-        interactionPotentialPtr = new HardRodPotential(params["scattering_length"].as<double>());
-    else if (constants()->intPotentialType() == "delta1D")
-        interactionPotentialPtr = new Delta1DPotential(params["delta_strength"].as<double>());
-    else if (constants()->intPotentialType() == "lorentzian")
-        interactionPotentialPtr = new LorentzianPotential(params["delta_width"].as<double>(),
-                params["delta_strength"].as<double>());
-    else if (constants()->intPotentialType() == "aziz")
-        interactionPotentialPtr = new AzizPotential(boxPtr);
-    else if (constants()->intPotentialType() == "szalewicz")
-        interactionPotentialPtr = new SzalewiczPotential(boxPtr);
-    else if (constants()->intPotentialType() == "harmonic")
-        interactionPotentialPtr = new HarmonicPotential(params["omega"].as<double>());
-    else if (constants()->intPotentialType() == "dipole")
-        interactionPotentialPtr = new DipolePotential();
-
-    return interactionPotentialPtr;
+PotentialBase * Setup::interactionPotential() {
+    return PotentialFactory::instance().create(constants()->intPotentialType());
 }
 
 /*************************************************************************//**
@@ -1146,108 +1114,7 @@ PotentialBase * Setup::interactionPotential(const Container* boxPtr) {
  * which is returned to the main program.  
 ******************************************************************************/
 PotentialBase * Setup::externalPotential(const Container* boxPtr) {
-
-    PotentialBase *externalPotentialPtr = NULL;
-
-    if (constants()->extPotentialType() == "harmonic")
-        externalPotentialPtr = new HarmonicPotential(params["omega"].as<double>());
-    else if (constants()->extPotentialType() == "free")
-        externalPotentialPtr = new FreePotential();
-    else if (constants()->extPotentialType() == "osc_tube")
-        externalPotentialPtr = new HarmonicCylinderPotential(params["radius"].as<double>());
-    else if (constants()->extPotentialType() == "hg_tube")
-        externalPotentialPtr = new LJHourGlassPotential(params["radius"].as<double>(),
-                params["hourglass_radius"].as<double>(), params["hourglass_width"].as<double>());
-    else if (constants()->extPotentialType() == "plated_lj_tube")
-        externalPotentialPtr = new PlatedLJCylinderPotential(params["radius"].as<double>(),
-                params["lj_width"].as<double>(), params["lj_sigma"].as<double>(),
-                params["lj_epsilon"].as<double>(), params["lj_density"].as<double>());
-    else if (constants()->extPotentialType() == "lj_tube")
-        externalPotentialPtr = new LJCylinderPotential(params["radius"].as<double>(),
-		params["lj_cyl_density"].as<double>(), params["lj_cyl_sigma"].as<double>(),
-		params["lj_cyl_epsilon"].as<double>());
-    else if (constants()->extPotentialType() == "hard_tube") 
-        externalPotentialPtr = new HardCylinderPotential(params["radius"].as<double>());
-    else if (constants()->extPotentialType() == "single_well")
-        externalPotentialPtr = new SingleWellPotential();
-    else if (constants()->extPotentialType() == "fixed_aziz") 
-        externalPotentialPtr = new FixedAzizPotential(boxPtr);
-    else if (constants()->extPotentialType() == "gasp_prim")
-        externalPotentialPtr = new Gasparini_1_Potential(params["empty_width_z"].as<double>(),
-                params["empty_width_y"].as<double>(),boxPtr);
-    else if (constants()->extPotentialType() == "graphene") 
-        externalPotentialPtr = new GraphenePotential(params["strain"].as<double>(),
-                params["poisson"].as<double>(),
-                params["carbon_carbon_dist"].as<double>(),
-                params["lj_sigma"].as<double>(),
-                params["lj_epsilon"].as<double>()
-                                );
-    else if (constants()->extPotentialType() == "graphenelut") 
-        externalPotentialPtr = new GrapheneLUTPotential(params["strain"].as<double>(),
-                params["poisson"].as<double>(),
-                params["carbon_carbon_dist"].as<double>(),
-                params["lj_sigma"].as<double>(),
-                params["lj_epsilon"].as<double>(),
-                boxPtr
-                                );
-    else if (constants()->extPotentialType() == "fixed_lj") 
-        externalPotentialPtr = new FixedPositionLJPotential(params["lj_sigma"].as<double>(), 
-                params["lj_epsilon"].as<double>(),boxPtr);
-    else if (constants()->extPotentialType() == "graphenelut3d") 
-        externalPotentialPtr = new GrapheneLUT3DPotential(
-            params["graphenelut3d_file_prefix"].as<std::string>(),
-            boxPtr
-        );
-    else if (constants()->extPotentialType() == "graphenelut3dgenerate") 
-        externalPotentialPtr = new GrapheneLUT3DPotentialGenerate(
-            params["strain"].as<double>(),
-            params["poisson"].as<double>(),
-            params["carbon_carbon_dist"].as<double>(),
-            params["lj_sigma"].as<double>(),
-            params["lj_epsilon"].as<double>(),
-	    params["k_max"].as<int>(),
-	    params["xres"].as<int>(),
-	    params["yres"].as<int>(),
-	    params["zres"].as<int>(),
-            boxPtr
-        );
-    else if (constants()->extPotentialType() == "graphenelut3dtobinary") 
-        externalPotentialPtr = new GrapheneLUT3DPotentialToBinary(
-            params["graphenelut3d_file_prefix"].as<std::string>(),
-            boxPtr
-        );
-    else if (constants()->extPotentialType() == "graphenelut3dtotext") 
-        externalPotentialPtr = new GrapheneLUT3DPotentialToText(
-            params["graphenelut3d_file_prefix"].as<std::string>(),
-            boxPtr
-        );
-
-    return externalPotentialPtr;
-}
-
-/*************************************************************************//**
-* Setup the trial wave function.
-*
-* Based on the user's choice we create a new trial wave function  pointer
-* which is returned to the main program.
-******************************************************************************/
-WaveFunctionBase * Setup::waveFunction(const Path &path, LookupTable &lookup) {
-    
-    WaveFunctionBase *waveFunctionPtr = NULL;
-
-    if (constants()->waveFunctionType() == "constant")
-        waveFunctionPtr = new WaveFunctionBase(path,lookup);
-    else if (constants()->waveFunctionType() == "sech")
-        waveFunctionPtr = new SechWaveFunction(path,lookup);
-    else if (constants()->waveFunctionType() == "jastrow")
-        waveFunctionPtr = new JastrowWaveFunction(path,lookup);
-    else if (constants()->waveFunctionType() == "lieb")
-        waveFunctionPtr = new LiebLinigerWaveFunction(path,lookup);
-    else if (constants()->waveFunctionType() == "sutherland")
-        waveFunctionPtr = new SutherlandWaveFunction(path,lookup,
-                params["interaction_strength"].as<double>());
-    
-    return waveFunctionPtr;
+    return PotentialFactory::instance().create(constants()->extPotentialType());
 }
 
 /*************************************************************************//**

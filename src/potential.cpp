@@ -6,12 +6,77 @@
  */
 
 #include "potential.h"
+#include "factory_potential.h"
 #include "path.h"
 #include "lookuptable.h"
 #include "communicator.h"
 
 #include <boost/math/special_functions/ellint_1.hpp>
 #include <boost/math/special_functions/ellint_2.hpp>
+
+////////////////////
+//REGISTER INTERNAL POTENTIALS HERE
+///////////////////
+
+REGISTER_INTERNAL_POTENTIAL(       "free",       FreePotential)
+REGISTER_INTERNAL_POTENTIAL(      "delta",      DeltaPotential, setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
+REGISTER_INTERNAL_POTENTIAL( "sutherland", SutherlandPotential, setup.params["interaction_strength"].as<double>())
+REGISTER_INTERNAL_POTENTIAL("hard_sphere", HardSpherePotential, setup.params["scattering_length"].as<double>())
+REGISTER_INTERNAL_POTENTIAL(   "hard_rod",    HardRodPotential, setup.params["scattering_length"].as<double>())
+REGISTER_INTERNAL_POTENTIAL(    "delta1D",    Delta1DPotential, setup.params["delta_strength"].as<double>())
+REGISTER_INTERNAL_POTENTIAL( "lorentzian", LorentzianPotential, setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
+REGISTER_INTERNAL_POTENTIAL(       "aziz",       AzizPotential, setup.get_cell())
+REGISTER_INTERNAL_POTENTIAL(  "szalewicz",  SzalewiczPotential, setup.get_cell())
+REGISTER_INTERNAL_POTENTIAL(   "harmonic",   HarmonicPotential, setup.params["omega"].as<double>())
+REGISTER_INTERNAL_POTENTIAL(     "dipole",     DipolePotential)
+
+////////////////////
+//REGISTER EXTERNAL POTENTIALS HERE
+///////////////////
+
+REGISTER_EXTERNAL_POTENTIAL(             "harmonic",              HarmonicPotential, setup.params["omega"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(                 "free",                  FreePotential)
+REGISTER_EXTERNAL_POTENTIAL(             "osc_tube",      HarmonicCylinderPotential, setup.params["radius"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(              "hg_tube",           LJHourGlassPotential, setup.params["radius"].as<double>(), setup.params["hourglass_radius"].as<double>(), setup.params["hourglass_width"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(       "plated_lj_tube",      PlatedLJCylinderPotential, setup.params["radius"].as<double>(), setup.params["lj_width"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.params["lj_density"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(              "lj_tube",            LJCylinderPotential, setup.params["radius"].as<double>(), setup.params["lj_cyl_density"].as<double>(), setup.params["lj_cyl_sigma"].as<double>(), setup.params["lj_cyl_epsilon"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(            "hard_tube",          HardCylinderPotential, setup.params["radius"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(          "single_well",            SingleWellPotential)
+REGISTER_EXTERNAL_POTENTIAL(           "fixed_aziz",             FixedAzizPotential, setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(            "gasp_prim",          Gasparini_1_Potential, setup.params["empty_width_z"].as<double>(), setup.params["empty_width_y"].as<double>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(             "graphene",              GraphenePotential, setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(          "graphenelut",           GrapheneLUTPotential, setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(             "fixed_lj",       FixedPositionLJPotential, setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(        "graphenelut3d",         GrapheneLUT3DPotential, setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL("graphenelut3dgenerate", GrapheneLUT3DPotentialGenerate, setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.params["k_max"].as<int>(), setup.params["xres"].as<int>(), setup.params["yres"].as<int>(), setup.params["zres"].as<int>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL("graphenelut3dtobinary", GrapheneLUT3DPotentialToBinary, setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(  "graphenelut3dtotext",   GrapheneLUT3DPotentialToText, setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
+
+/*************************************************************************//**
+* Setup the trial wave function.
+*
+* Based on the user's choice we create a new trial wave function  pointer
+* which is returned to the main program.
+******************************************************************************/
+WaveFunctionBase * Setup::waveFunction(const Path &path, LookupTable &lookup) {
+    
+    WaveFunctionBase *waveFunctionPtr = NULL;
+
+    if (constants()->waveFunctionType() == "constant")
+        waveFunctionPtr = new WaveFunctionBase(path,lookup);
+    else if (constants()->waveFunctionType() == "sech")
+        waveFunctionPtr = new SechWaveFunction(path,lookup);
+    else if (constants()->waveFunctionType() == "jastrow")
+        waveFunctionPtr = new JastrowWaveFunction(path,lookup);
+    else if (constants()->waveFunctionType() == "lieb")
+        waveFunctionPtr = new LiebLinigerWaveFunction(path,lookup);
+    else if (constants()->waveFunctionType() == "sutherland")
+        waveFunctionPtr = new SutherlandWaveFunction(path,lookup,
+                params["interaction_strength"].as<double>());
+    
+    return waveFunctionPtr;
+}
+//////////////////
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
