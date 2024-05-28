@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include "setup.h"
 
 class PotentialFactory {
 public:
@@ -30,28 +31,29 @@ private:
     std::map<std::string, std::function<PotentialBase*()>> creators;
 };
 
-#define REGISTER_INTERNAL_POTENTIAL(NAME, TYPE, ...) \
-    const std::string TYPE::name = NAME; \
-    struct TYPE ## _Register { \
-        TYPE ## _Register() { \
-            PotentialFactory::instance().registerCreator(NAME, []() { \
-                auto& setup = Setup::instance(); \
-                return new TYPE(__VA_ARGS__); \
-            }); \
-        } \
-    }; \
-    static TYPE ## _Register global_##TYPE##_register;
+#define GET_SETUP() auto& setup = Setup::instance();
+#define NO_SETUP() do {} while(0);
 
-#define REGISTER_EXTERNAL_POTENTIAL(NAME, TYPE, ...) \
-    const std::string TYPE::name = NAME; \
-    struct TYPE ## _Register { \
-        TYPE ## _Register() { \
+#define REGISTER_INTERNAL_POTENTIAL(NAME, TYPE, WITH_PARAMS, ...) \
+    struct TYPE ## _Internal_Potential_Register { \
+        TYPE ## _Internal_Potential_Register() { \
             PotentialFactory::instance().registerCreator(NAME, []() { \
-                auto& setup = Setup::instance(); \
+                WITH_PARAMS \
                 return new TYPE(__VA_ARGS__); \
             }); \
         } \
     }; \
-    static TYPE ## _Register global_##TYPE##_register;
+    static TYPE ## _Internal_Potential_Register global_##TYPE##_internal_potential_register;
+
+#define REGISTER_EXTERNAL_POTENTIAL(NAME, TYPE, WITH_PARAMS, ...) \
+    struct TYPE ## _External_Potential_Register { \
+        TYPE ## _External_Potential_Register() { \
+            PotentialFactory::instance().registerCreator(NAME, []() { \
+                WITH_PARAMS \
+                return new TYPE(__VA_ARGS__); \
+            }); \
+        } \
+    }; \
+    static TYPE ## _External_Potential_Register global_##TYPE##_external_potential_register;
 
 #endif

@@ -36,7 +36,7 @@ int main (int argc, char *argv[]) {
 
     uint32 seed = 139853;   // The seed for the random number generator
 
-    Setup setup;
+    Setup& setup = Setup::instance();
 
     /* Attempt to parse the command line options */
     try {
@@ -62,6 +62,7 @@ int main (int argc, char *argv[]) {
     /* Get the simulation box */
     setup.set_cell();
     Container *boxPtr = setup.get_cell();
+    std::cout << boxPtr << std::endl;
 
     /* Create the worldlines */
     if (setup.worldlines())

@@ -265,8 +265,6 @@ class Setup {
             return setup;
         }
 
-        Setup();
-
         /* Get the options from the command line */
         void getOptions(int, char*[]);
         /* Parse the options and check for errors (needs to be more complete) */
@@ -276,10 +274,10 @@ class Setup {
         bool worldlines();
 
         /* Setup the physical simulation cell */
-        Container* Setup::set_cell();
+        void set_cell();
 
         /* Get pointer to physical simulation cell */
-        Container* Setup::get_cell() {
+        Container* get_cell() const {
             return boxPtr;
         }
 
@@ -318,6 +316,10 @@ class Setup {
         Parameters params;                          ///< All simulation parameters
 
     private:
+        Setup();
+        Setup(const Setup&) = delete;
+        Setup& operator=(const Setup&) = delete;
+
         std::vector<std::string> interactionPotentialName;    ///< The allowed interaction potential names
         std::vector<std::string> externalPotentialName;       ///< The allowed external potential names
         std::vector<std::string> waveFunctionName;            ///< The allowed trial wave function names

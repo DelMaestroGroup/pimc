@@ -860,7 +860,7 @@ uint32 Setup::seed (const uint32 startSeed) {
  * We setup the simulation cell, and return a pointer to a container opject
  * with a type that depends on the specified simulation cell.
 ******************************************************************************/
-Container* Setup::set_cell() {
+void Setup::set_cell() {
 
     /* Setup a cylindrical simulation cell */
     if (params["geometry"].as<std::string>() == "cylinder") {
@@ -1113,8 +1113,33 @@ PotentialBase * Setup::interactionPotential() {
  * Based on the user's choice we create a new external potential pointer
  * which is returned to the main program.  
 ******************************************************************************/
-PotentialBase * Setup::externalPotential(const Container* boxPtr) {
+PotentialBase * Setup::externalPotential() {
     return PotentialFactory::instance().create(constants()->extPotentialType());
+}
+
+/*************************************************************************//**
+* Setup the trial wave function.
+*
+* Based on the user's choice we create a new trial wave function  pointer
+* which is returned to the main program.
+******************************************************************************/
+WaveFunctionBase * Setup::waveFunction(const Path &path, LookupTable &lookup) {
+    
+    WaveFunctionBase *waveFunctionPtr = NULL;
+
+    if (constants()->waveFunctionType() == "constant")
+        waveFunctionPtr = new WaveFunctionBase(path,lookup);
+    else if (constants()->waveFunctionType() == "sech")
+        waveFunctionPtr = new SechWaveFunction(path,lookup);
+    else if (constants()->waveFunctionType() == "jastrow")
+        waveFunctionPtr = new JastrowWaveFunction(path,lookup);
+    else if (constants()->waveFunctionType() == "lieb")
+        waveFunctionPtr = new LiebLinigerWaveFunction(path,lookup);
+    else if (constants()->waveFunctionType() == "sutherland")
+        waveFunctionPtr = new SutherlandWaveFunction(path,lookup,
+                params["interaction_strength"].as<double>());
+    
+    return waveFunctionPtr;
 }
 
 /*************************************************************************//**
