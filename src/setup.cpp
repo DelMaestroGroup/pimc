@@ -1104,7 +1104,7 @@ void Setup::communicator() {
  * which is returned to the main program.  
 ******************************************************************************/
 PotentialBase * Setup::interactionPotential() {
-    return PotentialFactory::instance().create(constants()->intPotentialType());
+    return PotentialFactory::instance().create<PotentialFactory::Type::Internal>(constants()->intPotentialType());
 }
 
 /*************************************************************************//**
@@ -1114,7 +1114,7 @@ PotentialBase * Setup::interactionPotential() {
  * which is returned to the main program.  
 ******************************************************************************/
 PotentialBase * Setup::externalPotential() {
-    return PotentialFactory::instance().create(constants()->extPotentialType());
+    return PotentialFactory::instance().create<PotentialFactory::Type::External>(constants()->extPotentialType());
 }
 
 /*************************************************************************//**
