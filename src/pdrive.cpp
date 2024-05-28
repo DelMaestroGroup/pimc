@@ -36,7 +36,7 @@ int main (int argc, char *argv[]) {
 
     uint32 seed = 139853;   // The seed for the random number generator
 
-    Setup setup;
+    Setup& setup = Setup::instance();
 
     /* Attempt to parse the command line options */
     try {
@@ -60,7 +60,9 @@ int main (int argc, char *argv[]) {
     MTRand random(seed);
 
     /* Get the simulation box */
-    Container *boxPtr = setup.cell();
+    setup.set_cell();
+    Container *boxPtr = setup.get_cell();
+    std::cout << boxPtr << std::endl;
 
     /* Create the worldlines */
     if (setup.worldlines())
@@ -84,8 +86,8 @@ int main (int argc, char *argv[]) {
     }
     
     /* Create and initialize the potential pointers */
-    PotentialBase *interactionPotentialPtr = setup.interactionPotential(boxPtr);
-    PotentialBase *externalPotentialPtr = setup.externalPotential(boxPtr);
+    PotentialBase *interactionPotentialPtr = setup.interactionPotential();
+    PotentialBase *externalPotentialPtr = setup.externalPotential();
     if ((constants()->extPotentialType() == "graphenelut3dtobinary") ||
             (constants()->extPotentialType() == "graphenelut3dtotext") ||
             (constants()->extPotentialType() == "graphenelut3dgenerate") ) {

@@ -260,7 +260,10 @@ po::typed_value<Ttype, char>* Parameters::initValue(const std::string& key) {
  */
 class Setup {
     public:
-        Setup();
+        static Setup& instance() {
+            static Setup setup;
+            return setup;
+        }
 
         /* Get the options from the command line */
         void getOptions(int, char*[]);
@@ -271,7 +274,12 @@ class Setup {
         bool worldlines();
 
         /* Setup the physical simulation cell */
-        Container *cell();
+        void set_cell();
+
+        /* Get pointer to physical simulation cell */
+        Container* get_cell() const {
+            return boxPtr;
+        }
 
         /* Setup the simulation constants */
         void setConstants();
@@ -286,10 +294,10 @@ class Setup {
         void outputOptions(int, char*[], const uint32, const Container*, const iVec&);
 
         /* Setup the interaction potential */
-        PotentialBase * interactionPotential(const Container*);
+        PotentialBase * interactionPotential();
 
         /* Setup the external potential */
-        PotentialBase * externalPotential(const Container*);
+        PotentialBase * externalPotential();
     
         /* Setup the trial wave function */
         WaveFunctionBase * waveFunction(const Path &, LookupTable &);
@@ -308,6 +316,10 @@ class Setup {
         Parameters params;                          ///< All simulation parameters
 
     private:
+        Setup();
+        Setup(const Setup&) = delete;
+        Setup& operator=(const Setup&) = delete;
+
         std::vector<std::string> interactionPotentialName;    ///< The allowed interaction potential names
         std::vector<std::string> externalPotentialName;       ///< The allowed external potential names
         std::vector<std::string> waveFunctionName;            ///< The allowed trial wave function names
@@ -333,6 +345,7 @@ class Setup {
         MultiEstimatorFactory multiEstimatorFactory;
 
         bool definedCell;                           ///< The user has physically set the sim. cell
+        Container* boxPtr = nullptr;                ///< Pointer to simulation cell
 
         boost::ptr_map<std::string,po::options_description> optionClasses; ///< A map of different option types
         po::options_description cmdLineOptions;     ///< All options combined

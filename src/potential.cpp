@@ -6,12 +6,83 @@
  */
 
 #include "potential.h"
+#include "factory_potential.h"
 #include "path.h"
 #include "lookuptable.h"
 #include "communicator.h"
 
 #include <boost/math/special_functions/ellint_1.hpp>
 #include <boost/math/special_functions/ellint_2.hpp>
+
+/**************************************************************************//**
+ * Creating and Registering New Potentials
+******************************************************************************/
+ // 1. Declare your potential class inheriting from PotentialBase in the header file (e.g., potential.h).
+ //
+ // Example:
+ // class TestPotential : public PotentialBase {
+ // public:
+ //     TestPotential();
+ // };
+ //
+ // 2. Define your potential class inheriting from PotentialBase in the source file (e.g., potential.cpp).
+ //
+ // Example:
+ // TestPotential::TestPotential() {
+ //     // Constructor implementation
+ // }
+ //
+ // 3. Register your potential using the appropriate macro in the source file.
+ //
+ // For internal potentials:
+ // REGISTER_INTERNAL_POTENTIAL("internalName", TestPotential, NO_SETUP())
+ //
+ // For external potentials:
+ // REGISTER_EXTERNAL_POTENTIAL("externalName", TestPotential, NO_SETUP())
+ //
+ // If setup is needed (e.g., boxPtr and params["param1"]):
+ // REGISTER_INTERNAL_POTENTIAL("internalName", TestPotential, GET_SETUP(), setup.get_cell(), setup.params["param1"])
+ // REGISTER_EXTERNAL_POTENTIAL("externalName", TestPotential, GET_SETUP(), setup.get_cell(), setup.params["param1"])
+ //
+ //////////////////////////////////////////////////////////////////////////////
+
+/**************************************************************************//**
+ * Register interaction potentials
+******************************************************************************/
+
+REGISTER_INTERACTION_POTENTIAL(       "free",       FreePotential,  NO_SETUP())
+REGISTER_INTERACTION_POTENTIAL(      "delta",      DeltaPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
+REGISTER_INTERACTION_POTENTIAL( "sutherland", SutherlandPotential, GET_SETUP(), setup.params["interaction_strength"].as<double>())
+REGISTER_INTERACTION_POTENTIAL("hard_sphere", HardSpherePotential, GET_SETUP(), setup.params["scattering_length"].as<double>())
+REGISTER_INTERACTION_POTENTIAL(   "hard_rod",    HardRodPotential, GET_SETUP(), setup.params["scattering_length"].as<double>())
+REGISTER_INTERACTION_POTENTIAL(    "delta1D",    Delta1DPotential, GET_SETUP(), setup.params["delta_strength"].as<double>())
+REGISTER_INTERACTION_POTENTIAL( "lorentzian", LorentzianPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
+REGISTER_INTERACTION_POTENTIAL(       "aziz",       AzizPotential, GET_SETUP(), setup.get_cell())
+REGISTER_INTERACTION_POTENTIAL(  "szalewicz",  SzalewiczPotential, GET_SETUP(), setup.get_cell())
+REGISTER_INTERACTION_POTENTIAL(   "harmonic",   HarmonicPotential, GET_SETUP(), setup.params["omega"].as<double>())
+REGISTER_INTERACTION_POTENTIAL(     "dipole",     DipolePotential,  NO_SETUP())
+
+/**************************************************************************//**
+ * Register external potentials
+******************************************************************************/
+
+REGISTER_EXTERNAL_POTENTIAL(             "harmonic",              HarmonicPotential, GET_SETUP(), setup.params["omega"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(                 "free",                  FreePotential,  NO_SETUP())
+REGISTER_EXTERNAL_POTENTIAL(             "osc_tube",      HarmonicCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(              "hg_tube",           LJHourGlassPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["hourglass_radius"].as<double>(), setup.params["hourglass_width"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(       "plated_lj_tube",      PlatedLJCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["lj_width"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.params["lj_density"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(              "lj_tube",            LJCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["lj_cyl_density"].as<double>(), setup.params["lj_cyl_sigma"].as<double>(), setup.params["lj_cyl_epsilon"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(            "hard_tube",          HardCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(          "single_well",            SingleWellPotential,  NO_SETUP())
+REGISTER_EXTERNAL_POTENTIAL(           "fixed_aziz",             FixedAzizPotential, GET_SETUP(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(            "gasp_prim",          Gasparini_1_Potential, GET_SETUP(), setup.params["empty_width_z"].as<double>(), setup.params["empty_width_y"].as<double>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(             "graphene",              GraphenePotential, GET_SETUP(), setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(          "graphenelut",           GrapheneLUTPotential, GET_SETUP(), setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(             "fixed_lj",       FixedPositionLJPotential, GET_SETUP(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(        "graphenelut3d",         GrapheneLUT3DPotential, GET_SETUP(), setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL("graphenelut3dgenerate", GrapheneLUT3DPotentialGenerate, GET_SETUP(), setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.params["k_max"].as<int>(), setup.params["xres"].as<int>(), setup.params["yres"].as<int>(), setup.params["zres"].as<int>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL("graphenelut3dtobinary", GrapheneLUT3DPotentialToBinary, GET_SETUP(), setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(  "graphenelut3dtotext",   GrapheneLUT3DPotentialToText, GET_SETUP(), setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
