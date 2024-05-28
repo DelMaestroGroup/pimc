@@ -299,6 +299,7 @@ class CommensurateOrderParameterEstimator: public EstimatorBase {
         std::vector<dVec> g;             ///< the g-vector set
 };
 
+#if NDIM > 2
 // ========================================================================  
 // BIPARTITION DENSITY ESTIMATOR CLASS 
 // ========================================================================  
@@ -319,6 +320,7 @@ class BipartitionDensityEstimator: public EstimatorBase {
     private:
         void accumulate();      // Accumulate values
 };
+#endif
 
 // ========================================================================  
 // Linear Particle Density Estimator Class 

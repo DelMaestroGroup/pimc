@@ -35,7 +35,6 @@ REGISTER_ESTIMATOR("number distribution",NumberDistributionEstimator);
 REGISTER_ESTIMATOR("time",TimeEstimator);
 REGISTER_ESTIMATOR("particle position",ParticlePositionEstimator);
 REGISTER_ESTIMATOR("commensurate order parameter",CommensurateOrderParameterEstimator);
-REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
 REGISTER_ESTIMATOR("linear density rho",LinearParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density rho",PlaneParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density average rho",PlaneParticleAveragePositionEstimator);
@@ -55,6 +54,9 @@ REGISTER_ESTIMATOR("pair correlation function",PairCorrelationEstimator);
 REGISTER_ESTIMATOR("static structure factor",StaticStructureFactorEstimator);
 REGISTER_ESTIMATOR("intermediate scattering function",IntermediateScatteringFunctionEstimator);
 REGISTER_ESTIMATOR("radial density",RadialDensityEstimator);
+#if NDIM > 2
+    REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
+#endif
 REGISTER_ESTIMATOR("cylinder energy",CylinderEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder number particles",CylinderNumberParticlesEstimator);
 REGISTER_ESTIMATOR("cylinder number distribution",CylinderNumberDistributionEstimator);
@@ -1475,6 +1477,7 @@ void ParticlePositionEstimator::accumulate() {
     }
 }
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // BIPARTITION DENSITY ESTIMATOR CLASS ---------------------------------------
@@ -1551,6 +1554,7 @@ void BipartitionDensityEstimator::accumulate() {
     estimator(0) += 1.0*filmNum/(1.0*filmArea);
     estimator(1) += 1.0*bulkNum/(1.0*bulkVol);
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
