@@ -755,24 +755,15 @@ std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double q
     /* The q-vectors will end up in this array to be returned by value. */
     std::vector <std::vector<dVec> > q;
 
-    double dtheta;
-    if (qGeometry == "line") 
-        dtheta = M_PI;
-    else if (qGeometry == "sphere") {
 
-        /* Number of θ values per q-magnitude, hard-coded for now */
-        int numTheta = 24; 
-        dtheta = 0.5*M_PI/numTheta;
-    } 
-    else {
-        std::cerr << "\nERROR: A valid geometry wasn't chosen for q-space."
-            << std::endl << "Action: choose \"line\" or \"sphere\"" << std::endl;
+    if ((qGeometry != "line") && (qGeometry != "sphere")) {
+        std::cerr << "\nERROR: A valid geometry wasn't chosen for q-space." << std::endl
+                  << "Action: choose \"line\" or \"sphere\"" << std::endl;
         exit(0);
     }
 
     /* Determine the set of q-vectors that have these magnitudes.  */
-    for (double cq = 0.0; cq <= qMax + EPS; cq += dq)
-    {
+    for (double cq = 0.0; cq <= qMax + EPS; cq += dq) {
         std::vector <dVec> qvecs;
 
         /* cq = 0.0 */
@@ -783,29 +774,31 @@ std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double q
 
         /* cq > 0.0 */
         else {
-
             /* First do θ = 0, i.e. along the z-direction */
             dVec qd = 0.0;
             qd[NDIM-1] = cq;
             qvecs.push_back(qd);
 
-/* Can only do a spherical distribution of q-vectors in 3 spatial dimensions */
-#if NDIM==3
-            /* Now do the rest of the θ values */
-            for (double theta = dtheta; theta <= 0.5*M_PI + EPS; theta += dtheta) {
-                double dphi = dtheta/sin(theta);
-                for (double phi = 0.0; phi <= 0.5*M_PI+EPS; phi += dphi) {
+            /* Can only do a spherical distribution of q-vectors in 3 spatial dimensions */
+            #if NDIM==3
+                /* Number of θ values per q-magnitude, hard-coded for now */
+                int numTheta = 24; 
+                double dtheta = (qGeometry == "line") ? M_PI : 0.5*M_PI/numTheta;
 
-                    dVec qd;
-                    qd[0] = cq*sin(theta)*cos(phi);
-                    qd[1] = cq*sin(theta)*sin(phi);
-                    qd[2] = cq*cos(theta);
+                /* Now do the rest of the θ values */
+                for (double theta = dtheta; theta <= 0.5*M_PI + EPS; theta += dtheta) {
+                    double dphi = dtheta/sin(theta);
+                    for (double phi = 0.0; phi <= 0.5*M_PI+EPS; phi += dphi) {
 
-                    qvecs.push_back(qd);
-                } // phi
-            } // theta
-#endif 
+                        dVec qd;
+                        qd[0] = cq*sin(theta)*cos(phi);
+                        qd[1] = cq*sin(theta)*sin(phi);
+                        qd[2] = cq*cos(theta);
 
+                        qvecs.push_back(qd);
+                    } // phi
+                } // theta
+            #endif 
         } // non-zero q-mags
 
         /* Add the list of q-vectors at this magnitude */
