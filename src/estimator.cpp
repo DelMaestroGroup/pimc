@@ -11,28 +11,13 @@
 #include "potential.h"
 #include "communicator.h"
 #include "factory.h"
-#ifdef GPU_BLOCK_SIZE
-    #ifndef USE_CUDA
-        #include "estimator.hip.h"
-    #endif
-    #ifdef USE_CUDA
-        #include "estimator.cuh"
-    #endif
-#endif
-
-/* This no longer seems to be needed.  Commenting out for now. */
-//#ifndef GPU_BLOCK_SIZE
-//    #include "special_functions.h"
-//#endif
-
-
 
 /**************************************************************************//**
  * Setup the estimator factory.
 ******************************************************************************/
 EstimatorFactory estimatorFactory;
 #define REGISTER_ESTIMATOR(NAME,TYPE) \
-    const string TYPE::name = NAME;\
+    const std::string TYPE::name = NAME;\
     bool reg ## TYPE = estimatorFactory()->Register<TYPE>(TYPE::name); 
 
 /**************************************************************************//**
@@ -49,17 +34,10 @@ REGISTER_ESTIMATOR("number particles",NumberParticlesEstimator);
 REGISTER_ESTIMATOR("number distribution",NumberDistributionEstimator);
 REGISTER_ESTIMATOR("time",TimeEstimator);
 REGISTER_ESTIMATOR("particle position",ParticlePositionEstimator);
-REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
 REGISTER_ESTIMATOR("linear density rho",LinearParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density rho",PlaneParticlePositionEstimator);
 REGISTER_ESTIMATOR("planar density average rho",PlaneParticleAveragePositionEstimator);
 REGISTER_ESTIMATOR("planar potential average Vext",PlaneAverageExternalPotentialEstimator);
-REGISTER_ESTIMATOR("superfluid fraction",SuperfluidFractionEstimator);
-REGISTER_ESTIMATOR("planar winding rhos/rho",PlaneWindingSuperfluidDensityEstimator);
-REGISTER_ESTIMATOR("planar area rhos/rho",PlaneAreaSuperfluidDensityEstimator);
-REGISTER_ESTIMATOR("radial winding rhos/rho",RadialWindingSuperfluidDensityEstimator);
-REGISTER_ESTIMATOR("radial area rhos/rho",RadialAreaSuperfluidDensityEstimator);
-REGISTER_ESTIMATOR("local superfluid",LocalSuperfluidDensityEstimator);
 REGISTER_ESTIMATOR("diagonal fraction",DiagonalFractionEstimator);
 REGISTER_ESTIMATOR("worm properties",WormPropertiesEstimator);
 REGISTER_ESTIMATOR("permutation cycle",PermutationCycleEstimator);
@@ -68,21 +46,38 @@ REGISTER_ESTIMATOR("one body density matrix",OneBodyDensityMatrixEstimator);
 REGISTER_ESTIMATOR("pair correlation function",PairCorrelationEstimator);
 REGISTER_ESTIMATOR("static structure factor",StaticStructureFactorEstimator);
 REGISTER_ESTIMATOR("intermediate scattering function",IntermediateScatteringFunctionEstimator);
-#ifdef GPU_BLOCK_SIZE
-REGISTER_ESTIMATOR("intermediate scattering function gpu",IntermediateScatteringFunctionEstimatorGpu);
-#endif
 REGISTER_ESTIMATOR("radial density",RadialDensityEstimator);
+#if NDIM > 1
+REGISTER_ESTIMATOR("radial area rhos/rho",RadialAreaSuperfluidDensityEstimator);
+REGISTER_ESTIMATOR("planar area rhos/rho",PlaneAreaSuperfluidDensityEstimator);
+REGISTER_ESTIMATOR("superfluid fraction",SuperfluidFractionEstimator);
+REGISTER_ESTIMATOR("radial winding rhos/rho",RadialWindingSuperfluidDensityEstimator);
+REGISTER_ESTIMATOR("planar winding rhos/rho",PlaneWindingSuperfluidDensityEstimator);
+REGISTER_ESTIMATOR("local superfluid",LocalSuperfluidDensityEstimator);
+#endif
+#if NDIM > 2
+REGISTER_ESTIMATOR("bipartition density",BipartitionDensityEstimator);
+REGISTER_ESTIMATOR("commensurate order parameter",CommensurateOrderParameterEstimator);
+#endif
+
+/* Cylinder estimators */
 REGISTER_ESTIMATOR("cylinder energy",CylinderEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder number particles",CylinderNumberParticlesEstimator);
 REGISTER_ESTIMATOR("cylinder number distribution",CylinderNumberDistributionEstimator);
-REGISTER_ESTIMATOR("cylinder linear density",CylinderLinearDensityEstimator);
 REGISTER_ESTIMATOR("cylinder superfluid fraction",CylinderSuperfluidFractionEstimator);
 REGISTER_ESTIMATOR("cylinder one body density matrix",CylinderOneBodyDensityMatrixEstimator);
 REGISTER_ESTIMATOR("cylinder pair correlation function",CylinderPairCorrelationEstimator);
-REGISTER_ESTIMATOR("cylinder radial potential",CylinderRadialPotentialEstimator);
-REGISTER_ESTIMATOR("cylinder linear potential",CylinderLinearPotentialEstimator);
 REGISTER_ESTIMATOR("cylinder potential energy",PotentialEnergyEstimator);
 REGISTER_ESTIMATOR("cylinder static structure factor",CylinderStaticStructureFactorEstimator);
+#if NDIM > 1
+REGISTER_ESTIMATOR("cylinder linear density",CylinderLinearDensityEstimator);
+REGISTER_ESTIMATOR("cylinder linear potential",CylinderLinearPotentialEstimator);
+#endif
+#if NDIM > 2
+REGISTER_ESTIMATOR("cylinder radial potential",CylinderRadialPotentialEstimator);
+#endif
+
+/* PIGS estimators */
 REGISTER_ESTIMATOR("pigs kinetic energy",KineticEnergyEstimator);
 REGISTER_ESTIMATOR("pigs total energy",TotalEnergyEstimator);
 REGISTER_ESTIMATOR("pigs thermodynamic potential energy",ThermoPotentialEnergyEstimator);
@@ -93,15 +88,47 @@ REGISTER_ESTIMATOR("pigs velocity",VelocityEstimator);
 REGISTER_ESTIMATOR("pigs subregion occupation",SubregionOccupationEstimator);
 REGISTER_ESTIMATOR("pigs one body density matrix",PIGSOneBodyDensityMatrixEstimator);
 
+/* GPU accelerated estimators */
+#ifdef USE_GPU 
+REGISTER_ESTIMATOR("intermediate scattering function gpu",IntermediateScatteringFunctionEstimatorGpu);
+REGISTER_ESTIMATOR("elastic scattering gpu", ElasticScatteringEstimatorGpu);
+REGISTER_ESTIMATOR("static structure factor gpu",StaticStructureFactorGPUEstimator);
+REGISTER_ESTIMATOR("cylinder static structure factor gpu",CylinderStaticStructureFactorGPUEstimator);
+#endif
+
 /**************************************************************************//**
  * Setup the estimator factory for multi path estimators.
 ******************************************************************************/
 MultiEstimatorFactory multiEstimatorFactory;
-const string SwapEstimator::name = "pigs multi swap";
+const std::string SwapEstimator::name = "pigs multi swap";
 bool regSwap = multiEstimatorFactory()->Register<SwapEstimator>(SwapEstimator::name);
 
-const string EntPartEstimator::name = "pigs multi entanglement of particles";
+const std::string EntPartEstimator::name = "pigs multi entanglement of particles";
 bool regEntPart = multiEstimatorFactory()->Register<EntPartEstimator>(EntPartEstimator::name);
+
+
+/* These functions recursively generate all std::vectors {(-max[0], ..., -max[NDIM-1]), ..., (-max[0], ..., -max[NDIM-1])} 
+ * and returns the list */
+/* void generateVectors(std::vector<int>& current, const iVec &max, unsigned int pos, std::vector<std::vector<int>>&results) { */
+/*     if (pos == max.size()) { */
+/*         results.push_back(current); */
+/*         return; */
+/*     } */
+
+/*     for (int i = -max[pos]; i <= max[pos]; ++i) { */
+/*         current[pos] = i; */
+/*         generateVectors(current, max, pos + 1, results); */
+/*     } */
+/* } */
+
+/* std::vector<std::vector<int>> generateAllVectors(const iVec &max) { */
+/*     std::vector<int> current(max.size(), 0); */
+
+/*     std::vector<std::vector<int>> results; */
+/*     generateVectors(current, max, 0, results); */
+/*     return results; */
+/* } */
+
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -119,7 +146,7 @@ bool regEntPart = multiEstimatorFactory()->Register<EntPartEstimator>(EntPartEst
  * factory.
 ******************************************************************************/
 EstimatorBase::EstimatorBase(const Path &_path, ActionBase *_actionPtr, 
-        const MTRand &_random, double _maxR, int _frequency, string _label) :
+        const MTRand &_random, double _maxR, int _frequency, std::string _label) :
     path(_path),
     actionPtr(_actionPtr),
     random(_random),
@@ -230,13 +257,13 @@ void EstimatorBase::initialize(int _numEst) {
  *
  *  Initilize the estimator and normalization arrays.
 ******************************************************************************/
-void EstimatorBase::initialize(vector<string> estLabel) {
+void EstimatorBase::initialize(std::vector<std::string> estLabel) {
 
     /* Initialize the map linking names to indices */
     for(size_t i = 0; i < estLabel.size(); ++i) 
         estIndex[estLabel[i]] = i;
 
-    /* write the header string */
+    /* write the header std::string */
     header = "";
     for (const auto& label : estLabel)
         header += str(format("%16s") % label);
@@ -274,7 +301,7 @@ void EstimatorBase::prepare() {
              
             (*outFilePtr) << header;
             if (endLine)
-                (*outFilePtr) << endl;
+                (*outFilePtr) << std::endl;
 
         }
     }
@@ -315,7 +342,7 @@ void EstimatorBase::output() {
         (*outFilePtr) << format("%16.8E") % estimator(n);
 
     if (endLine)
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     /* Reset all values */
     reset();
@@ -334,7 +361,7 @@ void EstimatorBase::outputFlat() {
 
     (*outFilePtr) << header;
     if (endLine)
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     /* Now write the running average of the estimator to disk */
     for (int n = 0; n < numEst; n++) 
@@ -361,7 +388,7 @@ void EstimatorBase::outputHist() {
     }
 
     if (endLine)
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     /* Reset all values */
     norm = 0.0;
@@ -371,42 +398,372 @@ void EstimatorBase::outputHist() {
 /*************************************************************************//**
 *  AppendLabel
 ******************************************************************************/
-void EstimatorBase::appendLabel(string append) {
+void EstimatorBase::appendLabel(std::string append) {
     label = label + append;
 }
 
 /*************************************************************************//**
-*  Get q-vectors for scattering calculations
-*  
-*  Based on the geometry of the system and a user-defined choice, return a
-*  list of q-vectors where scattering will be computed
+* create a "(x,y,z)" std::string from a dVec for outputting 
 ******************************************************************************/
-vector <vector<dVec> > EstimatorBase::getQVectors(double dq, int numq, 
-        string qGeometry) {
+std::string EstimatorBase::dVecToString(const dVec& v){
+    std::string strVec = "(";
+    for (int i = 0; i < NDIM; i++) {
+        strVec += str(format("%+15.8E") % v[i]);
+        if (i < NDIM-1)
+            strVec += ",";
+    }
+    return strVec + ")";
+}
 
-    /* The q-vectors will end up in this array to be returned by value. */
-    vector <vector<dVec> > q;
+/*************************************************************************//**
+*  Get wavevectors for scattering calculations
+*  
+*  Based on the geometry of the system and a user-defined choice, 
+*  (wavevector and wavevector_type command line arguments) return a
+*  list of wavevectors where scattering will be computed.
+*  
+******************************************************************************/
+void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
+    dVec q;  // Vector to store individual wavevectors
 
-    double dtheta;
-    if (qGeometry == "line") 
-        dtheta = M_PI;
-    else if (qGeometry == "sphere") {
+    // Retrieve wavevector input string and type
+    std::string input = constants()->wavevector();
+    std::string inputType = constants()->wavevectorType();
 
-        /* Number of θ values per q-magnitude, hard-coded for now */
-        int numTheta = 12; 
-        dtheta = 0.5*M_PI/numTheta;
-    } 
-    else {
-        cerr << "\nERROR: A valid geometry wasn't chosen for q-space."
-            << endl << "Action: choose \"line\" or \"sphere\"" << endl;
+    // Tokenize input string into components
+    std::istringstream iss(input);
+    std::vector<std::string> tokens{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
+    if (tokens.size() < 1) {
+        std::cerr << "\nERROR: EstimatorBase::getQVectors: "
+                  << "No input detected." << std::endl
+                  << "Action: Ensure `wavevector` command line option is set." << std::endl;
+        exit(1);
+    }
+
+    // Handle integer and float inputs
+    if ((inputType == "int") || (inputType == "float")) {
+        for (size_t i = 0; i < tokens.size(); i += NDIM) {
+            for (int j = 0; j < NDIM; ++j) {
+                if (inputType == "int") {
+                    // Convert token to integer and scale by box side length
+                    q[j] = (2.0 * M_PI / path.boxPtr->side[j]) * std::stoi(tokens[i + j]);
+                } else {
+                    // Convert token to float
+                    q[j] = std::stof(tokens[i + j]);
+                }
+            }
+            // Add wavevector to the list of q-values
+            qValues.push_back(q);
+        }
+    }
+
+    // Handle maximum integer and float inputs
+    if ((inputType == "max_int") || (inputType == "max_float")) {
+        iVec q_max_int = 0;
+        iVec _q_int = 0;
+        dVec q_max = 0.0;
+
+        // Parse maximum wavevector components
+        for (int i = 0; i < NDIM; ++i) {
+            if (inputType == "max_int") {
+                q_max_int[i] = std::abs(std::stoi(tokens[i]));
+                q_max[i] = q_max_int[i] * 2.0 * M_PI / path.boxPtr->side[i];
+            } else {
+                q_max[i] = std::stof(tokens[i]);
+            }
+        }
+
+        // Calculate maximum wavevector magnitude
+        double q_mag_max = sqrt(dot(q_max, q_max));
+        double q_mag;
+
+        // Adjust maximum integer wavevector components for float input
+        if (inputType == "max_float") {
+            for (int i = 0; i < NDIM; ++i) {
+                q_max_int[i] = 1 + static_cast<int>(q_mag_max * path.boxPtr->side[i] / 2.0 / M_PI);
+            }
+        }
+
+        // Initialize wavevector generation
+        int n_q = 1;
+        for (int i = 0; i < NDIM; ++i) {
+            n_q *= 2 * q_max_int[i] + 1;
+            _q_int[i] = -q_max_int[i];
+            q[i] = _q_int[i] * 2.0 * M_PI / path.boxPtr->side[i];
+        }
+
+        // Check initial wavevector magnitude and add if valid
+        q_mag = sqrt(dot(q, q));
+        if (q_mag <= q_mag_max) {
+            qValues.push_back(q);
+        }
+
+        // Generate all possible wavevectors within specified bounds
+        int pos = NDIM - 1;
+        int count = 0;
+        while (count < n_q - 1) {
+            if (_q_int[pos] == q_max_int[pos]) {
+                _q_int[pos] = -q_max_int[pos];
+                pos -= 1;
+            } else {
+                _q_int[pos] += 1;
+                for (int i = 0; i < NDIM; ++i) {
+                    q[i] = _q_int[i] * 2.0 * M_PI / path.boxPtr->side[i];
+                }
+
+                // Check wavevector magnitude and add if valid
+                q_mag = sqrt(dot(q, q));
+                if (q_mag <= q_mag_max) {
+                    qValues.push_back(q);
+                }
+                count += 1;
+                pos = NDIM - 1;
+            }
+        }
+    }
+
+    // Handle file input for integer values
+    if (inputType == "file_int") {
+        std::ifstream file(input);
+        std::string line;
+        while (std::getline(file, line)) {
+            std::istringstream line_stream(line);
+            std::vector<int> line_data((std::istream_iterator<int>(line_stream)), std::istream_iterator<int>());
+            PIMC_ASSERT(line_data.size() == NDIM);
+
+            for (int i = 0; i < NDIM; ++i) {
+                q[i] = (2.0 * M_PI / path.boxPtr->side[i]) * line_data[i];
+            }
+            qValues.push_back(q);
+        }
+    }
+
+    // Handle file input for float values
+    if (inputType == "file_float") {
+        std::ifstream file(input);
+        std::string line;
+        while (std::getline(file, line)) {
+            std::istringstream line_stream(line);
+            std::vector<float> line_data((std::istream_iterator<float>(line_stream)), std::istream_iterator<float>());
+            PIMC_ASSERT(line_data.size() == NDIM);
+
+            for (int i = 0; i < NDIM; ++i) {
+                q[i] = line_data[i];
+            }
+            qValues.push_back(q);
+        }
+    }
+}
+
+/*************************************************************************//**
+*  Get wavevectors for scattering calculations
+*  
+*  Based on the geometry of the system and a user-defined choice, 
+*  (wavevector and wavevector_type command line arguments) return a
+*  list of wavevectors where scattering will be computed.
+*  
+******************************************************************************/
+void EstimatorBase::getQVectorsNN(std::vector<dVec> &qValues) {
+
+    dVec q;
+    std::string input = constants()->wavevector();
+    char * cstr = new char [input.length()+1];
+    std::strcpy (cstr, input.c_str());
+    char *token = strtok(cstr, " ");
+    // parse wavevectorType to determine how to handle isf_input
+    if (constants()->wavevectorType() == "int") {
+        std::cout << "wavevectorType = int" << std::endl;
+        while(token) {
+            int j = 0;
+            for (int i=0; (i<NDIM) && token; i++) {
+                q[i] = (2.0*M_PI/path.boxPtr->side[i])*std::atoi(token);
+                token = strtok(NULL, " ");
+                j = i;
+            }
+            if (j==(NDIM-1)){
+                qValues.push_back(q);
+            }
+        }
+    }
+
+    if (constants()->wavevectorType() == "float") {
+        std::cout << "wavevectorType = float" << std::endl;
+        while(token) {
+            int j = 0;
+            for (int i=0; (i<NDIM) && token; i++){
+                q[i] = std::atof(token);
+                token = strtok(NULL, " ");
+                j = i;
+            }
+            if (j==(NDIM-1)){
+                qValues.push_back(q);
+            }
+        }
+    }
+
+    if (constants()->wavevectorType() == "max_int") {
+        std::cout << "wavevectorType = max-int" << std::endl;
+        iVec q_int;
+        while(token) {
+            for (int i=0; (i<NDIM) && token; i++) {
+                q_int[i] = std::abs(std::atoi(token));
+                token = strtok(NULL, " ");
+            }
+        }
+
+        int _q_int[NDIM];
+        int n_q = 1;
+        for (int i = 0; i < NDIM; i++) {
+            n_q *= 2*q_int[i] + 1;
+            _q_int[i] = -q_int[i];
+            q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+        }
+        qValues.push_back(q);
+
+        std::cout << sqrt(blitz::dot(q,q)) << " " << q_int << std::endl;
+
+        int pos = NDIM - 1;
+        int count = 0;
+        while (count < n_q - 1) {
+            if (_q_int[pos] == q_int[pos]) {
+                _q_int[pos] = -q_int[pos];
+                pos -= 1;
+            } else {
+                _q_int[pos] += 1;
+                for (int i = 0; i < NDIM; i++) {
+                    q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+                }
+                qValues.push_back(q);
+                count += 1;
+                pos = NDIM - 1; //increment the innermost loop
+            }
+        }
+    }
+
+    if (constants()->wavevectorType() == "max_float") {
+        std::cout << "wavevectorType = max-float" << std::endl;
+        iVec q_int;
+        double q_mag_max = 0.0;
+        double q_mag;
+        while(token) {
+            for (int i=0; (i<NDIM) && token; i++) {
+                q_mag_max = std::atof(token);
+                token = strtok(NULL, " ");
+            }
+        }
+        
+        int _q_int[NDIM];
+        int n_q = 1;
+        for (int i = 0; i < NDIM; i++) {
+            q_int[i] = 1 + static_cast<int>(q_mag_max*path.boxPtr->side[i]/2.0/M_PI);
+            n_q *= 2*q_int[i] + 1;
+            _q_int[i] = -q_int[i];
+            q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+        }
+        q_mag = sqrt(dot(q,q));
+        if (q_mag <= q_mag_max) {
+            qValues.push_back(q);
+        }
+        std::cout << q_mag_max << " " << q_int << std::endl;
+
+        int pos = NDIM - 1;
+        int count = 0;
+        while (count < n_q - 1) {
+            if (_q_int[pos] == q_int[pos]) {
+                _q_int[pos] = -q_int[pos];
+                pos -= 1;
+            } else {
+                _q_int[pos] += 1;
+                for (int i = 0; i < NDIM; i++) {
+                    q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
+                }
+                q_mag = sqrt(dot(q,q));
+                if (q_mag <= q_mag_max) {
+                    qValues.push_back(q);
+                }
+                count += 1;
+                pos = NDIM - 1; //increment the innermost loop
+            }
+        }
+    }
+
+    if (constants()->wavevectorType() == "file_int") {
+        std::cout << "wavevectorType = file-int" << std::endl;
+
+        std::ifstream file(input);
+        std::string line;
+        // Read one line at a time into the variable line:
+        while(std::getline(file, line)) {
+            std::vector<int> line_data;
+            std::stringstream line_stream(line);
+        
+            int value;
+            // Read an integer at a time from the line
+            while(line_stream >> value) {
+                // Add the integers from a line to a 1D array (std::vector)
+                line_data.push_back(value);
+            }
+            PIMC_ASSERT(line_data.size()==NDIM);
+
+            for (int i=0; i < NDIM; i++) {
+                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
+            }
+            qValues.push_back(q);
+        }
+    }
+    if (constants()->wavevectorType() == "file_float") {
+        std::cout << "wavevectorType = file-float" << std::endl;
+
+        std::ifstream file(input);
+        std::string line;
+        // Read one line at a time into the variable line:
+        while(std::getline(file, line)) {
+            std::vector<int> line_data;
+            std::stringstream line_stream(line);
+        
+            int value;
+            // Read an integer at a time from the line
+            while(line_stream >> value) {
+                // Add the integers from a line to a 1D array (std::vector)
+                line_data.push_back(value);
+            }
+            PIMC_ASSERT(line_data.size()==NDIM);
+
+            for (int i=0; i < NDIM; i++) {
+                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
+            }
+            qValues.push_back(q);
+        }
+    }
+}
+
+/*************************************************************************//**
+*  Get wavevectors for scattering calculations
+*  
+*  Based on the geometry of the system and a user-defined choice, 
+*  (wavevector and wavevector_type command line arguments) return a
+*  list of wavevectors where scattering will be computed.
+*  
+******************************************************************************/
+std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double qMax, 
+        int& numq, std::string qGeometry) {
+
+    /* initilize the total number of wavevectors */
+    numq = 0;
+
+    /* The wavevectors will end up in this array to be returned by value. */
+    std::vector <std::vector<dVec> > q;
+
+
+    if ((qGeometry != "line") && (qGeometry != "sphere")) {
+        std::cerr << "\nERROR: A valid geometry wasn't chosen for q-space." << std::endl
+                  << "Action: choose \"line\" or \"sphere\"" << std::endl;
         exit(0);
     }
 
-    /* Determine the set of q-vectors that have these magnitudes.  */
-    for (int nq = 0; nq < numq; nq++)
-    {
-        double cq = nq*dq;
-        vector <dVec> qvecs;
+    /* Determine the set of wavevectors that have these magnitudes.  */
+    for (double cq = 0.0; cq <= qMax + EPS; cq += dq) {
+        std::vector <dVec> qvecs;
 
         /* cq = 0.0 */
         if (abs(cq) < EPS) {
@@ -416,28 +773,35 @@ vector <vector<dVec> > EstimatorBase::getQVectors(double dq, int numq,
 
         /* cq > 0.0 */
         else {
-
             /* First do θ = 0, i.e. along the z-direction */
             dVec qd = 0.0;
-            qd[2] = cq;
+            qd[NDIM-1] = cq;
             qvecs.push_back(qd);
 
-            /* Now do the rest of the θ values */
-            for (double theta = dtheta; theta <= 0.5*M_PI + EPS; theta += dtheta) {
-                double dphi = dtheta/sin(theta);
-                for (double phi = 0.0; phi <= 0.5*M_PI+EPS; phi += dphi) {
+            /* Can only do a spherical distribution of wavevectors in 3 spatial dimensions */
+            #if NDIM==3
+                /* Number of θ values per q-magnitude, hard-coded for now */
+                int numTheta = 24; 
+                double dtheta = (qGeometry == "line") ? M_PI : 0.5*M_PI/numTheta;
 
-                    dVec qd;
-                    qd[0] = cq*sin(theta)*cos(phi);
-                    qd[1] = cq*sin(theta)*sin(phi);
-                    qd[2] = cq*cos(theta);
+                /* Now do the rest of the θ values */
+                for (double theta = dtheta; theta <= 0.5*M_PI + EPS; theta += dtheta) {
+                    double dphi = dtheta/sin(theta);
+                    for (double phi = 0.0; phi <= 0.5*M_PI+EPS; phi += dphi) {
 
-                    qvecs.push_back(qd);
-                } // phi
-            } // theta
+                        dVec qd;
+                        qd[0] = cq*sin(theta)*cos(phi);
+                        qd[1] = cq*sin(theta)*sin(phi);
+                        qd[2] = cq*cos(theta);
+
+                        qvecs.push_back(qd);
+                    } // phi
+                } // theta
+            #endif 
         } // non-zero q-mags
 
-        /* Add the list of q-vectors at this magnitude */
+        /* Add the list of wavevectors at this magnitude */
+        numq += qvecs.size();
         q.push_back(qvecs);
     } //q-mags
 
@@ -445,13 +809,14 @@ vector <vector<dVec> > EstimatorBase::getQVectors(double dq, int numq,
     /* int totalNumQVecs = 0; */
     /* for (auto [nq,cq] : enumerate(q)) { */
     /*     double qMag = sqrt(blitz::dot(cq.front(),cq.front())); */
-    /*     cout << endl << endl << "qmag = " << qMag << endl; */
+    /*     std::cout << std::endl << std::endl << "qmag = " << qMag << std::endl; */
     /*     for (const auto &cqvec : cq) */ 
-    /*         cout << cqvec << endl; */
+    /*         std::cout << cqvec << std::endl; */
     /*     totalNumQVecs += cq.size(); */
     /* } */
-    /* cout << "Full: " << totalNumQVecs << endl; */
+    /* std::cout << "Full: " << totalNumQVecs << std::endl; */
     /* exit(-1); */
+    std::cout << "numQ = " << numq << std::endl;
 
     return q;
 }
@@ -469,7 +834,7 @@ vector <vector<dVec> > EstimatorBase::getQVectors(double dq, int numq,
 ******************************************************************************/
 TimeEstimator::TimeEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     endLine = false;
@@ -515,7 +880,7 @@ void TimeEstimator::output() {
         (*outFilePtr) << format("%16.8E") % estimator(n);
 
     if (endLine)
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     /* Reset all values */
     reset();
@@ -535,7 +900,7 @@ void TimeEstimator::output() {
  * estimators.
 ******************************************************************************/
 EnergyEstimator::EnergyEstimator (const Path &_path, ActionBase *_actionPtr,
-        const MTRand &_random, double _maxR, int _frequency, string _label) : 
+        const MTRand &_random, double _maxR, int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     endLine = false;
@@ -561,7 +926,7 @@ void EnergyEstimator::accumulate() {
 
     double totK = 0.0;
     double totV = 0.0;
-    TinyVector<double,2> totVop(0.0);
+    blitz::TinyVector<double,2> totVop(0.0);
 
     int numParticles  = path.getTrueNumParticles();
     int numTimeSlices = endSlice - startSlice;
@@ -661,7 +1026,7 @@ void EnergyEstimator::accumulate() {
  *
 ******************************************************************************/
 VirialEnergyEstimator::VirialEnergyEstimator (const Path &_path, ActionBase *_actionPtr,
-        const MTRand &_random, double _maxR, int _frequency, string _label) : 
+        const MTRand &_random, double _maxR, int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* Set estimator name and header, we will always report the energy
@@ -881,7 +1246,7 @@ void VirialEnergyEstimator::accumulate() {
 ******************************************************************************/
 NumberParticlesEstimator::NumberParticlesEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* Set estimator name and header */
@@ -905,6 +1270,93 @@ void NumberParticlesEstimator::accumulate() {
     estimator(2) += 1.0*numParticles/path.boxPtr->volume;
 }
 
+#if NDIM > 2
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// COMMENSURATE ORDER PARAMETER ESTIMATOR CLASS ------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  We measure the average static structure factor at a finite-set of wave-
+ *  std::vectors that correspond to the first shell of reciprocal lattice std::vectors.
+ *
+ *  @see https://journals.aps.org/prb/abstract/10.1103/PhysRevB.73.085422
+ *  
+******************************************************************************/
+CommensurateOrderParameterEstimator::CommensurateOrderParameterEstimator (
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
+        int _frequency, std::string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
+
+    /* Get the current carbon-carbon distance */
+    double aCC = constants()->aCC();
+
+    /* The reciprocal lattice std::vectors*/
+    dVec G1,G2;
+    G1[0] = 2.0*M_PI/(sqrt(3.0)*aCC);
+    G1[1] = 2.0*M_PI/(3.0*aCC);
+    G1[2] = 0.0;
+
+    G2[0] = -G1[0];
+    G2[1] = G1[1];
+    G2[2] = 0.0;
+
+    /* For now we hard-code the g-vectors for graphene */
+    g.push_back(G1);
+    g.push_back(G2);
+    g.push_back(G1+G2);
+
+    /* Set estimator name and header */
+    endLine = false;
+    initialize({"Scom"});
+
+    norm = 1.0/(g.size()*constants()->numTimeSlices());
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+CommensurateOrderParameterEstimator::~CommensurateOrderParameterEstimator() { 
+}
+
+/*************************************************************************//**
+ * Accumulate the number of Commensurate order parameter
+******************************************************************************/
+void CommensurateOrderParameterEstimator::accumulate() {
+
+    int numParticles = path.getTrueNumParticles();
+    int numTimeSlices = constants()->numTimeSlices();
+
+    double _norm = 1.0;
+
+    if (numParticles > 0)
+        _norm /= numParticles;
+
+    beadLocator beadIndex;  // The bead locator
+    double Scom = 0.0; // initialize
+    dVec pos;
+
+    /* Average over all time slices */
+    for (beadIndex[0] = 0; beadIndex[0] < numTimeSlices; beadIndex[0]++) {
+
+        /* Average over all beads */
+        for (beadIndex[1] = 0; beadIndex[1] < path.numBeadsAtSlice(beadIndex[0]); beadIndex[1]++) {
+            pos = path(beadIndex);
+
+            for (const auto &cg : g) {
+                Scom += cos(dot(cg,pos));
+            }
+
+        } // beadIndex[1]
+    } //beadIndex[0]
+
+    estimator(0) += Scom*_norm;
+}
+#endif
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // NUMBER DISTRIBUTION ESTIMATOR CLASS ---------------------------------------
@@ -920,12 +1372,12 @@ void NumberParticlesEstimator::accumulate() {
 ******************************************************************************/
 NumberDistributionEstimator::NumberDistributionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* For now, we assume 50 particles on each side of the mean */
     particleShift = 50;
-    startParticleNumber = max(constants()->initialNumParticles()-particleShift,0);
+    startParticleNumber = std::max(constants()->initialNumParticles()-particleShift,0);
     if (startParticleNumber == 0)
         endParticleNumber = 2*particleShift;
     else
@@ -977,7 +1429,7 @@ void NumberDistributionEstimator::accumulate() {
 ******************************************************************************/
 ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label)  : 
+        int _frequency, std::string _label)  : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     initialize(path.boxPtr->numGrid);
@@ -987,7 +1439,7 @@ ParticlePositionEstimator::ParticlePositionEstimator (const Path &_path,
     diffLabels = {"dx","dy","dz"};
 
     header =  str(format("# PIMCID: %s\n") % constants()->id());
-    header += "# ESTINF:" ;
+    header += "# ESTINF:";
     for (int i = 0; i < NDIM; i++) 
         header += str(format(" %s = %12.6E") % diffLabels[i] % path.boxPtr->gridSize[i]);
     header += str(format(" NGRIDSEP = %d\n") % NGRIDSEP);
@@ -1024,6 +1476,7 @@ void ParticlePositionEstimator::accumulate() {
     }
 }
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // BIPARTITION DENSITY ESTIMATOR CLASS ---------------------------------------
@@ -1039,7 +1492,7 @@ void ParticlePositionEstimator::accumulate() {
 ******************************************************************************/
 BipartitionDensityEstimator::BipartitionDensityEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* Set estimator name and header*/
@@ -1070,7 +1523,7 @@ void BipartitionDensityEstimator::accumulate() {
         lside[i] = path.boxPtr->side[i];
 
     /* read in the exclusion lengths */
-    Array<double,1> excLens (actionPtr->externalPtr->getExcLen());
+    blitz::Array<double,1> excLens (actionPtr->externalPtr->getExcLen());
     double excZ = excLens(1);
     
     /* determine volume of film region and bulk region */
@@ -1100,6 +1553,7 @@ void BipartitionDensityEstimator::accumulate() {
     estimator(0) += 1.0*filmNum/(1.0*filmArea);
     estimator(1) += 1.0*bulkNum/(1.0*bulkVol);
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -1116,7 +1570,7 @@ void BipartitionDensityEstimator::accumulate() {
 ******************************************************************************/
 LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* Make sure we have a bin centered at 0.0 */
@@ -1188,7 +1642,7 @@ void LinearParticlePositionEstimator::accumulate() {
 ******************************************************************************/
 PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
 
@@ -1271,7 +1725,7 @@ void PlaneParticlePositionEstimator::accumulate() {
 ******************************************************************************/
 PlaneParticleAveragePositionEstimator::PlaneParticleAveragePositionEstimator (
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) : 
+        double _maxR, int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* We choose an odd number to make sure (0,0) is the central 
@@ -1288,7 +1742,7 @@ PlaneParticleAveragePositionEstimator::PlaneParticleAveragePositionEstimator (
 
     /* The header contains information about the grid  */
     header = str(format("# PIMCID: %s\n") % constants()->id());
-    header = str(format("# ESTINF: dx = %12.6E dy = %12.6E NGRIDSEP = %d\n") 
+    header += str(format("# ESTINF: dx = %12.6E dy = %12.6E NGRIDSEP = %d\n") 
             % dl[0] % dl[1] % numLinearGrid);
     header += str(format("#%15s") % "plane density");
 
@@ -1350,7 +1804,7 @@ void PlaneParticleAveragePositionEstimator::accumulate() {
 ******************************************************************************/
 PlaneAverageExternalPotentialEstimator::PlaneAverageExternalPotentialEstimator (
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) : 
+        double _maxR, int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* We choose an odd number to make sure (0,0) is the central 
@@ -1367,7 +1821,7 @@ PlaneAverageExternalPotentialEstimator::PlaneAverageExternalPotentialEstimator (
 
     /* The header contains information about the grid  */
     header = str(format("# PIMCID: %s\n") % constants()->id());
-    header = str(format("# ESTINF: dx = %12.6E dy = %12.6E NGRIDSEP = %d\n") 
+    header += str(format("# ESTINF: dx = %12.6E dy = %12.6E NGRIDSEP = %d\n") 
             % dl[0] % dl[1] % numLinearGrid);
     header += str(format("#%15s") % "plane external potential");
 
@@ -1425,7 +1879,7 @@ void PlaneAverageExternalPotentialEstimator::output() {
 
     (*outFilePtr) << header;
     if (endLine)
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     /* Now write the running average of the estimator to disk */
     double Vext = 0.0;
@@ -1440,6 +1894,7 @@ void PlaneAverageExternalPotentialEstimator::output() {
     communicate()->file(label)->rename();
 }
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // SUPERFLUID FRACTION ESTIMATOR CLASS ---------------------------------------
@@ -1456,7 +1911,7 @@ void PlaneAverageExternalPotentialEstimator::output() {
 ******************************************************************************/
 SuperfluidFractionEstimator::SuperfluidFractionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     windMax = 10;
@@ -1564,7 +2019,9 @@ void SuperfluidFractionEstimator::accumulate() {
         ++n;
     }
 }
+#endif
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // PLANE WINDING SUPERFLUID DENSITY ESTIMATOR CLASS --------------------------
@@ -1581,7 +2038,7 @@ void SuperfluidFractionEstimator::accumulate() {
 ******************************************************************************/
 PlaneWindingSuperfluidDensityEstimator::PlaneWindingSuperfluidDensityEstimator
 (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     numGrid = (2*NGRIDSEP)*(2*NGRIDSEP);
@@ -1653,7 +2110,9 @@ void PlaneWindingSuperfluidDensityEstimator::accumulate() {
 
     estimator += locWz*Wz;
 }
+#endif
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // PLANE AREA SUPERFLUID DENSITY ESTIMATOR CLASS -----------------------------
@@ -1670,7 +2129,7 @@ void PlaneWindingSuperfluidDensityEstimator::accumulate() {
 ******************************************************************************/
 PlaneAreaSuperfluidDensityEstimator::PlaneAreaSuperfluidDensityEstimator
 (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     numGrid = (2*NGRIDSEP)*(2*NGRIDSEP);
@@ -1748,7 +2207,9 @@ void PlaneAreaSuperfluidDensityEstimator::accumulate() {
 
     estimator += locAz*Az;
 }
+#endif
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // RADIAL WINDING SUPERFLUID DENSITY ESTIMATOR CLASS -------------------------
@@ -1765,7 +2226,7 @@ void PlaneAreaSuperfluidDensityEstimator::accumulate() {
 ******************************************************************************/
 RadialWindingSuperfluidDensityEstimator::RadialWindingSuperfluidDensityEstimator
 (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     numGrid = NGRIDSEP;
@@ -1834,7 +2295,9 @@ void RadialWindingSuperfluidDensityEstimator::accumulate() {
 
     estimator += locWz*Wz;
 }
+#endif
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // RADIAL AREA SUPERFLUID DENSITY ESTIMATOR CLASS ----------------------------
@@ -1851,7 +2314,7 @@ void RadialWindingSuperfluidDensityEstimator::accumulate() {
 ******************************************************************************/
 RadialAreaSuperfluidDensityEstimator::RadialAreaSuperfluidDensityEstimator
 (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     numGrid = NGRIDSEP;
@@ -1922,7 +2385,9 @@ void RadialAreaSuperfluidDensityEstimator::accumulate() {
 
     estimator += locAz*Az;
 }
+#endif
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // LOCAL SUPERFLUID DENSITY ESTIMATOR CLASS ----------------------------------
@@ -1939,7 +2404,7 @@ void RadialAreaSuperfluidDensityEstimator::accumulate() {
 ******************************************************************************/
 LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
 (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label):
+        int _frequency, std::string _label):
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* This is a 'local' histogram estimator so we use the defined grid */
@@ -1993,14 +2458,14 @@ void LocalSuperfluidDensityEstimator::output() {
 
     (*outFilePtr) << header;
     if (endLine)
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     /* Now write the running average of the estimator to disk */
     for (int n = 0; n < numGrid; n++) {
         for (int i = 0; i < int(numEst/numGrid); i++)
             (*outFilePtr) << format("%16.8E") % 
                 (norm(n+i*numGrid)*estimator(n+i*numGrid)/totNumAccumulated);
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
     }
 
     communicate()->file(label)->rename();
@@ -2070,6 +2535,7 @@ void LocalSuperfluidDensityEstimator::accumulate() {
         estimator(n+2*numGrid) += locA2(n);
     }
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -2085,7 +2551,7 @@ void LocalSuperfluidDensityEstimator::accumulate() {
 ******************************************************************************/
 DiagonalFractionEstimator::DiagonalFractionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     initialize(1);
@@ -2138,7 +2604,7 @@ void DiagonalFractionEstimator::sample() {
 ******************************************************************************/
 WormPropertiesEstimator::WormPropertiesEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* We measure the average worm length, gap and cost.  It is an off-diagonal
@@ -2185,7 +2651,7 @@ void WormPropertiesEstimator::accumulate() {
 ******************************************************************************/
 PermutationCycleEstimator::PermutationCycleEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label)  : 
+        int _frequency, std::string _label)  : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* We just choose arbitrarily to only count cycles including up to 40 particles */
@@ -2232,7 +2698,7 @@ void PermutationCycleEstimator::accumulate() {
     else
         cycleNorm = 0.0;
 
-    /* We create a local vector, which determines whether or not we have
+    /* We create a local std::vector, which determines whether or not we have
      * already included a bead at slice 0*/
     doBead.resize(numWorldlines);
     doBead = true;
@@ -2287,7 +2753,7 @@ void PermutationCycleEstimator::accumulate() {
 ******************************************************************************/
 LocalPermutationEstimator::LocalPermutationEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label)  : 
+        int _frequency, std::string _label)  : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     /* We just choose arbitrarily to only count cycles including up to 40 particles */
@@ -2297,7 +2763,7 @@ LocalPermutationEstimator::LocalPermutationEstimator (const Path &_path,
      * maxNumCycles permutation cycles */
     initialize(path.boxPtr->numGrid);
 
-    /* vector to hold number of worldlines put into a grid space */
+    /* std::vector to hold number of worldlines put into a grid space */
     numBeadInGrid.resize(estimator.size());
 
     /* Set estimator header */
@@ -2323,7 +2789,7 @@ LocalPermutationEstimator::~LocalPermutationEstimator() {
 
 /*     (*outFilePtr) << header; */
 /*     if (endLine) */
-/*         (*outFilePtr) << endl; */
+/*         (*outFilePtr) << std::endl; */
 
 /*     /1* Now write the running average of the estimator to disk *1/ */
 /*     for (int n = 0; n < numEst; n++) */
@@ -2351,7 +2817,7 @@ void LocalPermutationEstimator::accumulate() {
 
     int numWorldlines = path.numBeadsAtSlice(0);
 
-    /* We create a local vector, which determines whether or not we have
+    /* We create a local std::vector, which determines whether or not we have
      * already included a bead at slice 0*/
     doBead.resize(numWorldlines);
     doBead = true;
@@ -2426,7 +2892,7 @@ void LocalPermutationEstimator::accumulate() {
 ******************************************************************************/
 OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
     lpath(_path)
 {
@@ -2484,10 +2950,10 @@ void OneBodyDensityMatrixEstimator::sample() {
 }
 
 /*************************************************************************//**
- *  Return a dimensionally dependent random vector of length r.  
+ *  Return a dimensionally dependent random std::vector of length r.  
  *
  *  If we are in 3D in a cylinder geometry, we only shift in the z-direction.
- *  @param r The length of the random vector
+ *  @param r The length of the random std::vector
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec OneBodyDensityMatrixEstimator::getRandomVector(const double r) {
@@ -2667,7 +3133,7 @@ void OneBodyDensityMatrixEstimator::outputFooter() {
 ******************************************************************************/
 PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The spatial discretization */
@@ -2698,7 +3164,7 @@ PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path,
             norm(n) = 0.5*path.boxPtr->side[NDIM-1] / dR;
     }
     else {
-        TinyVector<double,3> gNorm;
+	blitz::TinyVector<double,3> gNorm;
         gNorm[0] = 1.0;
         gNorm[1] = 1.0/(M_PI);
         gNorm[2] = 3.0/(2.0*M_PI);
@@ -2740,14 +3206,14 @@ void PairCorrelationEstimator::accumulate() {
 //
 //StaticStructureFactorEstimator::StaticStructureFactorEstimator(
 //        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-//        double _maxR, int _frequency, string _label) :
+//        double _maxR, int _frequency, std::string _label) :
 //    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 //{
 //
-//    /* hard-coded number of q-vector magnitudes */
+//    /* hard-coded number of wavevector magnitudes */
 //    numq = 20; 
 //
-//    /* initialize the number of vectors with each magnitude */
+//    /* initialize the number of std::vectors with each magnitude */
 //    numqVecs.resize(numq);               
 //    numqVecs = 0;
 //
@@ -2755,20 +3221,20 @@ void PairCorrelationEstimator::accumulate() {
 //    qMag.resize(numq);
 //    qMag = 0.0;
 //
-//    /* The maximum q-vector magnitude to consider (hard-coded for now) */
+//    /* The maximum wavevector magnitude to consider (hard-coded for now) */
 //    double qmax = 4.0; // 1/A
 //    double dq = qmax/(numq-1);
 //
 //    /* Determine the set of magnitudes */
-//    Array <double, 1> qMag(numq);         // the q-vector magnitudes
+//    Array <double, 1> qMag(numq);         // the wavevector magnitudes
 //    for (int nq = 0; nq < numq; nq++)
 //        qMag(nq) = nq*dq;
 //
-//    /* Determine the set of q-vectors that have these magintudes */
+//    /* Determine the set of wavevectors that have these magintudes */
 //    for (int nq = 0; nq < numq; nq++)
 //    {
 //        double cq = qMag(nq);
-//        vector <dVec> qvecs;
+//        std::vector <dVec> qvecs;
 //
 //        int maxComp = ceil(cq*blitz::max(path.boxPtr->side)/(2.0*M_PI))+1;
 //        int maxNumQ = ipow(2*maxComp + 1,NDIM);
@@ -2805,25 +3271,26 @@ void PairCorrelationEstimator::accumulate() {
 /*************************************************************************//**
  *  Constructor.
  * 
- *  Compute the static structure factor for a fixed set of q vector magnitude.
+ *  Compute the static structure factor for a fixed set of q std::vector magnitude.
 ******************************************************************************/
 StaticStructureFactorEstimator::StaticStructureFactorEstimator(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) :
+        double _maxR, int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
-    /* The maximum q-vector magnitude to consider (hard-coded for now) */
+    /* The maximum wavevector magnitude to consider (hard-coded for now) */
     double qMax = 4.0; // 1/Å
 
-    /* We choose dq from the smallest possible q-vector, set by PBC */
+    /* We choose dq from the smallest possible wavevector, set by PBC */
     double dq = 2.0*M_PI/path.boxPtr->side[NDIM-1];
 
-    /* Determine how many q-vector magnitudes  we have */
-    int numq = int(qMax/dq) + 1;
-    
-    /* Get the desired q-vectors */
-    q = getQVectors(dq,numq,"sphere");
+    /* Get the desired wavevectors */
+    int numq = 0;
+    q = getQVectors2(dq,qMax,numq,"sphere");
+
+    /* Determine how many wavevector magnitudes  we have */
+    numq = q.size();
 
     /* Initialize the accumulator intermediate scattering function*/
     sf.resize(numq);
@@ -2872,7 +3339,7 @@ void StaticStructureFactorEstimator::accumulate() {
     /* q-magnitudes */
     for (auto [nq,cq] : enumerate(q)) {
 
-        /* q-vectors with that q-magnitude*/
+        /* wavevectors with that q-magnitude*/
         for (const auto &cqvec : cq) {
     
             /* Average over all time slices */
@@ -2892,11 +3359,135 @@ void StaticStructureFactorEstimator::accumulate() {
                 } // bead1[1]
             } //bead1[0]
 
-        } // q-vectors
+        } // wavevectors
     } // q-magnitudes
 
     estimator += sf/numParticles; 
 }
+
+#ifdef USE_GPU
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// STATIC STRUCTURE FACTOR GPU ESTIMATOR CLASS -------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  A GPU accelerated static structure factor estimator.
+ *  
+******************************************************************************/
+StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
+        double _maxR, int _frequency, std::string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
+
+    /* Get the desired wavevectors (specified at command line)*/
+    getQVectors(qValues);
+
+    numq = qValues.size();
+    qValues_dVec.resize(numq);
+    for (int nq = 0; nq < numq; nq++) {
+        qValues_dVec(nq) = qValues[nq];
+    }
+
+    /* Initialize the accumulator for the static structure factor */
+    ssf.resize(numq);
+    ssf = 0.0;
+
+    // Create multiple gpu streams
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        GPU_ASSERT(gpu_stream_create(stream_array[i]));
+    }
+
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numq);
+
+    /* The header consists of an extra line of the possible q-values */
+    header = str(format("# ESTINF: num_q = %d; ") % numq);
+    for (int n = 0; n < numq; n++)
+        header += dVecToString(qValues_dVec(n)) + " ";
+    header += "\n";
+
+    /* We index the wavevectors with an integer */
+    header += str(format("#%15d") % 0);
+    for (int n = 1; n < numq; n++) 
+        header += str(format("%16d") % n);
+
+    /* utilize imaginary time translational symmetry */
+    norm = 0.5/constants()->numTimeSlices();
+
+    bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
+    bytes_ssf = ssf.size()*sizeof(double);
+    bytes_qvecs = NDIM*numq*sizeof(double);
+
+    gpu_malloc_device(double, d_ssf, ssf.size(), stream_array[0]);
+    gpu_malloc_device(double, d_qvecs, NDIM*numq, stream_array[0]);
+    gpu_memcpy_host_to_device(d_qvecs, qValues.data(), bytes_qvecs, stream_array[0]);
+    gpu_wait(stream_array[0]);
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+StaticStructureFactorGPUEstimator::~StaticStructureFactorGPUEstimator() { 
+    ssf.free();
+
+    // Release device memory
+    GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
+    GPU_ASSERT(gpu_free(d_qvecs, stream_array[0]));
+    GPU_ASSERT(gpu_free(d_ssf, stream_array[0]));
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        GPU_ASSERT(gpu_stream_destroy(stream_array[i]));
+    }
+}
+
+/*************************************************************************//**
+ *  Measure the static structure factor for each wavevector
+ *
+ *  We only compute this for N > 1 due to the normalization.
+******************************************************************************/
+void StaticStructureFactorGPUEstimator::accumulate() {
+
+    int numParticles = path.getTrueNumParticles();
+    int numTimeSlices = constants()->numTimeSlices();
+
+    /* Return to these and check if we need them */
+    double _inorm = 1.0/numParticles;
+
+    /* We need to copy over the current beads array to the device */
+    auto beads_extent = path.get_beads_extent();
+    int full_number_of_beads = beads_extent[0]*beads_extent[1];
+    int full_numParticles = beads_extent[1];
+
+    /* Size, in bytes, of beads array */
+    size_t bytes_beads_new = NDIM*full_number_of_beads*sizeof(double);
+
+    if (bytes_beads_new > bytes_beads) {
+        bytes_beads = bytes_beads_new;
+        GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
+        GPU_ASSERT(gpu_malloc_device(double, d_beads, NDIM*full_number_of_beads, stream_array[0])); // Allocate memory for beads on GPU
+        GPU_ASSERT(gpu_wait(stream_array[0]));
+    }
+    GPU_ASSERT(gpu_memcpy_host_to_device(d_beads, path.get_beads_data_pointer(), bytes_beads, stream_array[0])); // Copy beads data to gpu
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+
+    gpu_ssf_launcher(stream_array[0], d_ssf, d_qvecs, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles, numq);
+
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        GPU_ASSERT(gpu_wait(stream_array[i]));
+    }
+
+    //// Copy ssf data back to host
+    GPU_ASSERT(gpu_memcpy_device_to_host(ssf.data(), d_ssf, bytes_ssf, stream_array[0])); //Only copy up to beta/2 back to host
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+
+    estimator += ssf;
+
+}
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -2912,31 +3503,31 @@ void StaticStructureFactorEstimator::accumulate() {
 ******************************************************************************/
 IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) :
+        double _maxR, int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
     int numTimeSlices = constants()->numTimeSlices();
 
-    /* these are the hard-coded q-vectors for now */
+    /* these are the hard-coded wavevectors for now */
     numq = 3;
-    Array <double, 1> qMag(numq);         // the q-vector magnitudes
+    blitz::Array <double, 1> qMag(numq);         // the wavevector magnitudes
     /* qMag.resize(numq); */
     qMag = 0.761,1.75,1.81;
 
-    /* initialize the number of vectors with each magnitude */
+    /* initialize the number of std::vectors with each magnitude */
     numqVecs.resize(numq);               
     numqVecs = 0;
 
-    /* The allowable error in the q-vector magnitude */
+    /* The allowable error in the wavevector magnitude */
     double eps = 2.0*M_PI/min(path.boxPtr->side)/sqrt(NDIM);
     eps *= eps;
 
-    /* Determine the set of q-vectors that have these magintudes */
+    /* Determine the set of wavevectors that have these magintudes */
     for (int nq = 0; nq < numq; nq++)
     {
         double cq = qMag(nq);
-        vector <dVec> qvecs;
+        std::vector <dVec> qvecs;
 
         int maxComp = ceil(cq*blitz::min(path.boxPtr->side)/(2.0*M_PI))+1;
         int maxNumQ = ipow(2*maxComp + 1,NDIM);
@@ -2961,11 +3552,11 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
             }
         }
 
-        /* Make sure we have some q-vectors */
+        /* Make sure we have some wavevectors */
         if (qvecs.size() < 1) {
-            cerr << "\nERROR: Intermediate Scattering function: "
-                 << "No valid q-vectors were added to the list for measurment." 
-                 << endl << "Action: modify q-magintudes." << endl;
+            std::cerr << "\nERROR: Intermediate Scattering function: "
+                 << "No valid wavevectors were added to the list for measurment." 
+                 << std::endl << "Action: modify q-magintudes." << std::endl;
             exit(0);
         }
         
@@ -3028,7 +3619,7 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
     /* q-magnitudes */
     for (int nq = 0; nq < numq; nq++) {
 
-        /* q-vectors */
+        /* wavevectors */
         for (const auto &cqvec : q[nq]) {
 
             /* Average over all initial time slices */
@@ -3054,12 +3645,13 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
                     } // bead1[1]
                 } //tausep   
             } //bead1[0]
-        } //q-vectors
+        } //wavevectors
     } //q-magnitudes
 
     estimator += isf/numParticles;
 }
 
+#ifdef USE_GPU
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // INTERMEDIATE SCATTERING FUNCTION GPU ESTIMATOR CLASS ----------------------
@@ -3070,212 +3662,26 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
  *  Constructor.
  * 
  *  Measure the intermediate scattering function at wavevectors determined
- *  from isf_input and isf_input_type command line arguments
+ *  from the wavevector and wavevector_type command line arguments
 ******************************************************************************/
-#ifdef GPU_BLOCK_SIZE
 IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstimatorGpu(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) :
+        double _maxR, int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
 
     int numTimeSlices = constants()->numTimeSlices();
 
-    dVec q;
-    string input = constants()->isf_input();
-    char * cstr = new char [input.length()+1];
-    std::strcpy (cstr, input.c_str());
-    char *token = strtok(cstr, " ");
-    // parse isf_input_type to determine how to handle isf_input
-    if (constants()->isf_input_type() == "int") {
-        std::cout << "isf_input_type = int" << std::endl;
-        while(token) {
-            int j = 0;
-            for (int i=0; (i<NDIM) && token; i++) {
-                q[i] = (2.0*M_PI/path.boxPtr->side[i])*std::atoi(token);
-                token = strtok(NULL, " ");
-                j = i;
-            }
-            if (j==(NDIM-1)){
-                qValues.push_back(q);
-            }
-        }
-    }
+    /* getQVectors */
+    getQVectors(qValues);
 
-    if (constants()->isf_input_type() == "float") {
-        std::cout << "isf_input_type = float" << std::endl;
-        while(token) {
-            int j = 0;
-            for (int i=0; (i<NDIM) && token; i++){
-                q[i] = std::atof(token);
-                token = strtok(NULL, " ");
-                j = i;
-            }
-            if (j==(NDIM-1)){
-                qValues.push_back(q);
-            }
-        }
-    }
+    /* // Write qValues to disk FIXME should be handled by communicator */
+    /* std::ofstream outFile((format("qValues-ssf-%s.dat") % constants()->id()).str()); */
+    /* for (const auto &e : qValues){ */
+    /*    outFile << e << "\n"; */
+    /* } */
+    /* outFile.flush(); */
+    /* outFile.close(); */
 
-    if (constants()->isf_input_type() == "max-int") {
-        std::cout << "isf_input_type = max-int" << std::endl;
-        iVec q_int;
-        while(token) {
-            for (int i=0; (i<NDIM) && token; i++) {
-                q_int[i] = std::abs(std::atoi(token));
-                token = strtok(NULL, " ");
-            }
-        }
-        
-        int _q_int[NDIM];
-        int n_q = 1;
-        for (int i = 0; i < NDIM; i++) {
-            n_q *= 2*q_int[i] + 1;
-            _q_int[i] = -q_int[i];
-            q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
-        }
-        qValues.push_back(q);
-
-        int pos = NDIM - 1;
-        int count = 0;
-        while (count < n_q - 1) {
-            if (_q_int[pos] == q_int[pos]) {
-                _q_int[pos] = -q_int[pos];
-                pos -= 1;
-            } else {
-                _q_int[pos] += 1;
-                for (int i = 0; i < NDIM; i++) {
-                    q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
-                }
-                qValues.push_back(q);
-                count += 1;
-                pos = NDIM - 1; //increment the innermost loop
-            }
-        }
-    }
-
-    if (constants()->isf_input_type() == "max-float") {
-        std::cout << "isf_input_type = max-float" << std::endl;
-        iVec q_int;
-        double q_mag_max = 0.0;
-        double q_mag;
-        while(token) {
-            for (int i=0; (i<NDIM) && token; i++) {
-                q_mag_max = std::atof(token);
-                token = strtok(NULL, " ");
-            }
-        }
-        
-        int _q_int[NDIM];
-        int n_q = 1;
-        for (int i = 0; i < NDIM; i++) {
-            q_int[i] = 1 + static_cast<int>(q_mag_max*path.boxPtr->side[i]/2.0/M_PI);
-            n_q *= 2*q_int[i] + 1;
-            _q_int[i] = -q_int[i];
-            q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
-        }
-        q_mag = sqrt(dot(q,q));
-        if (q_mag <= q_mag_max) {
-            qValues.push_back(q);
-        }
-
-        int pos = NDIM - 1;
-        int count = 0;
-        while (count < n_q - 1) {
-            if (_q_int[pos] == q_int[pos]) {
-                _q_int[pos] = -q_int[pos];
-                pos -= 1;
-            } else {
-                _q_int[pos] += 1;
-                for (int i = 0; i < NDIM; i++) {
-                    q[i] = _q_int[i]*2.0*M_PI/path.boxPtr->side[i];
-                }
-                q_mag = sqrt(dot(q,q));
-                if (q_mag <= q_mag_max) {
-                    qValues.push_back(q);
-                }
-                count += 1;
-                pos = NDIM - 1; //increment the innermost loop
-            }
-        }
-    }
-
-    if (constants()->isf_input_type() == "file-int") {
-        std::cout << "isf_input_type = file-int" << std::endl;
-
-        std::ifstream file(input);
-        std::string line;
-        // Read one line at a time into the variable line:
-        while(std::getline(file, line)) {
-            std::vector<int> line_data;
-            std::stringstream line_stream(line);
-        
-            int value;
-            // Read an integer at a time from the line
-            while(line_stream >> value) {
-                // Add the integers from a line to a 1D array (vector)
-                line_data.push_back(value);
-            }
-            PIMC_ASSERT(line_data.size()==NDIM);
-
-            for (int i=0; i < NDIM; i++) {
-                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
-            }
-            qValues.push_back(q);
-        }
-    }
-    if (constants()->isf_input_type() == "file-float") {
-        std::cout << "isf_input_type = file-float" << std::endl;
-
-        std::ifstream file(input);
-        std::string line;
-        // Read one line at a time into the variable line:
-        while(std::getline(file, line)) {
-            std::vector<int> line_data;
-            std::stringstream line_stream(line);
-        
-            int value;
-            // Read an integer at a time from the line
-            while(line_stream >> value) {
-                // Add the integers from a line to a 1D array (vector)
-                line_data.push_back(value);
-            }
-            PIMC_ASSERT(line_data.size()==NDIM);
-
-            for (int i=0; i < NDIM; i++) {
-                q[i] = (2.0*M_PI/path.boxPtr->side[i])*line_data[i];
-            }
-            qValues.push_back(q);
-        }
-    }
-    if (constants()->isf_input_type() == "help") {
-        std::cout << "isf_input_type = help" << std::endl;
-        std::cout << std::endl;
-        std::cout << "The intermediate scattering function behavior is determined by the isf_input and isf_input_type command line arguments." << std::endl;
-        std::cout << "Setting isf_input_type to `help` displays this message." << std::endl;
-        std::cout << "Other available options are:" << std::endl;
-        std::cout << "    int        - set isf_input to an `N*NDIM` space-separated list of integers `i` where the wavevector components are determined by `i*2*pi/L` for the corresponding simulation cell side `L`" << std::endl;
-        std::cout << "    float      - set isf_input to an `N*NDIM` space-separated list of floating point numbers `x`, where sequential values modulo NDIM are the corresponding wavevector components" << std::endl;
-        std::cout << "    max-int    - set isf_input to an `NDIM` space-separated list of integers `i` where the wavevector components are determined by all allowable wavevectors between `-i*2*pi/L` to `i*2*pi/L` for the corresponding simulation cell side `L`" << std::endl;
-        std::cout << "    max-float  - set isf_input to an `NDIM` space-separated list of floating point numbers `x` where wavevector components are dermined for all allowable wavevectors with magnitudes less than the supplied wavevector" << std::endl;
-        std::cout << "    file-int   - set isf_input to the path of a file containing any number of lines with `NDIM` space-separated integers `i` where the wavevector components are determined by `i*2*pi/L` for the corresponding simulation cell side `L`" << std::endl;
-        std::cout << "    file-float - set isf_input to the path of a file containing any number of lines `NDIM` space-separated floating point numbers `x` where the wavevector components are determined by the supplied wavevector on each line" << std::endl;
-        std::cout << std::endl;
-
-        throw "Set argstring_type to: < int | float | max-int | max-float | file-int | file-float >";
-    }
-    if (constants()->isf_input_type() == "") {
-        std::cout << "isf_input_type not set" << std::endl;
-        throw "argstring_type not set (set to: < int | float | max-int | max-float | file-int | file-float | help >)";
-    }
-    delete[] cstr;
-
-    // Write qValues to disk FIXME should be handled by communicator
-    //std::ofstream outFile((format("qValues-ssf-%s.dat") % constants()->id()).str());
-    //for (const auto &e : qValues){
-    //   outFile << e << "\n";
-    //}
-    //outFile.flush();
-    //outFile.close();
     
     numq = qValues.size();
     qValues_dVec.resize(numq);
@@ -3288,14 +3694,8 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
     isf = 0.0;
 
     // Create multiple gpu streams
-    stream_array.resize(MAX_GPU_STREAMS);
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
-        #ifndef USE_CUDA
-        HIP_ASSERT(hipStreamCreate(&stream_array(i)));
-        #endif
-        #ifdef USE_CUDA
-        CUDA_ASSERT(cudaStreamCreate(&stream_array(i)));
-        #endif
+        GPU_ASSERT(gpu_stream_create(stream_array[i]));
     }
 
     /* This is a diagonal estimator that gets its own file */
@@ -3309,7 +3709,7 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
 
     /* The imaginary time values */
     header = str(format("#%15d") % 0);
-    for (int n = 1; n < isf.size(); n++) {
+    for (unsigned int n = 1; n < isf.size(); n++) {
         header.append(str(format("%16d") % n));
     }
     /* utilize imaginary time translational symmetry */
@@ -3318,45 +3718,30 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
     bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
     bytes_isf = isf.size()*sizeof(double);
     bytes_qvecs = NDIM*numq*sizeof(double);
-    #ifndef USE_CUDA
-        HIP_ASSERT(hipMalloc(&d_isf, bytes_isf)); // Allocate memory for isf on GPU
-        HIP_ASSERT(hipMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
-        HIP_ASSERT(hipMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, hipMemcpyHostToDevice )); // Copy qvecs data to gpu
-    #endif
-    #ifdef USE_CUDA
-        CUDA_ASSERT(cudaMalloc(&d_isf, bytes_isf)); // Allocate memory for isf on GPU
-        CUDA_ASSERT(cudaMalloc(&d_qvecs, bytes_qvecs)); // Allocate memory for qvecs on GPU
-        CUDA_ASSERT(cudaMemcpy( d_qvecs, qValues_dVec.data(), bytes_qvecs, cudaMemcpyHostToDevice )); // Copy qvecs data to gpu
-    #endif
+
+    gpu_malloc_device(double, d_isf, isf.size(), stream_array[0]);
+    gpu_malloc_device(double, d_qvecs, NDIM*numq, stream_array[0]);
+    gpu_memcpy_host_to_device(d_qvecs, qValues_dVec.data(), bytes_qvecs, stream_array[0]);
+    gpu_wait(stream_array[0]);
 }
 
 /*************************************************************************//**
  *  Destructor.
 ******************************************************************************/
 IntermediateScatteringFunctionEstimatorGpu::~IntermediateScatteringFunctionEstimatorGpu() { 
-    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
-        #ifndef USE_CUDA
-            HIP_ASSERT(hipStreamDestroy(stream_array(i)));
-        #endif
-        #ifdef USE_CUDA
-            CUDA_ASSERT(cudaStreamDestroy(stream_array(i)));
-        #endif
-    }
     isf.free();
     qValues_dVec.free();
-    stream_array.free();
 
     // Release device memory
-    #ifndef USE_CUDA
-        HIP_ASSERT(hipFree(d_beads));
-        HIP_ASSERT(hipFree(d_qvecs));
-        HIP_ASSERT(hipFree(d_isf));
-    #endif
-    #ifdef USE_CUDA
-        CUDA_ASSERT(cudaFree(d_beads));
-        CUDA_ASSERT(cudaFree(d_qvecs));
-        CUDA_ASSERT(cudaFree(d_isf));
-    #endif
+    GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
+    GPU_ASSERT(gpu_free(d_qvecs, stream_array[0]));
+    GPU_ASSERT(gpu_free(d_isf, stream_array[0]));
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        GPU_ASSERT(gpu_stream_destroy(stream_array[i]));
+    }
+
 }
 
 /*************************************************************************//**
@@ -3368,74 +3753,173 @@ IntermediateScatteringFunctionEstimatorGpu::~IntermediateScatteringFunctionEstim
 void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
     int numParticles = path.getTrueNumParticles();
     int numTimeSlices = constants()->numTimeSlices();
-    int beta_over_two_idx = numTimeSlices/2;
     int number_of_beads = numParticles*numTimeSlices;
-    int NNM = number_of_beads*numParticles;
     //int number_of_connections = int(number_of_beads*(number_of_beads + 1)/2);
 
     double _inorm = 1.0/number_of_beads;
 
     auto beads_extent = path.get_beads_extent();
     int full_number_of_beads = beads_extent[0]*beads_extent[1];
-    int full_numTimeSlices = beads_extent[0];
     int full_numParticles = beads_extent[1];
 
     //Size, in bytes, of beads array
     size_t bytes_beads_new = NDIM*full_number_of_beads*sizeof(double);
 
-    #ifndef USE_CUDA
-        if (bytes_beads_new > bytes_beads) {
-            bytes_beads = bytes_beads_new;
-            HIP_ASSERT(hipFree(d_beads));
-            HIP_ASSERT(hipMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
-        }
-        HIP_ASSERT(hipMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, hipMemcpyHostToDevice )); // Copy beads data to gpu
-        HIP_ASSERT(hipMemset(d_isf, 0, bytes_isf)); // Set initial isf data to zero
-    #endif
-    #ifdef USE_CUDA
-        if (bytes_beads_new > bytes_beads) {
-            bytes_beads = bytes_beads_new;
-            CUDA_ASSERT(cudaFree(d_beads));
-            CUDA_ASSERT(cudaMalloc(&d_beads, bytes_beads)); // Allocate memory for beads on GPU
-        }
-        CUDA_ASSERT(cudaMemcpy( d_beads, path.get_beads_data_pointer(), bytes_beads, cudaMemcpyHostToDevice )); // Copy beads data to gpu
-        CUDA_ASSERT(cudaMemset(d_isf, 0, bytes_isf)); // Set initial isf data to zero
-    #endif
-
-    int grid_size = (NNM + GPU_BLOCK_SIZE - 1) / GPU_BLOCK_SIZE;
+    if (bytes_beads_new > bytes_beads) {
+        bytes_beads = bytes_beads_new;
+        GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
+        GPU_ASSERT(gpu_malloc_device(double, d_beads, NDIM*full_number_of_beads, stream_array[0])); // Allocate memory for beads on GPU
+        GPU_ASSERT(gpu_wait(stream_array[0]));
+    }
+    GPU_ASSERT(gpu_memcpy_host_to_device(d_beads, path.get_beads_data_pointer(), bytes_beads, stream_array[0])); // Copy beads data to gpu
+    GPU_ASSERT(gpu_wait(stream_array[0]));
 
     int stream_idx;
     for (int nq = 0; nq < numq; nq++) {
-        for (int Mi = 0; Mi < numTimeSlices; Mi++) {
-            stream_idx = (nq*numTimeSlices + Mi) % MAX_GPU_STREAMS;
-            #ifndef USE_CUDA
-            hipLaunchKernelGGL(gpu_isf2, dim3(grid_size), dim3(GPU_BLOCK_SIZE), 0, stream_array(stream_idx),
-                d_isf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
-                number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
-            #endif
-            #ifdef USE_CUDA
-            cuda_wrapper::gpu_isf2_wrapper(dim3(grid_size), dim3(GPU_BLOCK_SIZE), stream_array(stream_idx),
-                d_isf, d_qvecs, d_beads, nq, Mi, _inorm, numq, numTimeSlices, numParticles,
-                number_of_beads, full_numTimeSlices, full_numParticles, full_number_of_beads, NNM, beta_over_two_idx);
-            #endif
-        }
+        stream_idx = nq % MAX_GPU_STREAMS;
+        gpu_isf_launcher(stream_array[stream_idx], d_isf + (numTimeSlices/2 + 1)*nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
     }
-    #ifndef USE_CUDA
-        HIP_ASSERT(hipDeviceSynchronize());
-    #endif
-    #ifdef USE_CUDA
-        CUDA_ASSERT(cudaDeviceSynchronize());
-    #endif
+    GPU_ASSERT(gpu_wait(stream_array[0]));
 
     //// Copy isf data back to host
-    #ifndef USE_CUDA
-        HIP_ASSERT(hipMemcpy(isf.data(), d_isf, bytes_isf, hipMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
-    #endif
-    #ifdef USE_CUDA
-        CUDA_ASSERT(cudaMemcpy(isf.data(), d_isf, bytes_isf, cudaMemcpyDeviceToHost)); //Only copy up to beta/2 back to host
-    #endif
+    GPU_ASSERT(gpu_memcpy_device_to_host(isf.data(), d_isf, bytes_isf, stream_array[0])); //Only copy up to beta/2 back to host
+    GPU_ASSERT(gpu_wait(stream_array[0]));
 
     estimator += isf;
+
+}
+#endif
+
+#ifdef USE_GPU
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// ELASTIC SCATTERING GPU ESTIMATOR CLASS ------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  Measure the intermediate scattering function at wavevectors determined
+ *  from the wavevector and wavevector_type command line arguments
+******************************************************************************/
+ElasticScatteringEstimatorGpu::ElasticScatteringEstimatorGpu(
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
+        double _maxR, int _frequency, std::string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
+
+    getQVectors(qValues);
+
+    // Write qValues to disk FIXME should be handled by communicator
+    /* std::ofstream outFile((format("qValues-ssf-%s.dat") % constants()->id()).str()); */
+    /* for (const auto &e : qValues){ */
+    /*    outFile << e << "\n"; */
+    /* } */
+    /* outFile.flush(); */
+    /* outFile.close(); */
+    
+    numq = qValues.size();
+    qValues_dVec.resize(numq);
+    for (int nq = 0; nq < numq; nq++) {
+        qValues_dVec(nq) = qValues[nq];
+    }
+
+    /* Initialize the accumulator for the elastic scattering*/
+    es.resize(numq);
+    es = 0.0;
+
+    // Create multiple gpu streams
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        GPU_ASSERT(gpu_stream_create(stream_array[i]));
+    }
+
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numq);
+
+    /* the q-values */
+    //header = str(format("#%15.6E") % qMag(0));
+    //for (int n = 1; n < numq; n++)
+    //    header.append(str(format("%16.6E") % qMag(n)));
+    //header.append("\n");
+
+    /* The imaginary time values */
+    header = str(format("#%15d") % 0);
+    for (unsigned int n = 1; n < es.size(); n++) {
+        header.append(str(format("%16d") % n));
+    }
+    /* utilize imaginary time translational symmetry */
+    norm = 0.5;
+
+    bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
+    bytes_es = es.size()*sizeof(double);
+    bytes_qvecs = NDIM*numq*sizeof(double);
+
+    gpu_malloc_device(double, d_es, es.size(), stream_array[0]);
+    gpu_malloc_device(double, d_qvecs, NDIM*numq, stream_array[0]);
+    gpu_memcpy_host_to_device(d_qvecs, qValues_dVec.data(), bytes_qvecs, stream_array[0]);
+    gpu_wait(stream_array[0]);
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+ElasticScatteringEstimatorGpu::~ElasticScatteringEstimatorGpu() { 
+    es.free();
+    qValues_dVec.free();
+
+    // Release device memory
+    GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
+    GPU_ASSERT(gpu_free(d_qvecs, stream_array[0]));
+    GPU_ASSERT(gpu_free(d_es, stream_array[0]));
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        GPU_ASSERT(gpu_stream_destroy(stream_array[i]));
+    }
+}
+
+/*************************************************************************//**
+ *  measure the elastic scattering for each wavevector 
+ *
+ *  We only compute this for N > 1 due to the normalization.
+******************************************************************************/
+void ElasticScatteringEstimatorGpu::accumulate() {
+    int numParticles = path.getTrueNumParticles();
+    int numTimeSlices = constants()->numTimeSlices();
+    int number_of_beads = numParticles*numTimeSlices;
+    //int number_of_connections = int(number_of_beads*(number_of_beads + 1)/2);
+
+    double _inorm = 1.0/number_of_beads;
+
+    auto beads_extent = path.get_beads_extent();
+    int full_number_of_beads = beads_extent[0]*beads_extent[1];
+    int full_numParticles = beads_extent[1];
+
+    //Size, in bytes, of beads array
+    size_t bytes_beads_new = NDIM*full_number_of_beads*sizeof(double);
+
+    if (bytes_beads_new > bytes_beads) {
+        bytes_beads = bytes_beads_new;
+        GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
+        GPU_ASSERT(gpu_malloc_device(double, d_beads, NDIM*full_number_of_beads, stream_array[0])); // Allocate memory for beads on GPU
+        GPU_ASSERT(gpu_wait(stream_array[0]));
+    }
+    GPU_ASSERT(gpu_memcpy_host_to_device(d_beads, path.get_beads_data_pointer(), bytes_beads, stream_array[0])); // Copy beads data to gpu
+    GPU_ASSERT(gpu_memset(d_es, 0, bytes_es, stream_array[0])); // Set initial es data to zero
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+
+    int stream_idx;
+    for (int nq = 0; nq < numq; nq++) {
+        stream_idx = nq % MAX_GPU_STREAMS;
+        gpu_es_launcher(stream_array[stream_idx], d_es + nq, d_qvecs + NDIM*nq, d_beads, _inorm, numTimeSlices, numParticles, full_numParticles);
+    }
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+
+    //// Copy es data back to host
+    GPU_ASSERT(gpu_memcpy_device_to_host(es.data(), d_es, bytes_es, stream_array[0])); //Only copy up to beta/2 back to host
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+
+    estimator += es;
 
 }
 #endif
@@ -3453,7 +3937,7 @@ void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
 ******************************************************************************/
 RadialDensityEstimator::RadialDensityEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The spatial discretization */
@@ -3467,7 +3951,7 @@ RadialDensityEstimator::RadialDensityEstimator (const Path &_path,
     for (int n = 1; n < NRADSEP; n++) 
         header.append(str(format("%16.3E") % ((n)*dR)));
 
-    norm = 1.0 / (path.boxPtr->side[NDIM-1]*path.numTimeSlices);
+    norm = (actionPtr->period)/ (path.boxPtr->side[NDIM-1]*(endDiagSlice - startSlice));
     for (int n = 0; n < NRADSEP; n++) 
         norm(n) /= (M_PI*(2*n+1)*dR*dR);
 }
@@ -3486,7 +3970,7 @@ void RadialDensityEstimator::accumulate() {
     dVec pos;
     double rsq;
     beadLocator beadIndex;
-    for (int slice = 0; slice < path.numTimeSlices; slice++) {
+    for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
             beadIndex = slice,ptcl;
             pos = path(beadIndex);
@@ -3543,7 +4027,7 @@ int num1DParticles(const Path &path, double maxR) {
 ******************************************************************************/
 CylinderEnergyEstimator::CylinderEnergyEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
@@ -3656,7 +4140,7 @@ void CylinderEnergyEstimator::accumulate() {
 ******************************************************************************/
 CylinderNumberParticlesEstimator::CylinderNumberParticlesEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* We compute three diagonal estimators, the total number of particles,
@@ -3698,7 +4182,7 @@ void CylinderNumberParticlesEstimator::accumulate() {
 ******************************************************************************/
 CylinderNumberDistributionEstimator::CylinderNumberDistributionEstimator 
     (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
@@ -3729,6 +4213,7 @@ void CylinderNumberDistributionEstimator::accumulate() {
         estimator(index) += 1.0;
 }
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // CYLINDER LINEAR DENSITY ESTIMATOR CLASS -----------------------------------
@@ -3738,12 +4223,12 @@ void CylinderNumberDistributionEstimator::accumulate() {
 /*************************************************************************//**
  *  Constructor.
  * 
- *  Setup a vector estimator which measures the linear density along the 
+ *  Setup a std::vector estimator which measures the linear density along the 
  *  pore axis.
 ******************************************************************************/
 CylinderLinearDensityEstimator::CylinderLinearDensityEstimator
     (const Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The length of the cylinder */
@@ -3793,6 +4278,7 @@ void CylinderLinearDensityEstimator::accumulate() {
         }
     }
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -3810,7 +4296,7 @@ void CylinderLinearDensityEstimator::accumulate() {
 ******************************************************************************/
 CylinderSuperfluidFractionEstimator::CylinderSuperfluidFractionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
@@ -3858,7 +4344,7 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
 
     int numWorldlines = path.numBeadsAtSlice(0);
 
-    /* We create a local vector, which determines whether or not we have
+    /* We create a local std::vector, which determines whether or not we have
      * already included a bead at slice 0*/
     doBead.resize(numWorldlines);
     doBead = true;
@@ -3953,7 +4439,7 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
 ******************************************************************************/
 CylinderOneBodyDensityMatrixEstimator::CylinderOneBodyDensityMatrixEstimator 
   (Path &_path, ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-   int _frequency, string _label) : 
+   int _frequency, std::string _label) : 
       EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
       lpath(_path)
 {
@@ -4007,10 +4493,10 @@ void CylinderOneBodyDensityMatrixEstimator::sample() {
 }
 
 /*************************************************************************//**
- *  Return a dimensionally dependent random vector of length r.  
+ *  Return a dimensionally dependent random std::vector of length r.  
  *
  *  If we are in 3D in a cylinder geometry, we only shift in the z-direction.
- *  @param r The length of the random vector
+ *  @param r The length of the random std::vector
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec CylinderOneBodyDensityMatrixEstimator::getRandomVector(const double r) {
@@ -4160,7 +4646,7 @@ void CylinderOneBodyDensityMatrixEstimator::accumulate() {
 ******************************************************************************/
 CylinderPairCorrelationEstimator::CylinderPairCorrelationEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The spatial discretization */
@@ -4215,6 +4701,7 @@ void CylinderPairCorrelationEstimator::sample() {
     }
 }
 
+#if NDIM > 1
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // CYLINDER LINEAR POTENTIAL ESTIMATOR CLASS ---------------------------------
@@ -4229,7 +4716,7 @@ void CylinderPairCorrelationEstimator::sample() {
 ******************************************************************************/
 CylinderLinearPotentialEstimator::CylinderLinearPotentialEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) : 
+        int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The length of the cylinder */
@@ -4353,7 +4840,9 @@ void CylinderLinearPotentialEstimator::accumulate() {
 
     } // slice
 }
+#endif
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // CYLINDER RADIAL POTENTIAL ESTIMATOR CLASS ---------------------------------
@@ -4367,7 +4856,7 @@ void CylinderLinearPotentialEstimator::accumulate() {
  *  external potential felt by the central chain of particles.
 ******************************************************************************/
 CylinderRadialPotentialEstimator::CylinderRadialPotentialEstimator (const Path &_path, 
-        ActionBase *_actionPtr, const MTRand &_random, double _maxR, int _frequency, string _label) : 
+        ActionBase *_actionPtr, const MTRand &_random, double _maxR, int _frequency, std::string _label) : 
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* The spatial discretization */
@@ -4502,6 +4991,7 @@ void CylinderRadialPotentialEstimator::accumulate1() {
     radPot /= (1.0*numFound1);
     estimator += radPot;
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -4512,24 +5002,25 @@ void CylinderRadialPotentialEstimator::accumulate1() {
 /*************************************************************************//**
  *  Constructor.
  * 
- *  Compute the static structure factor for a fixed set of q vector magnitude.
+ *  Compute the static structure factor for a fixed set of q std::vector magnitude.
 ******************************************************************************/
 CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-        double _maxR, int _frequency, string _label) :
+        double _maxR, int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
-    /* The maximum q-vector magnitude to consider (hard-coded for now) */
+    /* The maximum wavevector magnitude to consider (hard-coded for now) */
     double qMax = 4.0; // 1/Å
 
-    /* We choose dq from the smallest possible q-vector, set by PBC */
+    /* We choose dq from the smallest possible wavevector, set by PBC */
     double dq = 2.0*M_PI/path.boxPtr->side[NDIM-1];
-
-    /* Determine how many q-vector magnitudes  we have */
-    int numq = int(qMax/dq) + 1;
     
-    /* Get the desired q-vectors */
-    q = getQVectors(dq,numq,"line");
+    /* Get the desired wavevectors */
+    int numq = 0;
+    q = getQVectors2(dq,qMax,numq,"line");
+
+    /* Determine how many wavevector magnitudes  we have */
+    numq = q.size();
 
     /* Initialize the accumulator intermediate scattering function*/
     sf.resize(numq);
@@ -4577,7 +5068,7 @@ void CylinderStaticStructureFactorEstimator::accumulate() {
     /* q-magnitudes */
     for (auto [nq,cq] : enumerate(q)) {
 
-        /* q-vectors with a fixed q-magnitude*/
+        /* wavevectors with a fixed q-magnitude*/
         for (const auto &cqvec : cq) {
     
             /* Average over all time slices */
@@ -4603,7 +5094,7 @@ void CylinderStaticStructureFactorEstimator::accumulate() {
                 } // bead1[1]
             } //bead1[0]
 
-        } // q-vectors
+        } // wavevectors
     } // q-magnitudes
 
     estimator += sf/numParticles; 
@@ -4625,6 +5116,146 @@ void CylinderStaticStructureFactorEstimator::sample() {
     }
 }
 
+#ifdef USE_GPU
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// STATIC STRUCTURE FACTOR CYL GPU ESTIMATOR CLASS ---------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+/*************************************************************************//**
+ *  Constructor.
+ * 
+ *  A GPU accelerated static structure factor estimator.
+ *  
+******************************************************************************/
+CylinderStaticStructureFactorGPUEstimator::CylinderStaticStructureFactorGPUEstimator(
+        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
+        double _maxR, int _frequency, std::string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+{
+
+    /* Get the desired wavevectors (specified at command line)*/
+    getQVectors(qValues);
+
+    numq = qValues.size();
+    qValues_dVec.resize(numq);
+    for (int nq = 0; nq < numq; nq++) {
+        qValues_dVec(nq) = qValues[nq];
+    }
+
+    /* Initialize the accumulator for the static structure factor */
+    ssf.resize(numq);
+    ssf = 0.0;
+
+    // Create multiple gpu streams
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        GPU_ASSERT(gpu_stream_create(stream_array[i]));
+    }
+
+    /* This is a diagonal estimator that gets its own file */
+    initialize(numq);
+
+    /* The header consists of an extra line of the possible q-values */
+    header = str(format("# ESTINF: num_q = %d; ") % numq);
+    for (int n = 0; n < numq; n++)
+        header += dVecToString(qValues_dVec(n)) + " ";
+    header += "\n";
+
+    /* We index the wavevectors with an integer */
+    header += str(format("#%15d") % 0);
+    for (int n = 1; n < numq; n++) 
+        header += str(format("%16d") % n);
+
+    /* utilize imaginary time translational symmetry */
+    norm = 0.5/constants()->numTimeSlices();
+
+    bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
+    bytes_ssf = ssf.size()*sizeof(double);
+    bytes_qvecs = NDIM*numq*sizeof(double);
+
+    gpu_malloc_device(double, d_ssf, ssf.size(), stream_array[0]);
+    gpu_malloc_device(double, d_qvecs, NDIM*numq, stream_array[0]);
+    gpu_memcpy_host_to_device(d_qvecs, qValues.data(), bytes_qvecs, stream_array[0]);
+    gpu_wait(stream_array[0]);
+}
+
+/*************************************************************************//**
+ *  Destructor.
+******************************************************************************/
+CylinderStaticStructureFactorGPUEstimator::~CylinderStaticStructureFactorGPUEstimator() { 
+    ssf.free();
+
+    // Release device memory
+    GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
+    GPU_ASSERT(gpu_free(d_qvecs, stream_array[0]));
+    GPU_ASSERT(gpu_free(d_ssf, stream_array[0]));
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        GPU_ASSERT(gpu_stream_destroy(stream_array[i]));
+    }
+}
+
+/*************************************************************************//**
+ *  Measure the static structure factor for each wavevector
+ *
+ *  We only compute this for N > 1 due to the normalization.
+******************************************************************************/
+void CylinderStaticStructureFactorGPUEstimator::accumulate() {
+
+    int numParticles = path.getTrueNumParticles();
+    int numTimeSlices = constants()->numTimeSlices();
+
+    /* Return to these and check if we need them */
+    double _inorm = 1.0/numParticles;
+
+    /* We need to copy over the current beads array to the device */
+    auto beads_extent = path.get_beads_extent();
+    int full_number_of_beads = beads_extent[0]*beads_extent[1];
+    int full_numParticles = beads_extent[1];
+
+    /* Size, in bytes, of beads array */
+    size_t bytes_beads_new = NDIM*full_number_of_beads*sizeof(double);
+
+    if (bytes_beads_new > bytes_beads) {
+        bytes_beads = bytes_beads_new;
+        GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
+        GPU_ASSERT(gpu_malloc_device(double, d_beads, NDIM*full_number_of_beads, stream_array[0])); // Allocate memory for beads on GPU
+        GPU_ASSERT(gpu_wait(stream_array[0]));
+    }
+    GPU_ASSERT(gpu_memcpy_host_to_device(d_beads, path.get_beads_data_pointer(), bytes_beads, stream_array[0])); // Copy beads data to gpu
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+
+    gpu_ssf_cyl_launcher(stream_array[0], d_ssf, d_qvecs, d_beads, _inorm, maxR, numTimeSlices, numParticles, full_numParticles, numq);
+
+    for (int i = 0; i < MAX_GPU_STREAMS; i++) {
+        GPU_ASSERT(gpu_wait(stream_array[i]));
+    }
+
+    //// Copy ssf data back to host
+    GPU_ASSERT(gpu_memcpy_device_to_host(ssf.data(), d_ssf, bytes_ssf, stream_array[0])); //Only copy up to beta/2 back to host
+    GPU_ASSERT(gpu_wait(stream_array[0]));
+
+    estimator += ssf;
+
+}
+
+/**************************************************************************//**
+ *  Sample the estimator.
+ * 
+ *  Here we overload the cylinder static structure factor gpu estimator, as
+ *  we only measure when we have some relevant particle separations.
+******************************************************************************/
+void CylinderStaticStructureFactorGPUEstimator::sample() {
+    numSampled++;
+
+    if ( baseSample() && (num1DParticles(path,maxR)> 0) ) {
+        totNumAccumulated++;
+        numAccumulated++;
+        accumulate();
+    }
+}
+#endif
+
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // BEGIN PIGS ESTIMATORS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
@@ -4643,7 +5274,7 @@ void CylinderStaticStructureFactorEstimator::sample() {
 ******************************************************************************/
 PotentialEnergyEstimator::PotentialEnergyEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     /* We measure on every other time slice */
@@ -4689,7 +5320,7 @@ void PotentialEnergyEstimator::accumulate() {
  ******************************************************************************/
 KineticEnergyEstimator::KineticEnergyEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -4766,7 +5397,7 @@ void KineticEnergyEstimator::accumulate() {
 ******************************************************************************/
 TotalEnergyEstimator::TotalEnergyEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -4836,7 +5467,7 @@ void TotalEnergyEstimator::accumulate() {
 ******************************************************************************/
 ThermoPotentialEnergyEstimator::ThermoPotentialEnergyEstimator  (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label):
+        int _frequency, std::string _label):
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -4883,7 +5514,7 @@ void ThermoPotentialEnergyEstimator::accumulate() {
 ******************************************************************************/
 PositionEstimator::PositionEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
 
@@ -4933,7 +5564,7 @@ void PositionEstimator::accumulate() {
 ******************************************************************************/
 ParticleResolvedPositionEstimator::ParticleResolvedPositionEstimator(const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label)  :
+        int _frequency, std::string _label)  :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -4990,7 +5621,7 @@ void ParticleResolvedPositionEstimator::accumulate() {
 ******************************************************************************/
 ParticleCorrelationEstimator::ParticleCorrelationEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -5048,7 +5679,7 @@ void ParticleCorrelationEstimator::accumulate() {
 ******************************************************************************/
 VelocityEstimator::VelocityEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -5103,7 +5734,7 @@ void VelocityEstimator::accumulate() {
 ******************************************************************************/
 SubregionOccupationEstimator::SubregionOccupationEstimator (const Path &_path, 
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
 {
     
@@ -5150,7 +5781,7 @@ void SubregionOccupationEstimator::accumulate() {
         Z = 0.0;
         pA = 0.0;
         pB = 0.0;
-        cout << "Error!! Invalid configuration for SubregionOccupatoin!!" << endl;
+        std::cout << "Error!! Invalid configuration for SubregionOccupatoin!!" << std::endl;
     }
     
     estimator(0) += Z;
@@ -5175,7 +5806,7 @@ void SubregionOccupationEstimator::accumulate() {
 ******************************************************************************/
 PIGSOneBodyDensityMatrixEstimator::PIGSOneBodyDensityMatrixEstimator (Path &_path,
         ActionBase *_actionPtr, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
     lpath(_path)
 {
@@ -5232,12 +5863,12 @@ void PIGSOneBodyDensityMatrixEstimator::sample() {
 }
 
 /*************************************************************************//**
- *  Return a dimensionally dependent random vector of length r.
+ *  Return a dimensionally dependent random std::vector of length r.
  *  @see https://mathworld.wolfram.com/SpherePointPicking.html
  *  @see http://extremelearning.com.au/how-to-generate-uniformly-random-points-on-n-spheres-and-n-balls/
  *
  *  If we are in 3D in a cylinder geometry, we only shift in the z-direction.
- *  @param r The length of the random vector
+ *  @param r The length of the random std::vector
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec PIGSOneBodyDensityMatrixEstimator::getRandomVector(const double r) {
@@ -5365,7 +5996,7 @@ void PIGSOneBodyDensityMatrixEstimator::outputFooter() {
 ******************************************************************************/
 DoubledEstimator::DoubledEstimator (const Path &_path, const Path &_path2,
         ActionBase *_actionPtr, ActionBase* _actionPtr2, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
     EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label), path2(_path2) 
 {
 }
@@ -5388,7 +6019,7 @@ DoubledEstimator::~DoubledEstimator() {
 ******************************************************************************/
 SwapEstimator::SwapEstimator (Path &_path, Path &_path2, ActionBase *_actionPtr, 
         ActionBase *_actionPtr2, const MTRand &_random, double _maxR, 
-        int _frequency, string _label) :
+        int _frequency, std::string _label) :
 DoubledEstimator(_path,_path2,_actionPtr,_actionPtr2,_random,_maxR,_frequency,_label), 
     lpath(_path),lpath2(_path2),
     actionPtr(_actionPtr), 
@@ -5430,8 +6061,8 @@ void SwapEstimator::accumulateOpen() {
     beadIndexR2[0] = lpath2.breakSlice+1;
     
     /* Old tail positions & potential actions */
-    vector<dVec> oldTailPos(lpath.brokenWorldlinesR.size());
-    vector<dVec> oldTailPos2(lpath2.brokenWorldlinesR.size());
+    std::vector<dVec> oldTailPos(lpath.brokenWorldlinesR.size());
+    std::vector<dVec> oldTailPos2(lpath2.brokenWorldlinesR.size());
 
     for( uint32 i=0; i<lpath.brokenWorldlinesR.size();i++){
         beadIndexR[1] = lpath.brokenWorldlinesR[i];
@@ -5460,8 +6091,8 @@ void SwapEstimator::accumulateOpen() {
     }
     
     
-    /* Initialize permuation vector */
-    vector<int> permutation(lpath.brokenWorldlinesR.size());
+    /* Initialize permuation std::vector */
+    std::vector<int> permutation(lpath.brokenWorldlinesR.size());
     int Nperm = 0;
     double rho0perm;
     for( uint32 i=0; i<permutation.size(); i++)
@@ -5487,7 +6118,7 @@ void SwapEstimator::accumulateOpen() {
         rho0Dir *= 1.0/((double)Nperm);
     }
     
-    /* Re-initialize permuation vector */
+    /* Re-initialize permuation std::vector */
     permutation.resize(lpath2.brokenWorldlinesR.size());
     for( uint32 i=0; i<permutation.size(); i++)
         permutation[i] = i;
@@ -5530,7 +6161,7 @@ void SwapEstimator::accumulateOpen() {
             }
             
             /* Compute the swapped free particle density matrix */
-            /* Re-initialize permuation vector */
+            /* Re-initialize permuation std::vector */
             for( uint32 i=0; i<permutation.size(); i++)
                 permutation[i] = i;
             Nperm = 0;
@@ -5549,7 +6180,7 @@ void SwapEstimator::accumulateOpen() {
             } while (next_permutation(permutation.begin(),permutation.end()));
             rho0Swap*= 1.0/((double)Nperm);
             
-            /* Re-initialize permuation vector */
+            /* Re-initialize permuation std::vector */
             for( uint32 i=0; i<permutation.size(); i++)
                 permutation[i] = i;
             Nperm = 0;
@@ -5689,13 +6320,13 @@ void SwapEstimator::accumulateClosed() {
 EntPartEstimator::EntPartEstimator (Path &_path, Path &_path2,
                               ActionBase *_actionPtr,ActionBase *_actionPtr2,
                               const MTRand &_random, double _maxR,
-                              int _frequency, string _label) :
+                              int _frequency, std::string _label) :
 DoubledEstimator(_path,_path2,_actionPtr, _actionPtr2,_random,_maxR,_frequency,_label), 
     lpath(_path),lpath2(_path2),
     actionPtr(_actionPtr), 
     actionPtr2(_actionPtr2) 
 {
-    stringstream headerSS;
+    std::stringstream headerSS;
     
     /* Set estimator name and header */
     header = str(format("#%15s") % "Z" );
@@ -5732,8 +6363,8 @@ void EntPartEstimator::accumulate() {
     beadIndexR2[0] = lpath2.breakSlice+1;
     
     /* Old tail positions & potential actions */
-    vector<dVec> oldTailPos(lpath.brokenWorldlinesR.size());
-    vector<dVec> oldTailPos2(lpath2.brokenWorldlinesR.size());
+    std::vector<dVec> oldTailPos(lpath.brokenWorldlinesR.size());
+    std::vector<dVec> oldTailPos2(lpath2.brokenWorldlinesR.size());
     
     for( uint32 i=0; i<lpath.brokenWorldlinesR.size();i++){
         beadIndexR[1] = lpath.brokenWorldlinesR[i];
@@ -5762,8 +6393,8 @@ void EntPartEstimator::accumulate() {
     }
     
     
-    /* Initialize permuation vector */
-    vector<int> permutation(lpath.brokenWorldlinesR.size());
+    /* Initialize permuation std::vector */
+    std::vector<int> permutation(lpath.brokenWorldlinesR.size());
     int Nperm = 0;
     double rho0perm;
     for( uint32 i=0; i<permutation.size(); i++)
@@ -5789,7 +6420,7 @@ void EntPartEstimator::accumulate() {
         rho0Dir *= 1.0/((double)Nperm);
     }
     
-    /* Re-initialize permuation vector */
+    /* Re-initialize permuation std::vector */
     permutation.resize(lpath2.brokenWorldlinesR.size());
     for( uint32 i=0; i<permutation.size(); i++)
         permutation[i] = i;
@@ -5805,7 +6436,7 @@ void EntPartEstimator::accumulate() {
             for( uint32 i=0; i<permutation.size(); i++){
                 beadIndexL2[1] = lpath2.brokenWorldlinesL[i];
                 beadIndexR2[1] = lpath2.brokenWorldlinesR[permutation[i]];
-                //cout << beadIndexL2[1] << '\t' << beadIndexR2[1] << '\t' << permutation[i] << endl;
+                //cout << beadIndexL2[1] << '\t' << beadIndexR2[1] << '\t' << permutation[i] << std::endl;
                 rho0perm *= actionPtr2->rho0(beadIndexL2,beadIndexR2,1);
             }
             rho0Dir2 += rho0perm;
@@ -5833,7 +6464,7 @@ void EntPartEstimator::accumulate() {
             }
             
             /* Compute the swapped free particle density matrix */
-            /* Re-initialize permuation vector */
+            /* Re-initialize permuation std::vector */
             for( uint32 i=0; i<permutation.size(); i++)
                 permutation[i] = i;
             Nperm = 0;
@@ -5852,7 +6483,7 @@ void EntPartEstimator::accumulate() {
             } while (next_permutation(permutation.begin(),permutation.end()));
             rho0Swap*= 1.0/((double)Nperm);
             
-            /* Re-initialize permuation vector */
+            /* Re-initialize permuation std::vector */
             for( uint32 i=0; i<permutation.size(); i++)
                 permutation[i] = i;
             Nperm = 0;
@@ -5911,7 +6542,7 @@ void EntPartEstimator::accumulate() {
     //Z = rho0Dir*rho0Dir2*exp(-(oldPotAction+oldPotAction2));
     //S = rho0Swap*rho0Swap2*exp(-(newPotAction+newPotAction2));
     
-    //cout << rho0Dir << '\t' << rho0Dir2 << '\t' << Z << '\t' << S << endl;
+    //cout << rho0Dir << '\t' << rho0Dir2 << '\t' << Z << '\t' << S << std::endl;
     
     estimator(0) += Z;
     if( nMatch ){

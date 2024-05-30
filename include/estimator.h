@@ -11,6 +11,13 @@
 #ifndef ESTIMATOR_H 
 #define ESTIMATOR_H
 
+#ifdef USE_HIP
+    #include "estimator_gpu.hip.h"
+#endif
+#ifdef USE_CUDA
+    #include "estimator_gpu.cuh"
+#endif
+
 class Path;
 class ActionBase;
 class Potential;
@@ -29,7 +36,7 @@ class EstimatorBase {
 
     public:
         EstimatorBase(const Path & _path, ActionBase *_actionPtr, const MTRand &_random, 
-                double _maxR, int _frequency=1, string _label="");
+                double _maxR, int _frequency=1, std::string _label="");
         virtual ~EstimatorBase();
 
         /* Sample the estimator */
@@ -66,7 +73,7 @@ class EstimatorBase {
         uint32 getNumSampled() const { return numSampled; }
 
         /** Get the name of the estimator */
-        virtual string getName() const { return "base"; }
+        virtual std::string getName() const { return "base"; }
 
         /** Prepare the estimator for i/o */
         void prepare();
@@ -75,10 +82,13 @@ class EstimatorBase {
         void addEndLine() {endLine = true;}; 
     
         /** Append to default label */
-        void appendLabel(string append);
+        void appendLabel(std::string append);
+
+        /** convert a dVec to std::string */
+        std::string dVecToString(const dVec&);
 
         /** Get the estimator label */
-        string getLabel() const {return label;};
+        std::string getLabel() const {return label;};
 
     protected:
         const Path &path;               ///< A constant reference to the paths
@@ -86,20 +96,20 @@ class EstimatorBase {
         MTRand random;                  // A local copy of the random number generator
         double maxR;                    // An estimator cutoff radius
 
-        fstream *outFilePtr;            ///< The output fie
+        std::fstream *outFilePtr;            ///< The output fie
 
-        map<string,int> estIndex;       ///< Map estimator labels to indices.
+        std::map<std::string,int> estIndex;       ///< Map estimator labels to indices.
 
-        Array<double,1> estimator;      ///< The estimator array
-        Array<double,1> norm;           ///< The normalization factor for each estimator
+	blitz::Array<double,1> estimator;      ///< The estimator array
+	blitz::Array<double,1> norm;           ///< The normalization factor for each estimator
 
         int numEst;                     ///< The number of individual quantities measured
         int frequency;                  ///< The frequency at which we accumulate
         int startSlice;                 ///< Where imaginary time averages begin
         int endSlice;                   ///< Where imaginary time averages end
         int endDiagSlice;               ///< Where imaginary time averages end for diagonal estimiators
-        vector<double> sliceFactor;        ///< Used to properly incorporate end affects 
-        string label;                   ///< The label used for the output file
+        std::vector<double> sliceFactor;        ///< Used to properly incorporate end affects 
+        std::string label;                   ///< The label used for the output file
 
         uint32 numSampled;              ///< The number of times we have sampled
         uint32 numAccumulated;          ///< The number of accumulated values
@@ -110,17 +120,19 @@ class EstimatorBase {
         bool endLine;                   ///< Should we output a carriage return?
         bool canonical;                 ///< Are we in the canonical ensemble?
 
-        string header;                  ///< The data file header
+        std::string header;                  ///< The data file header
 
         /** Accumulate the estimator */
         virtual void accumulate() {}
 
         /* Initialize the estimator */
         void initialize(int);
-        void initialize(vector<string>);
+        void initialize(std::vector<std::string>);
 
         /* generate q-vectors needed for momentum space estimators */
-        vector <vector<dVec> > getQVectors(double, int, string);
+        void getQVectors(std::vector<dVec>&);
+        void getQVectorsNN(std::vector<dVec>&);
+        std::vector <std::vector<dVec> > getQVectors2(double, double, int&, std::string);
 };
 
 // ========================================================================  
@@ -135,13 +147,13 @@ class TimeEstimator : public EstimatorBase {
 
     public:
         TimeEstimator(const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="estimator");
+                int _frequency=1, std::string _label="estimator");
         ~TimeEstimator() {};
         
         void sample();          // Overload to always-on sampling
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
         void output();              // overload the output
 
@@ -169,11 +181,11 @@ class EnergyEstimator: public EstimatorBase {
 
     public:
         EnergyEstimator (const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="estimator");
+                int _frequency=1, std::string _label="estimator");
         ~EnergyEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
     
     private:
         void accumulate();      // Accumulate values
@@ -208,11 +220,11 @@ class VirialEnergyEstimator: public EstimatorBase {
 
     public:
         VirialEnergyEstimator (const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="virial");
+                int _frequency=1, std::string _label="virial");
         ~VirialEnergyEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -230,11 +242,11 @@ class NumberParticlesEstimator: public EstimatorBase {
 
     public:
         NumberParticlesEstimator(const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="estimator");
+                int _frequency=1, std::string _label="estimator");
         ~NumberParticlesEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
     
     private:
         void accumulate();          // Accumulate values
@@ -251,19 +263,45 @@ class ParticlePositionEstimator: public EstimatorBase {
 
     public:
         ParticlePositionEstimator(const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="position");
+                int _frequency=1, std::string _label="position");
         ~ParticlePositionEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
     
         void output() {outputFlat();}  // overload the output
 
     private:
         void accumulate();          // Accumulate values
-        vector<string> diffLabels;  ///< The axis differential labels
+        std::vector<std::string> diffLabels;  ///< The axis differential labels
 };
 
+
+#if NDIM > 2
+// ========================================================================  
+// Commensurate Order Parameter Class
+// ========================================================================  
+/**
+ * A Commensurate/Incommensurate Order Parameter.  Eq. (12) of
+ * @see https://journals.aps.org/prb/abstract/10.1103/PhysRevB.73.085422
+ */
+class CommensurateOrderParameterEstimator: public EstimatorBase {
+
+    public:
+        CommensurateOrderParameterEstimator(const Path &, ActionBase *, 
+                const MTRand &, double, int _frequency=1, std::string _label="estimator");
+        ~CommensurateOrderParameterEstimator();
+
+        static const std::string name;
+        std::string getName() const {return name;}
+    
+    private:
+        void accumulate();          ///< Accumulate values
+        std::vector<dVec> g;             ///< the g-vector set
+};
+#endif
+
+#if NDIM > 2
 // ========================================================================  
 // BIPARTITION DENSITY ESTIMATOR CLASS 
 // ========================================================================  
@@ -275,15 +313,16 @@ class BipartitionDensityEstimator: public EstimatorBase {
 
     public:
         BipartitionDensityEstimator(const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="bipart_dens");
+                int _frequency=1, std::string _label="bipart_dens");
         ~BipartitionDensityEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
 };
+#endif
 
 // ========================================================================  
 // Linear Particle Density Estimator Class 
@@ -296,11 +335,11 @@ class LinearParticlePositionEstimator: public EstimatorBase {
 
     public:
         LinearParticlePositionEstimator(const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="lineardensity");
+                int _frequency=1, std::string _label="lineardensity");
         ~LinearParticlePositionEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         int numGrid;                // The number of grid points
@@ -320,11 +359,11 @@ class PlaneParticlePositionEstimator: public EstimatorBase {
 
     public:
         PlaneParticlePositionEstimator(const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="planedensity");
+                int _frequency=1, std::string _label="planedensity");
         ~PlaneParticlePositionEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         int numGrid;                // The total number of grid boxes
@@ -345,11 +384,11 @@ class PlaneParticleAveragePositionEstimator: public EstimatorBase {
 
     public:
         PlaneParticleAveragePositionEstimator(const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="planeavedensity");
+                int _frequency=1, std::string _label="planeavedensity");
         ~PlaneParticleAveragePositionEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
         void output() {outputFlat();}  // overload the output
 
@@ -372,11 +411,11 @@ class PlaneAverageExternalPotentialEstimator: public EstimatorBase {
 
     public:
         PlaneAverageExternalPotentialEstimator(const Path &, ActionBase *, 
-                const MTRand &, double, int _frequency=1, string _label="planeaveVext");
+                const MTRand &, double, int _frequency=1, std::string _label="planeaveVext");
         ~PlaneAverageExternalPotentialEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
         void output();  // overload the output
 
@@ -400,11 +439,11 @@ class NumberDistributionEstimator: public EstimatorBase {
 
     public:
         NumberDistributionEstimator(const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="number");
+                int _frequency=1, std::string _label="number");
         ~NumberDistributionEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         int startParticleNumber;    // The smallest number of particles
@@ -415,6 +454,7 @@ class NumberDistributionEstimator: public EstimatorBase {
         void accumulate();          // Accumulate values
 };
 
+#if NDIM > 1
 // ========================================================================  
 // Superfluid Fraction Estimator Class 
 // ========================================================================  
@@ -426,11 +466,11 @@ class SuperfluidFractionEstimator: public EstimatorBase {
 
     public:
         SuperfluidFractionEstimator(const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="super");
+                int _frequency=1, std::string _label="super");
         ~SuperfluidFractionEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         int windMax;             // The maximum winding number considered
@@ -441,7 +481,9 @@ class SuperfluidFractionEstimator: public EstimatorBase {
         void accumulate();       // Accumulate values
 
 };
+#endif
 
+#if NDIM > 1
 // ========================================================================  
 // Local Superfluid Density Estimator Class 
 // ========================================================================  
@@ -452,25 +494,27 @@ class LocalSuperfluidDensityEstimator: public EstimatorBase {
 
     public:
         LocalSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, double,
-                int _frequency=1, string _label="locsuper");
+                int _frequency=1, std::string _label="locsuper");
         ~LocalSuperfluidDensityEstimator();
 
         void output();           ///< overload the output
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         int numGrid;            // The number of grid points
         double dR;              // The size of the radial bin
-        Array <double,1> locAz; // The local path area estimator
-        Array <double,1> locA2; // The local area squared
-        Array <double,1> locWz; // The local winding number estimator
+	blitz::Array <double,1> locAz; // The local path area estimator
+	blitz::Array <double,1> locA2; // The local area squared
+	blitz::Array <double,1> locWz; // The local winding number estimator
 
         void accumulate();      // Accumulate values
 
 };
+#endif
 
+#if NDIM > 1
 // ========================================================================  
 // Plane Winding Superfluid Density Estimator Class 
 // ========================================================================  
@@ -481,22 +525,24 @@ class PlaneWindingSuperfluidDensityEstimator: public EstimatorBase {
 
     public:
         PlaneWindingSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="planewind");
+                double, int _frequency=1, std::string _label="planewind");
         ~PlaneWindingSuperfluidDensityEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         dVec side;              // A local copy of the dimensions
         double dx;              // The linear x-size of the spatial bin
         double dy;              // The linear y-size of the spatial bin
         int numGrid;            // The number of grid points
-        Array <double,1> locWz; // The local winding number estimator
+	blitz::Array <double,1> locWz; // The local winding number estimator
         void accumulate();      // Accumulate values
 
 };
+#endif
 
+#if NDIM > 1
 // ========================================================================  
 // Plane Area Superfluid Density Estimator Class 
 // ========================================================================  
@@ -507,22 +553,24 @@ class PlaneAreaSuperfluidDensityEstimator: public EstimatorBase {
 
     public:
         PlaneAreaSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="planearea");
+                double, int _frequency=1, std::string _label="planearea");
         ~PlaneAreaSuperfluidDensityEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         dVec side;              // A local copy of the dimensions
         double dx;              // The linear x-size of the spatial bin
         double dy;              // The linear y-size of the spatial bin
         int numGrid;            // The number of grid points
-        Array <double,1> locAz; // The local area estimator
+	blitz::Array <double,1> locAz; // The local area estimator
         void accumulate();      // Accumulate values
 
 };
+#endif
 
+#if NDIM > 1
 // ========================================================================  
 // Radial Winding Superfluid Density Estimator Class 
 // ========================================================================  
@@ -533,20 +581,22 @@ class RadialWindingSuperfluidDensityEstimator: public EstimatorBase {
 
     public:
         RadialWindingSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="radwind");
+                double, int _frequency=1, std::string _label="radwind");
         ~RadialWindingSuperfluidDensityEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         double dR;              // The size of the radial bin
         int numGrid;            // The number of grid points
-        Array <double,1> locWz; // The local winding number estimator
+	blitz::Array <double,1> locWz; // The local winding number estimator
         void accumulate();      // Accumulate values
 
 };
+#endif
 
+#if NDIM > 1
 // ========================================================================  
 // Radial Area Superfluid Density Estimator Class 
 // ========================================================================  
@@ -557,19 +607,20 @@ class RadialAreaSuperfluidDensityEstimator: public EstimatorBase {
 
     public:
         RadialAreaSuperfluidDensityEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="radarea");
+                double, int _frequency=1, std::string _label="radarea");
         ~RadialAreaSuperfluidDensityEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         double dR;              // The size of the radial bin
         int numGrid;            // The number of grid points
-        Array <double,1> locAz; // The local winding number estimator
+	blitz::Array <double,1> locAz; // The local winding number estimator
         void accumulate();      // Accumulate values
 
 };
+#endif
 
 // ========================================================================  
 // Diagonal Fraction Estimator Class 
@@ -581,13 +632,13 @@ class DiagonalFractionEstimator: public EstimatorBase {
 
     public:
         DiagonalFractionEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="estimator");
+                double, int _frequency=1, std::string _label="estimator");
         ~DiagonalFractionEstimator();
     
         void sample();          // Overload to always-on sampling
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -603,14 +654,14 @@ class PermutationCycleEstimator: public EstimatorBase {
 
     public:
         PermutationCycleEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="pcycle");
+                double, int _frequency=1, std::string _label="pcycle");
         ~PermutationCycleEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
-        Array <bool,1> doBead;      // Used for ensuring we don't double count beads
+	blitz::Array <bool,1> doBead;      // Used for ensuring we don't double count beads
         int maxNumCycles;           // The maximum number of cycles to consider
         void accumulate();          // Accumulate values
 };
@@ -626,17 +677,17 @@ class LocalPermutationEstimator: public EstimatorBase {
 
     public:
         LocalPermutationEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="locperm");
+                double, int _frequency=1, std::string _label="locperm");
         ~LocalPermutationEstimator();
 
         void output() {outputFlat();}
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
-        Array <int, 1> numBeadInGrid;
-        Array <bool,1> doBead;      // Used for ensuring we don't double count beads
+	blitz::Array <int, 1> numBeadInGrid;
+	blitz::Array <bool,1> doBead;      // Used for ensuring we don't double count beads
         int maxNumCycles;           // The maximum number of cycles to consider
         void accumulate();          // Accumulate values
 };
@@ -657,14 +708,14 @@ class OneBodyDensityMatrixEstimator: public EstimatorBase {
 
     public:
         OneBodyDensityMatrixEstimator(Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=20, string _label="obdm");
+                double, int _frequency=20, std::string _label="obdm");
         ~OneBodyDensityMatrixEstimator();
     
         void sample();              // Sample the estimator
         void outputFooter();        // Output the acceptance footer to disk
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         Path &lpath;                    // A non-constant local reference to the path
@@ -683,7 +734,7 @@ class OneBodyDensityMatrixEstimator: public EstimatorBase {
         double rho0Norm;                // Free density matrix
         double oldAction,newAction;     // The old and new action
 
-        /* Get a random vector */
+        /* Get a random std::vector */
         dVec getRandomVector(const double);
         
         /* Returns a position used by the staging algorithm */
@@ -703,11 +754,11 @@ class PairCorrelationEstimator: public EstimatorBase {
 
     public:
         PairCorrelationEstimator(const Path &, ActionBase *, const MTRand &,
-                double, int _frequency=1, string _label="pair");
+                double, int _frequency=1, std::string _label="pair");
         ~PairCorrelationEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();              // Accumulate values
@@ -724,17 +775,91 @@ class StaticStructureFactorEstimator: public EstimatorBase {
 
     public:
         StaticStructureFactorEstimator(const Path &, ActionBase *, 
-                const MTRand &, double, int _frequency=1, string _label="ssf");
+                const MTRand &, double, int _frequency=1, std::string _label="ssf");
         ~StaticStructureFactorEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();              // Accumulate values
-        Array <double,1> sf;            // structure factor
-        vector <vector<dVec> > q;       // the q-vectors
+	blitz::Array <double,1> sf;            // structure factor
+        std::vector <std::vector<dVec> > q;       // the q-vectors
 };
+
+#ifdef USE_GPU
+// ========================================================================  
+// GPU Accellerated Static Structure Factor
+// ========================================================================  
+/** 
+ * Compute the intermediate scattering function F(q,\tau)
+ */
+class StaticStructureFactorGPUEstimator: public EstimatorBase {
+
+    public: StaticStructureFactorGPUEstimator(const Path &, ActionBase *, 
+                const MTRand &, double, int _frequency=1, std::string _label="ssfq");
+        ~StaticStructureFactorGPUEstimator();
+    
+        static const std::string name;
+        std::string getName() const {return name;}
+
+    private:
+        void accumulate();              // Accumulate values
+        
+        std::vector<dVec> qValues;              // Vector of q values
+        blitz::Array<dVec,1> qValues_dVec;      // Vector of q values
+        blitz::Array<double,1> ssf;             // local intermediate scattering function
+
+        int numq;                        // the number of q std::vectors
+        size_t bytes_beads;
+        size_t bytes_ssf;
+        size_t bytes_qvecs;
+        double *d_beads;                // pointer to beads on gpu (device_beads)
+        double *d_ssf;                  // pointer to ssf on gpu (device_ssf)
+        double *d_qvecs;                // pointer to qvecs on gpu (device_qvecs)
+
+        //FIXME stream handling needs to be moved out of estimators
+        gpu_stream_t stream_array[MAX_GPU_STREAMS]; // Store Multiple GPU streams
+};
+#endif
+
+#ifdef USE_GPU
+// ========================================================================  
+// GPU Accellerated Cylinder Static Structure Factor Estimator Class
+// ========================================================================  
+/** 
+ * Compute the static structure factor S(q)
+ */
+class CylinderStaticStructureFactorGPUEstimator: public EstimatorBase {
+
+    public: CylinderStaticStructureFactorGPUEstimator(const Path &, ActionBase *, 
+                const MTRand &, double, int _frequency=1, std::string _label="cyl_ssfq");
+        ~CylinderStaticStructureFactorGPUEstimator();
+    
+        static const std::string name;
+        std::string getName() const {return name;}
+        void sample();              // Sample the estimator
+
+
+    private:
+        void accumulate();              // Accumulate values
+        
+        std::vector<dVec> qValues;              // Vector of q values
+        blitz::Array<dVec,1> qValues_dVec;      // Vector of q values
+        blitz::Array<double,1> ssf;             // local intermediate scattering function
+
+        int numq;                        // the number of q std::vectors
+        size_t bytes_beads;
+        size_t bytes_ssf;
+        size_t bytes_qvecs;
+        double *d_beads;                // pointer to beads on gpu (device_beads)
+        double *d_ssf;                  // pointer to ssf on gpu (device_ssf)
+        double *d_qvecs;                // pointer to qvecs on gpu (device_qvecs)
+
+        //FIXME stream handling needs to be moved out of estimators
+        gpu_stream_t stream_array[MAX_GPU_STREAMS]; // Store Multiple GPU streams
+};
+#endif
 
 // ========================================================================  
 // Intermediate Scattering Function Estimator Class
@@ -746,60 +871,94 @@ class IntermediateScatteringFunctionEstimator: public EstimatorBase {
 
     public:
         IntermediateScatteringFunctionEstimator(const Path &, ActionBase *, 
-                const MTRand &, double, int _frequency=1, string _label="isf");
+                const MTRand &, double, int _frequency=1, std::string _label="isf");
         ~IntermediateScatteringFunctionEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();              // Accumulate values
-        Array <double,1> isf;           // local intermediate scattering function
+	blitz::Array <double,1> isf;           // local intermediate scattering function
 
         int numq;                       // the number of q-magnitudes
-        Array <int,1> numqVecs;         // the number of q-vectors with a given magnitude
-        vector <vector<dVec> > q;       // the q-vectors
+	blitz::Array <int,1> numqVecs;         // the number of q-vectors with a given magnitude
+        std::vector <std::vector<dVec> > q;       // the q-vectors
 };
 
+#ifdef USE_GPU
 // ========================================================================  
 // Intermediate Scattering Function GPU Estimator Class
 // ========================================================================  
 /** 
  * Compute the intermediate scattering function F(q,\tau)
  */
-#ifdef GPU_BLOCK_SIZE
 class IntermediateScatteringFunctionEstimatorGpu: public EstimatorBase {
 
     public:
         IntermediateScatteringFunctionEstimatorGpu(const Path &, ActionBase *, 
-                const MTRand &, double, int _frequency=1, string _label="isf");
+                const MTRand &, double, int _frequency=1, std::string _label="isf");
         ~IntermediateScatteringFunctionEstimatorGpu();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();              // Accumulate values
         std::vector<dVec> qValues;      // Vector of q values
-        Array<dVec,1> qValues_dVec;     // Vector of q values
-        Array<double,1> isf;           // local intermediate scattering function
+	blitz::Array<dVec,1> qValues_dVec;     // Vector of q values
+	blitz::Array<double,1> isf;           // local intermediate scattering function
 
-        int numq;                        // the number of q vectors
+        int numq;                        // the number of q std::vectors
         size_t bytes_beads;
         size_t bytes_isf;
         size_t bytes_qvecs;
         double *d_beads; // pointer to beads on gpu (device_beads)
         double *d_isf; // pointer to isf on gpu (device_isf)
         double *d_qvecs; // pointer to qvecs on gpu (device_qvecs)
-        #ifndef USE_CUDA
-            Array<hipStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
-        #ifdef USE_CUDA
-            Array<cudaStream_t,1> stream_array; // Store Multiple GPU streams
-        #endif
+
+        //FIXME stream handling needs to be moved out of estimators
+        gpu_stream_t stream_array[MAX_GPU_STREAMS]; // Store Multiple GPU streams
         
 };
 #endif
+
+#ifdef USE_GPU
+// ========================================================================  
+// Elastic Scattering GPU Estimator Class
+// ========================================================================  
+/** 
+ * Compute the elastic scattering S(q, \omega = 0) //FIXME is this true?
+ */
+class ElasticScatteringEstimatorGpu: public EstimatorBase {
+
+    public:
+        ElasticScatteringEstimatorGpu(const Path &, ActionBase *, 
+                const MTRand &, double, int _frequency=1, std::string _label="es");
+        ~ElasticScatteringEstimatorGpu();
+    
+        static const std::string name;
+        std::string getName() const {return name;}
+
+    private:
+        void accumulate();              // Accumulate values
+        std::vector<dVec> qValues;      // Vector of q values
+	blitz::Array<dVec,1> qValues_dVec;     // Vector of q values
+	blitz::Array<double,1> es;           // local intermediate scattering function
+
+        int numq;                        // the number of q std::vectors
+        size_t bytes_beads;
+        size_t bytes_es;
+        size_t bytes_qvecs;
+        double *d_beads; // pointer to beads on gpu (device_beads)
+        double *d_es; // pointer to es on gpu (device_es)
+        double *d_qvecs; // pointer to qvecs on gpu (device_qvecs)
+
+        //FIXME stream handling needs to be moved out of estimators
+        gpu_stream_t stream_array[MAX_GPU_STREAMS]; // Store Multiple GPU streams
+};
+#endif
+
 
 // ========================================================================  
 // Radial Density Estimator Class
@@ -811,11 +970,11 @@ class RadialDensityEstimator: public EstimatorBase {
 
     public:
         RadialDensityEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="radial");
+                double, int _frequency=1, std::string _label="radial");
         ~RadialDensityEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();              // Accumulate values
@@ -832,11 +991,11 @@ class WormPropertiesEstimator: public EstimatorBase {
 
     public:
         WormPropertiesEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="worm");
+                double, int _frequency=1, std::string _label="worm");
         ~WormPropertiesEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         dVec sep;                       // head-tail separation
@@ -865,11 +1024,11 @@ class CylinderEnergyEstimator: public EstimatorBase {
 
     public:
         CylinderEnergyEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="cyl_estimator");
+                double, int _frequency=1, std::string _label="cyl_estimator");
         ~CylinderEnergyEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
 
@@ -887,11 +1046,11 @@ class CylinderNumberParticlesEstimator: public EstimatorBase {
 
     public:
         CylinderNumberParticlesEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="cyl_estimator");
+                double, int _frequency=1, std::string _label="cyl_estimator");
         ~CylinderNumberParticlesEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -907,11 +1066,11 @@ class CylinderNumberDistributionEstimator: public EstimatorBase {
 
     public:
         CylinderNumberDistributionEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="cyl_number");
+                double, int _frequency=1, std::string _label="cyl_number");
         ~CylinderNumberDistributionEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         int maxNumParticles;        // The maximum number considered
@@ -919,6 +1078,7 @@ class CylinderNumberDistributionEstimator: public EstimatorBase {
         void accumulate();          // Accumulate values
 };
 
+#if NDIM > 1
 // ========================================================================  
 // Cylinder Linear Density Estimator Class 
 // ========================================================================  
@@ -929,11 +1089,11 @@ class CylinderLinearDensityEstimator: public EstimatorBase {
 
     public:
         CylinderLinearDensityEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="cyl_linedensity");
+                double, int _frequency=1, std::string _label="cyl_linedensity");
         ~CylinderLinearDensityEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         double dz;                  // The bin-size in the z-direction
@@ -941,6 +1101,7 @@ class CylinderLinearDensityEstimator: public EstimatorBase {
 
         void accumulate();          // Accumulate values
 };
+#endif
 
 // ========================================================================  
 // Cylinder Superfluid Fraction Estimator Class 
@@ -953,14 +1114,14 @@ class CylinderSuperfluidFractionEstimator: public EstimatorBase {
 
     public:
         CylinderSuperfluidFractionEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="cyl_super");
+                double, int _frequency=1, std::string _label="cyl_super");
         ~CylinderSuperfluidFractionEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
-        Array <bool,1> doBead;  // Used for ensuring we don't double count beads
+	blitz::Array <bool,1> doBead;  // Used for ensuring we don't double count beads
         int windMax;            // The maximum winding number considered
 
         void accumulate();      // Accumulate values
@@ -982,13 +1143,13 @@ class CylinderOneBodyDensityMatrixEstimator: public EstimatorBase {
 
     public:
         CylinderOneBodyDensityMatrixEstimator(Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=20, string _label="cyl_obdm");
+                double, int _frequency=20, std::string _label="cyl_obdm");
         ~CylinderOneBodyDensityMatrixEstimator();
 
         void sample();              // Sample the estimator
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         Path &lpath;                    // A non-constant local reference to the path
@@ -1007,7 +1168,7 @@ class CylinderOneBodyDensityMatrixEstimator: public EstimatorBase {
         double rho0Norm;                // Free density matrix
         double oldAction,newAction;     // The old and new action
 
-        /* Get a random vector */
+        /* Get a random std::vector */
         dVec getRandomVector(const double);
         
         /* Returns a position used by the staging algorithm */
@@ -1027,19 +1188,20 @@ class CylinderPairCorrelationEstimator: public EstimatorBase {
 
     public:
         CylinderPairCorrelationEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="cyl_pair");
+                double, int _frequency=1, std::string _label="cyl_pair");
         ~CylinderPairCorrelationEstimator();
     
         void sample();              // Sample the estimator
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();              // Accumulate values
         double dR;                      // The discretization
 };
 
+#if NDIM > 1
 // ========================================================================  
 // Cylinder Linear Potential Estimator Class
 // ========================================================================  
@@ -1050,11 +1212,11 @@ class CylinderLinearPotentialEstimator: public EstimatorBase {
 
     public:
         CylinderLinearPotentialEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="cyl_linepotential");
+                double, int _frequency=1, std::string _label="cyl_linepotential");
         ~CylinderLinearPotentialEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
         void output() {outputHist();}  // overload the output
 
@@ -1066,7 +1228,9 @@ class CylinderLinearPotentialEstimator: public EstimatorBase {
         void accumulate();              // Accumulate values
         void accumulate1();              // Accumulate values
 };
+#endif
 
+#if NDIM > 2
 // ========================================================================  
 // Cylinder Radial Potential Estimator Class
 // ========================================================================  
@@ -1077,20 +1241,21 @@ class CylinderRadialPotentialEstimator: public EstimatorBase {
 
     public:
         CylinderRadialPotentialEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="cyl_potential");
+                double, int _frequency=1, std::string _label="cyl_potential");
         ~CylinderRadialPotentialEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         
         double dR;                      // The discretization
-        Array <double,1> radPot;        // Used for normalization
+	blitz::Array <double,1> radPot;        // Used for normalization
 
         void accumulate();              // Accumulate values
         void accumulate1();             // Accumulate values
 };
+#endif
 
 // ========================================================================  
 // Cylinder Static Structure Factor Estimator Class
@@ -1102,17 +1267,17 @@ class CylinderStaticStructureFactorEstimator: public EstimatorBase {
 
     public:
         CylinderStaticStructureFactorEstimator(const Path &, ActionBase *, 
-                const MTRand &, double, int _frequency=1, string _label="cyl_ssf");
+                const MTRand &, double, int _frequency=1, std::string _label="cyl_ssf");
         ~CylinderStaticStructureFactorEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
         void sample();              // Sample the estimator
 
     private:
         void accumulate();              // Accumulate values
-        Array <double,1> sf;            // structure factor
-        vector <vector<dVec> > q;       // the q-vectors
+	blitz::Array <double,1> sf;            // structure factor
+        std::vector <std::vector<dVec> > q;       // the q-vectors
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
@@ -1130,11 +1295,11 @@ class PotentialEnergyEstimator: public EstimatorBase {
 
     public:
         PotentialEnergyEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="potential");
+                double, int _frequency=1, std::string _label="potential");
         ~PotentialEnergyEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1151,11 +1316,11 @@ class KineticEnergyEstimator: public EstimatorBase {
     
     public:
         KineticEnergyEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="kinetic");
+                double, int _frequency=1, std::string _label="kinetic");
         ~KineticEnergyEstimator();
     
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1172,11 +1337,11 @@ class TotalEnergyEstimator: public EstimatorBase {
     
     public:
         TotalEnergyEstimator(const Path &, ActionBase *, const MTRand &, 
-                double, int _frequency=1, string _label="energy");
+                double, int _frequency=1, std::string _label="energy");
         ~TotalEnergyEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1193,11 +1358,11 @@ class ThermoPotentialEnergyEstimator: public EstimatorBase {
     
     public:
         ThermoPotentialEnergyEstimator(const Path &, ActionBase *, const MTRand &,
-                double, int _frequency=1, string _label="thpotential");
+                double, int _frequency=1, std::string _label="thpotential");
         ~ThermoPotentialEnergyEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1215,11 +1380,11 @@ class PositionEstimator: public EstimatorBase {
 
     public:
         PositionEstimator(const Path &, ActionBase *, const MTRand &,
-                double, int _frequency=1, string _label="position");
+                double, int _frequency=1, std::string _label="position");
         ~PositionEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1237,11 +1402,11 @@ class ParticleResolvedPositionEstimator: public EstimatorBase {
     
     public:
         ParticleResolvedPositionEstimator(const Path &, ActionBase *, const MTRand &,
-                double, int _frequency=1, string _label="prposition");
+                double, int _frequency=1, std::string _label="prposition");
         ~ParticleResolvedPositionEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1260,11 +1425,11 @@ class ParticleCorrelationEstimator: public EstimatorBase {
 
     public:
         ParticleCorrelationEstimator(const Path &, ActionBase *, const MTRand &,
-                double, int _frequency=1, string _label="prcorrelation");
+                double, int _frequency=1, std::string _label="prcorrelation");
         ~ParticleCorrelationEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
 
     private:
@@ -1284,11 +1449,11 @@ class VelocityEstimator: public EstimatorBase {
     
     public:
         VelocityEstimator(const Path &, ActionBase *, const MTRand &,
-                double, int _frequency=1, string _label="velocity");
+                double, int _frequency=1, std::string _label="velocity");
         ~VelocityEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1306,11 +1471,11 @@ class SubregionOccupationEstimator: public EstimatorBase {
     
     public:
         SubregionOccupationEstimator(const Path &, ActionBase *, const MTRand &,
-                double, int _frequency=1, string _label="subregionocc");
+                double, int _frequency=1, std::string _label="subregionocc");
         ~SubregionOccupationEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         void accumulate();      // Accumulate values
@@ -1331,14 +1496,14 @@ class PIGSOneBodyDensityMatrixEstimator: public EstimatorBase {
 
     public:
         PIGSOneBodyDensityMatrixEstimator(Path &, ActionBase *, const MTRand &,
-                double, int _frequency=1, string _label="obdm");
+                double, int _frequency=1, std::string _label="obdm");
         ~PIGSOneBodyDensityMatrixEstimator();
 
         void sample();              // Sample the estimator
         void outputFooter();        // Output the acceptance footer to disk
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         Path &lpath;                    // A non-constant local reference to the path
@@ -1355,7 +1520,7 @@ class PIGSOneBodyDensityMatrixEstimator: public EstimatorBase {
         double sqrt2LambdaTau;          // sqrt(2 * lambda * tau)
         double oldAction,newAction;     // The old and new action
 
-        /* Get a random vector */
+        /* Get a random std::vector */
         dVec getRandomVector(const double);
 
         /* Accumulate values */
@@ -1373,10 +1538,10 @@ class DoubledEstimator: public EstimatorBase {
 
     public:
         DoubledEstimator(const Path &, const Path &, ActionBase*, ActionBase*, 
-                const MTRand &, double, int _frequency=1, string _label="");
+                const MTRand &, double, int _frequency=1, std::string _label="");
         ~DoubledEstimator();
 
-        string getName() const {return "doubled base";}
+        std::string getName() const {return "doubled base";}
 
     protected:
         const Path &path2;              ///< A constant reference to the paths
@@ -1397,11 +1562,11 @@ class SwapEstimator: public DoubledEstimator {
 
     public:
         SwapEstimator(Path &, Path &, ActionBase *, ActionBase *,
-                const MTRand &, double, int _frequency=1, string _label="swap");
+                const MTRand &, double, int _frequency=1, std::string _label="swap");
         ~SwapEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         Path &lpath;                    // A non-constant local reference to path 1
@@ -1425,11 +1590,11 @@ class EntPartEstimator: public DoubledEstimator {
     
     public:
         EntPartEstimator(Path &, Path &,ActionBase *,ActionBase *,
-                const MTRand &, double, int _frequency=1, string _label="entpart");
+                const MTRand &, double, int _frequency=1, std::string _label="entpart");
         ~EntPartEstimator();
 
-        static const string name;
-        string getName() const {return name;}
+        static const std::string name;
+        std::string getName() const {return name;}
 
     private:
         Path &lpath;                    // A non-constant local reference to path 1

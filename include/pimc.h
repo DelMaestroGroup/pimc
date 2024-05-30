@@ -18,10 +18,10 @@ class LookupTable;
 class MoveBase;
 class EstimatorBase;
 
-/** A vector containing measurable estimators */
+/** A std::vector containing measurable estimators */
 typedef boost::ptr_vector<EstimatorBase> estimator_vector;
 
-/** A vector containing Monte Carlo updates */
+/** A std::vector containing Monte Carlo updates */
 typedef boost::ptr_vector<MoveBase> move_vector;
 
 // ========================================================================  
@@ -74,7 +74,7 @@ class PathIntegralMonteCarlo {
         int numStepsAttempted;      ///< Number of steps for relaxing C0
 
         void printWormState();
-        string printHistogram();
+        std::string printHistogram();
 
     private:
         MTRand &random;             // The global random number generator
@@ -97,30 +97,30 @@ class PathIntegralMonteCarlo {
 
         int sgnAveN;                ///< What is the relative sign betwen aveN and N0?
 
-        Array<int,1> PN;            ///< Number probability distribution (used in relaxmu)
+	blitz::Array<int,1> PN;            ///< Number probability distribution (used in relaxmu)
         bool relaxmuMessage;        ///< For printing a message when μ relaxation begins
         bool relaxC0Message;        ///< For printing a message when μ relaxation begins
         bool equilMessage;          ///< For printing a message when equilibration begins
         bool equilODMessage;        ///< For printing a message when OD equilibration begins
-        vector <double> C0Vals;     ///< Record of previously attempted values of C0
-        vector <double> diagFracVals;   ///< Record fo diagonal fraction (for linear regression).
+        std::vector <double> C0Vals;     ///< Record of previously attempted values of C0
+        std::vector <double> diagFracVals;   ///< Record fo diagonal fraction (for linear regression).
 
         double targetDiagFrac;      ///< The target diagonal fraction we are trying to obtain.
         int sgnDiagFrac;            ///< What is the relative sign for C0 relaxation
         double shiftC0;             ///< How much are we shifting C0?
-        int barStepSize;            ///< Used for printing a status bar.
-        int numRemainingSteps;      ///< The number of remaining steps in the equilibration stage.
-        int numBars;                ///< Used for printing out progress bar
+        uint32 barStepSize;         ///< Used for printing a status bar.
+        uint32 numRemainingSteps;   ///< The number of remaining steps in the equilibration stage.
+        uint32 numBars;             ///< Used for printing out progress bar
 
         uint32 Npaths;                 // Number of paths
     
-        vector<string> stateStrings; // A vector of state strings from the last bin
+        std::vector<std::string> stateStrings; // A std::vector of state std::strings from the last bin
 
         bool startWithState;        // Are we starting from a saved state
         bool success;               // Track move success/failure
     
-        boost::ptr_vector<Path> &pathPtrVec; // The vector of all paths
-        Path &path;                          // A reference to the first path in the path vector
+        boost::ptr_vector<Path> &pathPtrVec; // The std::vector of all paths
+        Path &path;                          // A reference to the first path in the path std::vector
 
         boost::ptr_vector<move_vector> &movePtrVec;  // Vector of all move_vectors
         move_vector &move;                           // A reference to the first move_vector
@@ -129,11 +129,11 @@ class PathIntegralMonteCarlo {
                                                                // each path followed by multipath
         estimator_vector &estimator;                           // A reference to the first estimator_vector
 
-        vector <double> attemptDiagProb;        // The cumulative diagonal attempt Probabilities
-        vector <double> attemptOffDiagProb;     // The cumulative off-diagonal attempt Probabilities
+        std::vector <double> attemptDiagProb;        // The cumulative diagonal attempt Probabilities
+        std::vector <double> attemptOffDiagProb;     // The cumulative off-diagonal attempt Probabilities
 
-        map <string,int> moveIndex;             // A map to keep track of move names and indices
-        map <string,int> estimatorIndex;        // A map to keep track of estimator names and indices
+        std::map <std::string,int> moveIndex;             // A std::map to keep track of move names and indices
+        std::map <std::string,int> estimatorIndex;        // A std::map to keep track of estimator names and indices
 
         /* Output estimators to disk */
         void output();
@@ -145,14 +145,14 @@ class PathIntegralMonteCarlo {
         void loadState();
 
         /* Load classical or quantum initial states */
-        void loadClassicalState(Array <dVec,2>&, Array <unsigned int, 2>&, int);
-        void loadQuantumState(Array <dVec,2>&, Array <beadLocator,2>&, Array<beadLocator,2>&, int, int);
+        void loadClassicalState(blitz::Array <dVec,2>&, blitz::Array <unsigned int, 2>&, int);
+        void loadQuantumState(blitz::Array <dVec,2>&, blitz::Array <beadLocator,2>&, blitz::Array<beadLocator,2>&, int, int);
 
         /* Shuffle the offDiag move list, returning it in moves*/
         void shuffleMoves();
 
         /* Perform a Metropolis update */
-        string update(const double,const int,const int);
+        std::string update(const double,const int,const int);
 
 };
 

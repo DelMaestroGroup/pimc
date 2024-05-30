@@ -27,7 +27,7 @@
 #include <functional> // has std::bind
 
 #define BZ_HAVE_BOOST_SERIALIZATION
-#include <blitz/array.h>
+#include <blitz/array.h> 
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -71,9 +71,6 @@
 #define PIGS false
 #endif
 
-/* Include common gpu headers */
-#include "common_gpu.h"
-
 /* Determine if we are studying boltzmannons */
 #ifndef BOLTZMANNONS
 #define BOLTZMANNONS false
@@ -100,33 +97,31 @@
 #define LBIG 69.07755279 ///< The log of a big number
 #define XXX -1          ///< Used to refer to a nonsense beadIndex
 
-using namespace std;
-using namespace blitz;
 using boost::format;
 
 /** Unsigned integer type, at least 32 bits */
 typedef unsigned long uint32;
 
 /** A NDIM x NDIM matrix of type double */
-typedef TinyMatrix<double,NDIM,NDIM> dMat;
+typedef blitz::TinyMatrix<double,NDIM,NDIM> dMat;
 
 /** A NDIM-vector of type double */
-typedef TinyVector<double,NDIM> dVec;
+typedef blitz::TinyVector<double,NDIM> dVec;
 
 /** A NDIM-vector of type integer*/
-typedef TinyVector<int,NDIM> iVec;
+typedef blitz::TinyVector<int,NDIM> iVec;
 
 /** time-slice,bead-number world line index */
-typedef TinyVector<int,2> beadLocator;
+typedef blitz::TinyVector<int,2> beadLocator;
 
 /** Integer array iterator */
-typedef Array<int,1>::iterator intIter;
+typedef blitz::Array<int,1>::iterator intIter;
 
 /** Constant integer array iterator */
-typedef Array<int,1>::const_iterator cintIter;
+typedef blitz::Array<int,1>::const_iterator cintIter;
 
 /** beadLocator array iterator */
-typedef Array<beadLocator,1>::iterator beadIter;
+typedef blitz::Array<beadLocator,1>::iterator beadIter;
 
 /** Each bead can have three possible states */
 enum beadState {HEADTAIL,SPECIAL,NONE};

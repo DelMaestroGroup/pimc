@@ -22,7 +22,7 @@
 ******************************************************************************/
 ActionBase::ActionBase (const Path &_path, LookupTable &_lookup, 
         PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
-        WaveFunctionBase *_waveFunctionPtr, bool _local, string _name, 
+        WaveFunctionBase *_waveFunctionPtr, bool _local, std::string _name, 
         double _endFactor, int _period) :
     local(_local), 
     period(_period),
@@ -177,7 +177,7 @@ double ActionBase::kineticAction (const beadLocator &beadIndex) {
  *  Return the kinetic action for wlLength time slices starting at the 
  *  bead given by beadIndex.  
  *
- *  The total kinetic action for a string of connected beads all on the same
+ *  The total kinetic action for a std::string of connected beads all on the same
  *  worldline.
 ******************************************************************************/
 double ActionBase::kineticAction (const beadLocator &beadIndex, int wlLength) {
@@ -261,8 +261,8 @@ double ActionBase::potentialAction (const beadLocator &startBead,
 ******************************************************************************/
 LocalAction::LocalAction (const Path &_path, LookupTable &_lookup, 
         PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
-        WaveFunctionBase *_waveFunctionPtr, const TinyVector<double,2> &_VFactor, 
-        const TinyVector<double,2> & _gradVFactor, bool _local, string _name,
+        WaveFunctionBase *_waveFunctionPtr, const blitz::TinyVector<double,2> &_VFactor, 
+        const blitz::TinyVector<double,2> & _gradVFactor, bool _local, std::string _name,
         double _endFactor, int _period) :
     ActionBase(_path,_lookup,_externalPtr,_interactionPtr,_waveFunctionPtr,
             _local,_name,_endFactor,_period), 
@@ -573,7 +573,7 @@ double LocalAction::V(const beadLocator &bead1) {
  *  This is really only used for either debugging or during the calculation 
  *  of the potential energy. As such, we update the separation histogram here.
 ******************************************************************************/
-TinyVector<double,2> LocalAction::V(const int slice) {
+blitz::TinyVector<double,2> LocalAction::V(const int slice) {
 
     double totVint = 0.0;
     double totVext = 0.0;
@@ -607,7 +607,7 @@ TinyVector<double,2> LocalAction::V(const int slice) {
     } // bead1
 
     /* Separate the external and interaction parts */ 
-    return TinyVector<double,2>(totVext,totVint);
+    return blitz::TinyVector<double,2>(totVext,totVint);
 }
 
 /*************************************************************************//**
@@ -715,15 +715,15 @@ double LocalAction::Vnn(const beadLocator &bead1) {
 ******************************************************************************/
 double LocalAction::Vnn(const int slice) {
 
-    Array <bool,1> doParticles(path.numBeadsAtSlice(slice));
+    blitz::Array <bool,1> doParticles(path.numBeadsAtSlice(slice));
     doParticles = true;
 
     double totVint = 0.0;
     double totVext = 0.0;
 
     iVec gIndex,nngIndex;           // The grid box of a particle
-    TinyVector<int,NDIM+1> nnIndex; // The nearest neighbor boxes of a particle
-    TinyVector<int,NDIM+2> hI1,hI2; // The hash indices
+    blitz::TinyVector<int,NDIM+1> nnIndex; // The nearest neighbor boxes of a particle
+    blitz::TinyVector<int,NDIM+2> hI1,hI2; // The hash indices
 
     dVec pos;                       // The position of a particle
 
@@ -1494,7 +1494,7 @@ dVec LocalAction::gradU(const int slice) {
 ******************************************************************************/
 NonLocalAction::NonLocalAction (const Path &_path, LookupTable &_lookup, 
         PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
-        WaveFunctionBase *_waveFunctionPtr, bool _local, string _name) :
+        WaveFunctionBase *_waveFunctionPtr, bool _local, std::string _name) :
     ActionBase(_path,_lookup,_externalPtr,_interactionPtr,_waveFunctionPtr,
             _local,_name) 
 {
@@ -1619,7 +1619,7 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
  *  Computes the total potential energy by summing over all particles and time
  *  slices.  
 ******************************************************************************/
-TinyVector<double,2> NonLocalAction::U(int slice) {
+blitz::TinyVector<double,2> NonLocalAction::U(int slice) {
 
     double totUint = 0.0;
     double totUext = 0.0;
@@ -1652,7 +1652,7 @@ TinyVector<double,2> NonLocalAction::U(int slice) {
         } // bead2
 
     } // bead1
-    return TinyVector<double,2>(totUext,totUint);
+    return blitz::TinyVector<double,2>(totUext,totUint);
 }
 
 /**************************************************************************//**

@@ -32,11 +32,11 @@
  *  create a unique file name and backup file name.
  *
  *  @param _type The file type: state, log, etc
- *  @param _data The unique data string identifier
+ *  @param _data The unique data std::string identifier
  *  @param ensemble ce: canonical, gce: grand canonical
  *  @param outDir The output directory
 ******************************************************************************/
-File::File(string _type, string _data, string ensemble, string outDir) {
+File::File(std::string _type, std::string _data, std::string ensemble, std::string outDir) {
 
     /* The file name */
     name = str(format("%s/%s-%s-%s.dat") % outDir % ensemble % _type % _data);
@@ -54,11 +54,11 @@ File::File(string _type, string _data, string ensemble, string outDir) {
 /**************************************************************************//**
  *  Constructor.
  *
- *  Create a filename from a string.
+ *  Create a filename from a std::string.
  *
  *  @param _name A file name.
 ******************************************************************************/
-File::File(string _name) : name(_name), bakname() {
+File::File(std::string _name) : name(_name), bakname() {
 
 }
 
@@ -75,12 +75,12 @@ void File::close() {
  *
  *  @param mode A valid file rw mode
 ******************************************************************************/
-void File::open(ios_base::openmode mode) {
+void File::open(std::ios_base::openmode mode) {
 
-    /* Convert the filename to a c string, and open the file */ 
+    /* Convert the filename to a c std::string, and open the file */ 
     rwfile.open(name.c_str(), mode);
     if (!rwfile) {
-        cerr << "Unable to process file: " << name << endl;
+        std::cerr << "Unable to process file: " << name << std::endl;
         exit(EXIT_FAILURE);
     }
 }
@@ -91,12 +91,12 @@ void File::open(ios_base::openmode mode) {
  *  @param mode A valid file rw mode
  *  @param _name A valid file name
 ******************************************************************************/
-void File::open(ios_base::openmode mode, string _name) {
+void File::open(std::ios_base::openmode mode, std::string _name) {
 
-    /* Convert the filename to a c string, and open the file */ 
+    /* Convert the filename to a c std::string, and open the file */ 
     rwfile.open(_name.c_str(), mode);
     if (!rwfile) {
-        cerr << "Unable to process file: " << _name << endl;
+        std::cerr << "Unable to process file: " << _name << std::endl;
         exit(EXIT_FAILURE);
     }
 }
@@ -113,7 +113,7 @@ void File::reset() {
     close();
 
     /* Open a backup file and replace any content if it exists */
-    open(ios::out|ios::trunc,bakname);
+    open(std::ios::out|std::ios::trunc,bakname);
 
     /* Write the generic header to the file */
 }
@@ -144,8 +144,8 @@ void File::rename() {
  *  files with the form gce-xxx-T-L-mu-tau-ID.dat, whereas if we are in
  *  the canonical ensemble we label as ce-xxx-T-N-n-tau-ID.dat.
 ******************************************************************************/
-void Communicator::init(double _tau, bool outputWorldline, string _initName,
-        string _fixedName)
+void Communicator::init(double _tau, bool outputWorldline, std::string _initName,
+        std::string _fixedName)
 {
 
     /* Set local class variables */
@@ -155,7 +155,7 @@ void Communicator::init(double _tau, bool outputWorldline, string _initName,
     tau = _tau;
 
 
-    /* Determine the ensemble and unique parameter file string or dataname */
+    /* Determine the ensemble and unique parameter file std::string or dataname */
     if (!constants()->canonical()) {
         ensemble = "gce";
         dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%s") % constants()->T() 
@@ -175,7 +175,7 @@ void Communicator::init(double _tau, bool outputWorldline, string _initName,
     fs::create_directory(outputPath);
 
     /* If we have cylinder output files, add the required directory. */
-    if (constants()->extPotentialType().find("tube") != string::npos) {
+    if (constants()->extPotentialType().find("tube") != std::string::npos) {
         fs::path cylPath(baseDir + "/CYLINDER");
         fs::create_directory(cylPath);
     }
@@ -186,28 +186,28 @@ void Communicator::init(double _tau, bool outputWorldline, string _initName,
     /* Depending on whether or not we are restarting the simulations, the open mode
      * changes. */
     if (constants()->restart()) {
-        mode = ios::out|ios::app;
+        mode = std::ios::out|std::ios::app;
     }
     else {
-        mode = ios::out;
+        mode = std::ios::out;
     }
 }
 
 /**************************************************************************//**
  * Initialze a file based on a type.
 ******************************************************************************/
-void Communicator::initFile(string type) {
+void Communicator::initFile(std::string type) {
 
     /* Check a possible initialization file */
-    if (type.find("init") != string::npos ) {
+    if (type.find("init") != std::string::npos ) {
 
         /* We need to determine the name of the state file.  i.e. does it need
          * an integer appended after it? */
-        string stateName = "state";
+        std::string stateName = "state";
 
         /* If we have a numerical label, append it to the name of state */
         if (type != "init")
-            stateName += stateName.substr(4,string::npos);
+            stateName += stateName.substr(4, std::string::npos);
 
         /* There are only two reasons we would need an init file, either we are
          * restarting, or starting from a given initialization file */
@@ -216,20 +216,20 @@ void Communicator::initFile(string type) {
         else 
             file_.insert(type, new File(initName));
         
-        file_.at(type).open(ios::in);
+        file_.at(type).open(std::ios::in);
     }
     /* Initialize a possible fixed coordinate file */
     else if (type == "fixed") {
         file_.insert(type,new File(fixedName));
-        file_.at(type).open(ios::in);
+        file_.at(type).open(std::ios::in);
     }
     /* All other file types act normally */
     else {
-        string outDir = baseDir;
-        string ctype = type;
+        std::string outDir = baseDir;
+        std::string ctype = type;
 
         /* Deal with possible cylinder output files */
-        if (type.find("cyl_") != string::npos) {
+        if (type.find("cyl_") != std::string::npos) {
             outDir = baseDir + "/CYLINDER";
             ctype.erase(0,4);
         }
@@ -251,7 +251,7 @@ void Communicator::updateNames() {
 
     /* We create a new dataName based on the posibility of updated paramters. */
 
-    /* Determine the ensemble and unique parameter file string or dataname */
+    /* Determine the ensemble and unique parameter file std::string or dataname */
     if (!constants()->canonical()) {
         dataName = str(format("%06.3f-%07.3f-%+08.3f-%7.5f-%s") % constants()->T() 
                 % constants()->L() % constants()->mu() % tau % constants()->id());
@@ -267,7 +267,7 @@ void Communicator::updateNames() {
     for (auto const& [key, filePtr] : file_)
     {
 
-        string oldName(filePtr->name);
+        std::string oldName(filePtr->name);
 
         /* Replace with the new data name, we need to do this for both name and
          * backup name. */

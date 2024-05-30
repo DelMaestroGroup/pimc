@@ -26,17 +26,17 @@ class File
 {
     public:
     
-        File(string, string, string, string);
-        File(string);
+        File(std::string, std::string, std::string, std::string);
+        File(std::string);
         ~File() {close();}
 
         /* Return the file stream */
-        fstream & stream() { 
+        std::fstream & stream() { 
             return rwfile;
         }
 
         /* Open the primary file */
-        void open(ios_base::openmode);
+        void open(std::ios_base::openmode);
 
         /* Reset and rename the primary file */
         void reset();
@@ -52,16 +52,16 @@ class File
     protected:
         friend class Communicator;    // Friends for I/O
 
-        string name;        // The File name
-        string bakname;     // The backup name
+        std::string name;        // The File name
+        std::string bakname;     // The backup name
 
         bool exists_;       // Does the file exist? Check on creation.
         bool prepared_;      // Has the file already been prepared for writing?
 
-        fstream rwfile;     // The i/o file object
+        std::fstream rwfile;     // The i/o file object
 
         /* An alternate open which takes a filename */
-        void open(ios_base::openmode,string);
+        void open(std::ios_base::openmode, std::string);
 
 };
 
@@ -82,10 +82,10 @@ class Communicator
         static Communicator* getInstance();
 
         /** Initialize the output files */
-        void init(double,bool,string,string);
+        void init(double, bool, std::string, std::string);
 
         /** Get method returning file object */
-        File *file(string type) {
+        File *file(std::string type) {
             if (!file_.count(type))
                 initFile(type);
             return &file_.at(type);
@@ -99,22 +99,22 @@ class Communicator
         Communicator& operator= (const Communicator&);  ///< Singleton equals
 
     private:
-        ios_base::openmode mode;    // The file i/o mode
+        std::ios_base::openmode mode;    // The file i/o mode
 
-        string ensemble;            // The type of ensemble
-        string dataName;            // The labelling scheme of the output files
-        string header;              // A unique file header
+        std::string ensemble;            // The type of ensemble
+        std::string dataName;            // The labelling scheme of the output files
+        std::string header;              // A unique file header
 
-        string initName;      // A possible initial file name
-        string fixedName;     // A posible fixed file name
-        string baseDir;       // The output base directory
+        std::string initName;      // A possible initial file name
+        std::string fixedName;     // A posible fixed file name
+        std::string baseDir;       // The output base directory
 
         double tau;          // A local copy of the actual imaginary time step.
 
-        boost::ptr_map<string,File> file_; // The file map
+        boost::ptr_map<std::string,File> file_; // The file map
 
         /* Initialize a input/output file */
-        void initFile(string);
+        void initFile(std::string);
 };
 
 

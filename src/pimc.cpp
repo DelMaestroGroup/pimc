@@ -50,7 +50,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     numSteps = 0;
 
     /* This is required in case we have zero particles in the simulation */
-    numUpdates = int(ceil(max(constants()->initialNumParticles(),1)*constants()->numTimeSlices() / 
+    numUpdates = int(ceil(std::max(constants()->initialNumParticles(),1)*constants()->numTimeSlices() / 
                 (1.0*constants()->Mbar())));
     if (numUpdates < 100)
         numUpdates = 100;
@@ -109,7 +109,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
      * various diagonal moves */
     double cumDiagProb = 0.0;
     double cumOffDiagProb = 0.0;
-    string moveName;
+    std::string moveName;
 
     for (auto movePtr = move.begin(); movePtr != move.end(); ++movePtr) {
 
@@ -167,10 +167,10 @@ PathIntegralMonteCarlo::~PathIntegralMonteCarlo () {
 /**************************************************************************//**
  *  Performs one of various possible Monte Carlo updats on the path.
 ******************************************************************************/
-string PathIntegralMonteCarlo::update(const double x, const int sweep, const int pathIdx=0) { 
+std::string PathIntegralMonteCarlo::update(const double x, const int sweep, const int pathIdx=0) { 
 
     success = false;
-    string moveName = "NONE";
+    std::string moveName = "NONE";
     int index;
 
     /* Determine the index of the move to be performed */
@@ -266,7 +266,7 @@ void PathIntegralMonteCarlo::equilStepDiagonal() {
                 else if (displaceRatio > 0.8)
                     constants()->shiftDisplaceDelta(0.6);
 
-                //cout << "delta: " << constants()->delta() << " " << displaceRatio << endl;
+                //cout << "delta: " << constants()->delta() << " " << displaceRatio << std::endl;
                 /* Reset the counters */
                 numDisplaceAccepted = move.at(index).getNumAccepted();
             }
@@ -293,7 +293,7 @@ bool PathIntegralMonteCarlo::equilStepRelaxmu() {
     /* Print a message when starting the relaxation */
     if (!relaxmuMessage) {
         relaxmuMessage = true;
-        cout << format("[PIMCID: %s] - Relax Chemical Potential.") % constants()->id() << endl;
+        std::cout << format("[PIMCID: %s] - Relax Chemical Potential.") % constants()->id() << std::endl;
     }
 
     double shiftmu = 1.0;
@@ -303,7 +303,7 @@ bool PathIntegralMonteCarlo::equilStepRelaxmu() {
 
         /* Generate random number and run through all moves */
         double x = random.rand();
-        string mName;
+        std::string mName;
         for(uint32 p=0; p<Npaths; p++) {
             mName = update(x,n,p);
         }
@@ -324,20 +324,20 @@ bool PathIntegralMonteCarlo::equilStepRelaxmu() {
         if ( (numNAttempted == numMuAttempted) && (N0 > 0) ) {
 
             /* Output the distribution to the terminal*/
-            cout << printHistogram();
+            std::cout << printHistogram();
 
             /* Compute the peak loation and average number of particles */
             int peakN = blitz::maxIndex(PN)[0];
-            firstIndex i;
+	    blitz::firstIndex i;
             int aveN = round(blitz::sum(i*PN)/blitz::sum(PN));
 
             /* If we have shifted the peak to the desired value, exit */
             if (peakN == N0) {
-                cout << format("Converged on μ = %8.5f\n\n") % constants()->mu();
+                std::cout << format("Converged on μ = %8.5f\n\n") % constants()->mu();
                 return true;
             }
             else {
-                string method;
+                std::string method;
 
                 /* We make sure the peak is in a window 10 particles away from
                  * the target. */
@@ -357,7 +357,7 @@ bool PathIntegralMonteCarlo::equilStepRelaxmu() {
                 }
                 else {
                     if (!inWindow) {
-                        cout << "Reseting μ to previous best value." << endl;
+                        std::cout << "Reseting μ to previous best value." << std::endl;
                         mu = bestmu;
                     }
                     else {
@@ -383,12 +383,12 @@ bool PathIntegralMonteCarlo::equilStepRelaxmu() {
                 }
 
                 /* Some optional debugging messages */
-                /* cout << format("Shifting %5s:%10.2f%10.2f%10d%10d%10d") % method % */ 
+                /* std::cout << format("Shifting %5s:%10.2f%10.2f%10d%10d%10d") % method % */ 
                 /*     constants()->mu() % mu % PN(N0-1) % PN(N0) % PN(N0+1); */
 
                 constants()->setmu(mu);
 
-                /* cout << format("%12d%12d%12d\n") % peakN % aveN % path.getTrueNumParticles(); */
+                /* std::cout << format("%12d%12d%12d\n") % peakN % aveN % path.getTrueNumParticles(); */
 
                 numNAttempted = 0;
                 PN = 0;
@@ -414,14 +414,14 @@ bool PathIntegralMonteCarlo::equilStepRelaxC0() {
     /* Print a message when starting the relaxation */
     if (!relaxC0Message) {
         relaxC0Message = true;
-        cout << format("[PIMCID: %s] - Relax Worm Constant.\n") % constants()->id() << endl;
+        std::cout << format("[PIMCID: %s] - Relax Worm Constant.\n") % constants()->id() << std::endl;
     }
 
     for (int n = 0; n < numUpdates; n++) {
 
         /* Generate random number and run through all moves */
         double x = random.rand();
-        string mName;
+        std::string mName;
         for(uint32 p=0; p<Npaths; p++) {
             mName = update(x,n,p);
         }
@@ -438,13 +438,13 @@ bool PathIntegralMonteCarlo::equilStepRelaxC0() {
             double diagFrac = 1.0*numDiagonal / (1.0*numConfig);
 
             if ( (diagFrac > (targetDiagFrac-0.05)) && (diagFrac <= (targetDiagFrac+0.05)) ) {
-                cout << format("\nConverged on C0 = %8.5f\n\n") % constants()->C0();
+                std::cout << format("\nConverged on C0 = %8.5f\n\n") % constants()->C0();
                 /* for (int i = 0; i < diagFracVals.size(); i++) */ 
-                /*     cout << format("%12.5f%12.5f\n") % C0Vals[i] % diagFracVals[i]; */
+                /*     std::cout << format("%12.5f%12.5f\n") % C0Vals[i] % diagFracVals[i]; */
                 return true;
             }
             else {
-                cout << format("%4.2f\t%8.5f\t") % diagFrac % constants()->C0();
+                std::cout << format("%4.2f\t%8.5f\t") % diagFrac % constants()->C0();
 
                 /* Store the values of C0 and the diagonal fraciton */
                 C0Vals.push_back(constants()->C0());
@@ -454,7 +454,7 @@ bool PathIntegralMonteCarlo::equilStepRelaxC0() {
                  * value */
                 constants()->setC0(linearRegressionC0());
 
-                cout << format("%8.5f\t%5d\t%8.6f\n") % constants()->C0() 
+                std::cout << format("%8.5f\t%5d\t%8.6f\n") % constants()->C0() 
                     % path.getTrueNumParticles() 
                     % (1.0*path.getTrueNumParticles()/path.boxPtr->volume);
 
@@ -509,7 +509,7 @@ double PathIntegralMonteCarlo::linearRegressionC0() {
 
         sum1 = sumX = sumY = sumXY = sumX2 = 0.0;
 
-        for (int i = 0; i < num; i++) {
+        for (decltype(num) i = 0; i < num; i++) {
             sumX += C0Vals[i];
             sumX2 += C0Vals[i]*C0Vals[i];
             sumY += diagFracVals[i];
@@ -572,21 +572,21 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
             barStepSize = numRemainingSteps/44;
             if (!barStepSize)
                 barStepSize = 1;
-            cout << "[" << std::flush;
+            std::cout << "[" << std::flush;
             numBars = 0;
         }
         equilStepDiagonal();
 
         /* Output a progress bar */
         if ((iStep > 0) && (iStep % barStepSize == 0) && (numBars < 44)) {
-            cout << "▇" << std::flush;
+            std::cout << "▇" << std::flush;
             numBars++;
         }
         
         if (iStep == numRemainingSteps-1) {
             for (int nb = numBars; nb < 44; nb++)
-                cout << "▇" << std::flush;
-            cout << "] \t. Diagonal Pre-Equilibration." << endl << std::flush;
+                std::cout << "▇" << std::flush;
+            std::cout << "] \t. Diagonal Pre-Equilibration." << std::endl << std::flush;
         }
 
     }
@@ -594,7 +594,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
 
         if (!equilODMessage) {
             equilODMessage = true;
-            cout << "[";
+            std::cout << "[";
             numRemainingSteps = int(0.2*constants()->numEqSteps())-iStep;
             barStepSize = numRemainingSteps/44;
             if (!barStepSize)
@@ -604,14 +604,14 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
 
         /* Output a progress bar */
         if ((iStep % barStepSize == 0) && (numBars < 44)) {
-            cout << "▇" << std::flush;
+            std::cout << "▇" << std::flush;
             numBars++;
         }
 
         if (iStep == constants()->numEqSteps()/5-1) {
             for (int nb = numBars; nb < 44; nb++)
-                cout << "▇" << std::flush;
-            cout << "] \t. Off-Diagonal Pre-Equilibration." << endl << std::flush;
+                std::cout << "▇" << std::flush;
+            std::cout << "] \t. Off-Diagonal Pre-Equilibration." << std::endl << std::flush;
         }
 
         /* If we are performing any parameter relaxtion, we do some additional 
@@ -620,7 +620,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
 
             /* Generate random number and run through all moves */
             double x = random.rand();
-            string mName;
+            std::string mName;
             for(uint32 p=0;p<Npaths;p++){
                 mName = update(x,n,p);
             }
@@ -637,7 +637,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
         else {
             if (!equilMessage) {
                 equilMessage = true;
-                cout << format("[PIMCID: %s] - Equilibration Stage.") % constants()->id() << endl << "[";
+                std::cout << format("[PIMCID: %s] - Equilibration Stage.") % constants()->id() << std::endl << "[";
                 numRemainingSteps = constants()->numEqSteps()-iStep;
                 barStepSize = numRemainingSteps/44;
                 if (!barStepSize)
@@ -647,7 +647,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
 
             /* Output a progress bar */
             if ((iStep % barStepSize == 0) && (numBars < 44)) {
-                cout << "▇" << std::flush;
+                std::cout << "▇" << std::flush;
                 numBars++;
             }
 
@@ -657,7 +657,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
 
                 /* Generate random number and run through all moves */
                 double x = random.rand();
-                string mName;
+                std::string mName;
                 for(uint32 p=0;p<Npaths;p++){
                     mName = update(x,n,p);
                 }
@@ -672,8 +672,8 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
 
     if ((iStep == constants()->numEqSteps()-1) && equilMessage){
         for (int nb = numBars; nb < 44; nb++)
-            cout << "▇" << std::flush;
-        cout << "]" << endl;
+            std::cout << "▇" << std::flush;
+        std::cout << "]" << std::endl;
     }
 }
 
@@ -687,7 +687,7 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
 ******************************************************************************/
 void PathIntegralMonteCarlo::step() {
 
-    string moveName;
+    std::string moveName;
 
     /* perform updates on each set of paths */
     for (uint32 pIdx=0; pIdx<Npaths; pIdx++) {
@@ -707,7 +707,7 @@ void PathIntegralMonteCarlo::step() {
             if (estimatorPtrVec[pIdx].front().getNumAccumulated() >= binSize) {
 
                 for (auto& est : estimatorPtrVec[pIdx]) {
-                    /* cout << est.getNumAccumulated() << endl; */
+                    /* std::cout << est.getNumAccumulated() << std::endl; */
                     if (est.getNumAccumulated() >= binSize)
                         est.output();
                 }
@@ -722,7 +722,7 @@ void PathIntegralMonteCarlo::step() {
     //////Multi-path Estimators////////////
     if(estimatorPtrVec.size() > Npaths) {
 
-        /* Multi-Path estimators are at the end of the estimator vectors */
+        /* Multi-Path estimators are at the end of the estimator std::vectors */
         for (auto& est : estimatorPtrVec.back()) 
             est.sample();
 
@@ -752,17 +752,17 @@ void PathIntegralMonteCarlo::step() {
 void PathIntegralMonteCarlo::finalOutput() {
 
     /* Output the acceptance data to the log file */
-    communicate()->file("log")->stream() << endl;
-    communicate()->file("log")->stream() << endl;
+    communicate()->file("log")->stream() << std::endl;
+    communicate()->file("log")->stream() << std::endl;
 
-    communicate()->file("log")->stream() << "---------- Begin Acceptance Data ---------------" << endl;
-    communicate()->file("log")->stream() << endl;
+    communicate()->file("log")->stream() << "---------- Begin Acceptance Data ---------------" << std::endl;
+    communicate()->file("log")->stream() << std::endl;
     communicate()->file("log")->stream() << format("%-29s\t:\t%7.5f\n") % "Total Rate" 
         % move.front().getTotAcceptanceRatio();
-    communicate()->file("log")->stream() << endl;
+    communicate()->file("log")->stream() << std::endl;
 
     /* Ouptut all the move acceptance information to disk */
-    string moveName;
+    std::string moveName;
     for (auto &cmove : move){
 
         moveName = cmove.getName();
@@ -777,24 +777,24 @@ void PathIntegralMonteCarlo::finalOutput() {
         }
         communicate()->file("log")->stream() << format("%-29s\t:\t%7.5f\t(%d/%d)\n") % moveName
             % cmove.getAcceptanceRatio() % cmove.numAccepted % cmove.numAttempted;
-        communicate()->file("log")->stream() << endl;
+        communicate()->file("log")->stream() << std::endl;
     
     }
-    communicate()->file("log")->stream() << "---------- End Acceptance Data -----------------" << endl;
+    communicate()->file("log")->stream() << "---------- End Acceptance Data -----------------" << std::endl;
 
-    communicate()->file("log")->stream() << endl;
-    communicate()->file("log")->stream() << endl;
+    communicate()->file("log")->stream() << std::endl;
+    communicate()->file("log")->stream() << std::endl;
 
     /* Output the estimator statistics to the log file */
-    communicate()->file("log")->stream() << "---------- Begin Estimator Data ----------------" << endl;
-    communicate()->file("log")->stream() << endl;
+    communicate()->file("log")->stream() << "---------- Begin Estimator Data ----------------" << std::endl;
+    communicate()->file("log")->stream() << std::endl;
     for (auto &cestimator : estimator) {
         communicate()->file("log")->stream() << format("%-33s\t:\t%16d\t%16d\n") % cestimator.getName()
             % cestimator.getNumSampled() % cestimator.getTotNumAccumulated();
     
     }
-    communicate()->file("log")->stream() << endl;
-    communicate()->file("log")->stream() << "---------- End Estimator Data ------------------" << endl;
+    communicate()->file("log")->stream() << std::endl;
+    communicate()->file("log")->stream() << "---------- End Estimator Data ------------------" << std::endl;
 }
 
 /**************************************************************************//**
@@ -803,9 +803,9 @@ void PathIntegralMonteCarlo::finalOutput() {
 ******************************************************************************/
 void PathIntegralMonteCarlo::saveState(const int finalSave) {
 
-    stringstream stateStrStrm;
+    std::stringstream stateStrStrm;
     
-    /* We only update the string during the simulation */
+    /* We only update the std::string during the simulation */
     if (!finalSave) {
 
         for(uint32 pIdx=0; pIdx<Npaths; pIdx++){
@@ -817,7 +817,7 @@ void PathIntegralMonteCarlo::saveState(const int finalSave) {
             pathPtrVec[pIdx].lookup.updateGrid(path);
 
             /* We First write the current total number of world lines */
-            stateStrStrm << pathPtrVec[pIdx].getNumParticles() << endl;
+            stateStrStrm << pathPtrVec[pIdx].getNumParticles() << std::endl;
 
             /* Now write the total acceptance information for all moves */
             stateStrStrm << format("%16d\t%16d\n")
@@ -834,28 +834,28 @@ void PathIntegralMonteCarlo::saveState(const int finalSave) {
                     % cestimator.getNumSampled();
 
             /* Now we output the actual path and worldline data */
-            stateStrStrm << setprecision(16) << pathPtrVec[pIdx].beads << endl;
-            stateStrStrm << pathPtrVec[pIdx].nextLink << endl;
-            stateStrStrm << pathPtrVec[pIdx].prevLink << endl;
+            stateStrStrm << std::setprecision(16) << pathPtrVec[pIdx].beads << std::endl;
+            stateStrStrm << pathPtrVec[pIdx].nextLink << std::endl;
+            stateStrStrm << pathPtrVec[pIdx].prevLink << std::endl;
 
             /* Output the worm data */
-            stateStrStrm << pathPtrVec[pIdx].worm.beads << endl;
+            stateStrStrm << pathPtrVec[pIdx].worm.beads << std::endl;
 
             /* Save the state of the random number generator */
             uint32 randomState[random.SAVE];
             random.save(randomState);
             for (int i = 0; i < random.SAVE; i++)
                 stateStrStrm << randomState[i] << " ";
-            stateStrStrm << endl;
+            stateStrStrm << std::endl;
 
-            /* store the state string */
+            /* store the state std::string */
             stateStrings[pIdx] = stateStrStrm.str();
 
         } // for pidx
     }
 
     /* Save the state file to disk */
-    string stateFileName;
+    std::string stateFileName;
     if (constants()->saveStateFiles() || finalSave) {
 
         for(uint32 pIdx=0; pIdx<Npaths; pIdx++) {
@@ -879,8 +879,8 @@ void PathIntegralMonteCarlo::saveState(const int finalSave) {
 /**************************************************************************//**
  *  Load a classical ground state from file.
 ******************************************************************************/
-void PathIntegralMonteCarlo::loadClassicalState(Array <dVec,2> &tempBeads,
-        Array <unsigned int, 2> &tempWormBeads, int numWorldLines) {
+void PathIntegralMonteCarlo::loadClassicalState(blitz::Array <dVec,2> &tempBeads,
+        blitz::Array <unsigned int, 2> &tempWormBeads, int numWorldLines) {
 
     /* We go through each active worldline and create a new classical
      * configuration */
@@ -896,8 +896,8 @@ void PathIntegralMonteCarlo::loadClassicalState(Array <dVec,2> &tempBeads,
             if (tempWormBeads(beadIndex)) {
                 
                 /* Assign the classical configuration */
-                pathPtrVec[pIdx].beads(Range::all(),ptcl) = tempBeads(beadIndex);
-                pathPtrVec[pIdx].worm.beads(Range::all(),ptcl) = 1;
+                pathPtrVec[pIdx].beads(blitz::Range::all(),ptcl) = tempBeads(beadIndex);
+                pathPtrVec[pIdx].worm.beads(blitz::Range::all(),ptcl) = 1;
                 ptcl++;
             }
         }
@@ -907,12 +907,12 @@ void PathIntegralMonteCarlo::loadClassicalState(Array <dVec,2> &tempBeads,
 /**************************************************************************//**
  *  Load a quantum ground state from file.
 ******************************************************************************/
-void PathIntegralMonteCarlo::loadQuantumState(Array <dVec,2> &tempBeads, 
-        Array <beadLocator,2> &tempNextLink, Array <beadLocator,2> &tempPrevLink,
+void PathIntegralMonteCarlo::loadQuantumState(blitz::Array <dVec,2> &tempBeads, 
+        blitz::Array <beadLocator,2> &tempNextLink, blitz::Array <beadLocator,2> &tempPrevLink,
         int numTimeSlices, int tempNumWorldLines) {
 
     /* Prevent double counting of worldlines */
-    Array <bool, 1> doBead(tempNumWorldLines);
+    blitz::Array <bool, 1> doBead(tempNumWorldLines);
 
     beadLocator startBead,beadIndex;
     beadLocator newStartBead;
@@ -985,9 +985,9 @@ void PathIntegralMonteCarlo::loadQuantumState(Array <dVec,2> &tempBeads,
 ******************************************************************************/
 void PathIntegralMonteCarlo::loadState() {
 
-    string tempString;
+    std::string tempString;
     
-    string fileInitStr = "init";
+    std::string fileInitStr = "init";
     
     for( uint32 pIdx=0; pIdx<Npaths; pIdx++){
         
@@ -1027,7 +1027,7 @@ void PathIntegralMonteCarlo::loadState() {
         pathPtrVec[pIdx].worm.beads.resize(numTimeSlices,numWorldLines);
 
         /* A temporary container for the beads array */
-        Array <dVec,2> tempBeads;
+	blitz::Array <dVec,2> tempBeads;
 
         /* Get the worldline configuration */
         communicate()->file(fileInitStr)->stream() >> tempBeads;
@@ -1051,8 +1051,8 @@ void PathIntegralMonteCarlo::loadState() {
         else {
 
             /* Initialize the links */
-            firstIndex i1;
-            secondIndex i2;
+	    blitz::firstIndex i1;
+	    blitz::secondIndex i2;
             pathPtrVec[pIdx].prevLink[0] = i1-1;
             pathPtrVec[pIdx].prevLink[1] = i2;
             pathPtrVec[pIdx].nextLink[0] = i1+1;
@@ -1060,16 +1060,16 @@ void PathIntegralMonteCarlo::loadState() {
         
             /* Here we implement the initial periodic boundary conditions in 
              * imaginary time */
-            pathPtrVec[pIdx].prevLink(0,Range::all())[0] = numTimeSlices-1;
-            pathPtrVec[pIdx].nextLink(numTimeSlices-1,Range::all())[0] = 0;
+            pathPtrVec[pIdx].prevLink(0,blitz::Range::all())[0] = numTimeSlices-1;
+            pathPtrVec[pIdx].nextLink(numTimeSlices-1,blitz::Range::all())[0] = 0;
 
             /* Reset the worm.beads array */
             pathPtrVec[pIdx].worm.beads = 0;
 
             /* Temporary containers for the links and worm beads */
-            Array <beadLocator,2> tempNextLink;
-            Array <beadLocator,2> tempPrevLink;
-            Array <unsigned int,2> tempWormBeads;
+	    blitz::Array <beadLocator,2> tempNextLink;
+	    blitz::Array <beadLocator,2> tempPrevLink;
+	    blitz::Array <unsigned int,2> tempWormBeads;
 
             /* Get the link arrays and worm file */
             communicate()->file(fileInitStr)->stream() >> tempNextLink;
@@ -1137,7 +1137,7 @@ void PathIntegralMonteCarlo::loadState() {
         pathPtrVec[pIdx].lookup.resizeList(numWorldLines);
         pathPtrVec[pIdx].lookup.updateGrid(path);
 
-        /* Reset the broken/closed worldline vectors */
+        /* Reset the broken/closed worldline std::vectors */
         pathPtrVec[pIdx].resetBrokenClosedVecs();
         
         /* Close the file */
@@ -1167,23 +1167,23 @@ void PathIntegralMonteCarlo::outputPDB() {
 
     /* We go through all beads, and find the start and end bead for each
      * worldline, adding them to an array */
-    Array <beadLocator,1> startBead,endBead;
+    blitz::Array <beadLocator,1> startBead,endBead;
     startBead.resize(numParticles);
     endBead.resize(numParticles);
 
     /* We sort the output by the number of beads in a worldline */
-    Array <int,1> wlLength(numParticles);
+    blitz::Array <int,1> wlLength(numParticles);
     wlLength = 0;
 
     /* This is the index-beadNumber mapping array */
-    Array <int,2> beadNum(numTimeSlices,numParticles);
+    blitz::Array <int,2> beadNum(numTimeSlices,numParticles);
     beadNum = 0;
 
     int numWorldLines = 0;
 
     /* Get the list of beads that are active in the simulation */
-    Array <bool,2> doBead(numTimeSlices,numParticles);      
-    doBead = cast<bool>(path.worm.getBeads());
+    blitz::Array <bool,2> doBead(numTimeSlices,numParticles);      
+    doBead = blitz::cast<bool>(path.worm.getBeads());
 
     /* We go through each particle/worldline */
     int nwl = 0;
@@ -1305,7 +1305,7 @@ void PathIntegralMonteCarlo::outputPDB() {
                 if (dot(sep,sep) < path.boxPtr->rcut2)
                     communicate()->file("wl")->stream() << format("%5d") % beadNum(nextIndex);
             }
-            communicate()->file("wl")->stream() << endl;
+            communicate()->file("wl")->stream() << std::endl;
 
             beadIndex = path.next(beadIndex);
         } while (!all(beadIndex==endBead(n)));
@@ -1327,16 +1327,16 @@ void PathIntegralMonteCarlo::outputPDB() {
 void PathIntegralMonteCarlo::printWormState() {
 
     /* We make a list of all the beads contained in the worm */
-    Array <beadLocator,1> wormBeads;    // Used for debugging
+    blitz::Array <beadLocator,1> wormBeads;    // Used for debugging
     wormBeads.resize(path.worm.length+1);
     wormBeads = XXX;
 
     /* Output the worldline configuration */
-    communicate()->file("debug")->stream() << " (" << path.getTrueNumParticles() << ")" << endl;
+    communicate()->file("debug")->stream() << " (" << path.getTrueNumParticles() << ")" << std::endl;
     communicate()->file("debug")->stream() << "head " << path.worm.head[0] << " " << path.worm.head[1]
         << " tail " << path.worm.tail[0] << " " << path.worm.tail[1]
         << " length " << path.worm.length 
-        << " gap " << path.worm.gap << endl;
+        << " gap " << path.worm.gap << std::endl;
 
     if (!path.worm.isConfigDiagonal) {
         beadLocator beadIndex;
@@ -1350,7 +1350,7 @@ void PathIntegralMonteCarlo::printWormState() {
     }
 
     path.printWormConfig(wormBeads);
-    path.printLinks<fstream>(communicate()->file("debug")->stream());
+    path.printLinks<std::fstream>(communicate()->file("debug")->stream());
     wormBeads.free();
 }
 
@@ -1358,12 +1358,12 @@ void PathIntegralMonteCarlo::printWormState() {
  *  Output a histogram to the terminal.  Useful for visualizing distributions.
  *  
 ******************************************************************************/
-string PathIntegralMonteCarlo::printHistogram() {
+std::string PathIntegralMonteCarlo::printHistogram() {
 
-    string histogramDisplay = "\n";
+    std::string histogramDisplay = "\n";
 
     /* Setup the window of the histogram to be analyzed.*/
-    int start,end,window;
+    decltype(PN.size()) start,end,window;
     window = 5;
 
     start = N0-window;
@@ -1378,7 +1378,7 @@ string PathIntegralMonteCarlo::printHistogram() {
 
     double factor = 50.0/blitz::max(PN);
     int sumPN = 0;
-    for (int n = start; n <= end; n++) {
+    for (decltype(start) n = start; n <= end; n++) {
         int numStars = int(PN(n)*factor);
         histogramDisplay +=  str(format("%03d|") % n);
         for (int i = 0; i < numStars; i++)
@@ -1391,10 +1391,10 @@ string PathIntegralMonteCarlo::printHistogram() {
     /* if (sumPN > bestPN) { */
     /*     bestPN = sumPN; */
         /* bestmu = constants()->mu(); */
-        /* cout << "setting mu" << endl; */
+        /* std::cout << "setting mu" << std::endl; */
     /* } */
 
-    firstIndex i;
+    blitz::firstIndex i;
     double aveN = (blitz::sum(i*PN)/blitz::sum(PN));
 
     double diffAveN = abs(N0-aveN);

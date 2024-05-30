@@ -63,23 +63,23 @@ class ConstantParameters
         double fourLambdaTauInv() const { return (0.25 / (lambda_ * tau_)); }
 
         /* Get the move attempt probability */
-        double attemptProb(string type) {
+        double attemptProb(std::string type) {
             if (attemptProb_.count(type))
                 return attemptProb_[type];
             else {
-                cerr << "Get: Attempt probability for " << type << " does not exist!" << endl;
+                std::cerr << "Get: Attempt probability for " << type << " does not exist!" << std::endl;
                 exit(EXIT_FAILURE);
                 return 0.0;
             }
         }
 
         /* Set the move attempt probability */
-        void setAttemptProb(string type,double prob) {
+        void setAttemptProb(std::string type,double prob) {
             attemptProb_[type] = prob;
             /* if (attemptProb_.count(type)) */
             /*     attemptProb_[type] = prob; */
             /* else { */
-            /*     cerr << "Set: Attempt probability for " << type << " does not exist!" << endl; */
+            /*     std::cerr << "Set: Attempt probability for " << type << " does not exist!" << std::endl; */
             /*     exit(EXIT_FAILURE); */
             /* } */
         }
@@ -100,7 +100,7 @@ class ConstantParameters
         int numTimeSlices() {return numTimeSlices_;}    ///< Get number of time slices
         int initialNumParticles() { return initialNumParticles_;}   ///< Get initial number of particles
         int maxWind() { return maxWind_;}               ///< Get the maximum winding number sampled
-        string id() {return id_;}                       ///< Get simulation UUID
+        std::string id() {return id_;}                       ///< Get simulation UUID
         uint32 numEqSteps() {return numEqSteps_;}   ///< Get the number of equilibration steps
         int numBroken() {return numBroken_;}            //< Get number of broken paths
         double spatialSubregion() {return spatialSubregion_;}          //< Get size of subregion
@@ -108,14 +108,14 @@ class ConstantParameters
         int Npaths() {return Npaths_;}                  //< Get number of paths
         uint32 binSize() {return binSize_;}                //< Get the number of measurments per bin.
 
-        string intPotentialType() const {return intPotentialType_;}                   ///< Get interaction potential type
-        string extPotentialType() const {return extPotentialType_;}                   ///< Get external potential type
-        string waveFunctionType() const {return waveFunctionType_;}                   ///< Get wave function type
+        std::string intPotentialType() const {return intPotentialType_;}                   ///< Get interaction potential type
+        std::string extPotentialType() const {return extPotentialType_;}                   ///< Get external potential type
+        std::string waveFunctionType() const {return waveFunctionType_;}                   ///< Get wave function type
         double endFactor() const {return endFactor_;}                                 ///< Get end factor
-        string actionType() const {return actionType_;}                               ///< Get wave action type
-        string graphenelut3d_file_prefix() const {return graphenelut3d_file_prefix_;} ///< Get GrapheneLUT3D file prefix <prefix>_serialized.{dat|txt}
-        string isf_input() const {return isf_input_;}                                 ///< Get input for intermediate scattering function
-        string isf_input_type() const {return isf_input_type_;}                       ///< Get type for input to intermediate scattering function
+        std::string actionType() const {return actionType_;}                               ///< Get wave action type
+        std::string graphenelut3d_file_prefix() const {return graphenelut3d_file_prefix_;} ///< Get GrapheneLUT3D file prefix <prefix>_serialized.{dat|txt}
+        std::string wavevector() const {return wavevector_;}                               ///< Get wavevectors for scattering functions
+        std::string wavevectorType() const {return wavevectorType_;}                       ///< Get wavevector types for scattering functions
 
         /* Trial wave funciton parameters */
         double R_LL_wfn() const {return R_LL_wfn_;}        ///< Get Lieb-Liniger length scale
@@ -182,25 +182,25 @@ class ConstantParameters
         double gaussianEnsembleSD_; // Standard deviation of ensemble weight
         bool varUpdates_;           // Perform variable length diagonal updates
 
-        string  id_;                // The unique simulation UUID
-        string intPotentialType_;   // The type of interaction potential
-        string extPotentialType_;   // The type of external potential
-        string waveFunctionType_;   // The type of trial wave function
+        std::string  id_;                // The unique simulation UUID
+        std::string intPotentialType_;   // The type of interaction potential
+        std::string extPotentialType_;   // The type of external potential
+        std::string waveFunctionType_;   // The type of trial wave function
         double R_LL_wfn_;           // The length scale of the Lieb-Liniger wave function
         double k_LL_wfn_;           // The wave number of the Lieb-Liniger wave function
         double endFactor_;          // The multiplicative factor of the potential on end beads
-        string actionType_;         // The type of action
+        std::string actionType_;         // The type of action
 
         int virialWindow_;        // Window size for centroid virial estimator
         int maxWind_;             // The maximum winding number sampled
         uint32 binSize_;               // The number of measurments per bin.
 
         bool saveStateFiles_;              // Are we saving a state file every MC bin?
-        string graphenelut3d_file_prefix_; // GrapheneLUT3D file prefix <prefix>_{V,gradV,grad2V}.npy 
-        string isf_input_;                 // Input for intermediate scattering function
-        string isf_input_type_;            // Type of input for intermediate scattering function
+        std::string graphenelut3d_file_prefix_; // GrapheneLUT3D file prefix <prefix>_{V,gradV,grad2V}.npy 
+        std::string wavevector_;                // Input for wavevectors 
+        std::string wavevectorType_;            // Type of input for wavevectors
         
-        map <string,double> attemptProb_;   // The move attempt probabilities
+        std::map <std::string,double> attemptProb_;   // The move attempt probabilities
 };
 
 /**************************************************************************//**

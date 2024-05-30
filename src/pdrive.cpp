@@ -36,18 +36,18 @@ int main (int argc, char *argv[]) {
 
     uint32 seed = 139853;   // The seed for the random number generator
 
-    Setup setup;
+    Setup& setup = Setup::instance();
 
     /* Attempt to parse the command line options */
     try {
         setup.getOptions(argc,argv);
     }
-    catch(exception& ex) {
-        cerr << "error: " << ex.what() << "\n";
+    catch(std::exception& ex) {
+        std::cerr << "error: " << ex.what() << "\n";
         return 1;
     }
     catch(...) {
-        cerr << "Exception of unknown type!\n";
+        std::cerr << "Exception of unknown type!\n";
     }
 
     /* Parse the setup options and possibly exit */
@@ -60,7 +60,9 @@ int main (int argc, char *argv[]) {
     MTRand random(seed);
 
     /* Get the simulation box */
-    Container *boxPtr = setup.cell();
+    setup.set_cell();
+    Container *boxPtr = setup.get_cell();
+    std::cout << boxPtr << std::endl;
 
     /* Create the worldlines */
     if (setup.worldlines())
@@ -84,8 +86,8 @@ int main (int argc, char *argv[]) {
     }
     
     /* Create and initialize the potential pointers */
-    PotentialBase *interactionPotentialPtr = setup.interactionPotential(boxPtr);
-    PotentialBase *externalPotentialPtr = setup.externalPotential(boxPtr);
+    PotentialBase *interactionPotentialPtr = setup.interactionPotential();
+    PotentialBase *externalPotentialPtr = setup.externalPotential();
     if ((constants()->extPotentialType() == "graphenelut3dtobinary") ||
             (constants()->extPotentialType() == "graphenelut3dtotext") ||
             (constants()->extPotentialType() == "graphenelut3dgenerate") ) {
@@ -94,7 +96,7 @@ int main (int argc, char *argv[]) {
 
     /* Get the initial conditions associated with the external potential */
     /* Must use the copy constructor as we return a copy */
-    Array<dVec,1> initialPos = 
+    blitz::Array<dVec,1> initialPos = 
         externalPotentialPtr->initialConfig(boxPtr,random,constants()->initialNumParticles());
 
     /* Perform a classical canonical pre-equilibration to obtain a suitable
@@ -151,33 +153,33 @@ int main (int argc, char *argv[]) {
 
     /* Setup the pimc object */
     PathIntegralMonteCarlo pimc(pathPtrVec,random,movesPtrVec,estimatorsPtrVec,
-                                !setup.params["start_with_state"].as<string>().empty());
+                                !setup.params["start_with_state"].as<std::string>().empty());
 
     /* A silly banner */
     if (PIGS)
-        cout << endl 
-             << " _____    _____    _____    _____"   << endl 
-             << "|  __ \\  |_   _|  / ____|  / ____|" << endl
-             << "| |__) |   | |   | |  __  | (___"    << endl
-             << "|  ___/    | |   | | |_ |  \\___ \\" << endl
-             << "| |       _| |_  | |__| |  ____) |"  << endl
-             << "|_|      |_____|  \\_____| |_____/"  << endl
-             << endl;  
+        std::cout << std::endl 
+             << " _____    _____    _____    _____"   << std::endl 
+             << "|  __ \\  |_   _|  / ____|  / ____|" << std::endl
+             << "| |__) |   | |   | |  __  | (___"    << std::endl
+             << "|  ___/    | |   | | |_ |  \\___ \\" << std::endl
+             << "| |       _| |_  | |__| |  ____) |"  << std::endl
+             << "|_|      |_____|  \\_____| |_____/"  << std::endl
+             << std::endl;  
     else 
-        cout << endl
-             << "  _____    _____   __  __    _____"    << endl
-             << " |  __ \\  |_   _| |  \\/  |  / ____|" << endl
-             << " | |__) |   | |   | \\  / | | |     "  << endl
-             << " |  ___/    | |   | |\\/| | | |     "  << endl
-             << " | |       _| |_  | |  | | | |____ "   << endl
-             << " |_|      |_____| |_|  |_|  \\_____|"  << endl
-             << endl;
+        std::cout << std::endl
+             << "  _____    _____   __  __    _____"    << std::endl
+             << " |  __ \\  |_   _| |  \\/  |  / ____|" << std::endl
+             << " | |__) |   | |   | \\  / | | |     "  << std::endl
+             << " |  ___/    | |   | |\\/| | | |     "  << std::endl
+             << " | |       _| |_  | |  | | | |____ "   << std::endl
+             << " |_|      |_____| |_|  |_|  \\_____|"  << std::endl
+             << std::endl;
 
     /* If this is a fresh run, we equilibrate and output simulation parameters to disk */
     if (!constants()->restart()) {
 
         /* Equilibrate */
-        cout << format("[PIMCID: %s] - Pre-Equilibration Stage.") % constants()->id() << endl;
+        std::cout << format("[PIMCID: %s] - Pre-Equilibration Stage.") % constants()->id() << std::endl;
         for (uint32 n = 0; n < constants()->numEqSteps(); n++) 
             pimc.equilStep(n,setup.params("relax"),setup.params("relaxmu"));
 
@@ -191,7 +193,7 @@ int main (int argc, char *argv[]) {
         setup.outputOptions(argc,argv,seed,boxPtr,lookupPtrVec.front().getNumNNGrid());
     }
 
-    cout << format("[PIMCID: %s] - Measurement Stage.") % constants()->id() << endl;
+    std::cout << format("[PIMCID: %s] - Measurement Stage.") % constants()->id() << std::endl;
 
     /* Sample */
     int oldNumStored = 0;
@@ -202,8 +204,8 @@ int main (int argc, char *argv[]) {
         pimc.step();
         if (pimc.numStoredBins > oldNumStored) {
             oldNumStored = pimc.numStoredBins;
-            cout << format("[PIMCID: %s] - Bin #%5d stored to disk.") % constants()->id() 
-                % oldNumStored << endl;
+            std::cout << format("[PIMCID: %s] - Bin #%5d stored to disk.") % constants()->id() 
+                % oldNumStored << std::endl;
         }
         n++;
 
@@ -223,9 +225,9 @@ int main (int argc, char *argv[]) {
         }
     } while (pimc.numStoredBins < setup.params["number_bins_stored"].as<int>());
     if (wallClockReached)
-        cout << format("[PIMCID: %s] - Wall clock limit reached.") % constants()->id() << endl;
+        std::cout << format("[PIMCID: %s] - Wall clock limit reached.") % constants()->id() << std::endl;
     else
-        cout << format("[PIMCID: %s] - Measurement complete.") % constants()->id() << endl;
+        std::cout << format("[PIMCID: %s] - Measurement complete.") % constants()->id() << std::endl;
 
     /* Output Results */
     if (!constants()->saveStateFiles())

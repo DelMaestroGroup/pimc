@@ -29,26 +29,26 @@ class LookupTable;
 class Path {
 
     public:
-        Path (const Container *, LookupTable &, int, const Array<dVec,1>&, int numberBroken = 0);
+        Path (const Container *, LookupTable &, int, const blitz::Array<dVec,1>&, int numberBroken = 0);
         ~Path();
 
         /* Path* clone() const{ return new Path(*this); } */
 
         const int numTimeSlices;        ///< A local constant copy of the number of time slices
         int breakSlice;                 ///< The location of the break in the path (0=>no break)
-        vector<int> brokenWorldlinesL;   ///< A list of particles with broken worldlines on left of break
-        vector<int> brokenWorldlinesR;   ///< A list of particles with broken worldlines on right of break
-        vector<int> closedWorldlines;   ///< A list of particles with closed worldlines on left of break
+        std::vector<int> brokenWorldlinesL;   ///< A list of particles with broken worldlines on left of break
+        std::vector<int> brokenWorldlinesR;   ///< A list of particles with broken worldlines on right of break
+        std::vector<int> closedWorldlines;   ///< A list of particles with closed worldlines on left of break
 
         const Container *boxPtr;        ///< A constant reference to the container class
         Worm worm;                      ///< Details on the worm
 
         LookupTable &lookup;            ///< A reference to the nearest neighbor lookup table.
 
-        Array <int,1> numBeadsAtSlice;  ///< The number of active beads at a given time slice
+	blitz::Array <int,1> numBeadsAtSlice;  ///< The number of active beads at a given time slice
 
         /** Get the size of the worldline array */
-        int getNumParticles() const {return beads.extent(secondDim);}
+        int getNumParticles() const {return beads.extent(blitz::secondDim);}
 
         /** The number of active particles */
         int getTrueNumParticles() const {return ( worm.getNumBeadsOn() / numTimeSlices );}
@@ -73,7 +73,7 @@ class Path {
         /** Return the velocity between two time slices of a given particle as a ndim-vector */
         dVec getVelocity(const beadLocator&) const;
 
-        /** Return the separation vector between two particles in the same timeslice */
+        /** Return the separation std::vector between two particles in the same timeslice */
         dVec getSeparation(const beadLocator&, const beadLocator&) const;
         
         /** Return the pointer to the beads array data */
@@ -150,19 +150,19 @@ class Path {
         void updateBead(const beadLocator&, const dVec&);
 
         /** Used when debugging worm configurations */
-        void printWormConfig(Array <beadLocator,1> &);
+        void printWormConfig(blitz::Array <beadLocator,1> &);
 
         /** Initialize any loaded state by left packing the array */
         void leftPack();
     
-        /** Reset broken/closed worldline vectors **/
+        /** Reset broken/closed worldline std::vectors **/
         void resetBrokenClosedVecs();
 
     private:
         friend class PathIntegralMonteCarlo;        // Friends for I/O
 
-        Array<dVec,2> beads;                        // The wordline array
-        Array<beadLocator,2> prevLink, nextLink;    // Bead connection matrices
+	blitz::Array<dVec,2> beads;                        // The wordline array
+	blitz::Array<beadLocator,2> prevLink, nextLink;    // Bead connection matrices
 
         beadLocator lastBeadIndex;                  // Holds the index of the last bead on a slice
 };
@@ -175,7 +175,7 @@ class Path {
 // INLINE FUNCTION DEFINITIONS
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-/** Return the separation vector between two particles in the same timeslice */
+/** Return the separation std::vector between two particles in the same timeslice */
 inline dVec Path::getSeparation(const beadLocator &bead1, const beadLocator &bead2) const {
     dVec sep;
     sep = (*this)(bead1) - (*this)(bead2);
@@ -273,17 +273,17 @@ void Path::printLinks(Tstream &outStream) {
         beadLocator beadIndex;
         for (int n = 0; n < numParticles; n++) {
             beadIndex = m,n;
-            outStream << setw(2) << prevLink(beadIndex)[1] << " ";
+            outStream << std::setw(2) << prevLink(beadIndex)[1] << " ";
         }
                         
         outStream << "\t";
         for (int n = 0; n < numParticles; n++) { 
             beadIndex = m,n;
-            outStream << setw(2) << nextLink(beadIndex)[1] << " ";
+            outStream << std::setw(2) << nextLink(beadIndex)[1] << " ";
         }
-        outStream << endl;
+        outStream << std::endl;
     }
-    outStream << endl;
+    outStream << std::endl;
 }
 
 #endif

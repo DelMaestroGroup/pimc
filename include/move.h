@@ -36,10 +36,10 @@ class MoveBase {
     
         ensemble operateOnConfig;       ///< What configurations do we operate on?
         bool variableLength;            ///< Does the move have a variable length?
-        string name1;
+        std::string name1;
 
         /** return the move name */
-        virtual string getName() {return "base";}
+        virtual std::string getName() {return "base";}
 
         /** Get the acceptance ratio. */
         double getAcceptanceRatio() {
@@ -91,17 +91,17 @@ class MoveBase {
         static uint32 totAccepted;      ///< The total number of  moves accepted
         static uint32 totAttempted;     ///< The total number of  moves attempted
 
-        Array <uint32,1> numAcceptedLevel;  ///< The number of moves accepted at each level
-        Array <uint32,1> numAttemptedLevel; ///< The number of moves attempted at each level
+	blitz::Array <uint32,1> numAcceptedLevel;  ///< The number of moves accepted at each level
+	blitz::Array <uint32,1> numAttemptedLevel; ///< The number of moves attempted at each level
 
-        Array <dVec,1> originalPos;     ///< The original particle positions
-        Array <dVec,1> newPos;          ///< New particle positions
+	blitz::Array <dVec,1> originalPos;     ///< The original particle positions
+	blitz::Array <dVec,1> newPos;          ///< New particle positions
         
-        vector <iVec> winding;          ///< The winding vectors         
-        vector <double> cumrho0;        ///< Used for tower-sampling winding sectors
+        std::vector <iVec> winding;          ///< The winding std::vectors         
+        std::vector <double> cumrho0;        ///< Used for tower-sampling winding sectors
 
         int maxWind;                    ///< The largest winding number
-        int numWind;                    ///< The total number of winding vectors
+        int numWind;                    ///< The total number of winding std::vectors
 
         double oldAction;               ///< The original potential action
         double newAction;               ///< The new potential action
@@ -139,7 +139,7 @@ class MoveBase {
         double newV,oldV;               ///< The old and new potential action
 
         /* Debugging methods */
-        void printMoveState(string);
+        void printMoveState(std::string);
         void checkMove(int,double);
 };
 
@@ -157,8 +157,8 @@ class DisplaceMove: public MoveBase {
         ~DisplaceMove();
     
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
         beadLocator beadIndex;  // The index of the bead being moved
@@ -179,8 +179,8 @@ class EndStagingMove: public MoveBase {
         ~EndStagingMove();
 
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
         bool leftMoving;        // True if update moves left to right
@@ -203,8 +203,8 @@ class MidStagingMove: public MoveBase {
         ~MidStagingMove();
 
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
     
     private:
         beadLocator leftBead;   // The left most bead being moved
@@ -228,8 +228,8 @@ class SwapBreakMove: public MoveBase {
         ~SwapBreakMove();
 
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
         void undoMove(){};
@@ -251,8 +251,8 @@ class CenterOfMassMove: public MoveBase {
         ~CenterOfMassMove();
 
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
         beadLocator startBead,endBead;  // The start and end beads
@@ -275,8 +275,8 @@ class StagingMove: public MoveBase {
         ~StagingMove();
 
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
         beadLocator startBead,endBead;      // The start and end of the stage
@@ -300,11 +300,11 @@ class BisectionMove: public MoveBase {
         ~BisectionMove();
     
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
-        Array <bool,1> include;             // Which beads have been included?
+	blitz::Array <bool,1> include;             // Which beads have been included?
 
         beadLocator startBead,endBead;
 
@@ -333,8 +333,8 @@ class OpenMove: public MoveBase {
         ~OpenMove();
 
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
         beadLocator headBead, tailBead; // The temporary head and tail locatores
@@ -361,14 +361,14 @@ class CloseMove: public MoveBase {
         ~CloseMove();
 
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
         beadLocator headBead,tailBead;  // The temporary head and tail slices
         int numLevels;                      // The 2^numLevels = num slices moved
 
-        Array <int,1> oldBeadOn;        // The old and new bead states
+	blitz::Array <int,1> oldBeadOn;        // The old and new bead states
 
         void undoMove();                // Undo a move
         void keepMove();                // keep the move
@@ -389,8 +389,8 @@ class InsertMove: public MoveBase {
         ~InsertMove();
     
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
         beadLocator headBead,tailBead;  // The temporary head and tail beads
@@ -417,8 +417,8 @@ class RemoveMove: public MoveBase {
         ~RemoveMove();
 
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
         int numLevels;                  // The 2^numLevels = num slices moved
@@ -442,8 +442,8 @@ class AdvanceHeadMove: public MoveBase {
         ~AdvanceHeadMove();
         
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
         beadLocator headBead;           // The temporary new head
@@ -455,8 +455,8 @@ class AdvanceHeadMove: public MoveBase {
         void keepMove();                // keep the move
 
         beadLocator startBead;          
-        Array <dVec,1> newPos;                  // The modified particle positions
-        Array <unsigned int,1> oldBeadOn;       // The old and new bead states
+	blitz::Array <dVec,1> newPos;                  // The modified particle positions
+	blitz::Array <unsigned int,1> oldBeadOn;       // The old and new bead states
 
 };
 
@@ -476,8 +476,8 @@ class AdvanceTailMove: public MoveBase {
         ~AdvanceTailMove();
     
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
         beadLocator tailBead;           // The temporary new tail
@@ -504,8 +504,8 @@ class RecedeHeadMove: public MoveBase {
         ~RecedeHeadMove();
     
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
         beadLocator headBead;           // The proposed new head position
@@ -531,8 +531,8 @@ class RecedeTailMove: public MoveBase {
         ~RecedeTailMove();
         
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
         beadLocator tailBead;           // The proposed new head position
@@ -562,7 +562,7 @@ class SwapMoveBase: public MoveBase {
         int numLevels;                      ///< The number of bisection levels
         unsigned int sizeCDF;               ///< The size of the cumulative distribution function
 
-        vector <double> cumulant;           ///< The cumulant array used in selecting a pivot
+        std::vector <double> cumulant;           ///< The cumulant array used in selecting a pivot
 
         beadLocator pivot;                  ///< The pivot bead
         beadLocator swap;                   ///< The swap bead
@@ -595,8 +595,8 @@ class SwapHeadMove: public SwapMoveBase {
         ~SwapHeadMove();
 
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
 
@@ -623,8 +623,8 @@ class SwapTailMove: public SwapMoveBase {
         ~SwapTailMove();
         
         bool attemptMove();
-        static const string name;
-        string getName() {return name;}
+        static const std::string name;
+        std::string getName() {return name;}
 
     private:
 

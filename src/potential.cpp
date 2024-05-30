@@ -6,12 +6,85 @@
  */
 
 #include "potential.h"
+#include "factory_potential.h"
 #include "path.h"
 #include "lookuptable.h"
 #include "communicator.h"
 
 #include <boost/math/special_functions/ellint_1.hpp>
 #include <boost/math/special_functions/ellint_2.hpp>
+
+/**************************************************************************//**
+ * Creating and Registering New Potentials
+******************************************************************************/
+ // 1. Declare your potential class inheriting from PotentialBase in the header file (e.g., potential.h).
+ //
+ // Example:
+ // class TestPotential : public PotentialBase {
+ // public:
+ //     TestPotential();
+ // };
+ //
+ // 2. Define your potential class inheriting from PotentialBase in the source file (e.g., potential.cpp).
+ //
+ // Example:
+ // TestPotential::TestPotential() {
+ //     // Constructor implementation
+ // }
+ //
+ // 3. Register your potential using the appropriate macro in the source file.
+ //
+ // For internal potentials:
+ // REGISTER_INTERNAL_POTENTIAL("internalName", TestPotential, NO_SETUP())
+ //
+ // For external potentials:
+ // REGISTER_EXTERNAL_POTENTIAL("externalName", TestPotential, NO_SETUP())
+ //
+ // If setup is needed (e.g., boxPtr and params["param1"]):
+ // REGISTER_INTERNAL_POTENTIAL("internalName", TestPotential, GET_SETUP(), setup.get_cell(), setup.params["param1"])
+ // REGISTER_EXTERNAL_POTENTIAL("externalName", TestPotential, GET_SETUP(), setup.get_cell(), setup.params["param1"])
+ //
+ //////////////////////////////////////////////////////////////////////////////
+
+/**************************************************************************//**
+ * Register interaction potentials
+******************************************************************************/
+
+REGISTER_INTERACTION_POTENTIAL(       "free",       FreePotential,  NO_SETUP())
+REGISTER_INTERACTION_POTENTIAL(      "delta",      DeltaPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
+REGISTER_INTERACTION_POTENTIAL( "sutherland", SutherlandPotential, GET_SETUP(), setup.params["interaction_strength"].as<double>())
+REGISTER_INTERACTION_POTENTIAL("hard_sphere", HardSpherePotential, GET_SETUP(), setup.params["scattering_length"].as<double>())
+REGISTER_INTERACTION_POTENTIAL(   "hard_rod",    HardRodPotential, GET_SETUP(), setup.params["scattering_length"].as<double>())
+REGISTER_INTERACTION_POTENTIAL(    "delta1D",    Delta1DPotential, GET_SETUP(), setup.params["delta_strength"].as<double>())
+REGISTER_INTERACTION_POTENTIAL( "lorentzian", LorentzianPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
+REGISTER_INTERACTION_POTENTIAL(       "aziz",       AzizPotential, GET_SETUP(), setup.get_cell())
+REGISTER_INTERACTION_POTENTIAL(  "szalewicz",  SzalewiczPotential, GET_SETUP(), setup.get_cell())
+REGISTER_INTERACTION_POTENTIAL(   "harmonic",   HarmonicPotential, GET_SETUP(), setup.params["omega"].as<double>())
+REGISTER_INTERACTION_POTENTIAL(     "dipole",     DipolePotential,  NO_SETUP())
+
+/**************************************************************************//**
+ * Register external potentials
+******************************************************************************/
+
+REGISTER_EXTERNAL_POTENTIAL(             "harmonic",              HarmonicPotential, GET_SETUP(), setup.params["omega"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(                 "free",                  FreePotential,  NO_SETUP())
+REGISTER_EXTERNAL_POTENTIAL(             "osc_tube",      HarmonicCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(          "single_well",            SingleWellPotential,  NO_SETUP())
+REGISTER_EXTERNAL_POTENTIAL(           "fixed_aziz",             FixedAzizPotential, GET_SETUP(), setup.get_cell())
+#if NDIM > 2
+REGISTER_EXTERNAL_POTENTIAL(             "graphene",              GraphenePotential, GET_SETUP(), setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(          "graphenelut",           GrapheneLUTPotential, GET_SETUP(), setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(            "hard_tube",          HardCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(       "plated_lj_tube",      PlatedLJCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["lj_width"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.params["lj_density"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(              "lj_tube",            LJCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["lj_cyl_density"].as<double>(), setup.params["lj_cyl_sigma"].as<double>(), setup.params["lj_cyl_epsilon"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(              "hg_tube",           LJHourGlassPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["hourglass_radius"].as<double>(), setup.params["hourglass_width"].as<double>())
+REGISTER_EXTERNAL_POTENTIAL(             "fixed_lj",       FixedPositionLJPotential, GET_SETUP(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(            "gasp_prim",          Gasparini_1_Potential, GET_SETUP(), setup.params["empty_width_z"].as<double>(), setup.params["empty_width_y"].as<double>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(        "graphenelut3d",         GrapheneLUT3DPotential, GET_SETUP(), setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL("graphenelut3dgenerate", GrapheneLUT3DPotentialGenerate, GET_SETUP(), setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.params["k_max"].as<int>(), setup.params["xres"].as<int>(), setup.params["yres"].as<int>(), setup.params["zres"].as<int>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL("graphenelut3dtobinary", GrapheneLUT3DPotentialToBinary, GET_SETUP(), setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(  "graphenelut3dtotext",   GrapheneLUT3DPotentialToText, GET_SETUP(), setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -38,11 +111,11 @@ PotentialBase::~PotentialBase () {
  * The default version creates a list of particle positions in an equally
  * spaced grid.
 ******************************************************************************/
-Array<dVec,1> PotentialBase::initialConfig(const Container *boxPtr, MTRand &random,
+blitz::Array<dVec,1> PotentialBase::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
 
     /* The particle configuration */
-    Array<dVec,1> initialPos(numParticles);
+    blitz::Array<dVec,1> initialPos(numParticles);
     initialPos = 0.0;
 
     /* Get the linear size per particle, and the number of particles */
@@ -132,9 +205,9 @@ double PotentialBase::deltaSeparation(double sep1, double sep2) const {
  *
  * This is only used for Gasparini potential, could probably be better.
 ******************************************************************************/
-Array<double,1> PotentialBase::getExcLen() {
+blitz::Array<double,1> PotentialBase::getExcLen() {
     /* The particle configuration */
-    Array<double,1> excLens(0);
+    blitz::Array<double,1> excLens(0);
     return excLens;
 }
 // ---------------------------------------------------------------------------
@@ -197,7 +270,7 @@ void TabulatedPotential::initLookupTable(const double _dr, const double maxSep) 
     /* exit(-1); */
         
 
-//      cout << format("%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E\n") % r % lookupV(n) % valueV(r) % 
+//      std::cout << format("%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E\n") % r % lookupV(n) % valueV(r) % 
 
 //  double rc = constants()->rc();
 //  for (int n = 0; n < tableLength; n++) {
@@ -210,7 +283,7 @@ void TabulatedPotential::initLookupTable(const double _dr, const double maxSep) 
 //          lookupV(n) = 0.0;
 //          lookupdVdr(n) = 0.0;
 //      }
-//      cout << format("%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E\n") % r % lookupV(n) % valueV(r) % 
+//      std::cout << format("%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E%16.8E\n") % r % lookupV(n) % valueV(r) % 
 //          lookupdVdr(n) % valuedVdr(r) % (lookupV(n) - valueV(r)) % (lookupdVdr(n) - valuedVdr(r));
 //  }
 
@@ -223,8 +296,8 @@ void TabulatedPotential::initLookupTable(const double _dr, const double maxSep) 
  *  @see M.P. Allen and D.J. Tildesley, "Computer Simulation of Liquids" 
  *  (Oxford Press, London, England) p 144 (2004).
 ******************************************************************************/
-double TabulatedPotential::newtonGregory(const Array<double,1> &VTable, 
-        const TinyVector<double,2> &extVal, const double r) {
+double TabulatedPotential::newtonGregory(const blitz::Array<double,1> &VTable, 
+        const blitz::TinyVector<double,2> &extVal, const double r) {
 
     double rdr = r/dr;
     int k = int(rdr);
@@ -252,8 +325,8 @@ double TabulatedPotential::newtonGregory(const Array<double,1> &VTable,
  *  This is faster thant Newton-Gregory and may give similar results for a fine
  *  enough mesh.
 ******************************************************************************/
-double TabulatedPotential::direct(const Array<double,1> &VTable, 
-        const TinyVector<double,2> &extVal, const double r) {
+double TabulatedPotential::direct(const blitz::Array<double,1> &VTable, 
+        const blitz::TinyVector<double,2> &extVal, const double r) {
 
     int k = int(r/dr);
     if (k <= 0) 
@@ -329,11 +402,11 @@ HarmonicPotential::~HarmonicPotential() {
  *
  * We create particles at random locations close to the origin.
 ******************************************************************************/
-Array<dVec,1> HarmonicPotential::initialConfig(const Container *boxPtr, MTRand &random,
+blitz::Array<dVec,1> HarmonicPotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
 
     /* The particle configuration */
-    Array<dVec,1> initialPos(numParticles);
+    blitz::Array<dVec,1> initialPos(numParticles);
     initialPos = 0.0;
 
     for (int n = 0; n < numParticles; n++) {
@@ -617,11 +690,11 @@ dVec FixedAzizPotential::gradV(const dVec &pos) {
  * updateable positions.  These positions are stored as NDIM vectors and
  * proceeded by a letter 'U'.
 ******************************************************************************/
-Array<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, MTRand &random,
+blitz::Array<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
 
     /* The particle configuration */
-    Array<dVec,1> initialPos(1);
+    blitz::Array<dVec,1> initialPos(1);
     initialPos = 0.0;
 
     int locNumParticles = 0;    // Number of updateable particles
@@ -658,12 +731,13 @@ Array<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, MTRand 
     }
 
     /* Reset the file pointer */
-    communicate()->file("fixed")->stream().seekg(0, ios::beg);
+    communicate()->file("fixed")->stream().seekg(0, std::ios::beg);
 
     /* Return the initial Positions */
     return initialPos;
 }
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // FixedPositionLJPotential Class---------------------------------------------
@@ -767,7 +841,9 @@ double FixedPositionLJPotential::V(const dVec &r) {
     }
     return 4.0*epsilon*v;
 }
+#endif
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // HARD CYLINDER POTENTIAL CLASS ---------------------------------------------
@@ -788,7 +864,9 @@ HardCylinderPotential::HardCylinderPotential(const double radius) :
 ******************************************************************************/
 HardCylinderPotential::~HardCylinderPotential() {
 }
+#endif
 
+#if NDIM > 2
 /**************************************************************************//**
  *  Constructor.
  *
@@ -945,11 +1023,11 @@ double PlatedLJCylinderPotential::valued2Vdr2(const double r) {
  *
  * Return a set of initial positions inside the cylinder.
 ******************************************************************************/
-Array<dVec,1> PlatedLJCylinderPotential::initialConfig(const Container *boxPtr, MTRand &random,
+blitz::Array<dVec,1> PlatedLJCylinderPotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
 
     /* The particle configuration */
-    Array<dVec,1> initialPos(numParticles);
+    blitz::Array<dVec,1> initialPos(numParticles);
     initialPos = 0.0;
 
     /* We shift the radius inward to account for the excluded volume from the
@@ -1008,7 +1086,9 @@ Array<dVec,1> PlatedLJCylinderPotential::initialConfig(const Container *boxPtr, 
 
     return initialPos;
 }
+#endif
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // LJ CYLINDER POTENTIAL CLASS -----------------------------------------------
@@ -1024,7 +1104,7 @@ Array<dVec,1> PlatedLJCylinderPotential::initialConfig(const Container *boxPtr, 
  *  @see C. Chakravarty J. Phys. Chem. B,  101, 1878 (1997).
  *  @param radius The radius of the cylinder
 ******************************************************************************/
-LJCylinderPotential::LJCylinderPotential(const double radius) : 
+LJCylinderPotential::LJCylinderPotential(const double radius, const double density_, const double sigma_, const double epsilon_) : 
     PotentialBase(),
     TabulatedPotential()
 {
@@ -1033,7 +1113,7 @@ LJCylinderPotential::LJCylinderPotential(const double radius) :
     R = radius;
 
     /* The density of nitrogen in silicon nitride */
-    density = 0.078; // atoms / angstrom^3
+//    density = 0.078; // atoms / angstrom^3
 //  density = 0.008; // atoms / angstrom^3
 
     /* We define the values of epsilon and sigma for N and He */ 
@@ -1048,9 +1128,11 @@ LJCylinderPotential::LJCylinderPotential(const double radius) :
      * silicon-nitride, and thus only consider the Nitrogen.  We use a
      * Kiselov type model to extract the actual parameters.  We assume that
      * silicate and silicon-nitride are roughly equivalent. */
-    epsilon = 10.22;    // Kelvin
-    sigma   = 2.628;    // angstroms
-
+//    epsilon = 10.22;    // Kelvin
+//    sigma   = 2.628;    // angstroms
+    epsilon = epsilon_;
+    sigma = sigma_;
+    density = density_;	    
 //  epsilon = 32;   // Kelvin
 //  sigma   = 3.08; // angstroms
 
@@ -1188,11 +1270,11 @@ double LJCylinderPotential::valued2Vdr2(const double r) {
  *
  * Return a set of initial positions inside the cylinder.
 ******************************************************************************/
-Array<dVec,1> LJCylinderPotential::initialConfig(const Container *boxPtr, MTRand &random,
+blitz::Array<dVec,1> LJCylinderPotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
 
     /* The particle configuration */
-    Array<dVec,1> initialPos(numParticles);
+    blitz::Array<dVec,1> initialPos(numParticles);
     initialPos = 0.0;
 
     /* We shift the radius inward to account for the excluded volume from the
@@ -1251,6 +1333,7 @@ Array<dVec,1> LJCylinderPotential::initialConfig(const Container *boxPtr, MTRand
 
     return initialPos;
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -1258,6 +1341,7 @@ Array<dVec,1> LJCylinderPotential::initialConfig(const Container *boxPtr, MTRand
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
+#if NDIM > 2
 /**************************************************************************//**
  *  Constructor.
  *
@@ -1351,11 +1435,11 @@ double LJHourGlassPotential::V(const dVec &r) {
  * @param numParticles The initial number of particles
  * @return An array of classical particle positions
 ******************************************************************************/
-Array<dVec,1> LJHourGlassPotential::initialConfig1(const Container *boxPtr, 
+blitz::Array<dVec,1> LJHourGlassPotential::initialConfig1(const Container *boxPtr, 
         MTRand &random, const int numParticles) {
 
     /* The particle configuration */
-    Array<dVec,1> initialPos(numParticles);
+    blitz::Array<dVec,1> initialPos(numParticles);
     initialPos = 0.0;
 
     /* We shift the radius inward to account for the excluded volume from the
@@ -1426,11 +1510,11 @@ Array<dVec,1> LJHourGlassPotential::initialConfig1(const Container *boxPtr,
  * @param numParticles The initial number of particles
  * @return An array of classical particle positions
 ******************************************************************************/
-Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr, 
+blitz::Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr, 
         MTRand &random, const int numParticles) {
 
     /* The particle configuration */
-    Array<dVec,1> initialPos(numParticles);
+    blitz::Array<dVec,1> initialPos(numParticles);
     initialPos = 0.0;
 
     dVec pos;
@@ -1459,6 +1543,7 @@ Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr,
 
 	return initialPos;
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -1680,9 +1765,9 @@ SzalewiczPotential::SzalewiczPotential(const Container *_boxPtr) : PotentialBase
     
     tailV = -t1 - t2;
     tailV *= 315774.65;
-    cout << tailV << endl;
-    cout << t1*315774.65 << endl;
-    cout << t2*315774.65 << endl;
+    std::cout << tailV << std::endl;
+    std::cout << t1*315774.65 << std::endl;
+    std::cout << t2*315774.65 << std::endl;
 
     exit(0);
     */
@@ -1841,7 +1926,7 @@ double SzalewiczPotential::valued2Vdr2(const double _r) {
 }
 
 
-
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // EXCLUDED VOLUME CLASS -----------------------------------------------
@@ -1871,7 +1956,7 @@ Gasparini_1_Potential::~Gasparini_1_Potential() {
  *
  * Return initial positions to exclude volume in the simulation cell.
 ******************************************************************************/
-Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
+blitz::Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
         MTRand &random, const int numParticles) {
 
     /* label the lengths of the sides of the simulation cell */
@@ -1893,7 +1978,7 @@ Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
     int correctNum = int(numParticles-density*volExc);
 
     /* The particle configuration */
-    Array<dVec,1> initialPos(correctNum);
+    blitz::Array<dVec,1> initialPos(correctNum);
 
     /* get linear size per particle  */
     double initSide = pow((1.0*correctNum/(volTot-volExc)),-1.0/(1.0*NDIM));
@@ -2014,14 +2099,14 @@ Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
     }
     /* do we want to output the initial config to disk? */
     bool outToDisk = 1;
-    ofstream OF;
+    std::ofstream OF;
     if (outToDisk){
         OF.open("./OUTPUT/initialConfig.dat");
-        OF<<"# Cartesian Coordinates of initial Positions (X-Y-Z)"<<endl;
-        OF<<"# "<<lside[0]<<"\t"<<lside[1]<<"\t"<<lside[2]<<endl;
-        OF<<"# "<< excY <<"\t"<< excZ <<endl;
+        OF << "# Cartesian Coordinates of initial Positions (X-Y-Z)" << std::endl;
+        OF << "# "<< lside[0]<<"\t"<<lside[1]<<"\t"<<lside[2] << std::endl;
+        OF << "# "<< excY << "\t" << excZ << std::endl;
         for (int i=0; i< int(initialPos.size()); i++)
-            OF<<initialPos(i)(0)<< "\t"<<initialPos(i)(1)<<"\t"<<initialPos(i)(2)<<endl;
+            OF << initialPos(i)(0) << "\t" << initialPos(i)(1) << "\t" << initialPos(i)(2) << std::endl;
         OF.close();
     }
     
@@ -2030,14 +2115,15 @@ Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
 /*************************************************************************//**
  *  Returns the exclusion lengths ay and az
 ******************************************************************************/
-Array<double,1> Gasparini_1_Potential::getExcLen(){
+blitz::Array<double,1> Gasparini_1_Potential::getExcLen(){
 
-    Array<double, 1> excLens(2);
+    blitz::Array<double, 1> excLens(2);
     excLens(0) = excY; // was ay
     excLens(1) = excZ; // was az
     
     return (excLens);
 }
+#endif
 
 
 // ---------------------------------------------------------------------------
@@ -2407,7 +2493,7 @@ double HardRodPotential::V(const dVec &sep1, const dVec &sep2)
     double t1 = -d1*d2/(2.0*constants()->lambda()*constants()->tau());
 
     /* communicate()->file("debug")->stream() << sep1[0] << "\t" << sep2[0] << "\t" */ 
-    /*     << -log(1.0-exp(t1)) << endl; */
+    /*     << -log(1.0-exp(t1)) << std::endl; */
 
     return (-log(1.0 - exp(t1)));
 }
@@ -2462,6 +2548,7 @@ double HardRodPotential::dVdtau(const dVec &sep1, const dVec &sep2)
     return ((0.5*t1/(exp(t2)-1.0))/(constants()->lambda()*constants()->tau()*constants()->tau()));
 }
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // GraphenePotential Class----------------------------------------------------
@@ -2568,11 +2655,11 @@ double GraphenePotential::V(const dVec &r) {
  *
  * We create particles at random locations above the graphene sheet.
 ******************************************************************************/
-Array<dVec,1> GraphenePotential::initialConfig(const Container *boxPtr, MTRand &random,
+blitz::Array<dVec,1> GraphenePotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
 
     /* The particle configuration */
-    Array<dVec,1> initialPos(numParticles);
+    blitz::Array<dVec,1> initialPos(numParticles);
     initialPos = 0.0;
     double initSideCube = 1.0*numParticles;
     
@@ -2644,7 +2731,9 @@ Array<dVec,1> GraphenePotential::initialConfig(const Container *boxPtr, MTRand &
     }
     return initialPos;
 }
+#endif
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // GrapheneLUTPotential Class----------------------------------------------------
@@ -2747,7 +2836,7 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
     /* } */
 
     /* Create a unique list of all g-vector magnitudes */
-    set<double> uniquegMag;
+    std::set<double> uniquegMag;
 
     /* This gives us the upper half-plane */
     uniquegMag.insert(0.0);
@@ -2945,10 +3034,10 @@ dVec GrapheneLUTPotential::gradV(const dVec &r) {
  *
  * We create particles at random locations above the graphene sheet.
 ******************************************************************************/
-Array<dVec,1> GrapheneLUTPotential::initialConfig(const Container *boxPtr, MTRand &random,
+blitz::Array<dVec,1> GrapheneLUTPotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
     /* The particle configuration */
-    Array<dVec,1> initialPos(numParticles);
+    blitz::Array<dVec,1> initialPos(numParticles);
     initialPos = 0.0;
     
     int Nlayer = round(boxPtr->side[0]*boxPtr->side[1]/a1x/a1y/4);
@@ -2992,8 +3081,10 @@ Array<dVec,1> GrapheneLUTPotential::initialConfig(const Container *boxPtr, MTRan
     }
     return initialPos;
 }
+#endif
 
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // GrapheneLUT3DPotential Class---------------------------------------------
@@ -3003,7 +3094,7 @@ Array<dVec,1> GrapheneLUTPotential::initialConfig(const Container *boxPtr, MTRan
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-GrapheneLUT3DPotential::GrapheneLUT3DPotential (string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
+GrapheneLUT3DPotential::GrapheneLUT3DPotential (std::string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
 
     static auto const aflags = boost::archive::no_header | boost::archive::no_tracking;
     /* get a local copy of the system size */
@@ -3137,13 +3228,13 @@ double GrapheneLUT3DPotential::grad2V(const dVec &r) {
  *
  * We create particles at random locations above the graphene sheet.
 ******************************************************************************/
-Array<dVec,1> GrapheneLUT3DPotential::initialConfig1(const Container *boxPtr, MTRand &random,
+blitz::Array<dVec,1> GrapheneLUT3DPotential::initialConfig1(const Container *boxPtr, MTRand &random,
         const int numParticles) {
     //FIXME We initialize on grid here above zmin, should I do C_1/3 here. I think not because might
     // be hard to get out of if other configurations are more favorable
 
     /* The particle configuration */
-    Array<dVec,1> initialPos(numParticles);
+    blitz::Array<dVec,1> initialPos(numParticles);
     initialPos = 0.0;
 
     /* Get the average inter-particle separation in the accessible volume. */
@@ -3201,14 +3292,14 @@ Array<dVec,1> GrapheneLUT3DPotential::initialConfig1(const Container *boxPtr, MT
     }
 
     /* Output for plotting in python */
-    /* cout << "np.array(["; */
+    /* std::cout << "np.array(["; */
     /* for (int n = 0; n < numParticles; n++)  { */
-    /*     cout << "["; */
+    /*     std::cout << "["; */
     /*     for (int i = 0; i < NDIM-1; i++) */
-    /*         cout << initialPos(n)[i] << ", "; */
-    /*     cout << initialPos(n)[NDIM-1] << "]," << endl; */
+    /*         std::cout << initialPos(n)[i] << ", "; */
+    /*     std::cout << initialPos(n)[NDIM-1] << "]," << std::endl; */
     /* } */
-    /* cout << "])" << endl; */
+    /* std::cout << "])" << std::endl; */
     /* exit(-1); */
 
     return initialPos;
@@ -3219,20 +3310,23 @@ Array<dVec,1> GrapheneLUT3DPotential::initialConfig1(const Container *boxPtr, MT
  *
  * We create particles at random locations above the graphene sheet.
 ******************************************************************************/
-Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTRand &random,
+blitz::Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
     
     /* The particle configuration */
-    Array<dVec,1> initialPos(numParticles);
+    blitz::Array<dVec,1> initialPos(numParticles);
     initialPos = 0.0;
 
     dVec side_; 
     side_ = boxPtr->side;
 
     /* The first particle is randomly placed inside the box */
-    for (int i = 0; i < NDIM-1; i++)
-        initialPos(0)[i] = side_[i]*(-0.5 + random.rand());
-    initialPos(0)[NDIM-1] = -0.5*side_[NDIM-1]+zmin + (zWall-zmin)*random.rand();
+    for (int i = 0; i < NDIM-1; i++){
+        if (numParticles ==0)
+            break;
+        initialPos(0)[i] = side_[i]*(-0.5 + random.rand());}
+    if (numParticles != 0)
+        initialPos(0)[NDIM-1] = -0.5*side_[NDIM-1]+zmin + (zWall-zmin)*random.rand();
 
     double hardCoreRadius = 1.00;
 
@@ -3271,25 +3365,27 @@ Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTR
     }
 
     if (numAttempts == maxNumAttempts) {
-        cerr << "Could not construct a valid initial configuration." << endl;
+        std::cerr << "Could not construct a valid initial configuration." << std::endl;
         exit(EXIT_FAILURE);
     }
 
     /* Output configuration to terminal suitable for plotting with python */
-    /* cout << "np.array(["; */
+    /* std::cout << "np.array(["; */
     /* for (int n = 0; n < numParticles; n++)  { */
-    /*     cout << "["; */
+    /*     std::cout << "["; */
     /*     for (int i = 0; i < NDIM-1; i++) */
-    /*         cout << initialPos(n)[i] << ", "; */
-    /*     cout << initialPos(n)[NDIM-1] << "]," << endl; */
+    /*         std::cout << initialPos(n)[i] << ", "; */
+    /*     std::cout << initialPos(n)[NDIM-1] << "]," << std::endl; */
     /* } */
-    /* cout << "])" << endl; */
+    /* std::cout << "])" << std::endl; */
     /* exit(EXIT_FAILURE); */
 
     return initialPos;
 }
+#endif
 
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // GrapheneLUT3DPotentialGenerate Class---------------------------------------
@@ -3337,7 +3433,7 @@ GrapheneLUT3DPotentialGenerate::GrapheneLUT3DPotentialGenerate (
     auto [ V3d, gradV3d_x, gradV3d_y, gradV3d_z, grad2V3d, xy_x, xy_y, LUTinfo ] = 
         get_V3D_all(strain,sigma,epsilon,xres,yres,zres,zmax);
 
-    string graphenelut3d_file_prefix = str( format( "graphene_%.2f_%.2f_%d_%d_%d_") %
+    std::string graphenelut3d_file_prefix = str( format( "graphene_%.2f_%.2f_%d_%d_%d_") %
             strain % zmax % xres % yres % zres );
 
     // create and open a character archive for output
@@ -3500,13 +3596,13 @@ double GrapheneLUT3DPotentialGenerate::grad2Vg_64(
 
 double GrapheneLUT3DPotentialGenerate::V_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
-        TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
-        Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
+        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
+        blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    TinyVector <double,2> g;
+    blitz::TinyVector <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;    
     double _V = 0.0;
     _V += 2*Vz_64(z, sigma);
@@ -3556,13 +3652,13 @@ double GrapheneLUT3DPotentialGenerate::V_64(
 
 double GrapheneLUT3DPotentialGenerate::gradV_x_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
-        TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
-        Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
+        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
+        blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    TinyVector <double,2> g;
+    blitz::TinyVector <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
     double _V = 0.0;
     _V += 2*gradVz_x_64(z, sigma);
@@ -3607,13 +3703,13 @@ double GrapheneLUT3DPotentialGenerate::gradV_x_64(
 
 double GrapheneLUT3DPotentialGenerate::gradV_y_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
-        TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
-        Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
+        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
+        blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    TinyVector <double,2> g;
+    blitz::TinyVector <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
     double _V = 0.0;
     _V += 2*gradVz_y_64(z, sigma);
@@ -3658,13 +3754,13 @@ double GrapheneLUT3DPotentialGenerate::gradV_y_64(
 
 double GrapheneLUT3DPotentialGenerate::gradV_z_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
-        TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
-        Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
+        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
+        blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    TinyVector <double,2> g;
+    blitz::TinyVector <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
     double _V = 0.0;
     _V += 2*gradVz_z_64(z, sigma);
@@ -3709,13 +3805,13 @@ double GrapheneLUT3DPotentialGenerate::gradV_z_64(
 
 double GrapheneLUT3DPotentialGenerate::grad2V_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
-        TinyVector<double,2> g_m, TinyVector<double,2> g_n, Array<int,1> g_i_array,
-        Array<int,1> g_j_array, Array<double,1> g_magnitude_array ) {
+        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
+        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
+        blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    TinyVector <double,2> g;
+    blitz::TinyVector <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
     double _V = 0.0;
     _V += 2*grad2Vz_64(z, sigma);
@@ -3758,99 +3854,99 @@ double GrapheneLUT3DPotentialGenerate::grad2V_64(
     return pf * _V;
 }
 
-std::tuple< TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>,
-    TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>
+std::tuple< blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
+    blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors() {
     return get_graphene_vectors(0.00);
 }
 
-std::tuple< TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>,
-    TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>
+std::tuple< blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
+    blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors( double strain ) {
     return get_graphene_vectors(strain, 1.42, 0.165);
 }
 
-std::tuple< TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>,
-    TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>
+std::tuple< blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
+    blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors(
         double strain, double carbon_carbon_distance, double poisson_ratio) {
-    Array<double,2> R_strain(2,2);
+    blitz::Array<double,2> R_strain(2,2);
     R_strain = -strain*poisson_ratio, 0,
                                  0, strain;
 
-    TinyVector <double,2> A_m_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
-    TinyVector <double,2> A_m( (carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
+    blitz::TinyVector <double,2> A_m_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
+    blitz::TinyVector <double,2> A_m( (carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
             (carbon_carbon_distance/2)*3*(1 + strain) ); //with strain
     
-    TinyVector <double,2> A_n_strain0( -(carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
-    TinyVector <double,2> A_n( -(carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
+    blitz::TinyVector <double,2> A_n_strain0( -(carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
+    blitz::TinyVector <double,2> A_n( -(carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
             (carbon_carbon_distance/2)*3*(1 + strain) ); //with strain
 
     //FIXME might have a problem here if A_m_60_strain0 is passed by reference
-    TinyVector <double,2> A_m_60_strain0( carbon_carbon_distance*sqrt(3) , 0 ); // A_m_strain0 rotated 60 degrees to sit on x-axis
-    TinyVector <double,2> A_m_60 = A_m_60_strain0; // rotated with strain
+    blitz::TinyVector <double,2> A_m_60_strain0( carbon_carbon_distance*sqrt(3) , 0 ); // A_m_strain0 rotated 60 degrees to sit on x-axis
+    blitz::TinyVector <double,2> A_m_60 = A_m_60_strain0; // rotated with strain
     A_m_60(0) += R_strain(0,0)*A_m_60_strain0(0) + R_strain(0,1)*A_m_60_strain0(1);
     A_m_60(1) += R_strain(1,0)*A_m_60_strain0(0) + R_strain(1,1)*A_m_60_strain0(1);
 
-    TinyVector <double,2> A_n_60_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); // A_n_strain0 rotated 60
-    TinyVector <double,2> A_n_60 = A_n_60_strain0; // rotated with strain
+    blitz::TinyVector <double,2> A_n_60_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); // A_n_strain0 rotated 60
+    blitz::TinyVector <double,2> A_n_60 = A_n_60_strain0; // rotated with strain
     A_n_60(0) += R_strain(0,0)*A_n_60_strain0(0) + R_strain(0,1)*A_n_60_strain0(1);
     A_n_60(1) += R_strain(1,0)*A_n_60_strain0(0) + R_strain(1,1)*A_n_60_strain0(1);
 
 
     // basis vectors
-    TinyVector <double,2> b_1( 0, carbon_carbon_distance*(1 + strain) );
-    TinyVector <double,2> b_2( 0, carbon_carbon_distance*2*(1 + strain) );
+    blitz::TinyVector <double,2> b_1( 0, carbon_carbon_distance*(1 + strain) );
+    blitz::TinyVector <double,2> b_2( 0, carbon_carbon_distance*2*(1 + strain) );
 
     // reciprocal lattice vectors
-    TinyVector <double,2> g_m( 3/(1 - strain*poisson_ratio) , sqrt(3)/(1 + strain) );
+    blitz::TinyVector <double,2> g_m( 3/(1 - strain*poisson_ratio) , sqrt(3)/(1 + strain) );
     g_m *= (2*M_PI/3/carbon_carbon_distance);
-    TinyVector <double,2> g_n( -g_m[0] , g_m[1] );
+    blitz::TinyVector <double,2> g_n( -g_m[0] , g_m[1] );
 
-    TinyVector <double,2> g_m_60( sqrt(3)/(1 - strain*poisson_ratio), -1/(1 + strain) );
+    blitz::TinyVector <double,2> g_m_60( sqrt(3)/(1 - strain*poisson_ratio), -1/(1 + strain) );
     g_m_60 *= (2*M_PI/3/carbon_carbon_distance);
-    TinyVector <double,2> g_n_60( 0 , 1/(1 + strain) );
+    blitz::TinyVector <double,2> g_n_60( 0 , 1/(1 + strain) );
     g_n_60 *= (4*M_PI/3/carbon_carbon_distance);
 
     return { A_m_60, A_n_60, b_1, b_2, g_m_60, g_n_60 };
 }
 
-std::tuple< TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>,
-    TinyVector<double,2>, TinyVector<double,2>, TinyVector<double,2>
+std::tuple< blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
+    blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors_old(
         double strain, double carbon_carbon_distance, double poisson_ratio) {
-    TinyVector <double,2> A_m_old( sqrt(3)*(4 + strain - 3*strain*poisson_ratio) ,
+     blitz::TinyVector <double,2> A_m_old( sqrt(3)*(4 + strain - 3*strain*poisson_ratio) ,
             3*(4 + 3*strain - strain*poisson_ratio) ); // wrong value previously used
     A_m_old *= (carbon_carbon_distance/8);
-    TinyVector <double,2> A_n_old( sqrt(3)*(-4 - strain + 3*strain*poisson_ratio),
+    blitz::TinyVector <double,2> A_n_old( sqrt(3)*(-4 - strain + 3*strain*poisson_ratio),
             3*(4 + 3*strain - strain*poisson_ratio) ); // wrong value previously used
     A_n_old *= (carbon_carbon_distance/8);
 
     // basis vectors
-    TinyVector <double,2> b_1( 0 , carbon_carbon_distance*(1 + strain) );
-    TinyVector <double,2> b_2( 0 , carbon_carbon_distance*2*(1 + strain) );
+    blitz::TinyVector <double,2> b_1( 0 , carbon_carbon_distance*(1 + strain) );
+    blitz::TinyVector <double,2> b_2( 0 , carbon_carbon_distance*2*(1 + strain) );
 
     // reciprocal lattice vectors
-    TinyVector <double,2> g_m_old( sqrt(3)*(4 + 3*strain - strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)),
+    blitz::TinyVector <double,2> g_m_old( sqrt(3)*(4 + 3*strain - strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)),
                             (4 + strain - 3*strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)) );
     g_m_old *= (8*M_PI/3/carbon_carbon_distance);
-    TinyVector <double,2> g_n_old( -g_m_old[0], g_m_old[1] );
+    blitz::TinyVector <double,2> g_n_old( -g_m_old[0], g_m_old[1] );
 
     return { A_m_old, A_n_old, b_1, b_2, g_m_old, g_n_old };
 }
 
-std::tuple< Array<int,1>, Array<int,1>, Array<double,1> >
+std::tuple< blitz::Array<int,1>, blitz::Array<int,1>, blitz::Array<double,1> >
 GrapheneLUT3DPotentialGenerate::get_g_magnitudes( 
-        TinyVector<double,2> g_m, TinyVector<double,2> g_n ) {
+        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n ) {
     int number_of_g_i = 200;
     int number_of_g_j = 200;
     
     int size_of_arrays = pow(number_of_g_i + number_of_g_j + 1,2);
-    Array<double,1> g_magnitude_array(size_of_arrays);
-    Array<int,1> g_i_array(size_of_arrays);
-    Array<int,1> g_j_array(size_of_arrays);
+    blitz::Array<double,1> g_magnitude_array(size_of_arrays);
+    blitz::Array<int,1> g_i_array(size_of_arrays);
+    blitz::Array<int,1> g_j_array(size_of_arrays);
 
-    TinyVector<double,2> g;
+    blitz::TinyVector<double,2> g;
     int k = 0;
     for (int g_i = -number_of_g_i; g_i < number_of_g_i + 1; g_i++) {
         for (int g_j = -number_of_g_j; g_j < number_of_g_j + 1; g_j++){
@@ -3876,9 +3972,9 @@ GrapheneLUT3DPotentialGenerate::get_g_magnitudes(
     // FIXME may need to pass reference to g_magnitude_array in labmda function
     // i.e. [&g_magnitude_array](...)
     
-    Array<double,1> g_magnitude_array2(size_of_arrays);
-    Array<int,1> g_i_array2(size_of_arrays);
-    Array<int,1> g_j_array2(size_of_arrays);
+    blitz::Array<double,1> g_magnitude_array2(size_of_arrays);
+    blitz::Array<int,1> g_i_array2(size_of_arrays);
+    blitz::Array<int,1> g_j_array2(size_of_arrays);
     
     for (int i = 0; i < size_of_arrays; i++) {
         int p = sort_indeces[i];
@@ -3892,12 +3988,12 @@ GrapheneLUT3DPotentialGenerate::get_g_magnitudes(
 
 
 void GrapheneLUT3DPotentialGenerate::calculate_V3D_64(
-        Array<double,3> V3D, Array<double,2> xy_x, Array<double,2> xy_y,
-        Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
-        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
-        Array<int,1> g_i_array, Array<int,1> g_j_array,
-        Array<double,1> g_magnitude_array ) {
+        blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
+        blitz::Array<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
+        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
+        blitz::Array<double,1> g_magnitude_array ) {
     double x;
     double y;
     double z;
@@ -3915,12 +4011,12 @@ void GrapheneLUT3DPotentialGenerate::calculate_V3D_64(
 }
 
 void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_x_64(
-        Array<double,3> V3D, Array<double,2> xy_x, Array<double,2> xy_y,
-        Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
-        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
-        Array<int,1> g_i_array, Array<int,1> g_j_array,
-        Array<double,1> g_magnitude_array ) {
+        blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
+        blitz::Array<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
+        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
+        blitz::Array<double,1> g_magnitude_array ) {
     double x;
     double y;
     double z;
@@ -3937,12 +4033,12 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_x_64(
 }
 
 void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_y_64(
-        Array<double,3> V3D, Array<double,2> xy_x, Array<double,2> xy_y,
-        Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
-        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
-        Array<int,1> g_i_array, Array<int,1> g_j_array,
-        Array<double,1> g_magnitude_array ) {
+        blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
+        blitz::Array<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
+        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
+        blitz::Array<double,1> g_magnitude_array ) {
     double x;
     double y;
     double z;
@@ -3959,12 +4055,12 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_y_64(
 }
 
 void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_z_64(
-        Array<double,3> V3D, Array<double,2> xy_x, Array<double,2> xy_y,
-        Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
-        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
-        Array<int,1> g_i_array, Array<int,1> g_j_array,
-        Array<double,1> g_magnitude_array ) {
+        blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
+        blitz::Array<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
+        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
+        blitz::Array<double,1> g_magnitude_array ) {
     double x;
     double y;
     double z;
@@ -3981,12 +4077,12 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_z_64(
 }
 
 void GrapheneLUT3DPotentialGenerate::calculate_grad2V3D_64(
-        Array<double,3> V3D, Array<double,2> xy_x, Array<double,2> xy_y,
-        Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, TinyVector<double,2> b_1, TinyVector<double,2> b_2,
-        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
-        Array<int,1> g_i_array, Array<int,1> g_j_array,
-        Array<double,1> g_magnitude_array ) {
+        blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
+        blitz::Array<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
+        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
+        blitz::Array<double,1> g_magnitude_array ) {
     double x;
     double y;
     double z;
@@ -4004,10 +4100,10 @@ void GrapheneLUT3DPotentialGenerate::calculate_grad2V3D_64(
 
 std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_min_V_min(double x, double y,
         double sigma, double epsilon, double area_lattice,
-        TinyVector<double,2> b_1, TinyVector<double,2> b_2,
-        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
-        Array<int,1> g_i_array, Array<int,1> g_j_array,
-        Array<double,1> g_magnitude_array ) {
+        blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
+        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
+        blitz::Array<double,1> g_magnitude_array ) {
 
     double z_min_limit = 1.0;
     double z_max_limit = 5.0;
@@ -4024,13 +4120,13 @@ std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_min_V_min(double
 
 std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_V_to_find(
         double sigma, double epsilon, double area_lattice,
-        TinyVector<double,2> b_1, TinyVector<double,2> b_2,
-        TinyVector<double,2> g_m, TinyVector<double,2> g_n,
-        Array<int,1> g_i_array, Array<int,1> g_j_array,
-        Array<double,1> g_magnitude_array ) {
+        blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
+        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
+        blitz::Array<double,1> g_magnitude_array ) {
     double V_to_find = 10000.0;
-    TinyVector<double,2> center_of_hexagon(0.0, 0.0);
-    TinyVector<double,2> above_A_site(b_1[0],b_1[1]);
+    blitz::TinyVector<double,2> center_of_hexagon(0.0, 0.0);
+    blitz::TinyVector<double,2> above_A_site(b_1[0],b_1[1]);
     double x = center_of_hexagon(0);
     double y = center_of_hexagon(1);
 
@@ -4057,7 +4153,7 @@ std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_V_to_find(
     return { _z_V_to_find, _found_V };
 }
 
-Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
+blitz::Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
         double strain, double sigma, double epsilon, int x_res, int y_res,
         int z_res, double z_min, double z_max ) {
     auto [A_m, A_n, b_1, b_2, g_m, g_n] = get_graphene_vectors(strain);
@@ -4073,7 +4169,7 @@ Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
     //double cell_angle_gamma_degrees = cell_angle_gamma*180/M_PI;
     double area_lattice = cell_length_a * cell_length_b * sin(cell_angle_gamma);
     
-    Array<double,1> uc_x_range(x_res);
+    blitz::Array<double,1> uc_x_range(x_res);
     double uc_x_min = 0.0;
     double uc_x_max = cell_length_a;
     double delta_uc_x = (uc_x_max - uc_x_min) / (x_res - 1);
@@ -4085,7 +4181,7 @@ Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
 
     //double uc_dx = uc_x_range(1) - uc_x_range(0);
     
-    Array<double,1> uc_y_range(y_res);
+    blitz::Array<double,1> uc_y_range(y_res);
     double uc_y_min = 0.0;
     double uc_y_max = cell_length_b;
     double delta_uc_y = (uc_y_max - uc_y_min) / (y_res - 1);
@@ -4097,9 +4193,9 @@ Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
     
     //double uc_dy = uc_y_range(1) - uc_y_range(0);
 
-    Array<double,2> uc_xy_x(x_res,y_res);
+    blitz::Array<double,2> uc_xy_x(x_res,y_res);
     uc_xy_x = 0;
-    Array<double,2> uc_xy_y(x_res,y_res);
+    blitz::Array<double,2> uc_xy_y(x_res,y_res);
     uc_xy_y = 0;
 
     for (int i=0; i < x_res; ++i) {
@@ -4110,13 +4206,13 @@ Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
     }
     
 
-    Array<double,2> B(2,2);
+    blitz::Array<double,2> B(2,2);
     B = 1, cos(cell_angle_gamma),
         0, sin(cell_angle_gamma); //transfer to Cartesian
     
     // Set up transfer matrices to transfer from unit cell coordinates to Cartesian coordinates
     //A = inv(B);
-    Array<double,2> A(2,2);
+    blitz::Array<double,2> A(2,2);
     //A = sin(cell_angle_gamma), -cos(cell_angle_gamma),
     //                        0, 1; 
     //A /= sin(cell_angle_gamma);
@@ -4124,8 +4220,8 @@ Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
         0, 1/sin(cell_angle_gamma); //transfer to unit cell coords
     
 
-    Array<double,2> xy_x(x_res,y_res);
-    Array<double,2> xy_y(x_res,y_res);
+    blitz::Array<double,2> xy_x(x_res,y_res);
+    blitz::Array<double,2> xy_y(x_res,y_res);
 
     for (int i=0; i < x_res; ++i) {
         for(int j=0; j < y_res; ++j) {
@@ -4138,7 +4234,7 @@ Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
     }
     
 
-    Array<double,1> z_range(z_res);
+    blitz::Array<double,1> z_range(z_res);
     double delta_z = (z_max - z_min) / (z_res - 1);
 
     for (int i=0; i < z_res - 1; ++i) {
@@ -4148,14 +4244,14 @@ Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
 
     //double dz = z_range(1) - z_range(0);
 
-    Array<double,3> _V3D(x_res,y_res,z_res);
+    blitz::Array<double,3> _V3D(x_res,y_res,z_res);
     _V3D = 0;
     calculate_V3D_64(_V3D,xy_x,xy_y,z_range,sigma,epsilon,area_lattice,b_1,b_2,
             g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
     return _V3D;
 }
 
-std::pair<Array<double,3> , Array<double,1>> GrapheneLUT3DPotentialGenerate::get_V3D(
+std::pair<blitz::Array<double,3> , blitz::Array<double,1>> GrapheneLUT3DPotentialGenerate::get_V3D(
         double strain, double sigma, double epsilon, int x_res, int y_res,
         int z_res, double z_max ) {
     auto [A_m, A_n, b_1, b_2, g_m, g_n] = get_graphene_vectors(strain);
@@ -4168,7 +4264,7 @@ std::pair<Array<double,3> , Array<double,1>> GrapheneLUT3DPotentialGenerate::get
     //double cell_angle_gamma_degrees = cell_angle_gamma*180/M_PI;
     double area_lattice = cell_length_a * cell_length_b * sin(cell_angle_gamma);
     
-    Array<double,1> uc_x_range(x_res);
+    blitz::Array<double,1> uc_x_range(x_res);
     double uc_x_min = 0.0;
     double uc_x_max = cell_length_a;
     double delta_uc_x = (uc_x_max - uc_x_min) / (x_res - 1);
@@ -4180,7 +4276,7 @@ std::pair<Array<double,3> , Array<double,1>> GrapheneLUT3DPotentialGenerate::get
 
     double uc_dx = uc_x_range(1) - uc_x_range(0);
     
-    Array<double,1> uc_y_range(y_res);
+    blitz::Array<double,1> uc_y_range(y_res);
     double uc_y_min = 0.0;
     double uc_y_max = cell_length_b;
     double delta_uc_y = (uc_y_max - uc_y_min) / (y_res - 1);
@@ -4192,9 +4288,9 @@ std::pair<Array<double,3> , Array<double,1>> GrapheneLUT3DPotentialGenerate::get
     
     double uc_dy = uc_y_range(1) - uc_y_range(0);
 
-    Array<double,2> uc_xy_x(x_res,y_res);
+    blitz::Array<double,2> uc_xy_x(x_res,y_res);
     uc_xy_x = 0;
-    Array<double,2> uc_xy_y(x_res,y_res);
+    blitz::Array<double,2> uc_xy_y(x_res,y_res);
     uc_xy_y = 0;
 
     for (int i=0; i < x_res; ++i) {
@@ -4205,13 +4301,13 @@ std::pair<Array<double,3> , Array<double,1>> GrapheneLUT3DPotentialGenerate::get
     }
     
 
-    Array<double,2> B(2,2);
+    blitz::Array<double,2> B(2,2);
     B = 1, cos(cell_angle_gamma),
         0, sin(cell_angle_gamma); //transfer to Cartesian
     
     // Set up transfer matrices to transfer from unit cell coordinates to Cartesian coordinates
     //A = inv(B);
-    Array<double,2> A(2,2);
+    blitz::Array<double,2> A(2,2);
     //A = sin(cell_angle_gamma), -cos(cell_angle_gamma),
     //                        0, 1; 
     //A /= sin(cell_angle_gamma);
@@ -4219,8 +4315,8 @@ std::pair<Array<double,3> , Array<double,1>> GrapheneLUT3DPotentialGenerate::get
         0, 1/sin(cell_angle_gamma); //transfer to unit cell coords
     
 
-    Array<double,2> xy_x(x_res,y_res);
-    Array<double,2> xy_y(x_res,y_res);
+    blitz::Array<double,2> xy_x(x_res,y_res);
+    blitz::Array<double,2> xy_y(x_res,y_res);
 
     for (int i=0; i < x_res; ++i) {
         for(int j=0; j < y_res; ++j) {
@@ -4234,7 +4330,7 @@ std::pair<Array<double,3> , Array<double,1>> GrapheneLUT3DPotentialGenerate::get
     
     auto [z_min, V_z_min] = get_z_V_to_find(sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
 
-    Array<double,1> z_range(z_res);
+    blitz::Array<double,1> z_range(z_res);
     double delta_z = (z_max - z_min) / (z_res - 1);
 
     for (int i=0; i < z_res - 1; ++i) {
@@ -4244,20 +4340,20 @@ std::pair<Array<double,3> , Array<double,1>> GrapheneLUT3DPotentialGenerate::get
 
     double dz = z_range(1) - z_range(0);
 
-    Array<double,3> _V3D(x_res,y_res,z_res);
+    blitz::Array<double,3> _V3D(x_res,y_res,z_res);
     _V3D = 0;
     calculate_V3D_64(_V3D,xy_x,xy_y,z_range,sigma,epsilon,area_lattice,b_1,b_2,
             g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
 
-    Array<double,1> _LUTinfo(12);
+    blitz::Array<double,1> _LUTinfo(12);
     _LUTinfo = A(0,0), A(0,1), A(1,0), A(1,1), uc_dx, uc_dy, dz, cell_length_a,
              cell_length_b, z_min, z_max, V_z_min;
 
     return { _V3D, _LUTinfo };
 }
 
-std::tuple< Array<double,3>, Array<double,3>, Array<double,3>, Array<double,3>,
-    Array<double,3>, Array<double,2>, Array<double,2>, Array<double,1>
+std::tuple< blitz::Array<double,3>, blitz::Array<double,3>, blitz::Array<double,3>, blitz::Array<double,3>,
+    blitz::Array<double,3>, blitz::Array<double,2>, blitz::Array<double,2>, blitz::Array<double,1>
     > GrapheneLUT3DPotentialGenerate::get_V3D_all(
         double strain, double sigma, double epsilon, int x_res, int y_res,
         int z_res, double z_max ) {
@@ -4272,7 +4368,7 @@ std::tuple< Array<double,3>, Array<double,3>, Array<double,3>, Array<double,3>,
     //double cell_angle_gamma_degrees = cell_angle_gamma*180/M_PI;
     double area_lattice = cell_length_a * cell_length_b * sin(cell_angle_gamma);
     
-    Array<double,1> uc_x_range(x_res);
+    blitz::Array<double,1> uc_x_range(x_res);
     double uc_x_min = 0.0;
     double uc_x_max = cell_length_a;
     double delta_uc_x = (uc_x_max - uc_x_min) / (x_res - 1);
@@ -4284,7 +4380,7 @@ std::tuple< Array<double,3>, Array<double,3>, Array<double,3>, Array<double,3>,
 
     double uc_dx = uc_x_range(1) - uc_x_range(0);
     
-    Array<double,1> uc_y_range(y_res);
+    blitz::Array<double,1> uc_y_range(y_res);
     double uc_y_min = 0.0;
     double uc_y_max = cell_length_b;
     double delta_uc_y = (uc_y_max - uc_y_min) / (y_res - 1);
@@ -4296,9 +4392,9 @@ std::tuple< Array<double,3>, Array<double,3>, Array<double,3>, Array<double,3>,
 
     double uc_dy = uc_y_range(1) - uc_y_range(0);
     
-    Array<double,2> uc_xy_x(x_res,y_res);
+    blitz::Array<double,2> uc_xy_x(x_res,y_res);
     uc_xy_x = 0;
-    Array<double,2> uc_xy_y(x_res,y_res);
+    blitz::Array<double,2> uc_xy_y(x_res,y_res);
     uc_xy_y = 0;
 
     for (int i=0; i < x_res; ++i) {
@@ -4309,13 +4405,13 @@ std::tuple< Array<double,3>, Array<double,3>, Array<double,3>, Array<double,3>,
     }
     
 
-    Array<double,2> B(2,2);
+    blitz::Array<double,2> B(2,2);
     B = 1, cos(cell_angle_gamma),
         0, sin(cell_angle_gamma); //transfer to Cartesian
     
     // Set up transfer matrices to transfer from unit cell coordinates to Cartesian coordinates
     //A = inv(B);
-    Array<double,2> A(2,2);
+    blitz::Array<double,2> A(2,2);
     //A = sin(cell_angle_gamma), -cos(cell_angle_gamma),
     //                        0, 1; 
     //A /= sin(cell_angle_gamma);
@@ -4323,8 +4419,8 @@ std::tuple< Array<double,3>, Array<double,3>, Array<double,3>, Array<double,3>,
         0, 1/sin(cell_angle_gamma); //transfer to unit cell coords
     
 
-    Array<double,2> xy_x(x_res,y_res);
-    Array<double,2> xy_y(x_res,y_res);
+    blitz::Array<double,2> xy_x(x_res,y_res);
+    blitz::Array<double,2> xy_y(x_res,y_res);
 
     for (int i=0; i < x_res; ++i) {
         for(int j=0; j < y_res; ++j) {
@@ -4338,7 +4434,7 @@ std::tuple< Array<double,3>, Array<double,3>, Array<double,3>, Array<double,3>,
     
     auto [z_min, V_z_min] = get_z_V_to_find(sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
 
-    Array<double,1> z_range(z_res);
+    blitz::Array<double,1> z_range(z_res);
     double delta_z = (z_max - z_min) / (z_res - 1);
 
     for (int i=0; i < z_res - 1; ++i) {
@@ -4348,11 +4444,11 @@ std::tuple< Array<double,3>, Array<double,3>, Array<double,3>, Array<double,3>,
 
     double dz = z_range(1) - z_range(0);
 
-    Array<double,3> _V3D(x_res,y_res,z_res);
-    Array<double,3> _gradV3D_x(x_res,y_res,z_res);
-    Array<double,3> _gradV3D_y(x_res,y_res,z_res);
-    Array<double,3> _gradV3D_z(x_res,y_res,z_res);
-    Array<double,3> _grad2V3D(x_res,y_res,z_res);
+    blitz::Array<double,3> _V3D(x_res,y_res,z_res);
+    blitz::Array<double,3> _gradV3D_x(x_res,y_res,z_res);
+    blitz::Array<double,3> _gradV3D_y(x_res,y_res,z_res);
+    blitz::Array<double,3> _gradV3D_z(x_res,y_res,z_res);
+    blitz::Array<double,3> _grad2V3D(x_res,y_res,z_res);
     _V3D = 0;
     _gradV3D_x = 0;
     _gradV3D_y = 0;
@@ -4373,7 +4469,7 @@ std::tuple< Array<double,3>, Array<double,3>, Array<double,3>, Array<double,3>,
     calculate_grad2V3D_64( _grad2V3D, xy_x, xy_y, z_range, sigma, epsilon,
             area_lattice, b_1, b_2, g_m, g_n, g_i_array, g_j_array,
             g_magnitude_array );
-    Array<double,1> _LUTinfo(12);
+    blitz::Array<double,1> _LUTinfo(12);
     _LUTinfo = A(0,0), A(0,1), A(1,0), A(1,1), uc_dx, uc_dy, dz, cell_length_a,
              cell_length_b, z_min, z_max, V_z_min;
     return { _V3D, _gradV3D_x, _gradV3D_y, _gradV3D_z, _grad2V3D, xy_x, xy_y,
@@ -4386,7 +4482,9 @@ std::tuple< Array<double,3>, Array<double,3>, Array<double,3>, Array<double,3>,
 ******************************************************************************/
 GrapheneLUT3DPotentialGenerate::~GrapheneLUT3DPotentialGenerate() {
 }
+#endif
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // GrapheneLUT3DPotential Class---------------------------------------------
@@ -4396,7 +4494,7 @@ GrapheneLUT3DPotentialGenerate::~GrapheneLUT3DPotentialGenerate() {
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
+GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (std::string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
 
     static auto const aflags = boost::archive::no_header | boost::archive::no_tracking;
     /* load lookup tables */
@@ -4487,7 +4585,9 @@ GrapheneLUT3DPotentialToBinary::~GrapheneLUT3DPotentialToBinary() {
     grad2V3d.free();
     LUTinfo.free();
 }
+#endif
 
+#if NDIM > 2
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // GrapheneLUT3DPotential Class---------------------------------------------
@@ -4497,7 +4597,7 @@ GrapheneLUT3DPotentialToBinary::~GrapheneLUT3DPotentialToBinary() {
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
+GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (std::string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
 
     static auto const aflags = boost::archive::no_header | boost::archive::no_tracking;
     /* load lookup tables */
@@ -4587,3 +4687,4 @@ GrapheneLUT3DPotentialToText::~GrapheneLUT3DPotentialToText() {
     grad2V3d.free();
     LUTinfo.free();
 }
+#endif

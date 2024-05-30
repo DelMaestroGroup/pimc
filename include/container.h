@@ -26,7 +26,7 @@ class Container {
         Container();
         virtual ~Container();
 
-        TinyVector <unsigned int, NDIM> periodic;   ///< Determines which dimensions have periodic bc
+	blitz::TinyVector <unsigned int, NDIM> periodic;   ///< Determines which dimensions have periodic bc
 
         dVec side;                          ///< The linear dimensions of the box
         dVec sideInv;                       ///< The inverse box dimensions
@@ -36,14 +36,14 @@ class Container {
         double rcut2;                       ///< The smallest separation squared
         double maxSep;                      ///< The maximum possible separation for 2 beads on the same timeslice
 
-        string name;                        ///< The name of the container
+        std::string name;                        ///< The name of the container
 
         int numGrid;                        ///< The number of grid boxes for the position grid
         bool fullyPeriodic;                 ///< Is the prism fully periodic?
 
         dVec gridSize;                      ///< The grid size in each dimension
 
-        /** Place a vector in boundary conditions. */
+        /** Place a std::vector in boundary conditions. */
         /** Algorithm C4 from 
          * @see: Z. Phys. Chem. 227 (2013) 345–352
          */
@@ -64,7 +64,7 @@ class Container {
         /*     } */
         /* } */
 
-        /* Place a vector in boundary conditions. */
+        /* Place a std::vector in boundary conditions. */
         void putInBC1(dVec & r) const {
             for (int i = 0; i < NDIM; ++i) {
                 while (r[i] >= 0.5*side[i] && periodic[i])
@@ -74,7 +74,7 @@ class Container {
             }
         }
 
-        /** Place a vector inside the simulation cell */
+        /** Place a std::vector inside the simulation cell */
         virtual void putInside(dVec &) const = 0;   
         
         /** Random position inside a box. */
@@ -89,8 +89,10 @@ class Container {
         /** The physical size of a NDIM-dimensional grid box */
         virtual double gridBoxVolume(const int) const = 0;
 
-        /** The radius of a grid box */
-        double gridRadius2(const int) const;
+        #if NDIM > 1
+            /** The radius of a grid box */
+            double gridRadius2(const int) const;
+        #endif
 
 
     protected:
@@ -146,7 +148,7 @@ class Cylinder: public Container {
         Cylinder(const double, const double);
         ~Cylinder();
 
-        /* Place a vector inside the cylinder */
+        /* Place a std::vector inside the cylinder */
         void putInside(dVec &r) const;
 
         /* The various types of random positions inside the cylinder */

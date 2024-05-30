@@ -26,7 +26,7 @@
  * @param initialPos The initial configuration of particles
 ******************************************************************************/
 Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices, 
-        const Array<dVec,1> &initialPos,int numberBroken) :
+        const blitz::Array<dVec,1> &initialPos,int numberBroken) :
     numTimeSlices(_numTimeSlices),
     boxPtr(_boxPtr), 
     worm(initialPos.size()),
@@ -43,14 +43,14 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
     /* Copy the initial condition at all time slices (a classical initial condition)*/
     for (int n = 0; n < numParticles; n++) {
         for (int i = 0; i < NDIM; i++)
-            beads(Range::all(),n)[i] = initialPos(n)[i];
+            beads(blitz::Range::all(),n)[i] = initialPos(n)[i];
     }
 
     /* Construct and initialize the prevLink and nextLink arrays */
     prevLink.resize(numTimeSlices,getNumParticles());
     nextLink.resize(numTimeSlices,getNumParticles());
-    firstIndex i1;
-    secondIndex i2;
+    blitz::firstIndex i1;
+    blitz::secondIndex i2;
     prevLink[0] = i1-1;
     prevLink[1] = i2;
     nextLink[0] = i1+1;
@@ -58,8 +58,8 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
     
     if (PIGS) {
     /* Here we implement the fixed boundary conditions in imaginary time. */
-        prevLink(0,Range::all()) = XXX;
-        nextLink(numTimeSlices-1,Range::all()) = XXX;
+        prevLink(0,blitz::Range::all()) = XXX;
+        nextLink(numTimeSlices-1,blitz::Range::all()) = XXX;
 
         /* Here we break worldlines at the center of the path if requested*/
         breakSlice = 0;
@@ -96,8 +96,8 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
     else {
         breakSlice = 0;
         /* Here we implement periodic boundary conditions in imaginary time */
-        prevLink(0,Range::all())[0] = numTimeSlices-1;
-        nextLink(numTimeSlices-1,Range::all())[0] = 0;
+        prevLink(0,blitz::Range::all())[0] = numTimeSlices-1;
+        nextLink(numTimeSlices-1,blitz::Range::all())[0] = 0;
     }
 
     /* Initialize the number of active beads at each slice */
@@ -133,13 +133,13 @@ void Path::leftPack() {
 
     /* We go through each slice, and make sure the data arrays are left packed */
     for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
-        for (bead1[1] = 0; bead1[1] < beads.extent(secondDim); bead1[1]++) {
+        for (bead1[1] = 0; bead1[1] < beads.extent(blitz::secondDim); bead1[1]++) {
             if (!worm.beadOn(bead1)) {
                 bead2 = bead1;
 
                 /* Find an active bead to the right of the inactive bead */
                 bool foundBead = false;
-                for (bead2[1] = bead1[1] + 1; bead2[1] < beads.extent(secondDim); bead2[1]++) {
+                for (bead2[1] = bead1[1] + 1; bead2[1] < beads.extent(blitz::secondDim); bead2[1]++) {
                     if (worm.beadOn(bead2)) {
                         foundBead = true;
                         break;
@@ -261,18 +261,18 @@ beadLocator Path::addBead(const int slice, const dVec &pos) {
         /* Resize and initialize the main data array which holds all worldline 
          * configurations */
         beads.resizeAndPreserve(numTimeSlices,numWorldLines + 1);
-        beads(Range::all(),numWorldLines) = 0.0;
+        beads(blitz::Range::all(),numWorldLines) = 0.0;
 
         /* Resize and initialize the worm bead arrays which tells us
          * whether or not we have a bead present */
         worm.beads.resizeAndPreserve(numTimeSlices,numWorldLines + 1);
-        worm.beads(Range::all(),numWorldLines) = 0;
+        worm.beads(blitz::Range::all(),numWorldLines) = 0;
 
         /* Resize and initialize the previous and next link arrays */
         prevLink.resizeAndPreserve(numTimeSlices,numWorldLines + 1);
         nextLink.resizeAndPreserve(numTimeSlices,numWorldLines + 1);
-        prevLink(Range::all(),numWorldLines) = XXX;
-        nextLink(Range::all(),numWorldLines) = XXX;
+        prevLink(blitz::Range::all(),numWorldLines) = XXX;
+        nextLink(blitz::Range::all(),numWorldLines) = XXX;
 
         /* Resize the lookup table */
         lookup.resizeList(numWorldLines + 1);
@@ -428,7 +428,7 @@ void Path::removeCenterLink(const beadLocator &beadIndexL) {
     breakLink(beadIndexL);
     
     /* Update lists */
-    vector<int>::iterator itr;
+    std::vector<int>::iterator itr;
     itr = find(closedWorldlines.begin(), closedWorldlines.end(), beadIndexL[1]);
     closedWorldlines.erase(itr);
     brokenWorldlinesL.push_back(beadIndexL[1]);
@@ -444,7 +444,7 @@ void Path::addCenterLink(const beadLocator &beadIndexL,const beadLocator &beadIn
     makeLink(beadIndexL,beadIndexR);
     
     /* Update lists */
-    vector<int>::iterator itr;
+    std::vector<int>::iterator itr;
     itr = find(brokenWorldlinesL.begin(), brokenWorldlinesL.end(), beadIndexL[1]);
     brokenWorldlinesL.erase(itr);
     itr = find(brokenWorldlinesR.begin(), brokenWorldlinesR.end(), beadIndexR[1]);
@@ -462,7 +462,7 @@ void Path::resetBrokenClosedVecs(){
         
         beadLocator beadIndex;
         
-        /* Clear vectors */
+        /* Clear std::vectors */
         brokenWorldlinesL.clear();
         brokenWorldlinesR.clear();
         closedWorldlines.clear();
@@ -523,7 +523,7 @@ bool Path::inSubregionA(const beadLocator &beadIndex) const{
                 ( beads(beadIndex)[0] < constants()->spatialSubregion() ) )
             inA = true;
     }
-    //cout << beadIndex[0] << '\t' << inA << '\t' << beads(beadIndex) << endl;
+    //cout << beadIndex[0] << '\t' << inA << '\t' << beads(beadIndex) << std::endl;
     return inA;
 }
 
@@ -557,8 +557,8 @@ bool Path::checkSubregionLinks() const{
             foundError=true;
         }
         if(foundError){
-            cout << beadIndex[1] << '\t' << beads(beadIndex) << 't' <<
-            inSubregionA(beadIndex) << '\t' << inSubregionB(beadIndex) << endl;
+            std::cout << beadIndex[1] << '\t' << beads(beadIndex) << 't' <<
+            inSubregionA(beadIndex) << '\t' << inSubregionB(beadIndex) << std::endl;
             break;
         }
     }
@@ -620,19 +620,19 @@ void Path::outputConfig(int configNumber) const {
 #else
     /* We go through all beads, and find the start and end bead for each
      * worldline, adding them to an array */
-    Array <beadLocator,1> startBead,endBead;
+    blitz::Array <beadLocator,1> startBead,endBead;
     startBead.resize(numParticles);
     endBead.resize(numParticles);
 
     /* We sort the output by the number of beads in a worldline */
-    Array <int,1> wlLength(numParticles);
+    blitz::Array <int,1> wlLength(numParticles);
     wlLength = 0;
 
     int numWorldLines = 0;
 
     /* Get the list of beads that are active in the simulation */
-    Array <bool,2> doBead(numTimeSlices,numParticles);      
-    doBead = cast<bool>(worm.getBeads());
+    blitz::Array <bool,2> doBead(numTimeSlices,numParticles);      
+    doBead = blitz::cast<bool>(worm.getBeads());
 
     /* We go through each particle/worldline */
     int nwl = 0;
@@ -648,7 +648,7 @@ void Path::outputConfig(int configNumber) const {
         do {
             doBead(beadIndex) = false;
             beadIndex = next(beadIndex);
-        } while (!all(beadIndex==endBead(nwl)));
+        } while (!blitz::all(beadIndex==endBead(nwl)));
 
         /* We label a worm with a XXX */
         wlLength(nwl) = XXX;
@@ -679,7 +679,7 @@ void Path::outputConfig(int configNumber) const {
                 doBead(beadIndex) = false;
                 length++;
                 beadIndex = next(beadIndex);
-            } while (!all(beadIndex==endBead(nwl)));
+            } while (!blitz::all(beadIndex==endBead(nwl)));
 
             /* We label each trajectory by the number of particles it contains. */
             wlLength(nwl) = int(length/numTimeSlices)-1;
@@ -740,12 +740,12 @@ void Path::outputConfig(int configNumber) const {
  * 
  *  We print out the current link and bead configuration to visualize a worm.
 ******************************************************************************/
-void Path::printWormConfig(Array <beadLocator,1> &wormBeads) {
+void Path::printWormConfig(blitz::Array <beadLocator,1> &wormBeads) {
 
     int numWorldLines = getNumParticles();
 
     /* A shortform for the output file */
-    fstream *outFilePtr;            
+    std::fstream *outFilePtr;            
     outFilePtr = &(communicate()->file("debug")->stream());
 
     for (int m = numTimeSlices-1; m >= 0; m--) {
@@ -793,12 +793,12 @@ void Path::printWormConfig(Array <beadLocator,1> &wormBeads) {
                 beadLocator beadIndex;
                 beadIndex = m,n;
                 bool foundWormBead = false;
-                string beadOut;
-                for (int k = 0; k < wormBeads.extent(firstDim); k++) { 
+                std::string beadOut;
+                for (int k = 0; k < wormBeads.extent(blitz::firstDim); k++) { 
                     
                     if (all(beadIndex==wormBeads(k))) { 
                         foundWormBead = true;
-                        if ((k > 0) && (k < (wormBeads.extent(firstDim)-1))) {
+                        if ((k > 0) && (k < (wormBeads.extent(blitz::firstDim)-1))) {
                             if ( (wormBeads(k+1)[1] > wormBeads(k)[1]) || 
                                     (wormBeads(k-1)[1] < wormBeads(k)[1]) ) 
                                 beadOut = "/";
@@ -829,8 +829,8 @@ void Path::printWormConfig(Array <beadLocator,1> &wormBeads) {
             } // for n
 
         } // isConfigDiagonal
-        (*outFilePtr) << endl;
+        (*outFilePtr) << std::endl;
 
     } // for int m
-    (*outFilePtr) << endl;
+    (*outFilePtr) << std::endl;
 }
