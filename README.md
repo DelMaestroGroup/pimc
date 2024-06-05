@@ -19,13 +19,7 @@ If you have questions, bug reports or plan to use this code for scientific resea
 
 The development and maintenance of this code has been supported in part by the National Science Foundation under Award Nos. [DMR-1553991](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1553991) and [DMR-1808440](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1808440) and in part by the U.S. Department of Energy, Office of Science, Office of Basic Energy Sciences, under Award Number DE-SC0024333
 
-<img width="400px" src="https://new.nsf.gov/themes/custom/nsf_theme/components/images/logo/logo-desktop.svg">
-<img width="400px" src="https://science.osti.gov/assets/img/doe-logos/logo.png">
-
-
-
-[<img width="100" src="https://www.nsf.gov/images/logos/NSF_4-Color_bitmap_Logo.png">](http://www.nsf.gov/awardsearch/showAward?AWD_ID=1553991)
-
+<img width="300px" src="https://new.nsf.gov/themes/custom/nsf_theme/components/images/logo/logo-desktop.svg"> <img width="300px" src="https://science.osti.gov/assets/img/doe-logos/logo.png">
 
 ## Installation
 
