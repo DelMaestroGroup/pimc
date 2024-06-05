@@ -17,10 +17,6 @@ The design philosophy included the goal of abstracting the actual implementation
 
 If you have questions, bug reports or plan to use this code for scientific research, please contact me at Adrian.DelMaestro@utk.edu.
 
-The development and maintenance of this code has been supported in part by the National Science Foundation under Award Nos. [DMR-1553991](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1553991) and [DMR-1808440](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1808440) and in part by the U.S. Department of Energy, Office of Science, Office of Basic Energy Sciences, under Award Number DE-SC0024333
-
-<img width="300px" src="https://new.nsf.gov/themes/custom/nsf_theme/components/images/logo/logo-desktop.svg"> <img width="300px" src="https://science.osti.gov/assets/img/doe-logos/logo.png">
-
 ## Installation
 
 This program has been successfully compiled and run on both Intel and AMD systems using clang, g++, pathscale and icpc. Before installing, one needs to ensure that all dependencies are met.  We recommend that the required libraries (boost and blitz) are installed in a `local` folder inside your home directory: `$HOME/local`.
@@ -328,6 +324,12 @@ The results of running the code are a number of data, state and log files that r
 |`gce-super-T-L-u-t-PIMCID.dat` |  Contains all superfluid estimators |
 
 Each line in either the scalar or vector estimator files contains a bin which is the average of some measurement over a certain number of Monte Carlo steps.  By averaging bins, one can get the final result along with its uncertainty via the variance.
+
+## Support
+
+The development and maintenance of this code has been supported in part by the National Science Foundation under Award Nos. [DMR-1553991](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1553991) and [DMR-1808440](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1808440) and in part by the U.S. Department of Energy, Office of Science, Office of Basic Energy Sciences, under Award Number DE-SC0024333
+
+<img width="300px" src="https://new.nsf.gov/themes/custom/nsf_theme/components/images/logo/logo-desktop.svg"> <img width="300px" src="https://science.osti.gov/assets/img/doe-logos/logo.png">
 
 ## General Description
 
