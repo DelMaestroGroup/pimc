@@ -329,7 +329,7 @@ Each line in either the scalar or vector estimator files contains a bin which is
 
 The development and maintenance of this code has been supported in part by the National Science Foundation under Award Nos. [DMR-1553991](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1553991) and [DMR-1808440](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1808440) and in part by the U.S. Department of Energy, Office of Science, Office of Basic Energy Sciences, under Award Number DE-SC0024333
 
-<img height="200px" src="https://new.nsf.gov/themes/custom/nsf_theme/components/images/logo/logo-desktop.svg"> <img height="200px" src="https://science.osti.gov/assets/img/doe-logos/logo.png">
+<img height="100px" src="https://new.nsf.gov/themes/custom/nsf_theme/components/images/logo/logo-desktop.svg"> <img height="100px" src="https://science.osti.gov/assets/img/doe-logos/logo.png">
 
 ## General Description
 
