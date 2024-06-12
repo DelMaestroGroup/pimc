@@ -63,7 +63,19 @@ void ConstantParameters::initConstants(po::variables_map &params) {
     else {
         wallClockOn_ = true;
         /* Set wallClock_ in seconds*/
-        wallClock_ = uint32( floor(params["wall_clock"].as<double>()*3600));
+	string wallClockparam = params["wall_clock"].as<string>();
+  	if (wallClockparam.find('-') != string::npos) {
+	    
+	    size_t colon_pos = wallClockparam.find('-');
+	    wallClock_ = (stof(wallClockparam.substr(0, colon_pos)) * 24 + stof(wallClockparam.substr(colon_pos+1)))*3600;
+	} else if (wallClockparam.find(':') != string::npos) {
+	    
+	    wallClock_ = stof(wallClockparam.substr(0,2))*3600 + stof(wallClockparam.substr(3,2))*60 + stof(wallClockparam.substr(6,2));
+	} else {
+	    	
+       	    wallClock_ = uint32(floor(stof(wallClockparam)*3600));
+    	}
+	//cout << "Wall clock time: " << wallClock_ << endl;
     }
 
     /* Are we working in the grand canonical ensemble? */
