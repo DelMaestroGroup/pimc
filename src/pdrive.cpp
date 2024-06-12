@@ -62,7 +62,6 @@ int main (int argc, char *argv[]) {
     /* Get the simulation box */
     setup.set_cell();
     Container *boxPtr = setup.get_cell();
-    std::cout << boxPtr << std::endl;
 
     /* Create the worldlines */
     if (setup.worldlines())
@@ -95,6 +94,7 @@ int main (int argc, char *argv[]) {
     std::vector<std::string> grapheneLUTOptions= {"graphenelut3dtobinary", "graphenelut3dtotext","graphenelut3dgenerate"};
     if (std::find(grapheneLUTOptions.begin(),grapheneLUTOptions.end(), constants<std::string>("external")) != grapheneLUTOptions.end())
             return 99;
+
 
     /* Get the initial conditions associated with the external potential */
     /* Must use the copy constructor as we return a copy */

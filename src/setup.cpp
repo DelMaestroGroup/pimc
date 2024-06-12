@@ -346,7 +346,7 @@ void Setup::initParameters() {
     params.add<int>("output_config,o","number of output configurations",oClass,0);
     params.add<uint32>("process,p","process or cpu number",oClass,0);
     params.add<std::string>("restart,R","restart running simulation with PIMCID",oClass);
-    params.add<double>("wall_clock,W","set wall clock limit in hours",oClass);
+    params.add<std::string>("wall_clock,W","set wall clock limit in hours",oClass);
     params.add<std::string>("start_with_state,s", "start simulation with a supplied state file.",oClass,"");
     params.add<bool>("no_save_state","Only save a state file at the end of a simulation",oClass);
     params.add<bool>("estimator_list","Output a list of estimators in xml format.",oClass);

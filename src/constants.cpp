@@ -60,22 +60,25 @@ void ConstantParameters::initConstants(po::variables_map &params) {
         wallClockOn_ = false;
         wallClock_ = 0;
     } 
+    /* Set wallClock_ in seconds*/
     else {
         wallClockOn_ = true;
-        /* Set wallClock_ in seconds*/
-	string wallClockparam = params["wall_clock"].as<string>();
-  	if (wallClockparam.find('-') != string::npos) {
-	    
-	    size_t colon_pos = wallClockparam.find('-');
-	    wallClock_ = (stof(wallClockparam.substr(0, colon_pos)) * 24 + stof(wallClockparam.substr(colon_pos+1)))*3600;
-	} else if (wallClockparam.find(':') != string::npos) {
-	    
-	    wallClock_ = stof(wallClockparam.substr(0,2))*3600 + stof(wallClockparam.substr(3,2))*60 + stof(wallClockparam.substr(6,2));
+        std::string wallClockparam = params["wall_clock"].as<std::string>();
+
+        /* If we detect a hyphen, we interpret as days-hours. */ 
+  	if (wallClockparam.find('-') != std::string::npos) {
+            std::size_t apos_pos = wallClockparam.find('-');
+	    wallClock_ = (stof(wallClockparam.substr(0, apos_pos)) * 24 + stof(wallClockparam.substr(apos_pos+1)))*3600;
+
+        /* If we have a colon, we interpret as hours:mins:seconds */ 
+	} else if (wallClockparam.find(':') != std::string::npos) {
+            std::size_t colon_pos = wallClockparam.find(':');
+	    wallClock_ = stof(wallClockparam.substr(0,colon_pos))*3600 + stof(wallClockparam.substr(colon_pos+1,2))*60 + stof(wallClockparam.substr(colon_pos+4,2));
+
+        /* Finally, if neither are present, we interpret as a number of hours */ 
 	} else {
-	    	
        	    wallClock_ = uint32(floor(stof(wallClockparam)*3600));
     	}
-	//cout << "Wall clock time: " << wallClock_ << endl;
     }
 
     /* Are we working in the grand canonical ensemble? */
