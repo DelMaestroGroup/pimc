@@ -29,6 +29,11 @@ namespace po = boost::program_options;
  * the simulation and allows their access via the singleton design
  * pattern.
  * @see http://en.wikipedia.org/wiki/Singleton_pattern
+ *
+ * The design principle includes just passing through the
+ * boost::propgram_options params object if the data is only minimally used
+ * (e.g. in an object constructor) or setting an explicit constant if it is 
+ * used more frequently (e.g. temperature). 
  */
 class ConstantParameters
 {
@@ -38,6 +43,20 @@ class ConstantParameters
         void initConstants(po::variables_map &);
 
         /* All the get methods */
+
+        /** Safe way to access the command line parameters array */
+        template<typename Type>
+            Type params(std::string parName) const {
+
+                if (!params_[parName].empty())
+                    return params_[parName].as<Type>();
+                else {
+                    std::cerr << std::endl << "ERROR: command line parameter "
+                              << parName << " is not set!" << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
+
         double T() const {return T_;}                   ///< Get temperature.
         double imagTimeLength() const { return imagTimeLength_;}    ///< Get the extent in imaginary time.
         double mu() const {return mu_;}                 ///< Get chemical potential.
@@ -62,7 +81,7 @@ class ConstantParameters
         /** Get (4lambda/tau)^{-1} */
         double fourLambdaTauInv() const { return (0.25 / (lambda_ * tau_)); }
 
-        /* Get the move attempt probability */
+        /** Get the move attempt probability */
         double attemptProb(std::string type) {
             if (attemptProb_.count(type))
                 return attemptProb_[type];
@@ -108,19 +127,12 @@ class ConstantParameters
         int Npaths() {return Npaths_;}                  //< Get number of paths
         uint32 binSize() {return binSize_;}                //< Get the number of measurments per bin.
 
-        std::string intPotentialType() const {return intPotentialType_;}                   ///< Get interaction potential type
-        std::string extPotentialType() const {return extPotentialType_;}                   ///< Get external potential type
-        std::string waveFunctionType() const {return waveFunctionType_;}                   ///< Get wave function type
         double endFactor() const {return endFactor_;}                                 ///< Get end factor
         std::string actionType() const {return actionType_;}                               ///< Get wave action type
         std::string graphenelut3d_file_prefix() const {return graphenelut3d_file_prefix_;} ///< Get GrapheneLUT3D file prefix <prefix>_serialized.{dat|txt}
         std::string wavevector() const {return wavevector_;}                               ///< Get wavevectors for scattering functions
         std::string wavevectorType() const {return wavevectorType_;}                       ///< Get wavevector types for scattering functions
 
-        /* Trial wave funciton parameters */
-        double R_LL_wfn() const {return R_LL_wfn_;}        ///< Get Lieb-Liniger length scale
-        double k_LL_wfn() const {return k_LL_wfn_;}        ///< Get Lieb-Liniger wave number
-    
         /* Set methods */
         void setmu(double _mu) {mu_ = _mu;}             ///< Set the value of the chemical potential
         void setCoMDelta(double _comDelta) {comDelta_ = _comDelta;} ///< Set the CoM move size
@@ -142,6 +154,8 @@ class ConstantParameters
         ConstantParameters& operator= (const ConstantParameters&);  ///< Overload Singleton equals
 
     private:
+        po::variables_map params_;  // Local copy of the full set of command line parameters 
+
         double T_;              // Temperature [K]
         double imagTimeLength_; // Temperature [K]
         double mu_;             // Chemical Potential [K]
@@ -183,11 +197,7 @@ class ConstantParameters
         bool varUpdates_;           // Perform variable length diagonal updates
 
         std::string  id_;                // The unique simulation UUID
-        std::string intPotentialType_;   // The type of interaction potential
-        std::string extPotentialType_;   // The type of external potential
-        std::string waveFunctionType_;   // The type of trial wave function
-        double R_LL_wfn_;           // The length scale of the Lieb-Liniger wave function
-        double k_LL_wfn_;           // The wave number of the Lieb-Liniger wave function
+                                         //
         double endFactor_;          // The multiplicative factor of the potential on end beads
         std::string actionType_;         // The type of action
 
@@ -209,6 +219,11 @@ class ConstantParameters
 inline ConstantParameters* constants() {
     ConstantParameters *temp = ConstantParameters::getInstance();
     return temp;
+}
+
+template <typename Type>
+inline Type constants(std::string parName) {
+    return ConstantParameters::getInstance()->params<Type>(parName);
 }
 
 #endif

@@ -284,8 +284,7 @@ Setup::Setup() :
     cmdLineOptions("Command Line Options")
 {
     /* Initialize the option class names */
-    optionClassNames = {"simulation","physical","cell","algorithm","potential",
-        "measurement"};
+    optionClassNames = {"simulation","physical","cell","algorithm","potential","measurement"};
 
     /* Define the allowed interaction potential names */
     interactionPotentialName = PotentialFactory::instance().getNames<PotentialFactory::Type::Interaction>();
@@ -304,7 +303,8 @@ Setup::Setup() :
     actionNames = getList(actionName);
 
     /* Define the allowed trial wave function names */
-    waveFunctionName = {"constant", "sech", "jastrow", "lieb", "sutherland"};
+    /* waveFunctionName = {"constant", "sech", "jastrow", "lieb", "sutherland"}; */
+    waveFunctionName = waveFunctionFactory()->getNames();  
     waveFunctionNames = getList(waveFunctionName);
 
     /* Define the allowed random number generator names */
@@ -366,7 +366,7 @@ void Setup::initParameters() {
 
     /* Initialize the potential options */
     oClass = "potential";
-    params.add<std::string>("interaction,I",str(format("interaction potential type:\n%s") % interactionNames).c_str(),oClass,"aziz");
+    params.add<std::string>("interaction,I",str(format("interaction potential type:\n%s") % interactionNames).c_str(),oClass,"free");
     params.add<std::string>("external,X",str(format("external potential type:\n%s") % externalNames).c_str(),oClass,"free");
     params.add<double>("scattering_length,a","scattering length [angstroms]",oClass,1.0);
     params.add<double>("delta_width","delta function potential width",oClass,1.0E-3);
@@ -406,8 +406,8 @@ void Setup::initParameters() {
     params.add<double>("temperature,T","temperature [kelvin]",oClass);
     params.add<std::string>("wavefunction",str(format("trial wave function type:\n%s") 
                 % waveFunctionNames).c_str(),oClass,"constant");
-    params.add<double>("R_LL_wfn","length scale of the lieb liniger wave function",oClass,0.0);
-    params.add<double>("k_LL_wfn","wave number of the lieb liniger wave function",oClass,0.0);
+    params.add<double>("R_LL_wfn","length scale of the lieb liniger wave function",oClass);
+    params.add<double>("k_LL_wfn","wave number of the lieb liniger wave function",oClass);
     params.add<double>("end_factor","end bead potential action multiplicatave factor",oClass,1.0);
     params.add<double>("chemical_potential,u","chemical potential [kelvin]",oClass,0.0);
     params.add<int>("number_paths","number of paths",oClass,1);
@@ -1090,8 +1090,9 @@ void Setup::setConstants() {
 void Setup::communicator() {
         
     communicate()->init(params["imaginary_time_step"].as<double>(),
-            (params["output_config"].as<int>() > 0),params["start_with_state"].as<std::string>(),
-            params["fixed"].as<std::string>());
+                        (params["output_config"].as<int>() > 0),
+                        params["start_with_state"].as<std::string>(),
+                        params["fixed"].as<std::string>());
 }
 
 /*************************************************************************//**
@@ -1101,7 +1102,7 @@ void Setup::communicator() {
  * which is returned to the main program.  
 ******************************************************************************/
 PotentialBase * Setup::interactionPotential() {
-    return PotentialFactory::instance().create<PotentialFactory::Type::Interaction>(constants()->intPotentialType());
+    return PotentialFactory::instance().create<PotentialFactory::Type::Interaction>(params["interaction"].as<std::string>());
 }
 
 /*************************************************************************//**
@@ -1111,32 +1112,17 @@ PotentialBase * Setup::interactionPotential() {
  * which is returned to the main program.  
 ******************************************************************************/
 PotentialBase * Setup::externalPotential() {
-    return PotentialFactory::instance().create<PotentialFactory::Type::External>(constants()->extPotentialType());
+    return PotentialFactory::instance().create<PotentialFactory::Type::External>(params["external"].as<std::string>());
 }
 
 /*************************************************************************//**
 * Setup the trial wave function.
 *
-* Based on the user's choice we create a new trial wave function  pointer
-* which is returned to the main program.
+* Based on the user's choice we create a new trial wave function pointer
+* which is returned to the main program through the associated factory.
 ******************************************************************************/
 WaveFunctionBase * Setup::waveFunction(const Path &path, LookupTable &lookup) {
-    
-    WaveFunctionBase *waveFunctionPtr = NULL;
-
-    if (constants()->waveFunctionType() == "constant")
-        waveFunctionPtr = new WaveFunctionBase(path,lookup);
-    else if (constants()->waveFunctionType() == "sech")
-        waveFunctionPtr = new SechWaveFunction(path,lookup);
-    else if (constants()->waveFunctionType() == "jastrow")
-        waveFunctionPtr = new JastrowWaveFunction(path,lookup);
-    else if (constants()->waveFunctionType() == "lieb")
-        waveFunctionPtr = new LiebLinigerWaveFunction(path,lookup);
-    else if (constants()->waveFunctionType() == "sutherland")
-        waveFunctionPtr = new SutherlandWaveFunction(path,lookup,
-                params["interaction_strength"].as<double>());
-    
-    return waveFunctionPtr;
+    return waveFunctionFactory()->Create(params["wavefunction"].as<std::string>(),path,lookup);
 }
 
 /*************************************************************************//**

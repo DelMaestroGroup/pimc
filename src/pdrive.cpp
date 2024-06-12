@@ -88,11 +88,13 @@ int main (int argc, char *argv[]) {
     /* Create and initialize the potential pointers */
     PotentialBase *interactionPotentialPtr = setup.interactionPotential();
     PotentialBase *externalPotentialPtr = setup.externalPotential();
-    if ((constants()->extPotentialType() == "graphenelut3dtobinary") ||
-            (constants()->extPotentialType() == "graphenelut3dtotext") ||
-            (constants()->extPotentialType() == "graphenelut3dgenerate") ) {
-        return 99;
-    }
+
+    /* This functionality allows us to use the code directly to generate
+     * graphene potential binary or plain-text lookup tables (and convert
+     * between them) */ 
+    std::vector<std::string> grapheneLUTOptions= {"graphenelut3dtobinary", "graphenelut3dtotext","graphenelut3dgenerate"};
+    if (std::find(grapheneLUTOptions.begin(),grapheneLUTOptions.end(), constants<std::string>("external")) != grapheneLUTOptions.end())
+            return 99;
 
     /* Get the initial conditions associated with the external potential */
     /* Must use the copy constructor as we return a copy */
@@ -115,6 +117,7 @@ int main (int argc, char *argv[]) {
                          initialPos,constants()->numBroken()));
     }
     
+    //PotentialBase *externalPotentialPtr = setup.externalPotential();
     /* The Trial Wave Function (constant for pimc) */
     WaveFunctionBase *waveFunctionPtr = setup.waveFunction(pathPtrVec.front(),lookupPtrVec.front());
 

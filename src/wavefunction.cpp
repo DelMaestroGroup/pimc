@@ -8,6 +8,30 @@
 
 #include "wavefunction.h"
 #include "path.h"
+#include "factory.h"
+
+/**************************************************************************//**
+ * Setup the WaveFunction factory.
+******************************************************************************/
+WaveFunctionFactory waveFunctionFactory;
+
+#define REGISTER_WAVEFUNCTION(NAME,TYPE) \
+    const std::string TYPE::name = NAME;\
+    bool reg ## TYPE = waveFunctionFactory()->Register<TYPE>(TYPE::name); 
+
+/**************************************************************************//**
+ * Wavefunction naming conventions:
+ *
+ * 1) be as descriptive as possible
+ * 2) use only lower case letters
+ * 3) spaces are fine, but then the option needs to be bracketed at the 
+ *    command line.
+******************************************************************************/
+REGISTER_WAVEFUNCTION("constant",ConstantWaveFunction)
+REGISTER_WAVEFUNCTION("sho_sech",SechWaveFunction)
+REGISTER_WAVEFUNCTION("jastrow",JastrowWaveFunction)
+REGISTER_WAVEFUNCTION("lieb_liniger",LiebLinigerWaveFunction)
+REGISTER_WAVEFUNCTION("sutherland",SutherlandWaveFunction)
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -18,9 +42,7 @@
 /**************************************************************************//**
  *  Setup the path data members for the constant trial wavefunction.
 ******************************************************************************/
-WaveFunctionBase::WaveFunctionBase (const Path &_path, LookupTable &_lookup,
-        std::string _name) :
-    name(_name),
+WaveFunctionBase::WaveFunctionBase (const Path &_path, LookupTable &_lookup) :
     path(_path),
     lookup(_lookup)
 {
@@ -36,6 +58,28 @@ WaveFunctionBase::~WaveFunctionBase() {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
+// CONSTANT WAVEFUNCTION CLASS ---------------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+ * Constructor.
+******************************************************************************/
+ConstantWaveFunction::ConstantWaveFunction(const Path &_path,LookupTable &_lookup) :
+    WaveFunctionBase(_path,_lookup)
+{
+ // empty constructor
+}
+
+/**************************************************************************//**
+ * Destructor.
+******************************************************************************/
+ConstantWaveFunction::~ConstantWaveFunction() {
+    // empty destructor
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // SECH WAVEFUNCTION CLASS ---------------------------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
@@ -43,8 +87,8 @@ WaveFunctionBase::~WaveFunctionBase() {
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-SechWaveFunction::SechWaveFunction(const Path &_path,LookupTable &_lookup, std::string _name) :
-    WaveFunctionBase(_path,_lookup,_name)
+SechWaveFunction::SechWaveFunction(const Path &_path,LookupTable &_lookup) :
+    WaveFunctionBase(_path,_lookup)
 {
     /* Set the parameter to its optimized value */
     a = sqrt(0.5*M_PI);
@@ -88,8 +132,8 @@ double SechWaveFunction::PsiTrial(const int slice) {
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-JastrowWaveFunction::JastrowWaveFunction(const Path &_path,LookupTable &_lookup, std::string _name) :
-WaveFunctionBase(_path,_lookup,_name)
+JastrowWaveFunction::JastrowWaveFunction(const Path &_path,LookupTable &_lookup) :
+WaveFunctionBase(_path,_lookup)
 {
     /* Set the parameter to its optimized value */
     alpha = 19.0;
@@ -204,12 +248,12 @@ double JastrowWaveFunction::gradSqPsiTrial(const int slice) {
 /**************************************************************************//**
  * Constructor.
  ******************************************************************************/
-LiebLinigerWaveFunction::LiebLinigerWaveFunction(const Path &_path,LookupTable &_lookup, std::string _name) :
-WaveFunctionBase(_path,_lookup,_name)
+LiebLinigerWaveFunction::LiebLinigerWaveFunction(const Path &_path,LookupTable &_lookup) :
+WaveFunctionBase(_path,_lookup)
 {
     /* Set the parameter to its optimized value */
-    R = constants()->R_LL_wfn();
-    k = constants()->k_LL_wfn();
+    R = constants<double>("R_LL_wfn");
+    k = constants<double>("k_LL_wfn");
 }
 
 /**************************************************************************//**
@@ -356,12 +400,15 @@ double LiebLinigerWaveFunction::gradSqPsiTrial(const int slice) {
 /**************************************************************************//**
  * Constructor.
  ******************************************************************************/
-SutherlandWaveFunction::SutherlandWaveFunction(const Path &_path, LookupTable &_lookup, 
-        double _lambda, std::string _name) :
-WaveFunctionBase(_path,_lookup,_name)
+SutherlandWaveFunction::SutherlandWaveFunction(const Path &_path, LookupTable &_lookup) :
+WaveFunctionBase(_path,_lookup)
 {
     // The Sutherland model value of the interaction paramter \lambda
-    lambda = _lambda;
+    /* lambda = constants()->params()["interaction_strength"].as<double>(); */ 
+    /* lambda = constants()->params<double>("interaction_strength"); */
+    /* AGD START HERE */
+    lambda = constants<double>("interaction_strength");
+
 
     // pi/L
     pioL = M_PI/constants()->L();

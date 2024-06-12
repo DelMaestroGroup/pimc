@@ -343,6 +343,7 @@ class Setup {
         MoveFactory moveFactory;                    
         EstimatorFactory estimatorFactory;
         MultiEstimatorFactory multiEstimatorFactory;
+        WaveFunctionFactory waveFunctionFactory;
 
         bool definedCell;                           ///< The user has physically set the sim. cell
         Container* boxPtr = nullptr;                ///< Pointer to simulation cell

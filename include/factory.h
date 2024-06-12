@@ -27,7 +27,7 @@ template<class BaseType, class ...ParamType>
 class Factory<BaseType (ParamType...)>
 {
     protected:
-        /* The constructor signature */
+        /* The constructor signature (*) refers to a function pointer (the constructor) */
         using CreateObjectFunc = BaseType (*)(ParamType...);
 
     public:
@@ -41,7 +41,7 @@ class Factory<BaseType (ParamType...)>
         }
 
         /** Singleton access */
-        Factory<BaseType (ParamType...)> *Instance()
+        Factory<BaseType (ParamType...)> *getInstance()
         {
             static Factory<BaseType (ParamType...)> fact;
             return &fact;
@@ -49,8 +49,8 @@ class Factory<BaseType (ParamType...)>
         }
 
         /** Overload () to return a singleton instance */
-        const Factory<BaseType (ParamType...)> * operator() () const { return Instance();}
-        Factory<BaseType (ParamType...)> * operator() () { return Instance();}
+        const Factory<BaseType (ParamType...)> * operator() () const { return getInstance();}
+        Factory<BaseType (ParamType...)> * operator() () { return getInstance();}
 
         /** Return an instantiated object with a given name */
         BaseType Create(std::string name, ParamType ...param) {
@@ -85,13 +85,16 @@ class Factory<BaseType (ParamType...)>
 class EstimatorBase;
 class MoveBase;
 class ActionBase;
+class WaveFunctionBase;
 class Path;
 class MTRand;
+class LookupTable;
 
 /* Typedefs used for actually creating factories */
 typedef Factory<EstimatorBase* (Path &, ActionBase *, MTRand &, double)> EstimatorFactory;
 typedef Factory<EstimatorBase* (Path &, Path &, ActionBase *, ActionBase *, MTRand &, double)> MultiEstimatorFactory;
 typedef Factory<MoveBase* (Path &, ActionBase *, MTRand &)> MoveFactory;
+typedef Factory<WaveFunctionBase* (const Path &, LookupTable &)> WaveFunctionFactory;
 
 /* template<typename BaseType, class DerivedType, class ...ParamType> */
 /* BaseType CreateObject(ParamType ...param) */

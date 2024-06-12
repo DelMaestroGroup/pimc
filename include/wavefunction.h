@@ -6,6 +6,8 @@
  * @brief Action class definitions.
  */
 
+/* #include "common.h" */
+
 #include "constants.h"
 #include "lookuptable.h"
 
@@ -26,11 +28,8 @@ class Path;
 class WaveFunctionBase {
 
     public:
-        WaveFunctionBase (const Path &,LookupTable &_lookup, std::string _name="constant");
+        WaveFunctionBase (const Path &,LookupTable &_lookup);
         virtual ~WaveFunctionBase();
-
-        /** Name of the trial wave function */
-        std::string name;
 
         /** The Constant Trial Wave Function*/
         virtual double PsiTrial(const int) { return 1.0; };
@@ -46,6 +45,21 @@ class WaveFunctionBase {
 
 };
 
+// ========================================================================  
+// ConstantWaveFunction Class
+// ========================================================================  
+/**
+ * Simple constant wavefunction (implements the base class).
+ */
+class ConstantWaveFunction: public WaveFunctionBase {
+    public:
+        ConstantWaveFunction(const Path &,LookupTable &_lookup);
+        ~ConstantWaveFunction();
+
+        static const std::string name;
+        std::string getName() const {return name;}
+};
+
 
 // ========================================================================  
 // SechWaveFunction Class
@@ -58,8 +72,11 @@ class WaveFunctionBase {
 class SechWaveFunction: public WaveFunctionBase {
 
     public:
-        SechWaveFunction(const Path &,LookupTable &_lookup, std::string _name="SHO sech");
+        SechWaveFunction(const Path &,LookupTable &_lookup);
         ~SechWaveFunction();
+
+        static const std::string name;
+        std::string getName() const {return name;}
 
         double PsiTrial (const int);
 
@@ -77,25 +94,26 @@ class SechWaveFunction: public WaveFunctionBase {
  */
 class JastrowWaveFunction: public WaveFunctionBase {
     
-public:
-    JastrowWaveFunction(const Path &, LookupTable &_lookup, std::string _name="Jastrow");
-    ~JastrowWaveFunction();
-    
-    double PsiTrial (const double);
-    double PsiTrial (const int);
-    double delPsiTrial(const double r);
-    double delSqPsiTrial(const double r);
-    double gradSqPsiTrial(const int);
+    public:
+        JastrowWaveFunction(const Path &, LookupTable &_lookup);
+        ~JastrowWaveFunction();
 
-    double twoBodyPsiTrial (const double);
+        double PsiTrial (const double);
+        double PsiTrial (const int);
+        double delPsiTrial(const double r);
+        double delSqPsiTrial(const double r);
+        double gradSqPsiTrial(const int);
+
+        double twoBodyPsiTrial (const double);
+
+        static const std::string name;
+        std::string getName() const {return name;}
     
-private:
-    double alpha;           // The parameter of the wave function
-    double beta;            // The parameter of the wave function
+    private:
+        double alpha;           // The parameter of the wave function
+        double beta;            // The parameter of the wave function
     
 };
-
-
 
 // ========================================================================
 // LiebLinigerWaveFunction Class
@@ -106,22 +124,24 @@ private:
  */
 class LiebLinigerWaveFunction: public WaveFunctionBase {
     
-public:
-    LiebLinigerWaveFunction(const Path &, LookupTable &_lookup, std::string _name="LiebLiniger");
-    ~LiebLinigerWaveFunction();
+    public:
+        LiebLinigerWaveFunction(const Path &, LookupTable &_lookup);
+        ~LiebLinigerWaveFunction();
+
+        double PsiTrial (const double);
+        double PsiTrial (const beadLocator &bead1);
+        double PsiTrial (const int);
+
+        double delPsiTrial(const double r);
+        double delSqPsiTrial(const double r);
+        double gradSqPsiTrial(const int);
+
+        static const std::string name;
+        std::string getName() const {return name;}
     
-    double PsiTrial (const double);
-    double PsiTrial (const beadLocator &bead1);
-    double PsiTrial (const int);
-    
-    double delPsiTrial(const double r);
-    double delSqPsiTrial(const double r);
-    double gradSqPsiTrial(const int);
-    
-    
-private:
-    double R;           // The parameter length scale of the wave function
-    double k;           // The wavevector of the wave function
+    private:
+        double R;           // The parameter length scale of the wave function
+        double k;           // The wavevector of the wave function
     
 };
 
@@ -135,19 +155,20 @@ private:
  */
 class SutherlandWaveFunction: public WaveFunctionBase {
     
-public:
-    SutherlandWaveFunction(const Path &, LookupTable &_lookup, double, std::string _name="Sutherland");
-    ~SutherlandWaveFunction();
+    public:
+        SutherlandWaveFunction(const Path &, LookupTable &_lookup);
+        ~SutherlandWaveFunction();
+
+        /** The 2-body trial wavefunction */
+        double PsiTrial(const double r) {return pow(2.0*sin(pioL*r),lambda);}
+        double PsiTrial (const int);
+
+        static const std::string name;
+        std::string getName() const {return name;}
     
-    /** The 2-body trial wavefunction */
-    double PsiTrial(const double r) {return pow(2.0*sin(pioL*r),lambda);}
-    double PsiTrial (const int);
-    
-private:
-    double lambda;          // Sutherland model \lambda
-    double pioL;            // pi / L
+    private:
+        double lambda;          // Sutherland model \lambda
+        double pioL;            // pi / L
 };
-
-
 
 #endif

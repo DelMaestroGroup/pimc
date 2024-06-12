@@ -9,11 +9,14 @@
 
 class PotentialFactory {
 public:
+
+    /* there are two types of potentials that we need to instantiate */ 
     enum class Type {
         Interaction,
         External
     };
 
+    /* singleton access by value? */
     static PotentialFactory& instance() {
         static PotentialFactory factory;
         return factory;

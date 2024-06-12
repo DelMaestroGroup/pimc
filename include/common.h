@@ -24,6 +24,7 @@
 #include <sstream>
 #include <chrono>
 #include <tuple>
+#include <optional>
 #include <functional> // has std::bind
 
 #define BZ_HAVE_BOOST_SERIALIZATION

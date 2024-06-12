@@ -35,13 +35,13 @@
  // 3. Register your potential using the appropriate macro in the source file.
  //
  // For internal potentials:
- // REGISTER_INTERNAL_POTENTIAL("internalName", TestPotential, NO_SETUP())
+ // REGISTER_INTERACTION_POTENTIAL("interactionName", TestPotential, NO_SETUP())
  //
  // For external potentials:
  // REGISTER_EXTERNAL_POTENTIAL("externalName", TestPotential, NO_SETUP())
  //
  // If setup is needed (e.g., boxPtr and params["param1"]):
- // REGISTER_INTERNAL_POTENTIAL("internalName", TestPotential, GET_SETUP(), setup.get_cell(), setup.params["param1"])
+ // REGISTER_INTERACTION_POTENTIAL("interactionName", TestPotential, GET_SETUP(), setup.get_cell(), setup.params["param1"])
  // REGISTER_EXTERNAL_POTENTIAL("externalName", TestPotential, GET_SETUP(), setup.get_cell(), setup.params["param1"])
  //
  //////////////////////////////////////////////////////////////////////////////
@@ -59,6 +59,7 @@ REGISTER_INTERACTION_POTENTIAL(    "delta1D",    Delta1DPotential, GET_SETUP(), 
 REGISTER_INTERACTION_POTENTIAL( "lorentzian", LorentzianPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
 REGISTER_INTERACTION_POTENTIAL(       "aziz",       AzizPotential, GET_SETUP(), setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(  "szalewicz",  SzalewiczPotential, GET_SETUP(), setup.get_cell())
+//REGISTER_INTERACTION_POTENTIAL(   "harmonic",   HarmonicPotential, GET_SETUP(), constants()->params()["omega"].as<double>())
 REGISTER_INTERACTION_POTENTIAL(   "harmonic",   HarmonicPotential, GET_SETUP(), setup.params["omega"].as<double>())
 REGISTER_INTERACTION_POTENTIAL(     "dipole",     DipolePotential,  NO_SETUP())
 

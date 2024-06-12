@@ -31,6 +31,9 @@ ConstantParameters::ConstantParameters()
 ******************************************************************************/
 void ConstantParameters::initConstants(po::variables_map &params) {
 
+    /* Create the local (and accessible) copy of the command line options */
+    params_ = params;
+
     /* We use boost to generate a UUID for the simulation */
     if (params["restart"].empty()) {
 
@@ -135,9 +138,6 @@ void ConstantParameters::initConstants(po::variables_map &params) {
     endFactor_ = params["end_factor"].as<double>();
     Npaths_ = params["number_paths"].as<int>();
 
-    intPotentialType_ = params["interaction"].as<std::string>();
-    extPotentialType_ = params["external"].as<std::string>();
-    waveFunctionType_ = params["wavefunction"].as<std::string>();
     actionType_       = params["action"].as<std::string>();
 
     /* Computed values */

@@ -175,7 +175,7 @@ void Communicator::init(double _tau, bool outputWorldline, std::string _initName
     fs::create_directory(outputPath);
 
     /* If we have cylinder output files, add the required directory. */
-    if (constants()->extPotentialType().find("tube") != std::string::npos) {
+    if (constants<std::string>("external").find("tube") != std::string::npos) {
         fs::path cylPath(baseDir + "/CYLINDER");
         fs::create_directory(cylPath);
     }
