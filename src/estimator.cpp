@@ -3380,7 +3380,10 @@ void StaticStructureFactorEstimator::accumulate() {
 StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
         double _maxR, int _frequency, std::string _label) :
-    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
+    d_beads(nullptr),
+    d_ssf(nullptr),
+    d_qvecs(nullptr)
 {
 
     /* Get the desired wavevectors (specified at command line)*/
@@ -3667,7 +3670,11 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
 IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstimatorGpu(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
         double _maxR, int _frequency, std::string _label) :
-    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
+    d_beads(nullptr),
+    d_isf(nullptr),
+    d_qvecs(nullptr)
+{
 
     int numTimeSlices = constants()->numTimeSlices();
 
@@ -3806,7 +3813,11 @@ void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
 ElasticScatteringEstimatorGpu::ElasticScatteringEstimatorGpu(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
         double _maxR, int _frequency, std::string _label) :
-    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) {
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label),
+    d_beads(nullptr),
+    d_es(nullptr),
+    d_qvecs(nullptr)
+{
 
     getQVectors(qValues);
 
@@ -5131,7 +5142,10 @@ void CylinderStaticStructureFactorEstimator::sample() {
 CylinderStaticStructureFactorGPUEstimator::CylinderStaticStructureFactorGPUEstimator(
         const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
         double _maxR, int _frequency, std::string _label) :
-    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label), 
+    d_beads(nullptr),
+    d_ssf(nullptr),
+    d_qvecs(nullptr)
 {
 
     /* Get the desired wavevectors (specified at command line)*/
