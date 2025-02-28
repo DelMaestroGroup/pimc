@@ -48,7 +48,9 @@ class Container {
          * @see: Z. Phys. Chem. 227 (2013) 345–352
          */
         void putInBC(dVec & r) const {
-            r -= pSide*blitz::floor(r*sideInv + 0.5);
+	    for (std::size_t i = 0; i < NDIM; ++i) {
+                r[i] -= pSide[i] * std::floor(r[i] * sideInv[i] + 0.5);
+            }
             /* int k; */
             /* for (int i = 0; i < NDIM; ++i) { */
             /*     k = int(r[i]*sideInv[i] + ((r[i]>=0.0)?0.5:-0.5)); */
