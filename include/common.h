@@ -169,4 +169,21 @@ constexpr auto enumerate(T && iterable)
     return iterable_wrapper{ std::forward<T>(iterable) };
 }
 
+template <typename T>
+T weighted_average(const std::vector<T>& x) {
+
+    auto [numerator, denominator] = std::accumulate(
+        x.begin(), x.end(),
+        std::make_pair(T{0}, T{0}),
+        [i = size_t{0}](std::pair<T, T> acc, T val) mutable {
+            acc.first += static_cast<T>(i) * val; // Weighted sum
+            acc.second += val; // Sum of weights
+            ++i;
+            return acc;
+        }
+    );
+
+    return denominator != T{0} ? numerator / denominator : T{0}; // Avoid division by zero
+}
+
 #endif
