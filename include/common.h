@@ -105,7 +105,7 @@ using boost::format;
 typedef unsigned long uint32;
 
 /** A NDIM x NDIM matrix of type double */
-typedef blitz::TinyMatrix<double,NDIM,NDIM> dMat;
+typedef std::array<std::array<double, NDIM>, NDIM> dMat;
 
 /** A NDIM-vector of type double */
 typedef std::array<double,NDIM> dVec;
