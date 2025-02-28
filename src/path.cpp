@@ -49,12 +49,11 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
     /* Construct and initialize the prevLink and nextLink arrays */
     prevLink.resize(numTimeSlices,getNumParticles());
     nextLink.resize(numTimeSlices,getNumParticles());
-    blitz::firstIndex i1;
-    blitz::secondIndex i2;
-    prevLink[0] = i1-1;
-    prevLink[1] = i2;
-    nextLink[0] = i1+1;
-    nextLink[1] = i2;
+    fill_with_function(prevLink.slice<0>(0), [](std::size_t j){ return static_cast<int>(j) - 1; });
+    fill_with_function(prevLink.slice<0>(1), [](std::size_t j){ return static_cast<int>(j); });
+    fill_with_function(nextLink.slice<0>(0), [](std::size_t j){ return static_cast<int>(j) + 1; });
+    fill_with_function(nextLink.slice<0>(1), [](std::size_t j){ return static_cast<int>(j); });
+
     
     if (PIGS) {
     /* Here we implement the fixed boundary conditions in imaginary time. */

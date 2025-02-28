@@ -1050,12 +1050,11 @@ void PathIntegralMonteCarlo::loadState() {
         else {
 
             /* Initialize the links */
-	    blitz::firstIndex i1;
-	    blitz::secondIndex i2;
-            pathPtrVec[pIdx].prevLink[0] = i1-1;
-            pathPtrVec[pIdx].prevLink[1] = i2;
-            pathPtrVec[pIdx].nextLink[0] = i1+1;
-            pathPtrVec[pIdx].nextLink[1] = i2;
+	    fill_with_function(pathPtrVec[pIdx].prevLink.slice<0>(0), [](std::size_t j){ return static_cast<int>(j) - 1; });
+            fill_with_function(pathPtrVec[pIdx].prevLink.slice<0>(1), [](std::size_t j){ return static_cast<int>(j); });
+            fill_with_function(pathPtrVec[pIdx].nextLink.slice<0>(0), [](std::size_t j){ return static_cast<int>(j) + 1; });
+            fill_with_function(pathPtrVec[pIdx].nextLink.slice<0>(1), [](std::size_t j){ return static_cast<int>(j); });
+
         
             /* Here we implement the initial periodic boundary conditions in 
              * imaginary time */
