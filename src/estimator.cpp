@@ -2900,7 +2900,7 @@ OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path,
     sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
 
     /* We chooose the maximum separation to be sqrt(NDIM)*min(L)/2 */
-    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*(blitz::min(path.boxPtr->side)) / (1.0*NOBDMSEP);
+    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*((*std::min_element(path.boxPtr->side.begin(), path.boxPtr->side.end()))) / (1.0*NOBDMSEP);
 
     /* This is an off-diagonal estimator*/
     initialize(NOBDMSEP);
@@ -3532,7 +3532,7 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
         double cq = qMag(nq);
         std::vector <dVec> qvecs;
 
-        int maxComp = ceil(cq*blitz::min(path.boxPtr->side)/(2.0*M_PI))+1;
+        int maxComp = ceil(cq*(*std::min_element(path.boxPtr->side.begin(), path.boxPtr->side.end()))/(2.0*M_PI))+1;
         int maxNumQ = ipow(2*maxComp + 1,NDIM);
         
         iVec qi;
@@ -5828,7 +5828,7 @@ PIGSOneBodyDensityMatrixEstimator::PIGSOneBodyDensityMatrixEstimator (Path &_pat
     sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
 
     /* We chooose the maximum separation to be sqrt(NDIM)*min(L)/2 */
-    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*(blitz::min(path.boxPtr->side)) / (1.0*NOBDMSEP);
+    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*(*std::min_element(path.boxPtr->side.begin(), path.boxPtr->side.end())) / (1.0*NOBDMSEP);
 
     /* This is an off-diagonal estimator*/
     initialize(NOBDMSEP);

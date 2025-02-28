@@ -216,7 +216,7 @@ void PathIntegralMonteCarlo::equilStepDiagonal() {
             if ( (move.at(index).getNumAttempted() > 0) 
                     && (move.at(index).getNumAttempted() > prevNumCoMAttempted)
                     && (move.at(index).getNumAttempted() % numCoMAttempted == 0) 
-                    && (constants()->comDelta() < 0.5*blitz::min(path.boxPtr->side)) ) {
+                    && (constants()->comDelta() < 0.5*(*std::min_element(path.boxPtr->side.begin(), path.boxPtr->side.end()))) ) {
 
                 numCoMAccepted  = move.at(index).getNumAccepted() - numCoMAccepted;
                 double CoMRatio = 1.0*numCoMAccepted / numCoMAttempted;
