@@ -172,22 +172,11 @@ endif()
 # Find Boost
 find_package( Boost 1.71.0 REQUIRED COMPONENTS program_options serialization )
 
-# Find Blitz
-find_package( Blitz REQUIRED )
-if (NOT Blitz_FOUND)
-    message(FATAL_ERROR
-        "Please follow blitz++ install instructions found at https://github.com/blitzpp/blitz.")
-endif()
-
 # Add include directories
 include_directories( ${Boost_INCLUDE_DIRS} )
-include_directories( ${Blitz_INCLUDE_DIRS} )
 
 # Link libraries
 target_link_libraries (${exe} ${Boost_LIBRARIES} )
-if((CMAKE_BUILD_TYPE MATCHES Debug) OR (CMAKE_BUILD_TYPE MATCHES PIGSDebug))
-    target_link_libraries (${exe} ${Blitz_LIBRARIES} )
-endif()
 
 # Link filesystem library -lstdc++fs for old compilers
 if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0))
