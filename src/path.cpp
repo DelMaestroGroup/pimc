@@ -131,20 +131,20 @@ void Path::leftPack() {
     beadLocator bead1,bead2;
 
     /* We go through each slice, and make sure the data arrays are left packed */
-    for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
-        for (bead1[1] = 0; bead1[1] < beads.extent(blitz::secondDim); bead1[1]++) {
+    for (bead1[0] = 0; bead1[0] < numTimeSlices; ++bead1[0]) {
+        for (bead1[1] = 0; bead1[1] < beads.extents()[1]; ++bead1[1]) {
             if (!worm.beadOn(bead1)) {
                 bead2 = bead1;
 
                 /* Find an active bead to the right of the inactive bead */
                 bool foundBead = false;
-                for (bead2[1] = bead1[1] + 1; bead2[1] < beads.extent(blitz::secondDim); bead2[1]++) {
+                for (bead2[1] = bead1[1] + 1; bead2[1] < beads.extents()[1]; ++bead2[1]) {
                     if (worm.beadOn(bead2)) {
                         foundBead = true;
                         break;
                     }
-                } //bead2
-                
+                }
+
                 /* If we have found one, perform the swap */
                 if (foundBead) {
 
@@ -793,19 +793,23 @@ void Path::printWormConfig(DynamicArray <beadLocator,1> &wormBeads) {
                 beadIndex = m,n;
                 bool foundWormBead = false;
                 std::string beadOut;
-                for (int k = 0; k < wormBeads.extent(blitz::firstDim); k++) { 
-                    
-                    if (all(beadIndex==wormBeads(k))) { 
+                for (int k = 0; k < static_cast<int>(wormBeads.extents()[0]); ++k) {
+                    if (beadIndex == wormBeads(k)) {
                         foundWormBead = true;
-                        if ((k > 0) && (k < (wormBeads.extent(blitz::firstDim)-1))) {
-                            if ( (wormBeads(k+1)[1] > wormBeads(k)[1]) || 
-                                    (wormBeads(k-1)[1] < wormBeads(k)[1]) ) 
+                        if (k > 0 && k < static_cast<int>(wormBeads.extents()[0]) - 1) {
+                            if ((wormBeads(k + 1)[1] > wormBeads(k)[1]) ||
+                                (wormBeads(k - 1)[1] < wormBeads(k)[1]))
+                            {
                                 beadOut = "/";
-                            else if ( (wormBeads(k+1)[1] < wormBeads(k)[1]) || 
-                                    (wormBeads(k-1)[1] > wormBeads(k)[1]) ) 
+                            }
+                            else if ((wormBeads(k + 1)[1] < wormBeads(k)[1]) ||
+                                     (wormBeads(k - 1)[1] > wormBeads(k)[1]))
+                            {
                                 beadOut = "\\";
-                            else
+                            }
+                            else {
                                 beadOut = "|";
+                            }
                         }
                         break;
                     }
