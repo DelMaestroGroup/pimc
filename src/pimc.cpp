@@ -1181,7 +1181,7 @@ void PathIntegralMonteCarlo::outputPDB() {
 
     /* Get the list of beads that are active in the simulation */
     DynamicArray <bool,2> doBead(numTimeSlices,numParticles);      
-    doBead = blitz::cast<bool>(path.worm.getBeads());
+    doBead = castArray<bool>(path.worm.getBeads());
 
     /* We go through each particle/worldline */
     int nwl = 0;

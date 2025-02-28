@@ -631,7 +631,7 @@ void Path::outputConfig(int configNumber) const {
 
     /* Get the list of beads that are active in the simulation */
     DynamicArray <bool,2> doBead(numTimeSlices,numParticles);      
-    doBead = blitz::cast<bool>(worm.getBeads());
+    doBead = castArray<bool>(worm.getBeads());
 
     /* We go through each particle/worldline */
     int nwl = 0;

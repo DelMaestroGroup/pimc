@@ -256,3 +256,27 @@ private:
     }
 };
 
+// Helper: Cast all elements of a DynamicArray<T, Rank> to type To.
+// This returns a new DynamicArray<To, Rank> with the same extents.
+template<typename To, typename T, std::size_t Rank>
+DynamicArray<To, Rank> castArray(const DynamicArray<T, Rank>& input) {
+    // Get extents from the input (assumes extents() returns a std::array<size_t, Rank>)
+    auto ext = input.extents();
+    // Construct the output array using extents. For a 2D array:
+    // (For higher ranks, you'll need to unpack ext appropriately.)
+    if constexpr(Rank == 2) {
+        DynamicArray<To, 2> output(ext[0], ext[1]);
+        std::transform(input.begin(), input.end(), output.begin(),
+                       [](const T &value) { return static_cast<To>(value); });
+        return output;
+    } else {
+        // For higher ranks, implement similar logic.
+        // You might iterate over all elements using the total size.
+        DynamicArray<To, Rank> output;
+        output.resize(ext[0], ext[1]); // Example for 2D; extend for other ranks.
+        std::transform(input.begin(), input.end(), output.begin(),
+                       [](const T &value) { return static_cast<To>(value); });
+        return output;
+    }
+}
+
