@@ -55,7 +55,7 @@ LookupTable::LookupTable(const Container *_boxPtr, const int _numLookupTimeSlice
 }
 
 /**************************************************************************//**
- * Free all blitz arrays.
+ * Free all memory.
 ******************************************************************************/
 LookupTable::~LookupTable() {
     gridNN.free(); 

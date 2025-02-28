@@ -111,7 +111,7 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
 /*************************************************************************//**
  * Destructor.
  *
- * Kill all blitz arrays
+ * Free up memory
 *****************************************************************************/
 Path::~Path () {
     beads.free();
@@ -647,7 +647,7 @@ void Path::outputConfig(int configNumber) const {
         do {
             doBead(beadIndex) = false;
             beadIndex = next(beadIndex);
-        } while (!blitz::all(beadIndex==endBead(nwl)));
+        } while (!(beadIndex == endBead(nwl)));
 
         /* We label a worm with a XXX */
         wlLength(nwl) = XXX;
@@ -678,7 +678,7 @@ void Path::outputConfig(int configNumber) const {
                 doBead(beadIndex) = false;
                 length++;
                 beadIndex = next(beadIndex);
-            } while (!blitz::all(beadIndex==endBead(nwl)));
+            } while (!(beadIndex == endBead(nwl)));
 
             /* We label each trajectory by the number of particles it contains. */
             wlLength(nwl) = int(length/numTimeSlices)-1;
