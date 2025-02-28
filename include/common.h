@@ -3,9 +3,9 @@
  * @author Adrian Del Maestro
  * @date 10.13.2008
  * @brief Global common header with shared dependencies and methods.
- * @details We use blitz++ for all arrays and used boost::format to simplify
+ * @details We use DynamicArray and std::array for all arrays and used boost::format to simplify
  * input and output.
- * @see http://sourceforge.net/projects/blitz/
+ * @see include/dynamic_array.h
  * @see http://www.boost.org/doc/libs/release/libs/format/index.html 
  */
 
