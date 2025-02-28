@@ -8,6 +8,17 @@
 #include <utility>
 #include <type_traits>
 
+// Helper to compute row‐major strides given extents.
+template <std::size_t Rank>
+std::array<std::size_t, Rank> compute_strides(const std::array<std::size_t, Rank>& extents) {
+    std::array<std::size_t, Rank> strides{};
+    strides[Rank - 1] = 1;
+    for (std::size_t i = Rank - 1; i-- > 0; ) {
+        strides[i] = strides[i + 1] * extents[i + 1];
+    }
+    return strides;
+}
+
 template <typename T, std::size_t Rank>
 class DynamicArray {
 public:
@@ -151,6 +162,33 @@ public:
     auto begin() const { return data_.begin(); }
     auto end() const { return data_.end(); }
 
+    // Fix the dimension FixedDim to a given index and return a lower-rank mdspan view.
+    // Usage: For a 2D array, arr.slice<1>(n) returns a 1D mdspan corresponding to arr(:, n).
+    template <std::size_t FixedDim>
+    auto slice(std::size_t index) const {
+        static_assert(FixedDim < Rank, "FixedDim out of range");
+        // Compute strides for our current extents.
+        const auto strides = compute_strides(extents_);
+        // Check index validity.
+        if (index >= extents_[FixedDim])
+            throw std::out_of_range("slice index out of range");
+
+        // Compute the offset in the linear data array.
+        T* new_ptr = data_.data() + index * strides[FixedDim];
+
+        // Build new extents by dropping the FixedDim.
+        std::array<std::size_t, Rank - 1> newExtents{};
+        for (std::size_t i = 0, j = 0; i < Rank; ++i) {
+            if (i != FixedDim) {
+                newExtents[j++] = extents_[i];
+            }
+        }
+        // Create dextents for the new rank.
+        auto new_dextents = make_dextents(newExtents);
+        using new_mdspan_t = std::mdspan<T, std::dextents<std::size_t, Rank - 1>>;
+        return new_mdspan_t(new_ptr, new_dextents);
+    }
+
 private:
     std::vector<T> data_;
     std::array<std::size_t, Rank> extents_{};
@@ -164,6 +202,17 @@ private:
     template <std::size_t... I>
     static dextents_type make_dextents_impl(const std::array<std::size_t, Rank>& ext, std::index_sequence<I...>) {
         return dextents_type{ ext[I]... };
+    }
+
+    // Overload for lower-rank extents.
+    template <std::size_t R>
+    static std::dextents<std::size_t, R> make_dextents(const std::array<std::size_t, R>& ext) {
+        return make_dextents_impl_lower(ext, std::make_index_sequence<R>{});
+    }
+
+    template <std::size_t R, std::size_t... I>
+    static std::dextents<std::size_t, R> make_dextents_impl_lower(const std::array<std::size_t, R>& ext, std::index_sequence<I...>) {
+        return std::dextents<std::size_t, R>{ ext[I]... };
     }
 
     // Helper: Convert a multi-index (given as an array of indices) to a linear index,
