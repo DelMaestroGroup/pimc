@@ -116,7 +116,17 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
      * calculation of maximal probabilities. We sort based on the winding
      * sector. */
     std::stable_sort(winding.begin(), winding.end(), [](const iVec& w1, const iVec& w2) {
-        return blitz::max(abs(w1)) < blitz::max(abs(w2));
+        auto max_w1 = *std::max_element(std::begin(w1), std::end(w1),
+            [](const auto& a, const auto& b) {
+                return std::abs(a) < std::abs(b);
+            });
+
+        auto max_w2 = *std::max_element(std::begin(w1), std::end(w1),
+            [](const auto& a, const auto& b) {
+                return std::abs(a) < std::abs(b);
+            });
+
+        return max_w1 < max_w2;
 	/* return (std::inner_product(w1.begin(), w1.end(), w1.begin(), 0.0) < std::inner_product(w2.begin(), w2.end(), w2.begin(), 0.0)); */
     });
 

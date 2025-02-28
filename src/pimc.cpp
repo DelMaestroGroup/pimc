@@ -1375,7 +1375,7 @@ std::string PathIntegralMonteCarlo::printHistogram() {
     if (end > PN.size()-1)
         end = PN.size()-1;
 
-    double factor = 50.0/blitz::max(PN);
+    double factor = 50.0/(*std::max_element(PN.begin(),PN.end()));
     int sumPN = 0;
     for (decltype(start) n = start; n <= end; n++) {
         int numStars = int(PN(n)*factor);

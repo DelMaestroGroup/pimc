@@ -3236,7 +3236,7 @@ void PairCorrelationEstimator::accumulate() {
 //        double cq = qMag(nq);
 //        std::vector <dVec> qvecs;
 //
-//        int maxComp = ceil(cq*blitz::max(path.boxPtr->side)/(2.0*M_PI))+1;
+//        int maxComp = ceil(cq*(*std::max_element(path.boxPtr->side.begin(), path.boxPtr->side.end())))/(2.0*M_PI))+1;
 //        int maxNumQ = ipow(2*maxComp + 1,NDIM);
 //        
 //        iVec qi;
