@@ -90,18 +90,18 @@ class TabulatedPotential {
         double dr;                          ///< The discretization for the lookup table
         int tableLength;                    ///< The number of elements in the lookup table
 
-	blitz::TinyVector<double,2> extV;          ///< Extremal value of V
-	blitz::TinyVector<double,2> extdVdr;       ///< Extremal value of dV/dr
-	blitz::TinyVector<double,2> extd2Vdr2;     ///< Extremal value of d2V/dr2
+	std::array<double,2> extV;          ///< Extremal value of V
+	std::array<double,2> extdVdr;       ///< Extremal value of dV/dr
+	std::array<double,2> extd2Vdr2;     ///< Extremal value of d2V/dr2
 
         /* Initialize all data structures */
         void initLookupTable(const double, const double);
 
         /* Returns the 2-point spline fit to the lookup table */
-        virtual double newtonGregory(const blitz::Array<double,1>&, const blitz::TinyVector<double,2>&, const double);
+        virtual double newtonGregory(const blitz::Array<double,1>&, const std::array<double,2>&, const double);
 
         /* Returns a bare lookup value */
-        virtual double direct(const blitz::Array<double,1>&, const blitz::TinyVector<double,2>&, const double);
+        virtual double direct(const blitz::Array<double,1>&, const std::array<double,2>&, const double);
 
         /** The functional value of V */
         virtual double valueV (const double) = 0;               
@@ -1506,52 +1506,52 @@ class GrapheneLUT3DPotentialGenerate: public PotentialBase  {
                 double, double );
 
         double V_64( double, double, double, double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::Array<int,1>,
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>, blitz::Array<int,1>,
                 blitz::Array<int,1>, blitz::Array<double,1> );
 
         double gradV_x_64( double, double, double, double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::Array<int,1>,
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>, blitz::Array<int,1>,
                 blitz::Array<int,1>, blitz::Array<double,1> );
 
         double gradV_y_64( double, double, double, double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::Array<int,1>,
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>, blitz::Array<int,1>,
                 blitz::Array<int,1>, blitz::Array<double,1> );
 
         double gradV_z_64( double, double, double, double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::Array<int,1>,
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>, blitz::Array<int,1>,
                 blitz::Array<int,1>, blitz::Array<double,1> );
 
         double grad2V_64( double, double, double, double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::Array<int,1>,
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>, blitz::Array<int,1>,
                 blitz::Array<int,1>, blitz::Array<double,1> );
         
         std::tuple<
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>
                 > get_graphene_vectors();
         std::tuple<
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>
                 > get_graphene_vectors( double );
         std::tuple<
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>
                 > get_graphene_vectors( double, double, double );
         std::tuple<
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>
                 > get_graphene_vectors_old( double, double, double );
         std::tuple< blitz::Array<int,1>, blitz::Array<int,1>, blitz::Array<double,1>
-            > get_g_magnitudes( blitz::TinyVector<double,2>, blitz::TinyVector<double,2> );
+            > get_g_magnitudes( std::array<double,2>, std::array<double,2> );
 
         template <class T> double calculate_magnitude( T vec ) {
             return sqrt(dot(vec,vec));
@@ -1569,53 +1569,53 @@ class GrapheneLUT3DPotentialGenerate: public PotentialBase  {
         void calculate_V3D_64(
                 blitz::Array<double,3>, blitz::Array<double,2>, blitz::Array<double,2>,
                 blitz::Array<double,1>, double, double,
-                double, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
+                double, std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
                 blitz::Array<int,1>, blitz::Array<int,1>,
                 blitz::Array<double,1> );
 
         void calculate_gradV3D_x_64(
                 blitz::Array<double,3>, blitz::Array<double,2>, blitz::Array<double,2>,
                 blitz::Array<double,1>, double, double,
-                double, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
+                double, std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
                 blitz::Array<int,1>, blitz::Array<int,1>,
                 blitz::Array<double,1> );
 
         void calculate_gradV3D_y_64(
                 blitz::Array<double,3>, blitz::Array<double,2>, blitz::Array<double,2>,
                 blitz::Array<double,1>, double, double,
-                double, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
+                double, std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
                 blitz::Array<int,1>, blitz::Array<int,1>,
                 blitz::Array<double,1> );
 
         void calculate_gradV3D_z_64(
                 blitz::Array<double,3>, blitz::Array<double,2>, blitz::Array<double,2>,
                 blitz::Array<double,1>, double, double,
-                double, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
+                double, std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
                 blitz::Array<int,1>, blitz::Array<int,1>,
                 blitz::Array<double,1> );
 
         void calculate_grad2V3D_64(
                 blitz::Array<double,3>, blitz::Array<double,2>, blitz::Array<double,2>,
                 blitz::Array<double,1>, double, double,
-                double, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
+                double, std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
                 blitz::Array<int,1>, blitz::Array<int,1>,
                 blitz::Array<double,1> );
 
         std::pair<double, double> get_z_min_V_min( 
                 double, double, double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
                 blitz::Array<int,1>, blitz::Array<int,1>, blitz::Array<double,1> );
 
         std::pair<double, double> get_z_V_to_find( 
                 double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
                 blitz::Array<int,1>, blitz::Array<int,1>, blitz::Array<double,1> );
 
 	blitz::Array<double,3> get_V3D(

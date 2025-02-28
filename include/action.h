@@ -82,7 +82,7 @@ class ActionBase {
         virtual double virKinCorr(int) { return 0.0; }
 
         /* The bare local potential at a single time slice */
-        virtual blitz::TinyVector<double,2> potential(int) { return blitz::TinyVector<double,2>(0.0); }
+        virtual std::array<double,2> potential(int) { return std::array<double,2>(0.0); }
         virtual double potential(int,double) { return 0.0; }
 
         /** The public method that sets the tau scaling factor. */
@@ -152,8 +152,8 @@ class LocalAction : public ActionBase {
 
     public:
         LocalAction (const Path &, LookupTable &, PotentialBase *, 
-                PotentialBase *, WaveFunctionBase *, const blitz::TinyVector<double,2>&, 
-                const blitz::TinyVector<double,2>&, bool _local=true, std::string _name="Local",
+                PotentialBase *, WaveFunctionBase *, const std::array<double,2>&, 
+                const std::array<double,2>&, bool _local=true, std::string _name="Local",
                 double _endFactor=1.0, int _period=1);
         virtual ~LocalAction();
 
@@ -188,14 +188,14 @@ class LocalAction : public ActionBase {
         virtual double virKinCorr(int slice) { return virialKinCorrection(slice); }
 
         /* The bare local potential at a single time slice */
-        virtual blitz::TinyVector<double,2> potential(int slice) { return V(slice); }
+        virtual std::array<double,2> potential(int slice) { return V(slice); }
         virtual double potential(int slice, double maxR) { return V(slice,maxR); }
 
     protected:
         int eo;                         ///< Is a slice even or odd?
 
-	blitz::TinyVector <double,2> VFactor;      ///< The even/odd slice potential factor
-	blitz::TinyVector <double,2> gradVFactor;  ///< The even/odd slice correction factor
+	std::array <double,2> VFactor;      ///< The even/odd slice potential factor
+	std::array <double,2> gradVFactor;  ///< The even/odd slice correction factor
 
         /* The full potential for a single bead and all beads at a single
          * time slice. */
@@ -204,7 +204,7 @@ class LocalAction : public ActionBase {
 
         /* For the potential at a given time slice we separate the interaction
          * and potential parts */
-	blitz::TinyVector <double,2> V(const int);
+	std::array <double,2> V(const int);
 
         /* The gradient of the potential squared for a single bead and all beads
          * at a single time slice. */
@@ -272,10 +272,10 @@ class NonLocalAction : public ActionBase {
         double derivPotentialActionLambda (int);
     
         /* The bare local external and interaction potential at a single time slice */
-        virtual blitz::TinyVector<double,2> potential(int slice) { return U(slice); }
+        virtual std::array<double,2> potential(int slice) { return U(slice); }
 
     protected:
-	blitz::TinyVector<double,2> U(int);
+	std::array<double,2> U(int);
     
     private:
         std::vector<bool> NNbead; //Records which beads where already visited for NN operation

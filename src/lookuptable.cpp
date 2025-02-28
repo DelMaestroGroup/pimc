@@ -93,7 +93,7 @@ void LookupTable::setupNNGrid() {
     }
 
     /* Resize and initialize the numLabels array*/
-    blitz::TinyVector <int,NDIM+1> initNumLabels;
+    std::array <int,NDIM+1> initNumLabels;
     for (int i = 0; i < NDIM; i++) 
         initNumLabels[i] = numNNGrid[i];
     initNumLabels[NDIM] = constants()->numTimeSlices();
@@ -105,7 +105,7 @@ void LookupTable::setupNNGrid() {
      * to take into account that we may have periodic boundary conditions */
     numNN = ipow(3,NDIM);                           // The total number of NN
     numUniqueNN = (int) floor(0.5*(numNN-1) + EPS); // The unique NN
-    blitz::TinyVector <int,NDIM+1> init;
+    std::array <int,NDIM+1> init;
 
     /* Get the init vector used to resize data structures */
     for (int i = 0; i < NDIM; i++) 
@@ -123,7 +123,7 @@ void LookupTable::setupNNGrid() {
     blitz::Array <iVec,1> nnShift(numNN);
     nnShift = 0; 
     /* The shift vector */
-    blitz::TinyVector<int,3> shift;
+    std::array<int,3> shift;
     shift = -1,0,1;
 
     /* For each of the unique nearest neighbors, we construct shift vectors 

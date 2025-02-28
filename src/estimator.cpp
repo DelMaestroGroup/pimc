@@ -926,7 +926,7 @@ void EnergyEstimator::accumulate() {
 
     double totK = 0.0;
     double totV = 0.0;
-    blitz::TinyVector<double,2> totVop(0.0);
+    std::array<double,2> totVop(0.0);
 
     int numParticles  = path.getTrueNumParticles();
     int numTimeSlices = endSlice - startSlice;
@@ -3164,7 +3164,7 @@ PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path,
             norm(n) = 0.5*path.boxPtr->side[NDIM-1] / dR;
     }
     else {
-	blitz::TinyVector<double,3> gNorm;
+	std::array<double,3> gNorm;
         gNorm[0] = 1.0;
         gNorm[1] = 1.0/(M_PI);
         gNorm[2] = 3.0/(2.0*M_PI);

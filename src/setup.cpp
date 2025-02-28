@@ -1147,8 +1147,8 @@ ActionBase * Setup::action(const Path &path, LookupTable &lookup,
     else {
 
         /* The factors needed for local actions. */
-        blitz::TinyVector <double,2> VFactor;      
-        blitz::TinyVector <double,2> gradVFactor;  
+        std::array <double,2> VFactor;      
+        std::array <double,2> gradVFactor;  
 
         VFactor = 1.0;
         gradVFactor = 0.0;

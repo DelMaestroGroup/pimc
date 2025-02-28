@@ -107,13 +107,13 @@ typedef unsigned long uint32;
 typedef blitz::TinyMatrix<double,NDIM,NDIM> dMat;
 
 /** A NDIM-vector of type double */
-typedef blitz::TinyVector<double,NDIM> dVec;
+typedef std::array<double,NDIM> dVec;
 
 /** A NDIM-vector of type integer*/
-typedef blitz::TinyVector<int,NDIM> iVec;
+typedef std::array<int,NDIM> iVec;
 
 /** time-slice,bead-number world line index */
-typedef blitz::TinyVector<int,2> beadLocator;
+typedef std::array<int,2> beadLocator;
 
 /** Integer array iterator */
 typedef blitz::Array<int,1>::iterator intIter;

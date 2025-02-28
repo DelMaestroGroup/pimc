@@ -298,7 +298,7 @@ void TabulatedPotential::initLookupTable(const double _dr, const double maxSep) 
  *  (Oxford Press, London, England) p 144 (2004).
 ******************************************************************************/
 double TabulatedPotential::newtonGregory(const blitz::Array<double,1> &VTable, 
-        const blitz::TinyVector<double,2> &extVal, const double r) {
+        const std::array<double,2> &extVal, const double r) {
 
     double rdr = r/dr;
     int k = int(rdr);
@@ -327,7 +327,7 @@ double TabulatedPotential::newtonGregory(const blitz::Array<double,1> &VTable,
  *  enough mesh.
 ******************************************************************************/
 double TabulatedPotential::direct(const blitz::Array<double,1> &VTable, 
-        const blitz::TinyVector<double,2> &extVal, const double r) {
+        const std::array<double,2> &extVal, const double r) {
 
     int k = int(r/dr);
     if (k <= 0) 
@@ -3597,13 +3597,13 @@ double GrapheneLUT3DPotentialGenerate::grad2Vg_64(
 
 double GrapheneLUT3DPotentialGenerate::V_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n, blitz::Array<int,1> g_i_array,
         blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    blitz::TinyVector <double,2> g;
+    std::array <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;    
     double _V = 0.0;
     _V += 2*Vz_64(z, sigma);
@@ -3653,13 +3653,13 @@ double GrapheneLUT3DPotentialGenerate::V_64(
 
 double GrapheneLUT3DPotentialGenerate::gradV_x_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n, blitz::Array<int,1> g_i_array,
         blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    blitz::TinyVector <double,2> g;
+    std::array <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
     double _V = 0.0;
     _V += 2*gradVz_x_64(z, sigma);
@@ -3704,13 +3704,13 @@ double GrapheneLUT3DPotentialGenerate::gradV_x_64(
 
 double GrapheneLUT3DPotentialGenerate::gradV_y_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n, blitz::Array<int,1> g_i_array,
         blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    blitz::TinyVector <double,2> g;
+    std::array <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
     double _V = 0.0;
     _V += 2*gradVz_y_64(z, sigma);
@@ -3755,13 +3755,13 @@ double GrapheneLUT3DPotentialGenerate::gradV_y_64(
 
 double GrapheneLUT3DPotentialGenerate::gradV_z_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n, blitz::Array<int,1> g_i_array,
         blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    blitz::TinyVector <double,2> g;
+    std::array <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
     double _V = 0.0;
     _V += 2*gradVz_z_64(z, sigma);
@@ -3806,13 +3806,13 @@ double GrapheneLUT3DPotentialGenerate::gradV_z_64(
 
 double GrapheneLUT3DPotentialGenerate::grad2V_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n, blitz::Array<int,1> g_i_array,
         blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    blitz::TinyVector <double,2> g;
+    std::array <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
     double _V = 0.0;
     _V += 2*grad2Vz_64(z, sigma);
@@ -3855,90 +3855,90 @@ double GrapheneLUT3DPotentialGenerate::grad2V_64(
     return pf * _V;
 }
 
-std::tuple< blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-    blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+std::tuple< std::array<double,2>, std::array<double,2>, std::array<double,2>,
+    std::array<double,2>, std::array<double,2>, std::array<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors() {
     return get_graphene_vectors(0.00);
 }
 
-std::tuple< blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-    blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+std::tuple< std::array<double,2>, std::array<double,2>, std::array<double,2>,
+    std::array<double,2>, std::array<double,2>, std::array<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors( double strain ) {
     return get_graphene_vectors(strain, 1.42, 0.165);
 }
 
-std::tuple< blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-    blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+std::tuple< std::array<double,2>, std::array<double,2>, std::array<double,2>,
+    std::array<double,2>, std::array<double,2>, std::array<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors(
         double strain, double carbon_carbon_distance, double poisson_ratio) {
     blitz::Array<double,2> R_strain(2,2);
     R_strain = -strain*poisson_ratio, 0,
                                  0, strain;
 
-    blitz::TinyVector <double,2> A_m_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
-    blitz::TinyVector <double,2> A_m( (carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
+    std::array <double,2> A_m_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
+    std::array <double,2> A_m( (carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
             (carbon_carbon_distance/2)*3*(1 + strain) ); //with strain
     
-    blitz::TinyVector <double,2> A_n_strain0( -(carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
-    blitz::TinyVector <double,2> A_n( -(carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
+    std::array <double,2> A_n_strain0( -(carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
+    std::array <double,2> A_n( -(carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
             (carbon_carbon_distance/2)*3*(1 + strain) ); //with strain
 
     //FIXME might have a problem here if A_m_60_strain0 is passed by reference
-    blitz::TinyVector <double,2> A_m_60_strain0( carbon_carbon_distance*sqrt(3) , 0 ); // A_m_strain0 rotated 60 degrees to sit on x-axis
-    blitz::TinyVector <double,2> A_m_60 = A_m_60_strain0; // rotated with strain
+    std::array <double,2> A_m_60_strain0( carbon_carbon_distance*sqrt(3) , 0 ); // A_m_strain0 rotated 60 degrees to sit on x-axis
+    std::array <double,2> A_m_60 = A_m_60_strain0; // rotated with strain
     A_m_60(0) += R_strain(0,0)*A_m_60_strain0(0) + R_strain(0,1)*A_m_60_strain0(1);
     A_m_60(1) += R_strain(1,0)*A_m_60_strain0(0) + R_strain(1,1)*A_m_60_strain0(1);
 
-    blitz::TinyVector <double,2> A_n_60_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); // A_n_strain0 rotated 60
-    blitz::TinyVector <double,2> A_n_60 = A_n_60_strain0; // rotated with strain
+    std::array <double,2> A_n_60_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); // A_n_strain0 rotated 60
+    std::array <double,2> A_n_60 = A_n_60_strain0; // rotated with strain
     A_n_60(0) += R_strain(0,0)*A_n_60_strain0(0) + R_strain(0,1)*A_n_60_strain0(1);
     A_n_60(1) += R_strain(1,0)*A_n_60_strain0(0) + R_strain(1,1)*A_n_60_strain0(1);
 
 
     // basis vectors
-    blitz::TinyVector <double,2> b_1( 0, carbon_carbon_distance*(1 + strain) );
-    blitz::TinyVector <double,2> b_2( 0, carbon_carbon_distance*2*(1 + strain) );
+    std::array <double,2> b_1( 0, carbon_carbon_distance*(1 + strain) );
+    std::array <double,2> b_2( 0, carbon_carbon_distance*2*(1 + strain) );
 
     // reciprocal lattice vectors
-    blitz::TinyVector <double,2> g_m( 3/(1 - strain*poisson_ratio) , sqrt(3)/(1 + strain) );
+    std::array <double,2> g_m( 3/(1 - strain*poisson_ratio) , sqrt(3)/(1 + strain) );
     g_m *= (2*M_PI/3/carbon_carbon_distance);
-    blitz::TinyVector <double,2> g_n( -g_m[0] , g_m[1] );
+    std::array <double,2> g_n( -g_m[0] , g_m[1] );
 
-    blitz::TinyVector <double,2> g_m_60( sqrt(3)/(1 - strain*poisson_ratio), -1/(1 + strain) );
+    std::array <double,2> g_m_60( sqrt(3)/(1 - strain*poisson_ratio), -1/(1 + strain) );
     g_m_60 *= (2*M_PI/3/carbon_carbon_distance);
-    blitz::TinyVector <double,2> g_n_60( 0 , 1/(1 + strain) );
+    std::array <double,2> g_n_60( 0 , 1/(1 + strain) );
     g_n_60 *= (4*M_PI/3/carbon_carbon_distance);
 
     return { A_m_60, A_n_60, b_1, b_2, g_m_60, g_n_60 };
 }
 
-std::tuple< blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-    blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+std::tuple< std::array<double,2>, std::array<double,2>, std::array<double,2>,
+    std::array<double,2>, std::array<double,2>, std::array<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors_old(
         double strain, double carbon_carbon_distance, double poisson_ratio) {
-     blitz::TinyVector <double,2> A_m_old( sqrt(3)*(4 + strain - 3*strain*poisson_ratio) ,
+     std::array <double,2> A_m_old( sqrt(3)*(4 + strain - 3*strain*poisson_ratio) ,
             3*(4 + 3*strain - strain*poisson_ratio) ); // wrong value previously used
     A_m_old *= (carbon_carbon_distance/8);
-    blitz::TinyVector <double,2> A_n_old( sqrt(3)*(-4 - strain + 3*strain*poisson_ratio),
+    std::array <double,2> A_n_old( sqrt(3)*(-4 - strain + 3*strain*poisson_ratio),
             3*(4 + 3*strain - strain*poisson_ratio) ); // wrong value previously used
     A_n_old *= (carbon_carbon_distance/8);
 
     // basis vectors
-    blitz::TinyVector <double,2> b_1( 0 , carbon_carbon_distance*(1 + strain) );
-    blitz::TinyVector <double,2> b_2( 0 , carbon_carbon_distance*2*(1 + strain) );
+    std::array <double,2> b_1( 0 , carbon_carbon_distance*(1 + strain) );
+    std::array <double,2> b_2( 0 , carbon_carbon_distance*2*(1 + strain) );
 
     // reciprocal lattice vectors
-    blitz::TinyVector <double,2> g_m_old( sqrt(3)*(4 + 3*strain - strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)),
+    std::array <double,2> g_m_old( sqrt(3)*(4 + 3*strain - strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)),
                             (4 + strain - 3*strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)) );
     g_m_old *= (8*M_PI/3/carbon_carbon_distance);
-    blitz::TinyVector <double,2> g_n_old( -g_m_old[0], g_m_old[1] );
+    std::array <double,2> g_n_old( -g_m_old[0], g_m_old[1] );
 
     return { A_m_old, A_n_old, b_1, b_2, g_m_old, g_n_old };
 }
 
 std::tuple< blitz::Array<int,1>, blitz::Array<int,1>, blitz::Array<double,1> >
 GrapheneLUT3DPotentialGenerate::get_g_magnitudes( 
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n ) {
+        std::array<double,2> g_m, std::array<double,2> g_n ) {
     int number_of_g_i = 200;
     int number_of_g_j = 200;
     
@@ -3947,7 +3947,7 @@ GrapheneLUT3DPotentialGenerate::get_g_magnitudes(
     blitz::Array<int,1> g_i_array(size_of_arrays);
     blitz::Array<int,1> g_j_array(size_of_arrays);
 
-    blitz::TinyVector<double,2> g;
+    std::array<double,2> g;
     int k = 0;
     for (int g_i = -number_of_g_i; g_i < number_of_g_i + 1; g_i++) {
         for (int g_j = -number_of_g_j; g_j < number_of_g_j + 1; g_j++){
@@ -3991,8 +3991,8 @@ GrapheneLUT3DPotentialGenerate::get_g_magnitudes(
 void GrapheneLUT3DPotentialGenerate::calculate_V3D_64(
         blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
         blitz::Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
         blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
         blitz::Array<double,1> g_magnitude_array ) {
     double x;
@@ -4014,8 +4014,8 @@ void GrapheneLUT3DPotentialGenerate::calculate_V3D_64(
 void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_x_64(
         blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
         blitz::Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
         blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
         blitz::Array<double,1> g_magnitude_array ) {
     double x;
@@ -4036,8 +4036,8 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_x_64(
 void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_y_64(
         blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
         blitz::Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
         blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
         blitz::Array<double,1> g_magnitude_array ) {
     double x;
@@ -4058,8 +4058,8 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_y_64(
 void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_z_64(
         blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
         blitz::Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
         blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
         blitz::Array<double,1> g_magnitude_array ) {
     double x;
@@ -4080,8 +4080,8 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_z_64(
 void GrapheneLUT3DPotentialGenerate::calculate_grad2V3D_64(
         blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
         blitz::Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
         blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
         blitz::Array<double,1> g_magnitude_array ) {
     double x;
@@ -4101,8 +4101,8 @@ void GrapheneLUT3DPotentialGenerate::calculate_grad2V3D_64(
 
 std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_min_V_min(double x, double y,
         double sigma, double epsilon, double area_lattice,
-        blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
         blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
         blitz::Array<double,1> g_magnitude_array ) {
 
@@ -4121,13 +4121,13 @@ std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_min_V_min(double
 
 std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_V_to_find(
         double sigma, double epsilon, double area_lattice,
-        blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
+        std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
         blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
         blitz::Array<double,1> g_magnitude_array ) {
     double V_to_find = 10000.0;
-    blitz::TinyVector<double,2> center_of_hexagon(0.0, 0.0);
-    blitz::TinyVector<double,2> above_A_site(b_1[0],b_1[1]);
+    std::array<double,2> center_of_hexagon(0.0, 0.0);
+    std::array<double,2> above_A_site(b_1[0],b_1[1]);
     double x = center_of_hexagon(0);
     double y = center_of_hexagon(1);
 

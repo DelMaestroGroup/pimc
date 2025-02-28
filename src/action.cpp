@@ -261,8 +261,8 @@ double ActionBase::potentialAction (const beadLocator &startBead,
 ******************************************************************************/
 LocalAction::LocalAction (const Path &_path, LookupTable &_lookup, 
         PotentialBase *_externalPtr, PotentialBase *_interactionPtr, 
-        WaveFunctionBase *_waveFunctionPtr, const blitz::TinyVector<double,2> &_VFactor, 
-        const blitz::TinyVector<double,2> & _gradVFactor, bool _local, std::string _name,
+        WaveFunctionBase *_waveFunctionPtr, const std::array<double,2> &_VFactor, 
+        const std::array<double,2> & _gradVFactor, bool _local, std::string _name,
         double _endFactor, int _period) :
     ActionBase(_path,_lookup,_externalPtr,_interactionPtr,_waveFunctionPtr,
             _local,_name,_endFactor,_period), 
@@ -573,7 +573,7 @@ double LocalAction::V(const beadLocator &bead1) {
  *  This is really only used for either debugging or during the calculation 
  *  of the potential energy. As such, we update the separation histogram here.
 ******************************************************************************/
-blitz::TinyVector<double,2> LocalAction::V(const int slice) {
+std::array<double,2> LocalAction::V(const int slice) {
 
     double totVint = 0.0;
     double totVext = 0.0;
@@ -607,7 +607,7 @@ blitz::TinyVector<double,2> LocalAction::V(const int slice) {
     } // bead1
 
     /* Separate the external and interaction parts */ 
-    return blitz::TinyVector<double,2>(totVext,totVint);
+    return std::array<double,2>(totVext,totVint);
 }
 
 /*************************************************************************//**
@@ -722,8 +722,8 @@ double LocalAction::Vnn(const int slice) {
     double totVext = 0.0;
 
     iVec gIndex,nngIndex;           // The grid box of a particle
-    blitz::TinyVector<int,NDIM+1> nnIndex; // The nearest neighbor boxes of a particle
-    blitz::TinyVector<int,NDIM+2> hI1,hI2; // The hash indices
+    std::array<int,NDIM+1> nnIndex; // The nearest neighbor boxes of a particle
+    std::array<int,NDIM+2> hI1,hI2; // The hash indices
 
     dVec pos;                       // The position of a particle
 
@@ -1619,7 +1619,7 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
  *  Computes the total potential energy by summing over all particles and time
  *  slices.  
 ******************************************************************************/
-blitz::TinyVector<double,2> NonLocalAction::U(int slice) {
+std::array<double,2> NonLocalAction::U(int slice) {
 
     double totUint = 0.0;
     double totUext = 0.0;
@@ -1652,7 +1652,7 @@ blitz::TinyVector<double,2> NonLocalAction::U(int slice) {
         } // bead2
 
     } // bead1
-    return blitz::TinyVector<double,2>(totUext,totUint);
+    return std::array<double,2>(totUext,totUint);
 }
 
 /**************************************************************************//**

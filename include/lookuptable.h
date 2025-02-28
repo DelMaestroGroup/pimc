@@ -100,9 +100,9 @@ class LookupTable {
 
         double rc2;                         // A local copy of the potential cutoff squared
 
-	blitz::TinyVector<int,NDIM+1> nnIndex;     // Comonly used nn index vector
-	blitz::TinyVector<int,NDIM+1> nI;          // Used for indexing numLabels
-	blitz::TinyVector<int,NDIM+2> hI;          // Used for indexing hash
+	std::array<int,NDIM+1> nnIndex;     // Comonly used nn index vector
+	std::array<int,NDIM+1> nI;          // Used for indexing numLabels
+	std::array<int,NDIM+2> hI;          // Used for indexing hash
 
 	blitz::Array <iVec,NDIM+1> gridNN;         // The nearest neighbors of each grid box 
 	blitz::Array <iVec,NDIM+1> gridNNReduced;  // The nn reduced to contain no back links
@@ -114,17 +114,17 @@ class LookupTable {
 	blitz::Array <int,2> beadLabel;            // The label of a bead in a cell
 	blitz::Array <int,NDIM+1> numLabels;       // The number of beads in a cell
 
-	blitz::TinyVector <int,NDIM+2> hashSize;   // The current size of the hash array
+	std::array <int,NDIM+2> hashSize;   // The current size of the hash array
 
         beadLocator swap;                   // Used when deleting/updating beads
 
         void setupNNGrid();                 // We initialize the nearest neighbor grid
 
         /* Return tiny vectors suitable for indexing the numLabel and hash array */
-        inline blitz::TinyVector <int,NDIM+1> numLabelIndex(const beadLocator&);
-        inline blitz::TinyVector <int,NDIM+1> numLabelIndex(const iVec&, const int);
-        inline blitz::TinyVector <int,NDIM+2> hashIndex(const beadLocator&, const int);
-        inline blitz::TinyVector <int,NDIM+2> hashIndex(const iVec&, const int, const int);
+        inline std::array <int,NDIM+1> numLabelIndex(const beadLocator&);
+        inline std::array <int,NDIM+1> numLabelIndex(const iVec&, const int);
+        inline std::array <int,NDIM+2> hashIndex(const beadLocator&, const int);
+        inline std::array <int,NDIM+2> hashIndex(const iVec&, const int, const int);
 };
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -201,8 +201,8 @@ inline int LookupTable::gridNumber(const iVec &index) {
  * Given a bead locator, return a NDIM+1 iVector used for indexing the numLabel
  * array. 
  */
-inline blitz::TinyVector <int,NDIM+1> LookupTable::numLabelIndex(const beadLocator &beadIndex) {
-	blitz::TinyVector<int,NDIM+1> index;
+inline std::array <int,NDIM+1> LookupTable::numLabelIndex(const beadLocator &beadIndex) {
+	std::array<int,NDIM+1> index;
     for (int i = 0; i < NDIM; i++)
         index[i] = grid(beadIndex)[i];
     index[NDIM] = beadIndex[0];
@@ -214,8 +214,8 @@ inline blitz::TinyVector <int,NDIM+1> LookupTable::numLabelIndex(const beadLocat
  * Given a grid Index, and slice, return a NDIM+1 iVector used for indexing the numLabel
  * array.
  */
-inline blitz::TinyVector <int,NDIM+1> LookupTable::numLabelIndex(const iVec &gI, const int slice) {
-	blitz::TinyVector<int,NDIM+1> index;
+inline std::array <int,NDIM+1> LookupTable::numLabelIndex(const iVec &gI, const int slice) {
+	std::array<int,NDIM+1> index;
     for (int i = 0; i < NDIM; i++)
         index[i] = gI[i];
     index[NDIM] = slice;
@@ -227,9 +227,9 @@ inline blitz::TinyVector <int,NDIM+1> LookupTable::numLabelIndex(const iVec &gI,
  * Given a bead locator and label, return a NDIM+2 iVector used for indexing the hash
  * array.
  */
-inline blitz::TinyVector <int,NDIM+2> LookupTable::hashIndex(const beadLocator &beadIndex, 
+inline std::array <int,NDIM+2> LookupTable::hashIndex(const beadLocator &beadIndex, 
         const int label) {
-	blitz::TinyVector<int,NDIM+2> index;
+	std::array<int,NDIM+2> index;
     for (int i = 0; i < NDIM; i++)
         index[i] = grid(beadIndex)[i];
     index[NDIM]   = beadIndex[0];
@@ -242,9 +242,9 @@ inline blitz::TinyVector <int,NDIM+2> LookupTable::hashIndex(const beadLocator &
  * Given a grid Index, slice and label, return a NDIM+2 iVector used for indexing the hash
  * array.
  */
-inline blitz::TinyVector <int,NDIM+2> LookupTable::hashIndex(const iVec &gI, const int slice, 
+inline std::array <int,NDIM+2> LookupTable::hashIndex(const iVec &gI, const int slice, 
         const int label) {
-	blitz::TinyVector<int,NDIM+2> index;
+	std::array<int,NDIM+2> index;
     for (int i = 0; i < NDIM; i++)
         index[i] = gI[i];
     index[NDIM]   = slice;
