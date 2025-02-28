@@ -212,7 +212,8 @@ int Prism::gridIndex(const dVec &pos) const {
  *  @return The hyper volume of the grid box
 ******************************************************************************/
 double Prism::gridBoxVolume(const int n) const {
-    return blitz::product(gridSize);
+    return std::accumulate(gridSize.begin(), gridSize.end(), 1.0, std::multiplies<>());
+
 }
 
 // ---------------------------------------------------------------------------
@@ -472,6 +473,6 @@ int Cylinder::gridIndex(const dVec &pos) const {
 double Cylinder::gridBoxVolume(const int n) const {
 
     /* Get the first grid box index */
-    return blitz::product(gridSize);
+    return std::accumulate(gridSize.begin(), gridSize.end(), 1.0, std::multiplies<>());
 }
 
