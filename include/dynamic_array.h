@@ -8,6 +8,16 @@
 #include <utility>
 #include <type_traits>
 
+// Helper to fill a slice
+template <typename Mdspan>
+void fill_mdspan(Mdspan view, const typename Mdspan::value_type& value) {
+    std::size_t total = 1;
+    for (std::size_t d = 0; d < Mdspan::rank(); ++d) {
+        total *= view.extent(d);
+    }
+    std::fill(view.data(), view.data() + total, value);
+}
+
 // Helper to compute row‐major strides given extents.
 template <std::size_t Rank>
 std::array<std::size_t, Rank> compute_strides(const std::array<std::size_t, Rank>& extents) {

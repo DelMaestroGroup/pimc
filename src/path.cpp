@@ -43,7 +43,7 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
     /* Copy the initial condition at all time slices (a classical initial condition)*/
     for (int n = 0; n < numParticles; n++) {
         for (int i = 0; i < NDIM; i++)
-            beads(blitz::Range::all(),n)[i] = initialPos(n)[i];
+	    beads.slice<1>(n)(i) = initialPos(n)[i];
     }
 
     /* Construct and initialize the prevLink and nextLink arrays */
@@ -58,8 +58,8 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
     
     if (PIGS) {
     /* Here we implement the fixed boundary conditions in imaginary time. */
-        prevLink(0,blitz::Range::all()) = XXX;
-        nextLink(numTimeSlices-1,blitz::Range::all()) = XXX;
+	fill_mdspan(prevLink.slice<0>(0), XXX);
+	fill_mdspan(nextLink.slice<0>(numTimeSlices-1), XXX);
 
         /* Here we break worldlines at the center of the path if requested*/
         breakSlice = 0;
@@ -96,8 +96,8 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
     else {
         breakSlice = 0;
         /* Here we implement periodic boundary conditions in imaginary time */
-        prevLink(0,blitz::Range::all())[0] = numTimeSlices-1;
-        nextLink(numTimeSlices-1,blitz::Range::all())[0] = 0;
+	prevLink.slice<0>(0)(0) = numTimeSlices-1;
+	nextLink.slice<0>(numTimeSlices-1)(0) = 0;
     }
 
     /* Initialize the number of active beads at each slice */
@@ -261,18 +261,18 @@ beadLocator Path::addBead(const int slice, const dVec &pos) {
         /* Resize and initialize the main data array which holds all worldline 
          * configurations */
         beads.resizeAndPreserve(numTimeSlices,numWorldLines + 1);
-        beads(blitz::Range::all(),numWorldLines) = 0.0;
+	fill_mdspan(beads.slice<1>(numWorldLines), 0.0);
 
         /* Resize and initialize the worm bead arrays which tells us
          * whether or not we have a bead present */
         worm.beads.resizeAndPreserve(numTimeSlices,numWorldLines + 1);
-        worm.beads(blitz::Range::all(),numWorldLines) = 0;
+	fill_mdspan(worm.beads.slice<1>(numWorldLines), 0);
 
         /* Resize and initialize the previous and next link arrays */
         prevLink.resizeAndPreserve(numTimeSlices,numWorldLines + 1);
         nextLink.resizeAndPreserve(numTimeSlices,numWorldLines + 1);
-        prevLink(blitz::Range::all(),numWorldLines) = XXX;
-        nextLink(blitz::Range::all(),numWorldLines) = XXX;
+	fill_mdspan(prevLink.slice<1>(numWorldLines), XXX);
+	fill_mdspan(nextLink.slice<1>(numWorldLines), XXX);
 
         /* Resize the lookup table */
         lookup.resizeList(numWorldLines + 1);
