@@ -620,7 +620,7 @@ void EstimatorBase::getQVectorsNN(std::vector<dVec> &qValues) {
         }
         qValues.push_back(q);
 
-        std::cout << sqrt(blitz::dot(q,q)) << " " << q_int << std::endl;
+        std::cout << sqrt(std::inner_product(q.begin(), q.end(), q.begin(), 0.0)) << " " << q_int << std::endl;
 
         int pos = NDIM - 1;
         int count = 0;
@@ -808,7 +808,7 @@ std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double q
     /* output */
     /* int totalNumQVecs = 0; */
     /* for (auto [nq,cq] : enumerate(q)) { */
-    /*     double qMag = sqrt(blitz::dot(cq.front(),cq.front())); */
+    /*     double qMag = sqrt(std::inner_product(cq.front().begin(), cq.front().end(), cq.front().begin(), 0.0)); */
     /*     std::cout << std::endl << std::endl << "qmag = " << qMag << std::endl; */
     /*     for (const auto &cqvec : cq) */ 
     /*         std::cout << cqvec << std::endl; */
@@ -3302,7 +3302,7 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
     /* The magnitude of q */
     header = str(format("#%15.6E") % 0.0);
     for (int nq = 1; nq < numq; nq++)  {
-        double qMag = sqrt(blitz::dot(q[nq][0],q[nq][0]));
+        double qMag = sqrt(std::inner_product(q[nq][0].begin(), q[nq][0].end(), q[nq][0].begin(), 0.0));
         header.append(str(format("%16.6E") % (qMag)));
     }
         /* header.append(str(format("%16.6E") % (qMag(nq)-0.5*dq))); */
@@ -5043,7 +5043,7 @@ CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
     /* The magnitude of q */
     header = str(format("#%15.6E") % 0.0);
     for (int nq = 1; nq < numq; nq++)  {
-        double qMag = sqrt(blitz::dot(q[nq][0],q[nq][0]));
+        double qMag = sqrt(std::inner_product(q[nq][0].begin(), q[nq][0].end(), q[nq][0].begin(), 0.0));
         header.append(str(format("%16.6E") % (qMag)));
     }
 

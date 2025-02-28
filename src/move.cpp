@@ -117,7 +117,7 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
      * sector. */
     std::stable_sort(winding.begin(), winding.end(), [](const iVec& w1, const iVec& w2) {
         return blitz::max(abs(w1)) < blitz::max(abs(w2));
-        /* return (blitz::dot(w1,w1) < blitz::dot(w2,w2)); */
+	/* return (std::inner_product(w1.begin(), w1.end(), w1.begin(), 0.0) < std::inner_product(w2.begin(), w2.end(), w2.begin(), 0.0)); */
     });
 
     /* output */
