@@ -1058,9 +1058,7 @@ void PathIntegralMonteCarlo::loadState() {
         
             /* Here we implement the initial periodic boundary conditions in 
              * imaginary time */
-            //pathPtrVec[pIdx].prevLink(0,blitz::Range::all())[0] = numTimeSlices-1;
 	    pathPtrVec[pIdx].prevLink.slice<0>(0)(0) = numTimeSlices-1;
-            pathPtrVec[pIdx].nextLink(numTimeSlices-1,blitz::Range::all())[0] = 0;
 	    pathPtrVec[pIdx].nextLink.slice<0>(numTimeSlices-1)(0) = 0;
 
             /* Reset the worm.beads array */
