@@ -895,8 +895,8 @@ void PathIntegralMonteCarlo::loadClassicalState(DynamicArray <dVec,2> &tempBeads
             if (tempWormBeads(beadIndex)) {
                 
                 /* Assign the classical configuration */
-                pathPtrVec[pIdx].beads(blitz::Range::all(),ptcl) = tempBeads(beadIndex);
-                pathPtrVec[pIdx].worm.beads(blitz::Range::all(),ptcl) = 1;
+	        fill_mdspan(pathPtrVec[pIdx].beads.slice<1>(ptcl), tempBeads(beadIndex));
+	        fill_mdspan(pathPtrVec[pIdx].worm.beads.slice<1>(ptcl), 1);
                 ptcl++;
             }
         }
@@ -1059,8 +1059,10 @@ void PathIntegralMonteCarlo::loadState() {
         
             /* Here we implement the initial periodic boundary conditions in 
              * imaginary time */
-            pathPtrVec[pIdx].prevLink(0,blitz::Range::all())[0] = numTimeSlices-1;
+            //pathPtrVec[pIdx].prevLink(0,blitz::Range::all())[0] = numTimeSlices-1;
+	    pathPtrVec[pIdx].prevLink.slice<0>(0)(0) = numTimeSlices-1;
             pathPtrVec[pIdx].nextLink(numTimeSlices-1,blitz::Range::all())[0] = 0;
+	    pathPtrVec[pIdx].nextLink.slice<0>(numTimeSlices-1)(0) = 0;
 
             /* Reset the worm.beads array */
             pathPtrVec[pIdx].worm.beads = 0;
