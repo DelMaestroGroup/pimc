@@ -26,7 +26,7 @@
  * @param initialPos The initial configuration of particles
 ******************************************************************************/
 Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices, 
-        const blitz::Array<dVec,1> &initialPos,int numberBroken) :
+        const DynamicArray<dVec,1> &initialPos,int numberBroken) :
     numTimeSlices(_numTimeSlices),
     boxPtr(_boxPtr), 
     worm(initialPos.size()),
@@ -620,18 +620,18 @@ void Path::outputConfig(int configNumber) const {
 #else
     /* We go through all beads, and find the start and end bead for each
      * worldline, adding them to an array */
-    blitz::Array <beadLocator,1> startBead,endBead;
+    DynamicArray <beadLocator,1> startBead,endBead;
     startBead.resize(numParticles);
     endBead.resize(numParticles);
 
     /* We sort the output by the number of beads in a worldline */
-    blitz::Array <int,1> wlLength(numParticles);
+    DynamicArray <int,1> wlLength(numParticles);
     wlLength = 0;
 
     int numWorldLines = 0;
 
     /* Get the list of beads that are active in the simulation */
-    blitz::Array <bool,2> doBead(numTimeSlices,numParticles);      
+    DynamicArray <bool,2> doBead(numTimeSlices,numParticles);      
     doBead = blitz::cast<bool>(worm.getBeads());
 
     /* We go through each particle/worldline */
@@ -740,7 +740,7 @@ void Path::outputConfig(int configNumber) const {
  * 
  *  We print out the current link and bead configuration to visualize a worm.
 ******************************************************************************/
-void Path::printWormConfig(blitz::Array <beadLocator,1> &wormBeads) {
+void Path::printWormConfig(DynamicArray <beadLocator,1> &wormBeads) {
 
     int numWorldLines = getNumParticles();
 

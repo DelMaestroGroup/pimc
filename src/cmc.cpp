@@ -23,7 +23,7 @@
 ******************************************************************************/
 ClassicalMonteCarlo::ClassicalMonteCarlo (PotentialBase *_externalPtr,
         PotentialBase *_interactionPtr, MTRand &_random, const Container *_boxPtr,
-        blitz::Array <dVec,1> &initialPos) :
+        DynamicArray <dVec,1> &initialPos) :
     externalPtr(_externalPtr), 
     interactionPtr(_interactionPtr),
     random(_random),

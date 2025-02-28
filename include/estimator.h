@@ -100,8 +100,8 @@ class EstimatorBase {
 
         std::map<std::string,int> estIndex;       ///< Map estimator labels to indices.
 
-	blitz::Array<double,1> estimator;      ///< The estimator array
-	blitz::Array<double,1> norm;           ///< The normalization factor for each estimator
+	DynamicArray<double,1> estimator;      ///< The estimator array
+	DynamicArray<double,1> norm;           ///< The normalization factor for each estimator
 
         int numEst;                     ///< The number of individual quantities measured
         int frequency;                  ///< The frequency at which we accumulate
@@ -505,9 +505,9 @@ class LocalSuperfluidDensityEstimator: public EstimatorBase {
     private:
         int numGrid;            // The number of grid points
         double dR;              // The size of the radial bin
-	blitz::Array <double,1> locAz; // The local path area estimator
-	blitz::Array <double,1> locA2; // The local area squared
-	blitz::Array <double,1> locWz; // The local winding number estimator
+	DynamicArray <double,1> locAz; // The local path area estimator
+	DynamicArray <double,1> locA2; // The local area squared
+	DynamicArray <double,1> locWz; // The local winding number estimator
 
         void accumulate();      // Accumulate values
 
@@ -536,7 +536,7 @@ class PlaneWindingSuperfluidDensityEstimator: public EstimatorBase {
         double dx;              // The linear x-size of the spatial bin
         double dy;              // The linear y-size of the spatial bin
         int numGrid;            // The number of grid points
-	blitz::Array <double,1> locWz; // The local winding number estimator
+	DynamicArray <double,1> locWz; // The local winding number estimator
         void accumulate();      // Accumulate values
 
 };
@@ -564,7 +564,7 @@ class PlaneAreaSuperfluidDensityEstimator: public EstimatorBase {
         double dx;              // The linear x-size of the spatial bin
         double dy;              // The linear y-size of the spatial bin
         int numGrid;            // The number of grid points
-	blitz::Array <double,1> locAz; // The local area estimator
+	DynamicArray <double,1> locAz; // The local area estimator
         void accumulate();      // Accumulate values
 
 };
@@ -590,7 +590,7 @@ class RadialWindingSuperfluidDensityEstimator: public EstimatorBase {
     private:
         double dR;              // The size of the radial bin
         int numGrid;            // The number of grid points
-	blitz::Array <double,1> locWz; // The local winding number estimator
+	DynamicArray <double,1> locWz; // The local winding number estimator
         void accumulate();      // Accumulate values
 
 };
@@ -616,7 +616,7 @@ class RadialAreaSuperfluidDensityEstimator: public EstimatorBase {
     private:
         double dR;              // The size of the radial bin
         int numGrid;            // The number of grid points
-	blitz::Array <double,1> locAz; // The local winding number estimator
+	DynamicArray <double,1> locAz; // The local winding number estimator
         void accumulate();      // Accumulate values
 
 };
@@ -661,7 +661,7 @@ class PermutationCycleEstimator: public EstimatorBase {
         std::string getName() const {return name;}
 
     private:
-	blitz::Array <bool,1> doBead;      // Used for ensuring we don't double count beads
+	DynamicArray <bool,1> doBead;      // Used for ensuring we don't double count beads
         int maxNumCycles;           // The maximum number of cycles to consider
         void accumulate();          // Accumulate values
 };
@@ -686,8 +686,8 @@ class LocalPermutationEstimator: public EstimatorBase {
         std::string getName() const {return name;}
 
     private:
-	blitz::Array <int, 1> numBeadInGrid;
-	blitz::Array <bool,1> doBead;      // Used for ensuring we don't double count beads
+	DynamicArray <int, 1> numBeadInGrid;
+	DynamicArray <bool,1> doBead;      // Used for ensuring we don't double count beads
         int maxNumCycles;           // The maximum number of cycles to consider
         void accumulate();          // Accumulate values
 };
@@ -783,7 +783,7 @@ class StaticStructureFactorEstimator: public EstimatorBase {
 
     private:
         void accumulate();              // Accumulate values
-	blitz::Array <double,1> sf;            // structure factor
+	DynamicArray <double,1> sf;            // structure factor
         std::vector <std::vector<dVec> > q;       // the q-vectors
 };
 
@@ -807,8 +807,8 @@ class StaticStructureFactorGPUEstimator: public EstimatorBase {
         void accumulate();              // Accumulate values
         
         std::vector<dVec> qValues;              // Vector of q values
-        blitz::Array<dVec,1> qValues_dVec;      // Vector of q values
-        blitz::Array<double,1> ssf;             // local intermediate scattering function
+        DynamicArray<dVec,1> qValues_dVec;      // Vector of q values
+        DynamicArray<double,1> ssf;             // local intermediate scattering function
 
         int numq;                        // the number of q std::vectors
         size_t bytes_beads;
@@ -845,8 +845,8 @@ class CylinderStaticStructureFactorGPUEstimator: public EstimatorBase {
         void accumulate();              // Accumulate values
         
         std::vector<dVec> qValues;              // Vector of q values
-        blitz::Array<dVec,1> qValues_dVec;      // Vector of q values
-        blitz::Array<double,1> ssf;             // local intermediate scattering function
+        DynamicArray<dVec,1> qValues_dVec;      // Vector of q values
+        DynamicArray<double,1> ssf;             // local intermediate scattering function
 
         int numq;                        // the number of q std::vectors
         size_t bytes_beads;
@@ -879,10 +879,10 @@ class IntermediateScatteringFunctionEstimator: public EstimatorBase {
 
     private:
         void accumulate();              // Accumulate values
-	blitz::Array <double,1> isf;           // local intermediate scattering function
+	DynamicArray <double,1> isf;           // local intermediate scattering function
 
         int numq;                       // the number of q-magnitudes
-	blitz::Array <int,1> numqVecs;         // the number of q-vectors with a given magnitude
+	DynamicArray <int,1> numqVecs;         // the number of q-vectors with a given magnitude
         std::vector <std::vector<dVec> > q;       // the q-vectors
 };
 
@@ -906,8 +906,8 @@ class IntermediateScatteringFunctionEstimatorGpu: public EstimatorBase {
     private:
         void accumulate();              // Accumulate values
         std::vector<dVec> qValues;      // Vector of q values
-	blitz::Array<dVec,1> qValues_dVec;     // Vector of q values
-	blitz::Array<double,1> isf;           // local intermediate scattering function
+	DynamicArray<dVec,1> qValues_dVec;     // Vector of q values
+	DynamicArray<double,1> isf;           // local intermediate scattering function
 
         int numq;                        // the number of q std::vectors
         size_t bytes_beads;
@@ -943,8 +943,8 @@ class ElasticScatteringEstimatorGpu: public EstimatorBase {
     private:
         void accumulate();              // Accumulate values
         std::vector<dVec> qValues;      // Vector of q values
-	blitz::Array<dVec,1> qValues_dVec;     // Vector of q values
-	blitz::Array<double,1> es;           // local intermediate scattering function
+	DynamicArray<dVec,1> qValues_dVec;     // Vector of q values
+	DynamicArray<double,1> es;           // local intermediate scattering function
 
         int numq;                        // the number of q std::vectors
         size_t bytes_beads;
@@ -1121,7 +1121,7 @@ class CylinderSuperfluidFractionEstimator: public EstimatorBase {
         std::string getName() const {return name;}
 
     private:
-	blitz::Array <bool,1> doBead;  // Used for ensuring we don't double count beads
+	DynamicArray <bool,1> doBead;  // Used for ensuring we don't double count beads
         int windMax;            // The maximum winding number considered
 
         void accumulate();      // Accumulate values
@@ -1250,7 +1250,7 @@ class CylinderRadialPotentialEstimator: public EstimatorBase {
     private:
         
         double dR;                      // The discretization
-	blitz::Array <double,1> radPot;        // Used for normalization
+	DynamicArray <double,1> radPot;        // Used for normalization
 
         void accumulate();              // Accumulate values
         void accumulate1();             // Accumulate values
@@ -1276,7 +1276,7 @@ class CylinderStaticStructureFactorEstimator: public EstimatorBase {
 
     private:
         void accumulate();              // Accumulate values
-	blitz::Array <double,1> sf;            // structure factor
+	DynamicArray <double,1> sf;            // structure factor
         std::vector <std::vector<dVec> > q;       // the q-vectors
 };
 

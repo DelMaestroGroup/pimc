@@ -878,8 +878,8 @@ void PathIntegralMonteCarlo::saveState(const int finalSave) {
 /**************************************************************************//**
  *  Load a classical ground state from file.
 ******************************************************************************/
-void PathIntegralMonteCarlo::loadClassicalState(blitz::Array <dVec,2> &tempBeads,
-        blitz::Array <unsigned int, 2> &tempWormBeads, int numWorldLines) {
+void PathIntegralMonteCarlo::loadClassicalState(DynamicArray <dVec,2> &tempBeads,
+        DynamicArray <unsigned int, 2> &tempWormBeads, int numWorldLines) {
 
     /* We go through each active worldline and create a new classical
      * configuration */
@@ -906,12 +906,12 @@ void PathIntegralMonteCarlo::loadClassicalState(blitz::Array <dVec,2> &tempBeads
 /**************************************************************************//**
  *  Load a quantum ground state from file.
 ******************************************************************************/
-void PathIntegralMonteCarlo::loadQuantumState(blitz::Array <dVec,2> &tempBeads, 
-        blitz::Array <beadLocator,2> &tempNextLink, blitz::Array <beadLocator,2> &tempPrevLink,
+void PathIntegralMonteCarlo::loadQuantumState(DynamicArray <dVec,2> &tempBeads, 
+        DynamicArray <beadLocator,2> &tempNextLink, DynamicArray <beadLocator,2> &tempPrevLink,
         int numTimeSlices, int tempNumWorldLines) {
 
     /* Prevent double counting of worldlines */
-    blitz::Array <bool, 1> doBead(tempNumWorldLines);
+    DynamicArray <bool, 1> doBead(tempNumWorldLines);
 
     beadLocator startBead,beadIndex;
     beadLocator newStartBead;
@@ -1026,7 +1026,7 @@ void PathIntegralMonteCarlo::loadState() {
         pathPtrVec[pIdx].worm.beads.resize(numTimeSlices,numWorldLines);
 
         /* A temporary container for the beads array */
-	blitz::Array <dVec,2> tempBeads;
+	DynamicArray <dVec,2> tempBeads;
 
         /* Get the worldline configuration */
         communicate()->file(fileInitStr)->stream() >> tempBeads;
@@ -1066,9 +1066,9 @@ void PathIntegralMonteCarlo::loadState() {
             pathPtrVec[pIdx].worm.beads = 0;
 
             /* Temporary containers for the links and worm beads */
-	    blitz::Array <beadLocator,2> tempNextLink;
-	    blitz::Array <beadLocator,2> tempPrevLink;
-	    blitz::Array <unsigned int,2> tempWormBeads;
+	    DynamicArray <beadLocator,2> tempNextLink;
+	    DynamicArray <beadLocator,2> tempPrevLink;
+	    DynamicArray <unsigned int,2> tempWormBeads;
 
             /* Get the link arrays and worm file */
             communicate()->file(fileInitStr)->stream() >> tempNextLink;
@@ -1166,22 +1166,22 @@ void PathIntegralMonteCarlo::outputPDB() {
 
     /* We go through all beads, and find the start and end bead for each
      * worldline, adding them to an array */
-    blitz::Array <beadLocator,1> startBead,endBead;
+    DynamicArray <beadLocator,1> startBead,endBead;
     startBead.resize(numParticles);
     endBead.resize(numParticles);
 
     /* We sort the output by the number of beads in a worldline */
-    blitz::Array <int,1> wlLength(numParticles);
+    DynamicArray <int,1> wlLength(numParticles);
     wlLength = 0;
 
     /* This is the index-beadNumber mapping array */
-    blitz::Array <int,2> beadNum(numTimeSlices,numParticles);
+    DynamicArray <int,2> beadNum(numTimeSlices,numParticles);
     beadNum = 0;
 
     int numWorldLines = 0;
 
     /* Get the list of beads that are active in the simulation */
-    blitz::Array <bool,2> doBead(numTimeSlices,numParticles);      
+    DynamicArray <bool,2> doBead(numTimeSlices,numParticles);      
     doBead = blitz::cast<bool>(path.worm.getBeads());
 
     /* We go through each particle/worldline */
@@ -1326,7 +1326,7 @@ void PathIntegralMonteCarlo::outputPDB() {
 void PathIntegralMonteCarlo::printWormState() {
 
     /* We make a list of all the beads contained in the worm */
-    blitz::Array <beadLocator,1> wormBeads;    // Used for debugging
+    DynamicArray <beadLocator,1> wormBeads;    // Used for debugging
     wormBeads.resize(path.worm.length+1);
     wormBeads = XXX;
 

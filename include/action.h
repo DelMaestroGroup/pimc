@@ -108,8 +108,8 @@ class ActionBase {
         PotentialBase *externalPtr;     ///< The external potential
         PotentialBase *interactionPtr;  ///< The interaction potential
 
-	blitz::Array <int,1> sepHist;          ///< A histogram of separations
-	blitz::Array <int,1> cylSepHist;       ///< A histogram of separations for a cylinder
+	DynamicArray <int,1> sepHist;          ///< A histogram of separations
+	DynamicArray <int,1> cylSepHist;       ///< A histogram of separations for a cylinder
 
     protected:
         std::string name;                    ///< The name of the action

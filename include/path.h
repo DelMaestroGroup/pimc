@@ -29,7 +29,7 @@ class LookupTable;
 class Path {
 
     public:
-        Path (const Container *, LookupTable &, int, const blitz::Array<dVec,1>&, int numberBroken = 0);
+        Path (const Container *, LookupTable &, int, const DynamicArray<dVec,1>&, int numberBroken = 0);
         ~Path();
 
         /* Path* clone() const{ return new Path(*this); } */
@@ -45,7 +45,7 @@ class Path {
 
         LookupTable &lookup;            ///< A reference to the nearest neighbor lookup table.
 
-	blitz::Array <int,1> numBeadsAtSlice;  ///< The number of active beads at a given time slice
+	DynamicArray <int,1> numBeadsAtSlice;  ///< The number of active beads at a given time slice
 
         /** Get the size of the worldline array */
         int getNumParticles() const {return beads.extent(blitz::secondDim);}
@@ -150,7 +150,7 @@ class Path {
         void updateBead(const beadLocator&, const dVec&);
 
         /** Used when debugging worm configurations */
-        void printWormConfig(blitz::Array <beadLocator,1> &);
+        void printWormConfig(DynamicArray <beadLocator,1> &);
 
         /** Initialize any loaded state by left packing the array */
         void leftPack();
@@ -161,8 +161,8 @@ class Path {
     private:
         friend class PathIntegralMonteCarlo;        // Friends for I/O
 
-	blitz::Array<dVec,2> beads;                        // The wordline array
-	blitz::Array<beadLocator,2> prevLink, nextLink;    // Bead connection matrices
+	DynamicArray<dVec,2> beads;                        // The wordline array
+	DynamicArray<beadLocator,2> prevLink, nextLink;    // Bead connection matrices
 
         beadLocator lastBeadIndex;                  // Holds the index of the last bead on a slice
 };

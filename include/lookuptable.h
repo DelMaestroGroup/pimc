@@ -37,9 +37,9 @@ class LookupTable {
         int numUniqueNN;                    ///< The number of unique nearest neighbors of each box
         int numNN;                          ///< The total number of nearest neighbors of each box
 
-	blitz::Array <beadLocator,1> beadList;     ///< The cutoff dynamic list of interacting beads
-	blitz::Array <beadLocator,1> fullBeadList; ///< The full dynamic list of interacting beads
-	blitz::Array <dVec,1> beadSep;             ///< The separation between beads
+	DynamicArray <beadLocator,1> beadList;     ///< The cutoff dynamic list of interacting beads
+	DynamicArray <beadLocator,1> fullBeadList; ///< The full dynamic list of interacting beads
+	DynamicArray <dVec,1> beadSep;             ///< The separation between beads
         int numBeads;                       ///< The cutoff number of active beads in beadList;
         int fullNumBeads;                   ///< The full number of active beads in beadList;
 
@@ -53,7 +53,7 @@ class LookupTable {
         void updateFullInteractionList(const beadLocator &, const int);
         void updateFullInteractionList(const int, const int);
         void updateGrid(const Path &);
-        void updateGrid(const blitz::Array <dVec,1>&);
+        void updateGrid(const DynamicArray <dVec,1>&);
 
         void printGrid();
 
@@ -104,15 +104,15 @@ class LookupTable {
 	std::array<int,NDIM+1> nI;          // Used for indexing numLabels
 	std::array<int,NDIM+2> hI;          // Used for indexing hash
 
-	blitz::Array <iVec,NDIM+1> gridNN;         // The nearest neighbors of each grid box 
-	blitz::Array <iVec,NDIM+1> gridNNReduced;  // The nn reduced to contain no back links
+	DynamicArray <iVec,NDIM+1> gridNN;         // The nearest neighbors of each grid box 
+	DynamicArray <iVec,NDIM+1> gridNNReduced;  // The nn reduced to contain no back links
 
         dVec sizeNNGrid;                    // The size of the nn grid boxes in each direction
 
-	blitz::Array <int,NDIM+2> hash;            // The main worldline lookup array
-	blitz::Array <iVec,2> grid;                // The grid index of a bead
-	blitz::Array <int,2> beadLabel;            // The label of a bead in a cell
-	blitz::Array <int,NDIM+1> numLabels;       // The number of beads in a cell
+	DynamicArray <int,NDIM+2> hash;            // The main worldline lookup array
+	DynamicArray <iVec,2> grid;                // The grid index of a bead
+	DynamicArray <int,2> beadLabel;            // The label of a bead in a cell
+	DynamicArray <int,NDIM+1> numLabels;       // The number of beads in a cell
 
 	std::array <int,NDIM+2> hashSize;   // The current size of the hash array
 

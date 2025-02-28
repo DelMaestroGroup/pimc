@@ -27,8 +27,9 @@
 #include <optional>
 #include <functional> // has std::bind
 
+#include "dynamic_array.h"
+
 #define BZ_HAVE_BOOST_SERIALIZATION
-#include <blitz/array.h> 
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -116,13 +117,13 @@ typedef std::array<int,NDIM> iVec;
 typedef std::array<int,2> beadLocator;
 
 /** Integer array iterator */
-typedef blitz::Array<int,1>::iterator intIter;
+typedef DynamicArray<int,1>::iterator intIter;
 
 /** Constant integer array iterator */
-typedef blitz::Array<int,1>::const_iterator cintIter;
+typedef DynamicArray<int,1>::const_iterator cintIter;
 
 /** beadLocator array iterator */
-typedef blitz::Array<beadLocator,1>::iterator beadIter;
+typedef DynamicArray<beadLocator,1>::iterator beadIter;
 
 /** Each bead can have three possible states */
 enum beadState {HEADTAIL,SPECIAL,NONE};

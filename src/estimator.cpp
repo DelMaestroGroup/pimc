@@ -1523,7 +1523,7 @@ void BipartitionDensityEstimator::accumulate() {
         lside[i] = path.boxPtr->side[i];
 
     /* read in the exclusion lengths */
-    blitz::Array<double,1> excLens (actionPtr->externalPtr->getExcLen());
+    DynamicArray<double,1> excLens (actionPtr->externalPtr->getExcLen());
     double excZ = excLens(1);
     
     /* determine volume of film region and bulk region */
@@ -3514,7 +3514,7 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
 
     /* these are the hard-coded wavevectors for now */
     numq = 3;
-    blitz::Array <double, 1> qMag(numq);         // the wavevector magnitudes
+    DynamicArray <double, 1> qMag(numq);         // the wavevector magnitudes
     /* qMag.resize(numq); */
     qMag = 0.761,1.75,1.81;
 

@@ -715,7 +715,7 @@ double LocalAction::Vnn(const beadLocator &bead1) {
 ******************************************************************************/
 double LocalAction::Vnn(const int slice) {
 
-    blitz::Array <bool,1> doParticles(path.numBeadsAtSlice(slice));
+    DynamicArray <bool,1> doParticles(path.numBeadsAtSlice(slice));
     doParticles = true;
 
     double totVint = 0.0;

@@ -120,7 +120,7 @@ void LookupTable::setupNNGrid() {
     /* This is somewhat complicated.  Basically we want to construct the list of 
      * nearest neighbors of a given grid box for general dimension.  This consists
      * of moving 'forward', 'zero' and 'back' in each dimension */
-    blitz::Array <iVec,1> nnShift(numNN);
+    DynamicArray <iVec,1> nnShift(numNN);
     nnShift = 0; 
     /* The shift vector */
     std::array<int,3> shift;
@@ -283,7 +283,7 @@ void LookupTable::printGrid() {
  *  Update the full nearest neighbor for a set of fixed particles, which are
  *  never updated and have the same position at all time slices.
 ******************************************************************************/
-void LookupTable::updateGrid(const blitz::Array <dVec,1> &fixedPos) {
+void LookupTable::updateGrid(const DynamicArray <dVec,1> &fixedPos) {
 
     numLabels = 0;
     beadLocator beadIndex;
