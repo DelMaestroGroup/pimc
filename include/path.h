@@ -48,7 +48,7 @@ class Path {
 	DynamicArray <int,1> numBeadsAtSlice;  ///< The number of active beads at a given time slice
 
         /** Get the size of the worldline array */
-        int getNumParticles() const {return beads.extent(blitz::secondDim);}
+        int getNumParticles() const {return beads.extents()[1];}
 
         /** The number of active particles */
         int getTrueNumParticles() const {return ( worm.getNumBeadsOn() / numTimeSlices );}

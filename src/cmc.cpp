@@ -31,7 +31,8 @@ ClassicalMonteCarlo::ClassicalMonteCarlo (PotentialBase *_externalPtr,
     config(initialPos)
 {
     /* The number of particles */
-    numParticles = config.extent(blitz::firstDim);
+    numParticles = config.extents()[0];
+
 
     /* Set the fugacity z*/
     z = exp(constants()->mu()/constants()->T())/pow(constants()->dBWavelength(),NDIM);
@@ -199,7 +200,7 @@ void ClassicalMonteCarlo::insertParticle() {
     /* Now the metropolis step */
     if (random.rand() < factor*exp(-deltaV/constants()->T())) {
         energy += deltaV;
-        if (config.extent(blitz::firstDim) < (numParticles+1))
+        if (config.extents()[0] < (numParticles+1))
             config.resizeAndPreserve(numParticles+1);
         config(numParticles) = newPos;
         numParticles++;
