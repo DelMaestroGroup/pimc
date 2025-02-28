@@ -327,7 +327,7 @@ bool PathIntegralMonteCarlo::equilStepRelaxmu() {
             std::cout << printHistogram();
 
             /* Compute the peak loation and average number of particles */
-            int peakN = blitz::maxIndex(PN)[0];
+            int peakN = static_cast<int>(std::distance(PN.begin(), std::max_element(PN.begin(), PN.end())));
             int aveN = round(weighted_average(PN));
 
             /* If we have shifted the peak to the desired value, exit */
