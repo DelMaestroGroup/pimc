@@ -1199,14 +1199,7 @@ double LocalAction::rDOTgradUterm2(const int slice) {
                 }   
             }   // end bead2
 
-            /* blitz++ product function seems broken in my current 
-             * version, so this performs matrix-vector mult. 
-             * Checked --MTG */
-            for(int j=0; j<NDIM; j++){
-                for(int i=0; i<NDIM; i++){
-                    gVdotT(j) += gV(i)*tMat(j,i);
-                }
-            }  
+	    apply_matrix_vector_product(gVdotT, gV, tMat);
             term2 += dot(gVdotT, path(bead1));
 
         }   // end bead1
@@ -1382,14 +1375,7 @@ double LocalAction::deltadotgradUterm2(const int slice) {
                 }   
             }   // end bead2
 
-            /* blitz++ product function seems broken in my current 
-             * version, so this performs matrix-vector mult. 
-             * Checked --MTG */
-            for(int j=0; j<NDIM; j++){
-                for(int i=0; i<NDIM; i++){
-                    gVdotT(j) += gV(i)*tMat(j,i);
-                }
-            }  
+	    apply_matrix_vector_product(gVdotT, gV, tMat);
             
             /* Compute deviation of bead from COM of worldline, 
              * WITHOUT mirror image conv.*/
@@ -1470,13 +1456,7 @@ dVec LocalAction::gradU(const int slice) {
 
     /* We only add the correction if it is finite */
     if ( gradVFactor[eo] > EPS ) {
-        /* blitz++ product function seems broken in my current 
-         * version, so this performs matrix-vector mult. */
-        for(int j=0; j<NDIM; j++){
-            for(int i=0; i<NDIM; i++){
-                gU2(i) += gV(j)*tM(i,j);
-            }
-        }
+	apply_matrix_vector_product(gU2, gV, tM);
         /* now scale by constants */
         gU2 *= 2.0 * gradVFactor[eo] * pow(tau(),3) * constants()->lambda();
     }

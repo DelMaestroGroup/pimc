@@ -187,4 +187,20 @@ T weighted_average(const std::vector<T>& x) {
     return denominator != T{0} ? numerator / denominator : T{0}; // Avoid division by zero
 }
 
+template <typename ResultType, typename VectorType, typename MatrixType, std::size_t Dimension>
+void apply_matrix_vector_product(
+    std::array<ResultType, Dimension>& resultVector,
+    const std::array<VectorType, Dimension>& inputVector,
+    const std::array<std::array<MatrixType, Dimension>, Dimension>& transformationMatrix)
+{
+    for (std::size_t row = 0; row < Dimension; ++row) {
+        resultVector[row] += std::inner_product(
+            transformationMatrix[row].begin(),
+            transformationMatrix[row].end(),
+            inputVector.begin(),
+            ResultType{0}
+        );
+    }
+}
+
 #endif
