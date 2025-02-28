@@ -91,7 +91,7 @@ class Worm {
         /** Decrement the number of active beads. */
         void decNumBeadsOn() {--numBeadsOn;}
         /** Reset the number of active beads. */
-        void resetNumBeadsOn() {numBeadsOn = blitz::sum(beads);}
+        void resetNumBeadsOn() {numBeadsOn = std::accumulate(beads.begin(), beads.end(), 0.0);}
 
         friend class Path;                      // Path needs access to beads
         friend class PathIntegralMonteCarlo;    // Friends for I/O

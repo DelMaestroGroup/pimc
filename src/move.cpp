@@ -84,7 +84,7 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
      * winding sectors.  We will sample w = -maxWind ... maxWind */
     maxWind = constants()->maxWind();
     /* numWind = ipow(2*maxWind + 1,NDIM); */
-    numWind = ipow(2*maxWind + 1,blitz::sum(path.boxPtr->periodic));
+    numWind = ipow(2*maxWind + 1,std::accumulate(path.boxPtr->periodic.begin(), path.boxPtr->periodic.end(), 0.0));
 
     /* initialize the cumulative probability distribution */
     cumrho0.resize(numWind);
