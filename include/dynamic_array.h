@@ -150,6 +150,17 @@ public:
         return view_(static_cast<std::size_t>(indices)...);
     }
 
+    // Element access operators (non-const and const) using containter with exactly Rank size
+    template <typename Container, typename = std::enable_if_t<Container::size() == Rank>>
+    T& operator()(const Container& indices) {
+        return (*this)(indices[0], indices[1]);  // Assuming Rank==2.
+    }
+
+    template <typename Container, typename = std::enable_if_t<Container::size() == Rank>>
+    const T& operator()(const Container& indices) const {
+        return (*this)(indices[0], indices[1]);  // Assuming Rank==2.
+    }
+
     // Returns a pointer to the underlying contiguous storage.
     T* data() { return data_.data(); }
     const T* data() const { return data_.data(); }
