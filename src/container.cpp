@@ -128,10 +128,11 @@ Prism::Prism(const dVec &_side, const std::array<unsigned int, NDIM> &_periodic)
     pSide = periodic*side;
 
     /* are there any non-periodic boundary conditions? */
-    fullyPeriodic = all(periodic == 1u);
+    static constexpr std::array<unsigned int, NDIM> fullPeriodicCondition = make_array<unsigned int, NDIM>(1u);
+    fullyPeriodic = periodic == fullPeriodicCondition;
 
     /* Compute the maximum possible separation possible inside the box */
-    maxSep = sqrt(dot(side/(periodic + 1.0),side/(periodic + 1.0)));
+    maxSep = sqrt(dot(side/(periodic + 1u),side/(periodic + 1u)));
 
     /* Calculate the volume of the cube */
     volume = product(side);
