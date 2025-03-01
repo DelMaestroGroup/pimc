@@ -947,8 +947,10 @@ void EnergyEstimator::accumulate() {
     beadLocator beadIndex;
     dVec vel;
     for (int slice = startSlice; slice < endSlice; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             vel = path.getVelocity(beadIndex);
             totK -= dot(vel,vel);
         }
@@ -1107,8 +1109,10 @@ void VirialEnergyEstimator::accumulate() {
     beadLocator bead1, beadNext, beadNextOld;
     dVec vel1, vel2;
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            bead1 = slice,ptcl; // current bead
+	bead1[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            bead1[1] = ptcl; // current bead
             vel2 = path.getVelocity(bead1);
             beadNextOld = bead1;
             vel1 = dVec{};
@@ -1464,8 +1468,10 @@ void ParticlePositionEstimator::accumulate() {
     beadLocator beadIndex;
 
     for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
 
             /* update our particle position histogram */
             int n = path.boxPtr->gridIndex(path(beadIndex));
@@ -1535,8 +1541,10 @@ void BipartitionDensityEstimator::accumulate() {
     dVec pos;
     beadLocator beadIndex;
     for (int slice = 0; slice < path.numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
 
             pos = path(beadIndex);
             if (pos[2] > excZ)
@@ -1611,8 +1619,10 @@ void LinearParticlePositionEstimator::accumulate() {
     int index;
 
     for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos = path(beadIndex);
 
             /* Get the z-index */
@@ -1689,8 +1699,10 @@ void PlaneParticlePositionEstimator::accumulate() {
     dVec pos;
 
     for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos = path(beadIndex);
 
             int index = 0;
@@ -1769,8 +1781,10 @@ void PlaneParticleAveragePositionEstimator::accumulate() {
     dVec pos;
 
     for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos = path(beadIndex);
 
             int index = 0;
@@ -1842,8 +1856,10 @@ void PlaneAverageExternalPotentialEstimator::accumulate() {
     dVec pos;
 
     for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos = path(beadIndex);
 
             /* Obtain the index of the particle position */
@@ -1958,10 +1974,12 @@ void SuperfluidFractionEstimator::accumulate() {
     dVec W,vel;
     W = dVec{};
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
 
             /* The winding number estimator */
-            beadIndex = slice,ptcl;
             vel = path.getVelocity(beadIndex);
             W += vel;
 
@@ -2085,9 +2103,10 @@ void PlaneWindingSuperfluidDensityEstimator::accumulate() {
     Wz = 0.0;
     locWz = 0.0;
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos1 = path(beadIndex);
             pos2 = path(path.next(beadIndex));
 
@@ -2174,9 +2193,10 @@ void PlaneAreaSuperfluidDensityEstimator::accumulate() {
     Az = 0.0;
     locAz = 0.0;
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos1 = path(beadIndex);
             pos2 = path(path.next(beadIndex));
 
@@ -2270,9 +2290,10 @@ void RadialWindingSuperfluidDensityEstimator::accumulate() {
     Wz = 0.0;
     locWz = 0.0;
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos1 = path(beadIndex);
             pos2 = path(path.next(beadIndex));
 
@@ -2356,9 +2377,10 @@ void RadialAreaSuperfluidDensityEstimator::accumulate() {
     Az = 0.0;
     locAz = 0.0;
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos1 = path(beadIndex);
             pos2 = path(path.next(beadIndex));
             rp2 = pos1[0]*pos1[0] + pos1[1]*pos1[1];
@@ -2484,9 +2506,10 @@ void LocalSuperfluidDensityEstimator::accumulate() {
 
     Az = Wz = 0.0;
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos1 = path(beadIndex);
             pos2 = path(path.next(beadIndex));
             int n = path.boxPtr->gridIndex(pos1);
@@ -2697,7 +2720,7 @@ void PermutationCycleEstimator::accumulate() {
     for (int n = 0; n < numWorldlines; n++) {
 
         /* The initial bead to be moved */
-        startBead = 0,n;
+        startBead = {0,n};
 
         /* We make sure we don't try to touch the same worldline twice */
         if (doBead(n)) {
@@ -2815,7 +2838,7 @@ void LocalPermutationEstimator::accumulate() {
     for (int n = 0; n < numWorldlines; n++) {
 
         /* The initial bead to be moved */
-        startBead = 0,n;
+        startBead = {0,n};
 
         /* We make sure we don't try to touch the same worldline twice */
         if (doBead(n)) {
@@ -3968,8 +3991,10 @@ void RadialDensityEstimator::accumulate() {
     double rsq;
     beadLocator beadIndex;
     for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos = path(beadIndex);
             rsq = 0.0;
             for (int i = 0; i < NDIM-1; i++)
@@ -4074,8 +4099,10 @@ void CylinderEnergyEstimator::accumulate() {
     beadLocator beadIndex;
     dVec vel;
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             if (include(path(beadIndex),maxR)) {
                 vel = path.getVelocity(beadIndex);
                 totK -= dot(vel,vel);
@@ -4261,8 +4288,10 @@ void CylinderLinearDensityEstimator::accumulate() {
     beadLocator beadIndex;
     /* visit each bead */
     for (int slice = 0; slice < path.numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos = path(beadIndex);
 
             /* If we are inside the cutoff cylinder, accumulate the density 
@@ -4353,7 +4382,7 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
     for (int n = 0; n < numWorldlines; n++) {
 
         /* The initial bead to be moved */
-        startBead = 0,n;
+        startBead = {0,n};
 
         /* We make sure we don't try to touch the same worldline twice */
         if (doBead(n)) {
@@ -5357,8 +5386,10 @@ void KineticEnergyEstimator::accumulate() {
     for (int slice = 0; slice < (numTimeSlices-1); slice+=2) {
         double K = 0.0;
         for (int eo = 0; eo < 2; eo++){
-            for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice+eo); ptcl++) {
-                beadIndex = slice+eo,ptcl;
+	    beadIndex[0] = slice + eo;
+            int numBeads = path.numBeadsAtSlice(slice + eo);
+            for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+                beadIndex[1] = ptcl;
                 vel = path.getVelocity(beadIndex);
                 K -= dot(vel,vel);
             }
@@ -5434,8 +5465,10 @@ void TotalEnergyEstimator::accumulate() {
     dVec vel,pos;
     for (int slice = 0; slice < (numTimeSlices-1); slice++) {
         double K = 0.0;
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             vel = path.getVelocity(beadIndex);
             K -= dot(vel,vel);
         }
