@@ -244,7 +244,7 @@ double ActionBase::potentialAction (const beadLocator &startBead,
     do {
         totU += potentialAction(beadIndex);
         beadIndex = path.next(beadIndex);
-    } while (!all(beadIndex==path.next(endBead)));
+    } while (!(beadIndex == path.next(endBead)));
     return totU;
 }
 
@@ -406,7 +406,7 @@ double LocalAction::potentialActionCorrection (const beadLocator &startBead,
     do {
         corU += potentialActionCorrection(beadIndex);
         beadIndex = path.next(beadIndex);
-    } while (!all(beadIndex==path.next(endBead)));
+    } while (!(beadIndex == path.next(endBead)));
 
     return corU;
 }
@@ -783,7 +783,7 @@ double LocalAction::gradVSquared(const beadLocator &bead1) {
         Fint1 = 0.0;
         for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
-            if (!all(bead1==bead2)) {
+            if (!(bead1 == bead2)) {
 
                 sep = path.getSeparation(bead2,bead1);
                 Fint2 = interactionPtr->gradV(sep);
@@ -794,7 +794,7 @@ double LocalAction::gradVSquared(const beadLocator &bead1) {
                  * between beads 2 and 3.  This is where all the time is taken */
                 Fint3 = 0.0;
                 for (bead3[1] = 0; bead3[1] < numParticles; bead3[1]++) {
-                    if ( !all(bead3==bead2) && !all(bead3==bead1) ) {
+                    if ( !(bead3 == bead2) && !(bead3 == bead1) ) {
                         sep = path.getSeparation(bead2,bead3);
                         Fint3 += interactionPtr->gradV(sep);
                     }
@@ -839,7 +839,7 @@ double LocalAction::gradVSquared(const int slice) {
         for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
             /* Avoid self interactions */
-            if (!all(bead1==bead2)) {
+            if (!(bead1 == bead2)) {
 
                 /* The interaction component of the force */
                 F += interactionPtr->gradV(path.getSeparation(bead1,bead2));
@@ -890,7 +890,7 @@ double LocalAction::gradVSquared(const int slice, const double maxR) {
             /* Sum up potential for all other active beads in the system */
             for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
                 /* Avoid self interactions */
-                if (!all(bead1==bead2)) {
+                if (!(bead1 == bead2)) {
 
                     /* The interaction component of the force */
                     F += interactionPtr->gradV(path.getSeparation(bead1,bead2));
@@ -935,7 +935,7 @@ double LocalAction::gradVnnSquared(const beadLocator &bead1) {
             bead2 = lookup.beadList(n);
 
             /* Eliminate self and null interactions */
-            if ( !all(bead1 == bead2) ) {
+            if ( !(bead1 == bead2) ) {
 
                 /* Get the separation between beads 1 and 2 and compute the terms in the
                  * gradient squared */
@@ -950,7 +950,7 @@ double LocalAction::gradVnnSquared(const beadLocator &bead1) {
                     bead3 = lookup.beadList(m);
 
                     /* Eliminate self-interactions */
-                    if ( !all(bead3==bead2) && !all(bead3==bead1) ) {
+                    if ( !(bead3 == bead2) && !(bead3 == bead1) ) {
                         sep = path.getSeparation(bead2,bead3);
                         Fint3 += interactionPtr->gradV(sep);
                     }
@@ -993,7 +993,7 @@ dVec LocalAction::gradientV(const int slice) {
         for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
             /* Avoid self interactions */
-            if (!all(bead1==bead2)) {
+            if (!(bead1 == bead2)) {
 
                 /* The interaction component of the force */
                 gV += interactionPtr->gradV(path.getSeparation(bead1,bead2));
@@ -1038,7 +1038,7 @@ dMat LocalAction::tMatrix(const int slice) {
                 for (bead2[1]=0; bead2[1]<numParticles; bead2[1]++){
 
                     /* avoid self-interactions */
-                    if (!all(bead1==bead2)) {
+                    if (!(bead1 == bead2)) {
                         
                         rDiff = path.getSeparation(bead1, bead2);
                         rmag = sqrt(dot(rDiff,rDiff));
@@ -1097,7 +1097,7 @@ double LocalAction::rDOTgradUterm1(const int slice) {
         for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
             /* Avoid self interactions */
-            if (!all(bead1==bead2)) {
+            if (!(bead1 == bead2)) {
 
                 /* The interaction component of the force */
                 gVi += interactionPtr->gradV(path.getSeparation(bead1,bead2));
@@ -1171,7 +1171,7 @@ double LocalAction::rDOTgradUterm2(const int slice) {
                 rmag = sqrt(dot(rDiff,rDiff));
 
                 /* Avoid self interactions */
-                if (!all(bead1==bead2)) {
+                if (!(bead1 == bead2)) {
 
                     /* Compute interaction potential derivatives */
                     gVi = interactionPtr->gradV(rDiff);
@@ -1243,7 +1243,7 @@ double LocalAction::deltadotgradUterm1(const int slice) {
         for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
             /* Avoid self interactions */
-            if (!all(bead1==bead2)) {
+            if (!(bead1 == bead2)) {
 
                 /* The interaction component of the force */
                 gVi += interactionPtr->gradV(path.getSeparation(bead1,bead2));
@@ -1347,7 +1347,7 @@ double LocalAction::deltadotgradUterm2(const int slice) {
                 rmag = sqrt(dot(rDiff,rDiff));
 
                 /* Avoid self interactions */
-                if (!all(bead1==bead2)) {
+                if (!(bead1 == bead2)) {
 
                     /* Compute interaction potential derivatives */
                     gVi = interactionPtr->gradV(rDiff);
@@ -1527,7 +1527,7 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
 #endif
 
     /* Make sure nextBead1 is a real bead and that it is active */
-    if ( (all(nextBead1==XXX)) || (!path.worm.beadOn(nextBead1)) )
+    if ( (nextBead1 == {XXX, XXX}) || (!path.worm.beadOn(nextBead1)) )
         return totU;
 
     /* Evaluate the external potential */
@@ -1537,7 +1537,7 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
     lookup.updateInteractionList(path,bead1);
     for (int n = 0; n < lookup.numBeads; n++) {
         bead2 = lookup.beadList(n);
-        if(!all(path.next(bead2)==XXX))
+        if(!(path.next(bead2) == {XXX, XXX}))
             NNbead[bead2[1]] = true;
     }
     
@@ -1545,7 +1545,7 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
     lookup.updateInteractionList(path,nextBead1);
     for (int n = 0; n < lookup.numBeads; n++) {
         bead2 = path.prev(lookup.beadList(n));
-        if(!all(bead2==XXX))
+        if(!(bead2 == {XXX, XXX}))
            NNbead[bead2[1]] = true;
     }
     
@@ -1579,7 +1579,7 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
             
     /*         /1* If the imaginary time neighbor exists, compute the effective */
     /*          * potential *1/ */
-    /*         if ( (!all(nextBead2==XXX)) && (path.worm.beadOn(nextBead2)) ) { */
+    /*         if ( (!(nextBead2 == {XXX, XXX})) && (path.worm.beadOn(nextBead2)) ) { */
     /*             sep2 = path.getSeparation(nextBead1,nextBead2); */
     /*             totU += interactionPtr->V(sep,sep2,constants()->lambda(),constants()->tau()); */
     /*         } */
