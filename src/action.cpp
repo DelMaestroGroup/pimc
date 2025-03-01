@@ -1050,11 +1050,11 @@ dMat LocalAction::tMatrix(const int slice) {
                         dV += sqrt(dot(externalPtr->gradV(path(bead1))
                                     ,externalPtr->gradV(path(bead1))));
 
-                        tMat(a,b) += rDiff(a)*rDiff(b)*d2V/(rmag*rmag);
+                        tMat[a][b] += rDiff[a]*rDiff[b]*d2V/(rmag*rmag);
                         if (a != b)
-                            tMat(a,b) -= (rDiff(a)*rDiff(b)/pow(rmag,3))*dV;
+                            tMat[a][b] -= (rDiff[a]*rDiff[b]/pow(rmag,3))*dV;
                         else
-                            tMat(a,b) += (1.0/rmag - rDiff(a)*rDiff(b)/pow(rmag,3))*dV;
+                            tMat[a][b] += (1.0/rmag - rDiff[a]*rDiff[b]/pow(rmag,3))*dV;
                     }
                 } // end bead2
             } // end bead1
@@ -1186,10 +1186,10 @@ double LocalAction::rDOTgradUterm2(const int slice) {
                     /* compute the T-matrix for bead1 interacting with bead2 */
                     for (int a=0; a<NDIM; a++){
                         for (int b=0; b<NDIM; b++){
-                            tMat(a,b) += rDiff(a)*rDiff(b)*d2V/(rmag*rmag)
-                                - rDiff(a)*rDiff(b)*dV/pow(rmag,3);
+                            tMat[a][b] += rDiff[a]*rDiff[b]*d2V/(rmag*rmag)
+                                - rDiff[a]*rDiff[b]*dV/pow(rmag,3);
                             if (a == b)
-                                tMat(a,b) += dV/rmag;
+                                tMat[a][b] += dV/rmag;
                         }
                     }   // end T-matrix 
                     
@@ -1362,10 +1362,10 @@ double LocalAction::deltadotgradUterm2(const int slice) {
                     /* compute the T-matrix for bead1 interacting with bead2 */
                     for (int a=0; a<NDIM; a++){
                         for (int b=0; b<NDIM; b++){
-                            tMat(a,b) += rDiff(a)*rDiff(b)*d2V/(rmag*rmag)
-                                - rDiff(a)*rDiff(b)*dV/pow(rmag,3);
+                            tMat[a][b] += rDiff[a]*rDiff[b]*d2V/(rmag*rmag)
+                                - rDiff[a]*rDiff[b]*dV/pow(rmag,3);
                             if (a == b)
-                                tMat(a,b) += dV/rmag;
+                                tMat[a][b] += dV/rmag;
                         }
                     }   // end T-matrix 
                     
