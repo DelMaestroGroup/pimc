@@ -3,15 +3,18 @@
 
 #include <array>
 #include <cstddef>
+#include <type_traits>
 
 // ------------------------
 // Vector operations
 // ------------------------
 
 // Element-wise addition
-template<typename T, std::size_t N>
-inline std::array<T, N> operator+(const std::array<T, N>& a, const std::array<T, N>& b) {
-    std::array<T, N> result;
+template<typename T, typename U, std::size_t N>
+inline std::array<typename std::common_type<T, U>::type, N>
+operator+(const std::array<T, N>& a, const std::array<U, N>& b) {
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<result_t, N> result;
     for (std::size_t i = 0; i < N; ++i) {
         result[i] = a[i] + b[i];
     }
@@ -19,9 +22,11 @@ inline std::array<T, N> operator+(const std::array<T, N>& a, const std::array<T,
 }
 
 // Element-wise subtraction
-template<typename T, std::size_t N>
-inline std::array<T, N> operator-(const std::array<T, N>& a, const std::array<T, N>& b) {
-    std::array<T, N> result;
+template<typename T, typename U, std::size_t N>
+inline std::array<typename std::common_type<T, U>::type, N>
+operator-(const std::array<T, N>& a, const std::array<U, N>& b) {
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<result_t, N> result;
     for (std::size_t i = 0; i < N; ++i) {
         result[i] = a[i] - b[i];
     }
@@ -29,9 +34,11 @@ inline std::array<T, N> operator-(const std::array<T, N>& a, const std::array<T,
 }
 
 // Element-wise multiplication
-template<typename T, std::size_t N>
-inline std::array<T, N> operator*(const std::array<T, N>& a, const std::array<T, N>& b) {
-    std::array<T, N> result;
+template<typename T, typename U, std::size_t N>
+inline std::array<typename std::common_type<T, U>::type, N>
+operator*(const std::array<T, N>& a, const std::array<U, N>& b) {
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<result_t, N> result;
     for (std::size_t i = 0; i < N; ++i) {
         result[i] = a[i] * b[i];
     }
@@ -39,9 +46,11 @@ inline std::array<T, N> operator*(const std::array<T, N>& a, const std::array<T,
 }
 
 // Element-wise division
-template<typename T, std::size_t N>
-inline std::array<T, N> operator/(const std::array<T, N>& a, const std::array<T, N>& b) {
-    std::array<T, N> result;
+template<typename T, typename U, std::size_t N>
+inline std::array<typename std::common_type<T, U>::type, N>
+operator/(const std::array<T, N>& a, const std::array<U, N>& b) {
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<result_t, N> result;
     for (std::size_t i = 0; i < N; ++i) {
         result[i] = a[i] / b[i];
     }
@@ -59,33 +68,33 @@ inline std::array<T, N> operator-(const std::array<T, N>& a) {
 }
 
 // Compound assignment operators for element-wise operations
-
-template<typename T, std::size_t N>
-inline std::array<T, N>& operator+=(std::array<T, N>& a, const std::array<T, N>& b) {
+// Note: The left-hand side type remains T.
+template<typename T, typename U, std::size_t N>
+inline std::array<T, N>& operator+=(std::array<T, N>& a, const std::array<U, N>& b) {
     for (std::size_t i = 0; i < N; ++i) {
         a[i] += b[i];
     }
     return a;
 }
 
-template<typename T, std::size_t N>
-inline std::array<T, N>& operator-=(std::array<T, N>& a, const std::array<T, N>& b) {
+template<typename T, typename U, std::size_t N>
+inline std::array<T, N>& operator-=(std::array<T, N>& a, const std::array<U, N>& b) {
     for (std::size_t i = 0; i < N; ++i) {
         a[i] -= b[i];
     }
     return a;
 }
 
-template<typename T, std::size_t N>
-inline std::array<T, N>& operator*=(std::array<T, N>& a, const std::array<T, N>& b) {
+template<typename T, typename U, std::size_t N>
+inline std::array<T, N>& operator*=(std::array<T, N>& a, const std::array<U, N>& b) {
     for (std::size_t i = 0; i < N; ++i) {
         a[i] *= b[i];
     }
     return a;
 }
 
-template<typename T, std::size_t N>
-inline std::array<T, N>& operator/=(std::array<T, N>& a, const std::array<T, N>& b) {
+template<typename T, typename U, std::size_t N>
+inline std::array<T, N>& operator/=(std::array<T, N>& a, const std::array<U, N>& b) {
     for (std::size_t i = 0; i < N; ++i) {
         a[i] /= b[i];
     }
@@ -95,9 +104,11 @@ inline std::array<T, N>& operator/=(std::array<T, N>& a, const std::array<T, N>&
 // Scalar operations (element-wise with a scalar)
 
 // Multiply array by a scalar
-template<typename T, std::size_t N>
-inline std::array<T, N> operator*(const std::array<T, N>& a, const T& scalar) {
-    std::array<T, N> result;
+template<typename T, typename U, std::size_t N>
+inline std::array<typename std::common_type<T, U>::type, N>
+operator*(const std::array<T, N>& a, const U& scalar) {
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<result_t, N> result;
     for (std::size_t i = 0; i < N; ++i) {
         result[i] = a[i] * scalar;
     }
@@ -105,15 +116,18 @@ inline std::array<T, N> operator*(const std::array<T, N>& a, const T& scalar) {
 }
 
 // Multiply scalar by an array
-template<typename T, std::size_t N>
-inline std::array<T, N> operator*(const T& scalar, const std::array<T, N>& a) {
+template<typename T, typename U, std::size_t N>
+inline std::array<typename std::common_type<T, U>::type, N>
+operator*(const T& scalar, const std::array<U, N>& a) {
     return a * scalar; // reuse the above definition
 }
 
 // Divide array by a scalar
-template<typename T, std::size_t N>
-inline std::array<T, N> operator/(const std::array<T, N>& a, const T& scalar) {
-    std::array<T, N> result;
+template<typename T, typename U, std::size_t N>
+inline std::array<typename std::common_type<T, U>::type, N>
+operator/(const std::array<T, N>& a, const U& scalar) {
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<result_t, N> result;
     for (std::size_t i = 0; i < N; ++i) {
         result[i] = a[i] / scalar;
     }
@@ -121,9 +135,11 @@ inline std::array<T, N> operator/(const std::array<T, N>& a, const T& scalar) {
 }
 
 // Divide scalar by an array
-template<typename T, std::size_t N>
-inline std::array<T, N> operator/(const T& scalar, const std::array<T, N>& a) {
-    std::array<T, N> result;
+template<typename T, typename U, std::size_t N>
+inline std::array<typename std::common_type<T, U>::type, N>
+operator/(const T& scalar, const std::array<U, N>& a) {
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<result_t, N> result;
     for (std::size_t i = 0; i < N; ++i) {
         result[i] = scalar / a[i];
     }
@@ -131,9 +147,11 @@ inline std::array<T, N> operator/(const T& scalar, const std::array<T, N>& a) {
 }
 
 // Add array to scalar
-template<typename T, std::size_t N>
-inline std::array<T, N> operator+(const std::array<T, N>& a, const T& scalar) {
-    std::array<T, N> result;
+template<typename T, typename U, std::size_t N>
+inline std::array<typename std::common_type<T, U>::type, N>
+operator+(const std::array<T, N>& a, const U& scalar) {
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<result_t, N> result;
     for (std::size_t i = 0; i < N; ++i) {
         result[i] = a[i] + scalar;
     }
@@ -141,15 +159,18 @@ inline std::array<T, N> operator+(const std::array<T, N>& a, const T& scalar) {
 }
 
 // Add scalar to array
-template<typename T, std::size_t N>
-inline std::array<T, N> operator+(const T& scalar, const std::array<T, N>& a) {
-    return a + scalar; // Reuse the above definition.
+template<typename T, typename U, std::size_t N>
+inline std::array<typename std::common_type<T, U>::type, N>
+operator+(const T& scalar, const std::array<U, N>& a) {
+    return a + scalar;
 }
 
 // Subtract scalar from array
-template<typename T, std::size_t N>
-inline std::array<T, N> operator-(const std::array<T, N>& a, const T& scalar) {
-    std::array<T, N> result;
+template<typename T, typename U, std::size_t N>
+inline std::array<typename std::common_type<T, U>::type, N>
+operator-(const std::array<T, N>& a, const U& scalar) {
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<result_t, N> result;
     for (std::size_t i = 0; i < N; ++i) {
         result[i] = a[i] - scalar;
     }
@@ -157,27 +178,28 @@ inline std::array<T, N> operator-(const std::array<T, N>& a, const T& scalar) {
 }
 
 // Subtract array from scalar
-template<typename T, std::size_t N>
-inline std::array<T, N> operator-(const T& scalar, const std::array<T, N>& a) {
-    std::array<T, N> result;
+template<typename T, typename U, std::size_t N>
+inline std::array<typename std::common_type<T, U>::type, N>
+operator-(const T& scalar, const std::array<U, N>& a) {
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<result_t, N> result;
     for (std::size_t i = 0; i < N; ++i) {
         result[i] = scalar - a[i];
     }
     return result;
 }
 
-// Compound assignment for scalar operations
-
-template<typename T, std::size_t N>
-inline std::array<T, N>& operator*=(std::array<T, N>& a, const T& scalar) {
+// Compound assignment for scalar operations (left-hand side remains type T)
+template<typename T, typename U, std::size_t N>
+inline std::array<T, N>& operator*=(std::array<T, N>& a, const U& scalar) {
     for (std::size_t i = 0; i < N; ++i) {
         a[i] *= scalar;
     }
     return a;
 }
 
-template<typename T, std::size_t N>
-inline std::array<T, N>& operator/=(std::array<T, N>& a, const T& scalar) {
+template<typename T, typename U, std::size_t N>
+inline std::array<T, N>& operator/=(std::array<T, N>& a, const U& scalar) {
     for (std::size_t i = 0; i < N; ++i) {
         a[i] /= scalar;
     }
@@ -211,16 +233,16 @@ template<typename T, std::size_t ROWS, std::size_t COLS>
 using Matrix = std::array<std::array<T, COLS>, ROWS>;
 
 // ------------------------
-// Element-wise Operations
+// Element-wise Operations for matrices
 // ------------------------
 
 // Element-wise addition of two matrices with the same dimensions.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS> operator+(
-    const Matrix<T, ROWS, COLS>& A,
-    const Matrix<T, ROWS, COLS>& B)
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline std::array<std::array<typename std::common_type<T, U>::type, COLS>, ROWS>
+operator+(const Matrix<T, ROWS, COLS>& A, const Matrix<U, ROWS, COLS>& B)
 {
-    Matrix<T, ROWS, COLS> result;
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<std::array<result_t, COLS>, ROWS> result;
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
             result[i][j] = A[i][j] + B[i][j];
@@ -228,22 +250,21 @@ inline Matrix<T, ROWS, COLS> operator+(
 }
 
 // Element-wise subtraction of two matrices with the same dimensions.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS> operator-(
-    const Matrix<T, ROWS, COLS>& A,
-    const Matrix<T, ROWS, COLS>& B)
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline std::array<std::array<typename std::common_type<T, U>::type, COLS>, ROWS>
+operator-(const Matrix<T, ROWS, COLS>& A, const Matrix<U, ROWS, COLS>& B)
 {
-    Matrix<T, ROWS, COLS> result;
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<std::array<result_t, COLS>, ROWS> result;
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
             result[i][j] = A[i][j] - B[i][j];
     return result;
 }
 
-// Unary minus operator (matrix negation).
+// Unary minus operator (matrix negation)
 template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS> operator-(
-    const Matrix<T, ROWS, COLS>& A)
+inline Matrix<T, ROWS, COLS> operator-(const Matrix<T, ROWS, COLS>& A)
 {
     Matrix<T, ROWS, COLS> result;
     for (std::size_t i = 0; i < ROWS; ++i)
@@ -253,10 +274,9 @@ inline Matrix<T, ROWS, COLS> operator-(
 }
 
 // Compound assignment for addition.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS>& operator+=(
-    Matrix<T, ROWS, COLS>& A,
-    const Matrix<T, ROWS, COLS>& B)
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline Matrix<T, ROWS, COLS>& operator+=(Matrix<T, ROWS, COLS>& A,
+                                           const Matrix<U, ROWS, COLS>& B)
 {
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
@@ -265,10 +285,9 @@ inline Matrix<T, ROWS, COLS>& operator+=(
 }
 
 // Compound assignment for subtraction.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS>& operator-=(
-    Matrix<T, ROWS, COLS>& A,
-    const Matrix<T, ROWS, COLS>& B)
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline Matrix<T, ROWS, COLS>& operator-=(Matrix<T, ROWS, COLS>& A,
+                                           const Matrix<U, ROWS, COLS>& B)
 {
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
@@ -277,16 +296,16 @@ inline Matrix<T, ROWS, COLS>& operator-=(
 }
 
 // ------------------------
-// Scalar Operations
+// Scalar Operations for matrices
 // ------------------------
 
 // Multiply a matrix by a scalar.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS> operator*(
-    const Matrix<T, ROWS, COLS>& A,
-    const T& scalar)
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline std::array<std::array<typename std::common_type<T, U>::type, COLS>, ROWS>
+operator*(const Matrix<T, ROWS, COLS>& A, const U& scalar)
 {
-    Matrix<T, ROWS, COLS> result;
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<std::array<result_t, COLS>, ROWS> result;
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
             result[i][j] = A[i][j] * scalar;
@@ -294,21 +313,20 @@ inline Matrix<T, ROWS, COLS> operator*(
 }
 
 // Multiply a scalar by a matrix.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS> operator*(
-    const T& scalar,
-    const Matrix<T, ROWS, COLS>& A)
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline std::array<std::array<typename std::common_type<T, U>::type, COLS>, ROWS>
+operator*(const U& scalar, const Matrix<T, ROWS, COLS>& A)
 {
     return A * scalar;
 }
 
 // Divide a matrix by a scalar.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS> operator/(
-    const Matrix<T, ROWS, COLS>& A,
-    const T& scalar)
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline std::array<std::array<typename std::common_type<T, U>::type, COLS>, ROWS>
+operator/(const Matrix<T, ROWS, COLS>& A, const U& scalar)
 {
-    Matrix<T, ROWS, COLS> result;
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<std::array<result_t, COLS>, ROWS> result;
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
             result[i][j] = A[i][j] / scalar;
@@ -316,9 +334,12 @@ inline Matrix<T, ROWS, COLS> operator/(
 }
 
 // Divide a scalar by a matrix.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS> operator/(const T& scalar, const Matrix<T, ROWS, COLS>& A) {
-    Matrix<T, ROWS, COLS> result;
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline std::array<std::array<typename std::common_type<T, U>::type, COLS>, ROWS>
+operator/(const U& scalar, const Matrix<T, ROWS, COLS>& A)
+{
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<std::array<result_t, COLS>, ROWS> result;
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
             result[i][j] = scalar / A[i][j];
@@ -326,9 +347,12 @@ inline Matrix<T, ROWS, COLS> operator/(const T& scalar, const Matrix<T, ROWS, CO
 }
 
 // Add a matrix to a scalar.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS> operator+(const Matrix<T, ROWS, COLS>& A, const T& scalar) {
-    Matrix<T, ROWS, COLS> result;
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline std::array<std::array<typename std::common_type<T, U>::type, COLS>, ROWS>
+operator+(const Matrix<T, ROWS, COLS>& A, const U& scalar)
+{
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<std::array<result_t, COLS>, ROWS> result;
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
             result[i][j] = A[i][j] + scalar;
@@ -336,15 +360,20 @@ inline Matrix<T, ROWS, COLS> operator+(const Matrix<T, ROWS, COLS>& A, const T& 
 }
 
 // Add a scalar to a matrix.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS> operator+(const T& scalar, const Matrix<T, ROWS, COLS>& A) {
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline std::array<std::array<typename std::common_type<T, U>::type, COLS>, ROWS>
+operator+(const U& scalar, const Matrix<T, ROWS, COLS>& A)
+{
     return A + scalar;
 }
 
 // Subtract a scalar from a matrix.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS> operator-(const Matrix<T, ROWS, COLS>& A, const T& scalar) {
-    Matrix<T, ROWS, COLS> result;
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline std::array<std::array<typename std::common_type<T, U>::type, COLS>, ROWS>
+operator-(const Matrix<T, ROWS, COLS>& A, const U& scalar)
+{
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<std::array<result_t, COLS>, ROWS> result;
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
             result[i][j] = A[i][j] - scalar;
@@ -352,9 +381,12 @@ inline Matrix<T, ROWS, COLS> operator-(const Matrix<T, ROWS, COLS>& A, const T& 
 }
 
 // Subtract a matrix from a scalar.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS> operator-(const T& scalar, const Matrix<T, ROWS, COLS>& A) {
-    Matrix<T, ROWS, COLS> result;
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline std::array<std::array<typename std::common_type<T, U>::type, COLS>, ROWS>
+operator-(const U& scalar, const Matrix<T, ROWS, COLS>& A)
+{
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<std::array<result_t, COLS>, ROWS> result;
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
             result[i][j] = scalar - A[i][j];
@@ -362,10 +394,8 @@ inline Matrix<T, ROWS, COLS> operator-(const T& scalar, const Matrix<T, ROWS, CO
 }
 
 // Compound assignment for scalar multiplication.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS>& operator*=(
-    Matrix<T, ROWS, COLS>& A,
-    const T& scalar)
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline Matrix<T, ROWS, COLS>& operator*=(Matrix<T, ROWS, COLS>& A, const U& scalar)
 {
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
@@ -374,10 +404,8 @@ inline Matrix<T, ROWS, COLS>& operator*=(
 }
 
 // Compound assignment for scalar division.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS>& operator/=(
-    Matrix<T, ROWS, COLS>& A,
-    const T& scalar)
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline Matrix<T, ROWS, COLS>& operator/=(Matrix<T, ROWS, COLS>& A, const U& scalar)
 {
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
@@ -392,22 +420,22 @@ inline Matrix<T, ROWS, COLS>& operator/=(
 // Conventional matrix multiplication.
 // If A is of dimensions M x N and B is of dimensions N x P,
 // then the product A * B is a matrix of dimensions M x P.
-template<typename T, std::size_t M, std::size_t N, std::size_t P>
-inline Matrix<T, M, P> operator*(
-    const Matrix<T, M, N>& A,
-    const Matrix<T, N, P>& B)
+// To allow mixed types in A, B, and the sum we introduce three type parameters.
+template<typename T, typename U, typename V, std::size_t M, std::size_t N, std::size_t P>
+inline std::array<std::array<typename std::common_type<T, U, V>::type, P>, M>
+operator*(const Matrix<T, M, N>& A, const std::array<std::array<U, P>, N>& B)
 {
-    Matrix<T, M, P> result{}; // Value-initialized to T() for each element.
+    using result_t = typename std::common_type<T, U, V>::type;
+    std::array<std::array<result_t, P>, M> result{};
     for (std::size_t i = 0; i < M; ++i)
     {
         for (std::size_t j = 0; j < P; ++j)
         {
-            T sum = T();
+            result[i][j] = result_t(); // value-initialize to 0
             for (std::size_t k = 0; k < N; ++k)
             {
-                sum += A[i][k] * B[k][j];
+                result[i][j] += A[i][k] * B[k][j];
             }
-            result[i][j] = sum;
         }
     }
     return result;
@@ -418,12 +446,12 @@ inline Matrix<T, M, P> operator*(
 // ------------------------
 
 // Element-wise (Hadamard) multiplication of two matrices of the same size.
-template<typename T, std::size_t ROWS, std::size_t COLS>
-inline Matrix<T, ROWS, COLS> hadamard(
-    const Matrix<T, ROWS, COLS>& A,
-    const Matrix<T, ROWS, COLS>& B)
+template<typename T, typename U, std::size_t ROWS, std::size_t COLS>
+inline std::array<std::array<typename std::common_type<T, U>::type, COLS>, ROWS>
+hadamard(const Matrix<T, ROWS, COLS>& A, const Matrix<U, ROWS, COLS>& B)
 {
-    Matrix<T, ROWS, COLS> result;
+    using result_t = typename std::common_type<T, U>::type;
+    std::array<std::array<result_t, COLS>, ROWS> result;
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
             result[i][j] = A[i][j] * B[i][j];
@@ -431,3 +459,4 @@ inline Matrix<T, ROWS, COLS> hadamard(
 }
 
 #endif // ARRAY_MATH_H
+
