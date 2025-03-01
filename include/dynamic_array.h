@@ -139,26 +139,35 @@ public:
         view_ = mdspan_type(data_.data(), make_dextents(extents_));
     }
 
-    // Element access operators (non-const and const) with exactly Rank indices.
-    template <typename... Indices, typename = std::enable_if_t<(sizeof...(Indices) == Rank)>>
+    // Element access operators
+    // 1. Multi-index overload: expects exactly Rank separate indices.
+    template <typename... Indices,
+              typename = std::enable_if_t<(sizeof...(Indices) == Rank)>>
     T& operator()(Indices... indices) {
-        return view_(static_cast<std::size_t>(indices)...);
+        std::size_t linear = computeLinearIndex(indices...);
+        return data_[linear];
     }
 
-    template <typename... Indices, typename = std::enable_if_t<(sizeof...(Indices) == Rank)>>
+    template <typename... Indices,
+              typename = std::enable_if_t<(sizeof...(Indices) == Rank)>>
     const T& operator()(Indices... indices) const {
-        return view_(static_cast<std::size_t>(indices)...);
+        std::size_t linear = computeLinearIndex(indices...);
+        return data_[linear];
     }
 
-    // Element access operators (non-const and const) using containter with exactly Rank size
-    template <typename Container, typename = std::enable_if_t<Container::size() == Rank>>
+    // 2. Container overload: accepts a container (like std::array) with Rank elements.
+    template <typename Container,
+              typename = std::enable_if_t<
+                  std::tuple_size<std::decay_t<Container>>::value == Rank>>
     T& operator()(const Container& indices) {
-        return (*this)(indices[0], indices[1]);  // Assuming Rank==2.
+        return callWithContainer(indices, std::make_index_sequence<Rank>{});
     }
 
-    template <typename Container, typename = std::enable_if_t<Container::size() == Rank>>
+    template <typename Container,
+              typename = std::enable_if_t<
+                  std::tuple_size<std::decay_t<Container>>::value == Rank>>
     const T& operator()(const Container& indices) const {
-        return (*this)(indices[0], indices[1]);  // Assuming Rank==2.
+        return callWithContainer(indices, std::make_index_sequence<Rank>{});
     }
 
     // Returns a pointer to the underlying contiguous storage.
