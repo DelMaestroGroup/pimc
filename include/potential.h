@@ -42,7 +42,7 @@ class PotentialBase {
         virtual double V(const dVec &, const dVec &) { return 0.0; }
 
         /** The gradient of the potential*/
-        virtual dVec gradV(const dVec &) { return 0.0; }
+        virtual dVec gradV(const dVec &) { return dVec{}; }
 
         /** Grad^2 of the potential*/
         virtual double grad2V(const dVec &) { return 0.0; }
