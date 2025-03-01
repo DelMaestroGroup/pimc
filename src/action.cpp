@@ -1632,7 +1632,7 @@ std::array<double,2> NonLocalAction::U(int slice) {
         } // bead2
 
     } // bead1
-    return std::array<double,2>(totUext,totUint);
+    return {totUext,totUint};
 }
 
 /**************************************************************************//**
