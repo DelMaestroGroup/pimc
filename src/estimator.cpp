@@ -3525,7 +3525,10 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
     numq = 3;
     DynamicArray <double, 1> qMag(numq);         // the wavevector magnitudes
     /* qMag.resize(numq); */
-    qMag = 0.761,1.75,1.81;
+    //qMag = 0.761,1.75,1.81;
+    qMag(0) = 0.761;
+    qMag(1) = 1.75;
+    qMag(2) = 1.81;
 
     /* initialize the number of std::vectors with each magnitude */
     numqVecs.resize(numq);               
