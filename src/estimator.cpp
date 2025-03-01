@@ -2739,7 +2739,7 @@ void PermutationCycleEstimator::accumulate() {
                     doBead(beadIndex[1]) = false;
 
                 beadIndex = path.next(beadIndex);
-            } while (!all(beadIndex==startBead));
+            } while (!(beadIndex == startBead));
 
             /* Accumulte the cycle length counter */
             int cycleNum = int(wlLength / path.numTimeSlices);
@@ -2857,7 +2857,7 @@ void LocalPermutationEstimator::accumulate() {
                     doBead(beadIndex[1]) = false;
 
                 beadIndex = path.next(beadIndex);
-            } while (!all(beadIndex==startBead)); // up to here, we have computed WL length only.
+            } while (!(beadIndex == startBead)); // up to here, we have computed WL length only.
 
             /* Accumulate the cycle length counter */
             int cycleNum = int(wlLength / path.numTimeSlices);
@@ -2872,7 +2872,7 @@ void LocalPermutationEstimator::accumulate() {
                 }
 
                 beadIndex = path.next(beadIndex);
-            } while (!all(beadIndex==startBead));
+            } while (!(beadIndex == startBead));
         } // doBead
     } // n
 
@@ -3082,7 +3082,7 @@ void OneBodyDensityMatrixEstimator::accumulate() {
             beadIndex = lpath.worm.head;
             int k = 0;
             do {
-                if (!all(beadIndex==lpath.worm.head) && !all(beadIndex==lpath.worm.tail)) {
+                if (!(beadIndex == lpath.worm.head) && !(beadIndex == lpath.worm.tail)) {
                     lpath.updateBead(beadIndex,
                             newStagingPosition(path.prev(beadIndex),lpath.worm.tail,lpath.worm.gap,k));
                     ++k;
@@ -3091,7 +3091,7 @@ void OneBodyDensityMatrixEstimator::accumulate() {
                 newAction += actionPtr->potentialAction(beadIndex);
 
                 beadIndex = lpath.next(beadIndex);
-            } while (!all(beadIndex==lpath.next(lpath.worm.tail)));
+            } while (!(beadIndex == lpath.next(lpath.worm.tail)));
 
             double expAction = exp(-newAction + oldAction + muShift);
 
@@ -3111,7 +3111,7 @@ void OneBodyDensityMatrixEstimator::accumulate() {
 
     /* Delete all the beads that were added. */
     beadIndex = lpath.next(lpath.worm.head);
-    while (!all(beadIndex==lpath.worm.tail)) {
+    while (!(beadIndex == lpath.worm.tail)) {
         beadIndex = lpath.delBeadGetNext(beadIndex);
     }
     lpath.next(lpath.worm.head).fill(XXX);
@@ -4408,7 +4408,7 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
                     includeWorldline = false;
 
                 beadIndex = path.next(beadIndex);
-            } while (!all(beadIndex==startBead));
+            } while (!(beadIndex == startBead));
 
             if (includeWorldline)
                 W += locW;
@@ -4620,7 +4620,7 @@ void CylinderOneBodyDensityMatrixEstimator::accumulate() {
             beadIndex = lpath.worm.head;
             int k = 0;
             do {
-                if (!all(beadIndex==lpath.worm.head) && !all(beadIndex==lpath.worm.tail)) {
+                if (!(beadIndex == lpath.worm.head) && !(beadIndex == lpath.worm.tail)) {
                     lpath.updateBead(beadIndex,
                             newStagingPosition(path.prev(beadIndex),lpath.worm.tail,lpath.worm.gap,k));
                     ++k;
@@ -4629,7 +4629,7 @@ void CylinderOneBodyDensityMatrixEstimator::accumulate() {
                 newAction += actionPtr->potentialAction(beadIndex);
 
                 beadIndex = lpath.next(beadIndex);
-            } while (!all(beadIndex==lpath.next(lpath.worm.tail)));
+            } while (!(beadIndex == lpath.next(lpath.worm.tail)));
 
             double expAction = exp(-newAction + oldAction + muShift);
             estimator(n) += rho0Norm*expAction;
@@ -4648,7 +4648,7 @@ void CylinderOneBodyDensityMatrixEstimator::accumulate() {
 
     /* Delete all the beads that were added. */
     beadIndex = lpath.next(lpath.worm.head);
-    while (!all(beadIndex==lpath.worm.tail)) {
+    while (!(beadIndex == lpath.worm.tail)) {
         beadIndex = lpath.delBeadGetNext(beadIndex);
     }
     lpath.next(lpath.worm.head).fill(XXX);
@@ -5739,7 +5739,7 @@ void VelocityEstimator::accumulate() {
     beadIndex[1] = 0;
     for (beadIndex[0] = 0; beadIndex[0] < (path.numTimeSlices-1); ++beadIndex[0]) {
         if ( (path.breakSlice > 0) && (beadIndex[0] == path.breakSlice)
-                                    &&( all(path.next(beadIndex)==XXX) ) ){
+                                    &&( path.next(beadIndex) == XXX ) ){
             beadLocator nextBead = beadIndex;
             nextBead[0]++;
             vel = path.getSeparation(beadIndex,nextBead);
