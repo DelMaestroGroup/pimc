@@ -70,7 +70,7 @@ ClassicalMonteCarlo::~ClassicalMonteCarlo ()
 double ClassicalMonteCarlo::getTotalEnergy()
 {
     double locEnergy = 0.0;
-    sep = 0.0;
+    sep = dVec{};
     for (int part1 = 0; part1 < numParticles; part1++) {
         locEnergy += externalPtr->V(config(part1));
 
@@ -129,8 +129,7 @@ void ClassicalMonteCarlo::run(uint32 numMCSteps, bool gce) {
 ******************************************************************************/
 void ClassicalMonteCarlo::moveParticle() {
 
-    dVec oldPos;
-    oldPos = 0.0;
+    dVec oldPos{};
     double oldV,newV;
 
     numMoveTotal++;
@@ -180,8 +179,7 @@ void ClassicalMonteCarlo::moveParticle() {
 ******************************************************************************/
 void ClassicalMonteCarlo::insertParticle() {
 
-    dVec newPos;
-    newPos = 0.0;
+    dVec newPos{};
 
     numInsertTotal++;
 
