@@ -80,7 +80,7 @@ class Path {
         auto get_beads_data_pointer() const;
 
         /** Return the extent of the beads array data */
-        auto get_beads_extent() const;
+        auto get_beads_extents() const;
 
         /** Output bead-link info, used for debugging */
         template<class Tstream> void printLinks(Tstream &);
@@ -211,9 +211,9 @@ inline auto Path::get_beads_data_pointer() const {
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-/** Return the extent of the beads array */
-inline auto Path::get_beads_extent() const {
-    return (*this).beads.extent();
+/** Return the extents of the beads array */
+inline auto Path::get_beads_extents() const {
+    return (*this).beads.extents();
 }
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
