@@ -213,4 +213,15 @@ bool all(const Container& c, Predicate pred) {
     return std::all_of(c.begin(), c.end(), pred);
 }
 
+// Helper function to generate an array filled with a given value
+template <typename T, std::size_t N, std::size_t... Is>
+constexpr std::array<T, N> make_array_impl(const T& value, std::index_sequence<Is...>) {
+    return {{ (static_cast<void>(Is), value)... }};
+}
+
+template <typename T, std::size_t N>
+constexpr std::array<T, N> make_array(const T& value) {
+    return make_array_impl<T, N>(value, std::make_index_sequence<N>{});
+}
+
 #endif

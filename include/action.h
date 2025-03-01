@@ -64,7 +64,7 @@ class ActionBase {
         virtual double derivPotentialActionLambda (int,double) { return 0.0; }
         
         /* gradient of the potential action */
-        virtual dVec gradPotentialAction(int) { return 0.0; }
+        virtual dVec gradPotentialAction(int) { return dVec{}; }
 
         /* r \dot gradU -> for virial estimator.
          * It is necessary to split the terms in order to compute
