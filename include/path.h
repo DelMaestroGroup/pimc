@@ -189,7 +189,8 @@ inline dVec Path::getSeparation(const beadLocator &bead1, const beadLocator &bea
 inline dVec Path::getVelocity (const beadLocator &beadIndex) const {
     dVec vel;
 
-    if (all(beadIndex==XXX) || all(next(beadIndex)==XXX)) {
+    constexpr std::array<int,2> compareArr = { XXX, XXX };
+    if (beadIndex==compareArr || next(beadIndex)==compareArr) {
         vel = 0.0;
         return (vel);
     }

@@ -214,6 +214,16 @@ bool all(const Container& c, Predicate pred) {
     return std::all_of(c.begin(), c.end(), pred);
 }
 
+template <typename T, std::size_t N>
+bool all(const std::array<T, N>& arr, T value) {
+    for (const auto& elem : arr) {
+        if (elem != value) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // Helper function to generate an array filled with a given value
 template <typename T, std::size_t N, std::size_t... Is>
 constexpr std::array<T, N> make_array_impl(const T& value, std::index_sequence<Is...>) {
