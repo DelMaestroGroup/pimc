@@ -87,8 +87,7 @@ double ClassicalMonteCarlo::getTotalEnergy()
  * Perform the monte carlo simulation.
 ******************************************************************************/
 void ClassicalMonteCarlo::run(uint32 numMCSteps, bool gce) {
-
-    int numMeasure = 0;
+    //int numMeasure = 0;
     double x;
     for(uint32 n = 1; n < numMCSteps; n++) {
         int m = 0;
@@ -110,7 +109,7 @@ void ClassicalMonteCarlo::run(uint32 numMCSteps, bool gce) {
             aveEnergy += energy;
             aveNumParticles += numParticles;
             aveEoN += energy/(1.0*numParticles);
-            numMeasure++;
+            //numMeasure++;
 
             m++;
         } while (m < numParticles);
