@@ -5736,10 +5736,11 @@ void VelocityEstimator::accumulate() {
     beadLocator beadIndex;
     dVec vel;
     
+    constexpr beadLocator inactiveBead = {XXX, XXX};
     beadIndex[1] = 0;
     for (beadIndex[0] = 0; beadIndex[0] < (path.numTimeSlices-1); ++beadIndex[0]) {
         if ( (path.breakSlice > 0) && (beadIndex[0] == path.breakSlice)
-                                    &&( path.next(beadIndex) == XXX ) ){
+                                    &&( path.next(beadIndex) == inactiveBead ) ){
             beadLocator nextBead = beadIndex;
             nextBead[0]++;
             vel = path.getSeparation(beadIndex,nextBead);
