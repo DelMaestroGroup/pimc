@@ -378,7 +378,7 @@ class DipolePotential : public PotentialBase  {
         dVec gradV(const dVec &r) {
             double x = sqrt(dot(r,r));
             if (x < EPS)
-                return 0.0;
+                return dVec{};
             return (-3.0/(x*x*x*x*x)) * r;
         }
 
@@ -1009,7 +1009,7 @@ class Gasparini_1_Potential : public PotentialBase {
         }
 
         /** The gradient of the potential. */
-        dVec gradV(const dVec &) { return 0.0; }
+        dVec gradV(const dVec &) { return dVec{}; }
 
         /** Laplacian of the potential. */
         double grad2V(const dVec &r) { return 0.0; }
