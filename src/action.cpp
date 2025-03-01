@@ -719,9 +719,10 @@ double LocalAction::Vnn(const int slice) {
     double totVint = 0.0;
     double totVext = 0.0;
 
-    iVec gIndex,nngIndex;           // The grid box of a particle
-    std::array<int,NDIM+1> nnIndex; // The nearest neighbor boxes of a particle
-    std::array<int,NDIM+2> hI1,hI2; // The hash indices
+    //FIXME these variables are unused?
+    //iVec gIndex,nngIndex;           // The grid box of a particle
+    //std::array<int,NDIM+1> nnIndex; // The nearest neighbor boxes of a particle
+    //std::array<int,NDIM+2> hI1,hI2; // The hash indices
 
     dVec pos;                       // The position of a particle
 
