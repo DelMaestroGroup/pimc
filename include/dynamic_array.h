@@ -41,8 +41,10 @@ std::array<std::size_t, Rank> compute_strides(const std::array<std::size_t, Rank
 template <typename T, std::size_t Rank>
 class DynamicArray {
 public:
-    using dextents_type = std::dextents<std::size_t, Rank>;
+    using dextents_type  = std::dextents<std::size_t, Rank>;
     using mdspan_type    = std::mdspan<T, dextents_type>;
+    using iterator       = typename std::vector<T>::iterator;
+    using const_iterator = typename std::vector<T>::const_iterator;
 
     // Constructor: accepts exactly Rank extents (e.g., DynamicArray<double,2> arr(3,4);)
     template <typename... Extents,
