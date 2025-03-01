@@ -457,9 +457,9 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
 
     // Handle maximum integer and float inputs
     if ((inputType == "max_int") || (inputType == "max_float")) {
-        iVec q_max_int = 0;
-        iVec _q_int = 0;
-        dVec q_max = 0.0;
+        iVec q_max_int{};
+        iVec _q_int{};
+        dVec q_max{};
 
         // Parse maximum wavevector components
         for (int i = 0; i < NDIM; ++i) {
