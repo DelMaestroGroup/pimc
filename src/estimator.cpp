@@ -1111,7 +1111,7 @@ void VirialEnergyEstimator::accumulate() {
             bead1 = slice,ptcl; // current bead
             vel2 = path.getVelocity(bead1);
             beadNextOld = bead1;
-            vel1 = 0.0;
+            vel1 = dVec{};
             /* get r_{current + window} - r_{current} */
             for (int gamma = 1; gamma <= virialWindow; gamma++) {
                 beadNext = path.next(bead1, gamma);
@@ -1956,7 +1956,7 @@ void SuperfluidFractionEstimator::accumulate() {
 
     Az = I = 0.0;
     dVec W,vel;
-    W = 0.0;
+    W = dVec{};
     for (int slice = 0; slice < numTimeSlices; slice++) {
         for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
 
@@ -2946,8 +2946,7 @@ void OneBodyDensityMatrixEstimator::sample() {
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec OneBodyDensityMatrixEstimator::getRandomVector(const double r) {
-    dVec rVec;
-    rVec = 0.0;
+    dVec rVec{};
 #if NDIM==1
     if (random.rand() < 0.5)
         rVec = r;
@@ -3027,8 +3026,7 @@ void OneBodyDensityMatrixEstimator::accumulate() {
      * as we go. */
     beadLocator beadIndex;
     beadIndex = lpath.worm.head;
-    dVec pos;
-    pos = 0.0;
+    dVec pos{};
     for (int k = 0; k < (lpath.worm.gap-1); k++) 
         beadIndex = lpath.addNextBead(beadIndex,pos);
 
@@ -3093,8 +3091,8 @@ void OneBodyDensityMatrixEstimator::accumulate() {
     while (!all(beadIndex==lpath.worm.tail)) {
         beadIndex = lpath.delBeadGetNext(beadIndex);
     }
-    lpath.next(lpath.worm.head) = XXX;
-    lpath.prev(lpath.worm.tail) = XXX;
+    lpath.next(lpath.worm.head).fill(XXX);
+    lpath.prev(lpath.worm.tail).fill(XXX);
 }
 
 /*************************************************************************//**
@@ -4334,8 +4332,8 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
 
     /* Sum up the winding number over all particles */
     dVec W,locW,vel;
-    W = 0.0;
-    locW = 0.0;
+    W = dVec{};
+    locW = dVec{};
 
     /* The start bead for each world line, and the moving index */
     beadLocator startBead;
@@ -4364,7 +4362,7 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
             beadIndex = startBead;
 
             /* Go through all worldlines, summing up the winding number */
-            locW = 0.0;
+            locW = dVec{};
             includeWorldline = true;
             do {
 
@@ -4499,8 +4497,7 @@ void CylinderOneBodyDensityMatrixEstimator::sample() {
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec CylinderOneBodyDensityMatrixEstimator::getRandomVector(const double r) {
-    dVec rVec;
-    rVec = 0.0;
+    dVec rVec{};
     if (random.rand() < 0.5)
         rVec[NDIM-1] = r;
     else
@@ -4561,8 +4558,7 @@ void CylinderOneBodyDensityMatrixEstimator::accumulate() {
      * as we go. */
     beadLocator beadIndex;
     beadIndex = lpath.worm.head;
-    dVec pos;
-    pos = 0.0;
+    dVec pos{};
     for (int k = 0; k < (lpath.worm.gap-1); k++) 
         beadIndex = lpath.addNextBead(beadIndex,pos);
 
@@ -4626,8 +4622,8 @@ void CylinderOneBodyDensityMatrixEstimator::accumulate() {
     while (!all(beadIndex==lpath.worm.tail)) {
         beadIndex = lpath.delBeadGetNext(beadIndex);
     }
-    lpath.next(lpath.worm.head) = XXX;
-    lpath.prev(lpath.worm.tail) = XXX;
+    lpath.next(lpath.worm.head).fill(XXX);
+    lpath.prev(lpath.worm.tail).fill(XXX);
 }
 
 // ---------------------------------------------------------------------------
@@ -4746,7 +4742,7 @@ void CylinderLinearPotentialEstimator::accumulate1() {
 
     double totV = 0.0;
     dVec r1,r2;         // The two bead positions
-    r1 = 0.0;
+    r1 = dVec{};
 
     dVec sep;           // The bead separation
     beadLocator bead2;  // The bead locator
@@ -5652,8 +5648,7 @@ void ParticleCorrelationEstimator::accumulate() {
     
     beadIndex0[0] = (path.numTimeSlices-1)/2;
     beadIndex[0] = beadIndex0[0];
-    dVec r;
-    r = 0.0;
+    dVec r{};
     
     beadIndex0[1]=0;
     for (beadIndex[1] = 1; beadIndex[1] <path.numBeadsAtSlice(beadIndex[0]);
@@ -5873,8 +5868,7 @@ void PIGSOneBodyDensityMatrixEstimator::sample() {
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec PIGSOneBodyDensityMatrixEstimator::getRandomVector(const double r) {
-    dVec rVec;
-    rVec = 0.0;
+    dVec rVec{};
 #if NDIM==1
     if (random.rand() < 0.5)
         rVec = r;
@@ -5921,8 +5915,7 @@ void PIGSOneBodyDensityMatrixEstimator::accumulate() {
    oldTailPos = lpath(beadIndexR);
    //oldAction = actionPtr->potentialAction(beadIndexR);
 
-   dVec pos;
-   pos = 0.0;
+   dVec pos{};
 
    /* Connection the broken beads*/
    //lpath.next(beadIndexL) = beadIndexR;
