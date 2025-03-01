@@ -82,7 +82,7 @@ class ActionBase {
         virtual double virKinCorr(int) { return 0.0; }
 
         /* The bare local potential at a single time slice */
-        virtual std::array<double,2> potential(int) { return std::array<double,2>(0.0); }
+        virtual std::array<double,2> potential(int) { return {0.0, 0.0}; }
         virtual double potential(int,double) { return 0.0; }
 
         /** The public method that sets the tau scaling factor. */
