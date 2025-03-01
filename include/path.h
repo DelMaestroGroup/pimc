@@ -191,7 +191,7 @@ inline dVec Path::getVelocity (const beadLocator &beadIndex) const {
 
     constexpr std::array<int,2> compareArr = { XXX, XXX };
     if (beadIndex==compareArr || next(beadIndex)==compareArr) {
-        vel = 0.0;
+        vel.fill(0.0);
         return (vel);
     }
 
