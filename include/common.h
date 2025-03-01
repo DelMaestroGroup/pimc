@@ -27,6 +27,7 @@
 #include <optional>
 #include <functional> // has std::bind
 
+#include "array_math.h"
 #include "dynamic_array.h"
 
 #define BZ_HAVE_BOOST_SERIALIZATION
