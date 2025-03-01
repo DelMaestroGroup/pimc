@@ -231,8 +231,8 @@ public:
     }
 
 private:
-    std::vector<T> data_;
     std::array<std::size_t, Rank> extents_{};
+    std::vector<T> data_;
     mdspan_type view_{ nullptr, dextents_type{} };
 
     // Helper: convert an extents array to a std::dextents object.
