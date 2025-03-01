@@ -203,4 +203,14 @@ void apply_matrix_vector_product(
     }
 }
 
+template<typename Container>
+double dot(const Container& a, const Container& b) {
+    return std::inner_product(a.begin(), a.end(), b.begin(), 0.0);
+}
+
+template<typename Container, typename Predicate>
+bool all(const Container& c, Predicate pred) {
+    return std::all_of(c.begin(), c.end(), pred);
+}
+
 #endif
