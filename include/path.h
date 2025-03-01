@@ -221,8 +221,7 @@ inline auto Path::get_beads_extents() const {
 /** Move an integer number of links forward in imaginary time */
 inline beadLocator Path::next(int slice, int ptcl, int numLinks) const {
     PIMC_ASSERT(slice>=0 && slice<numTimeSlices && ptcl>=0);
-    beadLocator bI;
-    bI = slice,ptcl;
+    beadLocator bI{slice,ptcl};
     for (int m = 0; m < numLinks; m++)
         bI = next(bI);
     return bI;
@@ -245,8 +244,7 @@ inline beadLocator Path::next(const beadLocator &beadIndex, int numLinks) const 
 /** Move an integer number of links backward in imaginary time */
 inline beadLocator Path::prev(int slice, int ptcl, int numLinks) const {
     PIMC_ASSERT(slice>=0 && slice<numTimeSlices && ptcl>=0);
-    beadLocator bI;
-    bI = slice,ptcl;
+    beadLocator bI{slice,ptcl};
     for (int m = 0; m < numLinks; m++)
         bI = prev(bI);
     return bI;
@@ -273,13 +271,13 @@ void Path::printLinks(Tstream &outStream) {
     for (int m = numTimeSlices-1; m >= 0; m--) {
         beadLocator beadIndex;
         for (int n = 0; n < numParticles; n++) {
-            beadIndex = m,n;
+            beadIndex = {m,n};
             outStream << std::setw(2) << prevLink(beadIndex)[1] << " ";
         }
                         
         outStream << "\t";
         for (int n = 0; n < numParticles; n++) { 
-            beadIndex = m,n;
+            beadIndex = {m,n};
             outStream << std::setw(2) << nextLink(beadIndex)[1] << " ";
         }
         outStream << std::endl;
