@@ -880,10 +880,10 @@ void Setup::set_cell() {
 
         /* we determine if we are using a non-periodic cell for 
          * the graphene potential */
-        iVec periodic;
-        periodic = 1;
+        std::array<unsigned int, NDIM> periodic;
+        periodic.fill(1u);
         if (params["external"].as<std::string>().find("graphene") != std::string::npos)
-            periodic[NDIM-1] = 0;
+            periodic[NDIM-1] = 0u;
 
         if (definedCell && params("number_particles")) 
             boxPtr = new Prism(params["side"].as<dVec>(),periodic);

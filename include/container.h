@@ -109,9 +109,9 @@ class Container {
  */
 class Prism: public Container {
     public:
-	inline static constexpr iVec defaultPeriodic = make_array<int, NDIM>(1);
+	inline static constexpr std::array<unsigned int, NDIM> defaultPeriodic = make_array<unsigned int, NDIM>(1u);
         Prism(const double, const int);
-        Prism(const dVec &, const iVec &_periodic=defaultPeriodic);
+        Prism(const dVec &, const std::array<unsigned int, NDIM> &_periodic=defaultPeriodic);
         ~Prism();
 
         /** For PBC, this is identical to putInBC */

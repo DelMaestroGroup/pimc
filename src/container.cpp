@@ -114,7 +114,7 @@ Prism::Prism(double density, int numParticles) {
  *  We create a NDIM hyperprism with periodic boundary conditions in all
  *  dimensions with sides that are set at teh command line.
 ******************************************************************************/
-Prism::Prism(const dVec &_side, const iVec &_periodic) {
+Prism::Prism(const dVec &_side, const std::array<unsigned int, NDIM> &_periodic) {
 
     /* Setup the cube size in each dimension */
     side = _side;
