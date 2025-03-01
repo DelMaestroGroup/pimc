@@ -605,7 +605,7 @@ std::array<double,2> LocalAction::V(const int slice) {
     } // bead1
 
     /* Separate the external and interaction parts */ 
-    return std::array<double,2>(totVext,totVint);
+    return {totVext,totVint};
 }
 
 /*************************************************************************//**
