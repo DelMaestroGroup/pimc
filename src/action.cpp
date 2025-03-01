@@ -835,7 +835,7 @@ double LocalAction::gradVSquared(const int slice) {
     /* We loop over the first bead */
     for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
 
-        F = 0.0;
+        F = dVec{};
         /* Sum up potential for all other active beads in the system */
         for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
@@ -887,7 +887,7 @@ double LocalAction::gradVSquared(const int slice, const double maxR) {
 
         if (r1sq < maxR*maxR) {
 
-            F = 0.0;
+            F = dVec{};
             /* Sum up potential for all other active beads in the system */
             for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
                 /* Avoid self interactions */
@@ -931,7 +931,7 @@ double LocalAction::gradVnnSquared(const beadLocator &bead1) {
         Fext1 = externalPtr->gradV(path(bead1));
 
         /* We first loop over bead2's interacting with bead1 via the nn lookup table */
-        Fint1 = 0.0;
+        Fint1 = dVec{};
         for (int n = 0; n < lookup.numBeads; n++) {
             bead2 = lookup.beadList(n);
 
@@ -946,7 +946,7 @@ double LocalAction::gradVnnSquared(const beadLocator &bead1) {
                 Fext2 = externalPtr->gradV(path(bead2));
 
                 /* We now loop over bead3, this is the time-intensive part of the calculation */
-                Fint3 = 0.0;
+                Fint3 = dVec{};
                 for (int m = 0; m < lookup.numBeads; m++) {
                     bead3 = lookup.beadList(m);
 
@@ -989,7 +989,7 @@ dVec LocalAction::gradientV(const int slice) {
 
     /* We loop over the first bead */
     for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
-        gV = 0.0;
+        gV = dVec{};
         /* Sum up potential for all other active beads in the system */
         for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
@@ -1018,9 +1018,9 @@ dMat LocalAction::tMatrix(const int slice) {
 
     int numParticles = path.numBeadsAtSlice(slice);
 
-    dMat tMat = 0.0; // tMat(row, col)
+    dMat tMat{}; // tMat(row, col)
 
-    dVec rDiff = 0.0;
+    dVec rDiff{};
     double rmag = 0.0;
     double d2V = 0.0;
     double dV = 0.0;
@@ -1092,7 +1092,7 @@ double LocalAction::rDOTgradUterm1(const int slice) {
 
     /* We loop over the first bead */
     for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
-        gVi = 0.0;
+        gVi = dVec{};
         /* Sum potential of bead1 interacting with all other beads at
          * a given time slice.*/
         for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
@@ -1140,7 +1140,7 @@ double LocalAction::rDOTgradUterm2(const int slice) {
     if (gradVFactor[eo] > EPS){
 
         /* constants for tMatrix */
-        dVec rDiff = 0.0;
+        dVec rDiff{};
         double rmag = 0.0;
         double d2V = 0.0;
         double dV = 0.0;
@@ -1151,10 +1151,10 @@ double LocalAction::rDOTgradUterm2(const int slice) {
 
         /* We loop over the first bead */
         for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
-            gV = 0.0;
-            g2V = 0.0;
-            dMat tMat = 0.0; // tMat(row, col)
-            dVec gVdotT = 0.0;
+            gV = dVec{};
+            g2V = dVec{};
+            dMat tMat{}; // tMat(row, col)
+            dVec gVdotT{};
 
             /* compute external potential derivatives */
             gVe = externalPtr->gradV(path(bead1));
@@ -1235,10 +1235,10 @@ double LocalAction::deltadotgradUterm1(const int slice) {
 
     /* We loop over the first bead */
     for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
-        gVi = 0.0;
-        gVe = 0.0;
-        gV = 0.0;
-        delta = 0.0;
+        gVi = dVec{};
+        gVe = dVec{};
+        gV = dVec{};
+        delta = dVec{};
         /* Sum potential of bead1 interacting with all other beads at
          * a given time slice.*/
         for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
@@ -1256,9 +1256,9 @@ double LocalAction::deltadotgradUterm1(const int slice) {
         
         /* Compute deviation of bead from COM of worldline, 
          * WITHOUT mirror image conv. */
-        dVec runTotMore = 0.0;
-        dVec runTotLess = 0.0;
-        dVec COM = 0.0;
+        dVec runTotMore{};
+        dVec runTotLess{};
+        dVec COM{};
         dVec pos1 = path(bead1);
         beadNextOld = bead1;
         beadPrevOld = bead1;
@@ -1315,7 +1315,7 @@ double LocalAction::deltadotgradUterm2(const int slice) {
     if (gradVFactor[eo] > EPS){
 
         /* constants for tMatrix */
-        dVec rDiff = 0.0;
+        dVec rDiff{};
         double rmag = 0.0;
         double d2V = 0.0;
         double dV = 0.0;
@@ -1326,11 +1326,11 @@ double LocalAction::deltadotgradUterm2(const int slice) {
 
         /* We loop over the first bead */
         for (bead1[1] = 0; bead1[1] < numParticles; bead1[1]++) {
-            gV = 0.0;
-            g2V = 0.0;
-            delta = 0.0;
-            dMat tMat = 0.0; // tMat(row, col)
-            dVec gVdotT = 0.0;
+            gV    = dVec{};
+            g2V   = dVec{};
+            delta = dVec{};
+            dMat tMat{}; // tMat(row, col)
+            dVec gVdotT{};
 
             /* compute external potential derivatives */
             gVe = externalPtr->gradV(path(bead1));
