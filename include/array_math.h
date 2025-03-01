@@ -143,4 +143,13 @@ inline T dot(const std::array<T, N>& a, const std::array<T, N>& b) {
     return result;
 }
 
+template<typename T, std::size_t N>
+inline T sum(const std::array<T, N>& a) {
+    T result = T();
+    for (std::size_t i = 0; i < N; ++i) {
+        result += a[i];
+    }
+    return result;
+}
+
 #endif // ARRAY_MATH_H
