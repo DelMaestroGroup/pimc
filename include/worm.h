@@ -108,9 +108,9 @@ class Worm {
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /** Get the state of the supplied bead? */
 inline beadState Worm::getState(const beadLocator &beadIndex) const {
-    if (all(beadIndex==head) || all(beadIndex==tail))
+    if (beadIndex==head || beadIndex==tail)
         return HEADTAIL;
-    else if (all(beadIndex==special1) || all(beadIndex==special2))
+    else if (beadIndex==special1 || beadIndex==special2)
         return SPECIAL;
     else
         return NONE;
