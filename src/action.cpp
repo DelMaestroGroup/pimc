@@ -1528,7 +1528,8 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
 #endif
 
     /* Make sure nextBead1 is a real bead and that it is active */
-    if ( (nextBead1 == {XXX, XXX}) || (!path.worm.beadOn(nextBead1)) )
+    constexpr beadLocator inactiveBead = {XXX, XXX};
+    if ( (nextBead1 == inactiveBead) || (!path.worm.beadOn(nextBead1)) )
         return totU;
 
     /* Evaluate the external potential */
@@ -1538,7 +1539,7 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
     lookup.updateInteractionList(path,bead1);
     for (int n = 0; n < lookup.numBeads; n++) {
         bead2 = lookup.beadList(n);
-        if(!(path.next(bead2) == {XXX, XXX}))
+        if(!(path.next(bead2) == inactiveBead))
             NNbead[bead2[1]] = true;
     }
     
@@ -1546,7 +1547,7 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
     lookup.updateInteractionList(path,nextBead1);
     for (int n = 0; n < lookup.numBeads; n++) {
         bead2 = path.prev(lookup.beadList(n));
-        if(!(bead2 == {XXX, XXX}))
+        if(!(bead2 == inactiveBead))
            NNbead[bead2[1]] = true;
     }
     
