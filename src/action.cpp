@@ -1378,9 +1378,9 @@ double LocalAction::deltadotgradUterm2(const int slice) {
             
             /* Compute deviation of bead from COM of worldline, 
              * WITHOUT mirror image conv.*/
-            dVec runTotMore = 0.0;
-            dVec runTotLess = 0.0;
-            dVec COM = 0.0;
+            dVec runTotMore{};
+            dVec runTotLess{};
+            dVec COM{};
             dVec pos1 = path(bead1);
             beadNextOld = bead1;
             beadPrevOld = bead1;
@@ -1445,7 +1445,7 @@ double LocalAction::virialKinCorrection(const int slice) {
 ******************************************************************************/
 dVec LocalAction::gradU(const int slice) {
 
-    dVec gU2 = 0.0;
+    dVec gU2{};
     dMat tM = tMatrix(slice);
     dVec gV = gradientV(slice);
 
