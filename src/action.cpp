@@ -780,7 +780,7 @@ double LocalAction::gradVSquared(const beadLocator &bead1) {
 
         /* We loop through all beads and compute the forces between beads
          * 1 and 2 */
-        Fint1 = 0.0;
+        Fint1 = dVec{};
         for (bead2[1] = 0; bead2[1] < numParticles; bead2[1]++) {
 
             if (!(bead1 == bead2)) {
@@ -792,7 +792,7 @@ double LocalAction::gradVSquared(const beadLocator &bead1) {
 
                 /* There is a single term that depends on this additional interaction
                  * between beads 2 and 3.  This is where all the time is taken */
-                Fint3 = 0.0;
+                Fint3 = dVec{};
                 for (bead3[1] = 0; bead3[1] < numParticles; bead3[1]++) {
                     if ( !(bead3 == bead2) && !(bead3 == bead1) ) {
                         sep = path.getSeparation(bead2,bead3);
