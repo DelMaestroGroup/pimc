@@ -1,3 +1,6 @@
+#ifndef DYNAMIC_ARRAY_H
+#define DYNAMIC_ARRAY_H
+
 #include <vector>
 #include <array>
 #include <cstddef>
@@ -624,3 +627,4 @@ DynamicArray<To, Rank> castArray(const DynamicArray<T, Rank>& input) {
     }
 }
 
+#endif // DYNAMIC_ARRAY_H
