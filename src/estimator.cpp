@@ -765,14 +765,14 @@ std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double q
 
         /* cq = 0.0 */
         if (abs(cq) < EPS) {
-            dVec qd = 0.0;
+            dVec qd{};
             qvecs.push_back(qd);
         }
 
         /* cq > 0.0 */
         else {
             /* First do θ = 0, i.e. along the z-direction */
-            dVec qd = 0.0;
+            dVec qd{};
             qd[NDIM-1] = cq;
             qvecs.push_back(qd);
 
@@ -924,7 +924,7 @@ void EnergyEstimator::accumulate() {
 
     double totK = 0.0;
     double totV = 0.0;
-    std::array<double,2> totVop(0.0);
+    std::array<double,2> totVop{};
 
     int numParticles  = path.getTrueNumParticles();
     int numTimeSlices = endSlice - startSlice;
