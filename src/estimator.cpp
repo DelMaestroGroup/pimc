@@ -189,8 +189,6 @@ EstimatorBase::EstimatorBase(const Path &_path, ActionBase *_actionPtr,
  *  Destructor.
 ******************************************************************************/
 EstimatorBase::~EstimatorBase() { 
-    estimator.free();
-    norm.free();
 }
 
 /**************************************************************************//**
@@ -2068,7 +2066,6 @@ PlaneWindingSuperfluidDensityEstimator::PlaneWindingSuperfluidDensityEstimator
  *  Destructor.
 ******************************************************************************/
 PlaneWindingSuperfluidDensityEstimator::~PlaneWindingSuperfluidDensityEstimator() { 
-    locWz.free();
 }
 
 /*************************************************************************//**
@@ -2159,7 +2156,6 @@ PlaneAreaSuperfluidDensityEstimator::PlaneAreaSuperfluidDensityEstimator
  *  Destructor.
 ******************************************************************************/
 PlaneAreaSuperfluidDensityEstimator::~PlaneAreaSuperfluidDensityEstimator() { 
-    locAz.free();
 }
 
 /*************************************************************************//**
@@ -2255,7 +2251,6 @@ RadialWindingSuperfluidDensityEstimator::RadialWindingSuperfluidDensityEstimator
  *  Destructor.
 ******************************************************************************/
 RadialWindingSuperfluidDensityEstimator::~RadialWindingSuperfluidDensityEstimator() { 
-    locWz.free();
 }
 
 /*************************************************************************//**
@@ -2343,7 +2338,6 @@ RadialAreaSuperfluidDensityEstimator::RadialAreaSuperfluidDensityEstimator
  *  Destructor.
 ******************************************************************************/
 RadialAreaSuperfluidDensityEstimator::~RadialAreaSuperfluidDensityEstimator() { 
-    locAz.free();
 }
 
 /*************************************************************************//**
@@ -2442,9 +2436,6 @@ LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
  *  Destructor.
 ******************************************************************************/
 LocalSuperfluidDensityEstimator::~LocalSuperfluidDensityEstimator() { 
-    locWz.free();
-    locAz.free();
-    locA2.free();
 }
 
 /*************************************************************************//**
@@ -2672,7 +2663,6 @@ PermutationCycleEstimator::PermutationCycleEstimator (const Path &_path,
  *  Destructor.
 ******************************************************************************/
 PermutationCycleEstimator::~PermutationCycleEstimator() { 
-    doBead.free();
 }
 
 /*************************************************************************//**
@@ -2775,7 +2765,6 @@ LocalPermutationEstimator::LocalPermutationEstimator (const Path &_path,
  *  Destructor.
 ******************************************************************************/
 LocalPermutationEstimator::~LocalPermutationEstimator() { 
-    doBead.free();
 }
 
 /*************************************************************************//**
@@ -3321,7 +3310,6 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
  *  Destructor.
 ******************************************************************************/
 StaticStructureFactorEstimator::~StaticStructureFactorEstimator() { 
-    sf.free();
 }
 
 /*************************************************************************//**
@@ -5062,7 +5050,6 @@ CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
  *  Destructor.
 ******************************************************************************/
 CylinderStaticStructureFactorEstimator::~CylinderStaticStructureFactorEstimator() { 
-    sf.free();
 }
 
 /*************************************************************************//**
