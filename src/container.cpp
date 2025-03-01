@@ -92,12 +92,12 @@ Prism::Prism(double density, int numParticles) {
     rcut2 = 0.25*side[NDIM-1]*side[NDIM-1];
 
     /* The hyper cube has periodic boundary conditions */
-    periodic = 1; 
+    periodic.fill(1); 
     pSide = side;
     fullyPeriodic = true;
 
     /* Compute the maximum possible separation possible inside the box */
-    maxSep = sqrt(dot(side/(periodic + 1.0),side/(periodic + 1.0)));
+    maxSep = sqrt(dot(side/(periodic + 1u),side/(periodic + 1u)));
 
     /* Calculate the volume of the cube */
     volume = product(side);
@@ -264,7 +264,7 @@ Cylinder::Cylinder(const double _rho, const double radius, const int numParticle
         pSide = periodic*side;
 
         /* Compute the maximum possible separation possible inside the box */
-        maxSep = sqrt(dot(side/(periodic + 1.0),side/(periodic + 1.0)));
+        maxSep = sqrt(dot(side/(periodic + 1),side/(periodic + 1)));
 
         /* Compute the cylinder volume. We use the radius here instead of the actual
          * side.  This is the 'active' volume */

@@ -130,6 +130,42 @@ inline std::array<T, N> operator/(const T& scalar, const std::array<T, N>& a) {
     return result;
 }
 
+// Add array to scalar
+template<typename T, std::size_t N>
+inline std::array<T, N> operator+(const std::array<T, N>& a, const T& scalar) {
+    std::array<T, N> result;
+    for (std::size_t i = 0; i < N; ++i) {
+        result[i] = a[i] + scalar;
+    }
+    return result;
+}
+
+// Add scalar to array
+template<typename T, std::size_t N>
+inline std::array<T, N> operator+(const T& scalar, const std::array<T, N>& a) {
+    return a + scalar; // Reuse the above definition.
+}
+
+// Subtract scalar from array
+template<typename T, std::size_t N>
+inline std::array<T, N> operator-(const std::array<T, N>& a, const T& scalar) {
+    std::array<T, N> result;
+    for (std::size_t i = 0; i < N; ++i) {
+        result[i] = a[i] - scalar;
+    }
+    return result;
+}
+
+// Subtract array from scalar
+template<typename T, std::size_t N>
+inline std::array<T, N> operator-(const T& scalar, const std::array<T, N>& a) {
+    std::array<T, N> result;
+    for (std::size_t i = 0; i < N; ++i) {
+        result[i] = scalar - a[i];
+    }
+    return result;
+}
+
 // Compound assignment for scalar operations
 
 template<typename T, std::size_t N>
@@ -286,6 +322,42 @@ inline Matrix<T, ROWS, COLS> operator/(const T& scalar, const Matrix<T, ROWS, CO
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
             result[i][j] = scalar / A[i][j];
+    return result;
+}
+
+// Add a matrix to a scalar.
+template<typename T, std::size_t ROWS, std::size_t COLS>
+inline Matrix<T, ROWS, COLS> operator+(const Matrix<T, ROWS, COLS>& A, const T& scalar) {
+    Matrix<T, ROWS, COLS> result;
+    for (std::size_t i = 0; i < ROWS; ++i)
+        for (std::size_t j = 0; j < COLS; ++j)
+            result[i][j] = A[i][j] + scalar;
+    return result;
+}
+
+// Add a scalar to a matrix.
+template<typename T, std::size_t ROWS, std::size_t COLS>
+inline Matrix<T, ROWS, COLS> operator+(const T& scalar, const Matrix<T, ROWS, COLS>& A) {
+    return A + scalar;
+}
+
+// Subtract a scalar from a matrix.
+template<typename T, std::size_t ROWS, std::size_t COLS>
+inline Matrix<T, ROWS, COLS> operator-(const Matrix<T, ROWS, COLS>& A, const T& scalar) {
+    Matrix<T, ROWS, COLS> result;
+    for (std::size_t i = 0; i < ROWS; ++i)
+        for (std::size_t j = 0; j < COLS; ++j)
+            result[i][j] = A[i][j] - scalar;
+    return result;
+}
+
+// Subtract a matrix from a scalar.
+template<typename T, std::size_t ROWS, std::size_t COLS>
+inline Matrix<T, ROWS, COLS> operator-(const T& scalar, const Matrix<T, ROWS, COLS>& A) {
+    Matrix<T, ROWS, COLS> result;
+    for (std::size_t i = 0; i < ROWS; ++i)
+        for (std::size_t j = 0; j < COLS; ++j)
+            result[i][j] = scalar - A[i][j];
     return result;
 }
 
