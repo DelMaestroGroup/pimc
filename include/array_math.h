@@ -120,6 +120,16 @@ inline std::array<T, N> operator/(const std::array<T, N>& a, const T& scalar) {
     return result;
 }
 
+// Divide scalar by an array
+template<typename T, std::size_t N>
+inline std::array<T, N> operator/(const T& scalar, const std::array<T, N>& a) {
+    std::array<T, N> result;
+    for (std::size_t i = 0; i < N; ++i) {
+        result[i] = scalar / a[i];
+    }
+    return result;
+}
+
 // Compound assignment for scalar operations
 
 template<typename T, std::size_t N>
@@ -266,6 +276,16 @@ inline Matrix<T, ROWS, COLS> operator/(
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
             result[i][j] = A[i][j] / scalar;
+    return result;
+}
+
+// Divide a scalar by a matrix.
+template<typename T, std::size_t ROWS, std::size_t COLS>
+inline Matrix<T, ROWS, COLS> operator/(const T& scalar, const Matrix<T, ROWS, COLS>& A) {
+    Matrix<T, ROWS, COLS> result;
+    for (std::size_t i = 0; i < ROWS; ++i)
+        for (std::size_t j = 0; j < COLS; ++j)
+            result[i][j] = scalar / A[i][j];
     return result;
 }
 

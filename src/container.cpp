@@ -18,11 +18,11 @@
  * Initialize all variables.
 ******************************************************************************/
 Container::Container() {
-    side     = 0.0;
-    sideInv  = 0.0;
-    sideInv2 = 0.0;
-    pSide    = 0.0;
-    periodic = 1;
+    side     = dVec{};
+    sideInv  = dVec{};
+    sideInv2 = dVec{};
+    pSide    = dVec{};
+    periodic.fill(1);
     maxSep   = 0.0;
     volume   = 0.0;
     rcut2    = 0.0;
@@ -85,7 +85,7 @@ Prism::Prism(double density, int numParticles) {
 
     /* Here we can only create a cube */
     /* Setup the cube size in each dimension */
-    side = pow(1.0*numParticles / density, 1.0/(1.0*NDIM));
+    side.fill(pow(1.0*numParticles / density, 1.0/(1.0*NDIM)));
     sideInv = 1.0/side;
     sideInv2 = 2.0*sideInv;
 
