@@ -277,6 +277,25 @@ private:
         }
         return indices;
     }
+
+    // Helper: Compute the linear index from multi-dimensional indices.
+    template <typename... Indices>
+    std::size_t computeLinearIndex(Indices... indices) const {
+        std::array<std::size_t, Rank> idx = { static_cast<std::size_t>(indices)... };
+        return multiIndexToLinear(idx, extents_);
+    }
+
+    // Helper: Unpack container indices into individual indices (non-const overload).
+    template <typename Container, std::size_t... I>
+    T& callWithContainer(const Container& indices, std::index_sequence<I...>) {
+        return (*this)(indices[I]...);
+    }
+
+    // Helper: Unpack container indices into individual indices (const overload).
+    template <typename Container, std::size_t... I>
+    const T& callWithContainer(const Container& indices, std::index_sequence<I...>) const {
+        return (*this)(indices[I]...);
+    }
 };
 
 // Helper: Cast all elements of a DynamicArray<T, Rank> to type To.
