@@ -59,8 +59,6 @@ ActionBase::ActionBase (const Path &_path, LookupTable &_lookup,
  *  Empty base constructor.
 ******************************************************************************/
 ActionBase::~ActionBase() {
-    sepHist.free();
-    cylSepHist.free();
 }
 
 /*************************************************************************//**
