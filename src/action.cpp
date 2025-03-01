@@ -204,21 +204,21 @@ double ActionBase::kineticAction (const beadLocator &beadIndex, int wlLength) {
  *  The total kinetic action evaluated for all particles and all time slices.
 ******************************************************************************/
 double ActionBase::kineticAction () {
-
-    double totK = 0.0;
-
     /* Calculate the kinetic energy.  Even though there
      * may be multiple mixing and swaps, it doesn't matter as we always
      * just advance one time step at a time, as taken care of through the
      * linking arrays.  This has been checked! */
+
+    double totK = 0.0;
     beadLocator beadIndex;
     for (int slice = 0; slice < path.numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+        beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             totK += kineticAction(beadIndex);
         }
     }
-
     return totK;
 }
 
