@@ -224,6 +224,15 @@ inline T sum(const std::array<T, N>& a) {
     return result;
 }
 
+template<typename T, std::size_t N>
+inline T product(const std::array<T, N>& a) {
+    T result = T(1);
+    for (std::size_t i = 0; i < N; ++i) {
+        result *= a[i];
+    }
+    return result;
+}
+
 // ------------------------
 // Matrix operations
 // ------------------------
@@ -455,6 +464,24 @@ hadamard(const Matrix<T, ROWS, COLS>& A, const Matrix<U, ROWS, COLS>& B)
     for (std::size_t i = 0; i < ROWS; ++i)
         for (std::size_t j = 0; j < COLS; ++j)
             result[i][j] = A[i][j] * B[i][j];
+    return result;
+}
+
+template<typename T, std::size_t ROWS, std::size_t COLS>
+inline T sum(const Matrix<T, ROWS, COLS>& A) {
+    T result = T(); // Initializes to 0 for numeric types.
+    for (std::size_t i = 0; i < ROWS; ++i)
+        for (std::size_t j = 0; j < COLS; ++j)
+            result += A[i][j];
+    return result;
+}
+
+template<typename T, std::size_t ROWS, std::size_t COLS>
+inline T product(const Matrix<T, ROWS, COLS>& A) {
+    T result = T(1);
+    for (std::size_t i = 0; i < ROWS; ++i)
+        for (std::size_t j = 0; j < COLS; ++j)
+            result *= A[i][j];
     return result;
 }
 
