@@ -214,8 +214,7 @@ class HarmonicCylinderPotential : public PotentialBase {
 
         /** The gradient of the potential. */
         dVec gradV(const dVec &r) {
-            dVec tempr;
-            tempr = 0.0;
+            dVec tempr{};
             for (int i=0; i < NDIM-1; i++)
                 tempr[i] = r[i];
             return ( c * constants()->m() * w * w * tempr );
