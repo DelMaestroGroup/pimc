@@ -42,8 +42,7 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
 
     /* Copy the initial condition at all time slices (a classical initial condition)*/
     for (int n = 0; n < numParticles; n++) {
-        for (int i = 0; i < NDIM; i++)
-	    beads.slice<1>(n)(i) = initialPos(n)[i];
+	fill_mdspan(beads.slice<1>(n), initialPos(n));
     }
 
     /* Construct and initialize the prevLink and nextLink arrays */
@@ -57,8 +56,8 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
     
     if (PIGS) {
     /* Here we implement the fixed boundary conditions in imaginary time. */
-	fill_mdspan(prevLink.slice<0>(0), XXX);
-	fill_mdspan(nextLink.slice<0>(numTimeSlices-1), XXX);
+	fill_mdspan(prevLink.slice<0>(0), {XXX, XXX});
+	fill_mdspan(nextLink.slice<0>(numTimeSlices-1), {XXX, XXX});
 
         /* Here we break worldlines at the center of the path if requested*/
         breakSlice = 0;
