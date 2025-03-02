@@ -208,7 +208,7 @@ void LookupTable::setupNNGrid() {
             dup = gridNNReduced(nnIndex); 
 
             /* We only follow links for real grid boxes */
-            if (!any(dup == -1)) {
+            if (noneEquals(dup, XXX)) {
 
                 for (int i = 0; i < NDIM; i++) 
                     nnIndex[i] = dup[i];
@@ -483,7 +483,7 @@ void LookupTable::updateInteractionList(const Path &path, const beadLocator &bea
         gIndex = gridNN(nnIndex);
 
         /* Make sure we don't access any illegal grid boxes */
-        if (!any(gIndex == -1)) {
+        if (noneEquals(gIndex, XXX)) {
 
             int maxNL = numLabels(numLabelIndex(gIndex,bead1[0]));
             hI = hashIndex(gIndex,bead1[0],0);
@@ -536,7 +536,7 @@ void LookupTable::updateFullInteractionList(const beadLocator &beadIndex, const 
         /* Get the grid index of the nearest neighbor box */
         gIndex = gridNN(nnIndex);
 
-        if (!any(gIndex == -1)) {
+        if (noneEquals(gIndex, XXX)) {
 
             /* Get the hash table index, and max number of labels*/
             int maxNL = numLabels(numLabelIndex(gIndex,slice));
@@ -579,7 +579,7 @@ void LookupTable::updateFullInteractionList(const int gNumber, const int slice) 
         /* Get the grid index of the nearest neighbor box */
         gIndex = gridNN(nnIndex);
 
-        if (!any(gIndex == -1)) {
+        if (noneEquals(gIndex, XXX)) {
 
             /* Get the hash table index, and max number of labels*/
             int maxNL = numLabels(numLabelIndex(gIndex,slice));

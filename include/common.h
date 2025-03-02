@@ -249,4 +249,27 @@ std::ostream& operator<<(std::ostream& os, const std::array<T, N>& arr) {
     return os;
 }
 
+// Returns true if no element in the container equals the given value.
+template <typename Container, typename T>
+constexpr bool noneEquals(const Container& container, const T& value) {
+    return std::none_of(container.begin(), container.end(), [&value](const auto& elem) {
+        return elem == value;
+    });
+}
+
+// Returns true if any element in the container equals the given value.
+template <typename Container, typename T>
+constexpr bool anyEquals(const Container& container, const T& value) {
+    return std::any_of(container.begin(), container.end(), [&value](const auto& elem) {
+        return elem == value;
+    });
+}
+
+// Returns true if all elements in the container equal the given value.
+template <typename Container, typename T>
+constexpr bool allEquals(const Container& container, const T& value) {
+    return std::all_of(container.begin(), container.end(), [&value](const auto& elem) {
+        return elem == value;
+    });
+}
 #endif
