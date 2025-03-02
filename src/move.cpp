@@ -760,7 +760,7 @@ bool EndStagingMove::attemptMove() {
     if (leftMoving){
         neighborIndex = pivotIndex;
         int k = originalPos.size()-1;
-        dVec pos;
+        //dVec pos;
         do {
             beadIndex = path.prev(neighborIndex);
             originalPos(k) = path(beadIndex);
@@ -772,7 +772,7 @@ bool EndStagingMove::attemptMove() {
     }else{
         neighborIndex = pivotIndex;
         int k = 0;
-        dVec pos;
+        //dVec pos;
         do {
             beadIndex = path.next(neighborIndex);
             originalPos(k) = path(beadIndex);
@@ -852,8 +852,8 @@ MidStagingMove::~MidStagingMove() {
 bool MidStagingMove::attemptMove() {
     
     beadLocator beadIndex;
-    beadLocator pivotIndex;         // The bead adjacent to the update that is fixed
-    beadLocator neighborIndex;
+    //beadLocator pivotIndex;         // The bead adjacent to the update that is fixed
+    //beadLocator neighborIndex;
     
     success = false;
     bool startBreak;                // Whether the update path starts broken
@@ -909,7 +909,7 @@ bool MidStagingMove::attemptMove() {
      * positions, while storing the old one */
     beadIndex = path.prev(leftBead);
     int k = 0;
-    dVec pos;
+    //dVec pos;
     do {
         beadIndex = path.next(beadIndex);
         originalPos(k) = path(beadIndex);
@@ -1143,7 +1143,8 @@ bool CenterOfMassMove::attemptMove() {
 
     /* The initial bead */
     beadLocator firstBead;
-    firstBead = {startSlice, random.randInt(path.numBeadsAtSlice(startSlice)-1)};
+    //FIXME this static_cast should be fine since the range of randInt will be clamped to a value much smaller than INTMAX
+    firstBead = {startSlice, static_cast<int>(random.randInt(path.numBeadsAtSlice(startSlice)-1))};
 
     bool startSubregionA,startSubregionB,endSubregionA,endSubregionB;
 
@@ -1372,7 +1373,7 @@ bool StagingMove::attemptMove() {
      * positions, while storing the old one */
     beadIndex = startBead;
     int k = 0;
-    dVec pos;
+    //dVec pos;
     bool movedIntoSubRegionA = false;
     do {
         beadIndex = path.next(beadIndex);

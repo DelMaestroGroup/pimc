@@ -454,7 +454,7 @@ class AdvanceHeadMove: public MoveBase {
         void undoMove();                // Undo a move
         void keepMove();                // keep the move
 
-        beadLocator startBead;          
+        //beadLocator startBead;          
 	DynamicArray <dVec,1> newPos;                  // The modified particle positions
 	DynamicArray <unsigned int,1> oldBeadOn;       // The old and new bead states
 
