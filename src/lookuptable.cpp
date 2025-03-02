@@ -40,12 +40,12 @@ LookupTable::LookupTable(const Container *_boxPtr, const int _numLookupTimeSlice
 
     /* Resize and initialize the main hash array */
     hash.resize(hashSize);
-    hash = XXX;
+    hash.fill(XXX);
 
     /* Resize and initialize the grid and bead label and list arrays */
     resizeList(_numParticles);
-    grid = XXX;
-    beadLabel= XXX;
+    grid.fill(XXX);
+    beadLabel.fill(XXX);
     beadList = XXX;
     fullBeadList = XXX;
     beadSep = 0.0;
@@ -89,7 +89,7 @@ void LookupTable::setupNNGrid() {
         initNumLabels[i] = numNNGrid[i];
     initNumLabels[NDIM] = constants()->numTimeSlices();
     numLabels.resize(initNumLabels);
-    numLabels= 0;
+    numLabels.fill(0);
 
     /* Now we set the array which holds the nearest neighbors of each
      * grid box which will be used in calculating the potential.  We need
@@ -114,8 +114,7 @@ void LookupTable::setupNNGrid() {
     DynamicArray <iVec,1> nnShift(numNN);
     nnShift = 0; 
     /* The shift vector */
-    std::array<int,3> shift;
-    shift = -1,0,1;
+    std::array<int,3> shift{-1,0,1};
 
     /* For each of the unique nearest neighbors, we construct shift vectors 
      * this includes all redundancies and even a zero shift, this is taken
@@ -163,7 +162,7 @@ void LookupTable::setupNNGrid() {
      * other corresponding to the same box.  We simply set such neighbors to -1 and
      * have logic in the potential class to skip these. */
     iVec neg,dup;
-    neg = -1;
+    neg.fill(-1);
     /* We go through each grid box */
     for (int n = 0; n < totNumGridBoxes; n++) {
         gIndex = gridIndex(n);
@@ -276,7 +275,7 @@ void LookupTable::printGrid() {
 ******************************************************************************/
 void LookupTable::updateGrid(const DynamicArray <dVec,1> &fixedPos) {
 
-    numLabels = 0;
+    numLabels.fill(0);
     beadLocator beadIndex;
     beadIndex[0] = 0;
     for (int n = 0; n < fixedPos.extents()[0]; ++n) {
@@ -314,7 +313,7 @@ void LookupTable::updateGrid(const DynamicArray <dVec,1> &fixedPos) {
 ******************************************************************************/
 void LookupTable::updateGrid(const Path &path) {
 
-    numLabels = 0;
+    numLabels.fill(0);
     beadLocator beadIndex;
     for (beadIndex[0] = 0; beadIndex[0] < constants()->numTimeSlices(); ++beadIndex[0]) {
         for (beadIndex[1] = 0; beadIndex[1] < path.getNumParticles(); ++beadIndex[1]) {
@@ -452,7 +451,7 @@ void LookupTable::delBead(const beadLocator &beadIndex) {
 
     /* Reset the label and grid */
     beadLabel(beadIndex) = XXX;
-    grid(beadIndex) = XXX;
+    grid(beadIndex).fill(XXX);
     
     /* Decrement the number of labels */
     numLabels(nI)--;
