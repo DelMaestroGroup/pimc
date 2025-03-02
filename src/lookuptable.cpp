@@ -44,7 +44,7 @@ LookupTable::LookupTable(const Container *_boxPtr, const int _numLookupTimeSlice
 
     /* Resize and initialize the grid and bead label and list arrays */
     resizeList(_numParticles);
-    grid.fill(XXX);
+    grid.fill(make_array<iVec>(XXX));
     beadLabel.fill(XXX);
     beadList = XXX;
     fullBeadList = XXX;

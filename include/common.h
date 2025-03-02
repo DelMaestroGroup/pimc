@@ -230,9 +230,19 @@ constexpr std::array<T, N> make_array_impl(const T& value, std::index_sequence<I
     return {{ (static_cast<void>(Is), value)... }};
 }
 
+// Helper to make and fill array of given type and size
 template <typename T, std::size_t N>
 constexpr std::array<T, N> make_array(const T& value) {
     return make_array_impl<T, N>(value, std::make_index_sequence<N>{});
+}
+
+// Overload that deduces type and size from a given array type.
+template <typename ArrayType>
+constexpr ArrayType make_array(const typename ArrayType::value_type& value) {
+    return make_array_impl<typename ArrayType::value_type,
+                           std::tuple_size<ArrayType>::value>(
+                           value,
+                           std::make_index_sequence<std::tuple_size<ArrayType>::value>{});
 }
 
 // Templated overload for printing any std::array<T, N>
