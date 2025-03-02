@@ -546,7 +546,7 @@ void LookupTable::updateFullInteractionList(const beadLocator &beadIndex, const 
 
                 /* Get the interacting bead */
                 hI[NDIM+1] = label;
-                fullBeadList(fullNumBeads) = slice,hash(hI);
+                fullBeadList(fullNumBeads) = {slice, hash(hI)};
                 fullNumBeads++;
 
             } // label
@@ -589,7 +589,7 @@ void LookupTable::updateFullInteractionList(const int gNumber, const int slice) 
 
                 /* Get the interacting bead */
                 hI[NDIM+1] = label;
-                fullBeadList(fullNumBeads) = slice,hash(hI);
+                fullBeadList(fullNumBeads) = {slice, hash(hI)};
                 fullNumBeads++;
 
             } // label
