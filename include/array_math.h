@@ -233,6 +233,26 @@ inline T product(const std::array<T, N>& a) {
     return result;
 }
 
+template<typename T, std::size_t N>
+inline T min(const std::array<T, N>& a) {
+    T min_val = a[0];
+    for (std::size_t i = 1; i < N; ++i) {
+        if (a[i] < min_val)
+            min_val = a[i];
+    }
+    return min_val;
+}
+
+template<typename T, std::size_t N>
+inline T max(const std::array<T, N>& a) {
+    T max_val = a[0];
+    for (std::size_t i = 1; i < N; ++i) {
+        if (max_val < a[i])
+            max_val = a[i];
+    }
+    return max_val;
+}
+
 // ------------------------
 // Matrix operations
 // ------------------------
@@ -483,6 +503,26 @@ inline T product(const Matrix<T, ROWS, COLS>& A) {
         for (std::size_t j = 0; j < COLS; ++j)
             result *= A[i][j];
     return result;
+}
+
+template<typename T, std::size_t ROWS, std::size_t COLS>
+inline T min(const Matrix<T, ROWS, COLS>& A) {
+    T min_val = A[0][0];
+    for (std::size_t i = 0; i < ROWS; ++i)
+        for (std::size_t j = 0; j < COLS; ++j)
+            if (A[i][j] < min_val)
+                min_val = A[i][j];
+    return min_val;
+}
+
+template<typename T, std::size_t ROWS, std::size_t COLS>
+inline T max(const Matrix<T, ROWS, COLS>& A) {
+    T max_val = A[0][0];
+    for (std::size_t i = 0; i < ROWS; ++i)
+        for (std::size_t j = 0; j < COLS; ++j)
+            if (max_val < A[i][j])
+                max_val = A[i][j];
+    return max_val;
 }
 
 #endif // ARRAY_MATH_H

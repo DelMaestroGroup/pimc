@@ -628,3 +628,4 @@ DynamicArray<To, Rank> castArray(const DynamicArray<T, Rank>& input) {
 }
 
 #endif // DYNAMIC_ARRAY_H
+

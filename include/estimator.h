@@ -727,7 +727,7 @@ class OneBodyDensityMatrixEstimator: public EstimatorBase {
 
 
         dVec newTailPos,oldTailPos;     // The new and old tail position
-        dVec newHeadPos;                // The new head position
+        //dVec newHeadPos;                // The new head position
         dVec newRanPos,neighborPos;     // The random shift
 
         double sqrt2LambdaTau;          // sqrt(2 * lambda * tau)
@@ -998,7 +998,7 @@ class WormPropertiesEstimator: public EstimatorBase {
         std::string getName() const {return name;}
 
     private:
-        dVec sep;                       // head-tail separation
+        //dVec sep;                       // head-tail separation
         void accumulate();              // Accumulate values
 };
 
@@ -1161,7 +1161,7 @@ class CylinderOneBodyDensityMatrixEstimator: public EstimatorBase {
 
 
         dVec newTailPos,oldTailPos;     // The new and old tail position
-        dVec newHeadPos;                // The new head position
+        //dVec newHeadPos;                // The new head position
         dVec newRanPos,neighborPos;     // The random shift
 
         double sqrt2LambdaTau;          // sqrt(2 * lambda * tau)
@@ -1515,7 +1515,7 @@ class PIGSOneBodyDensityMatrixEstimator: public EstimatorBase {
 
 
         dVec newTailPos,oldTailPos;     // The new and old tail position
-        dVec newRanPos,neighborPos;     // The random shift
+        //dVec newRanPos,neighborPos;     // The random shift
 
         double sqrt2LambdaTau;          // sqrt(2 * lambda * tau)
         double oldAction,newAction;     // The old and new action

@@ -4120,7 +4120,7 @@ void CylinderEnergyEstimator::accumulate() {
      * for V and the thermodynamic estimator for K */
     int eo;
     double t1 = 0.0;
-    double t2 = 0.0;
+    //double t2 = 0.0;
     for (int slice = 0; slice < numTimeSlices; slice++) {
         eo = (slice % 2);
         t1 += actionPtr->derivPotentialActionLambda(slice,maxR);
@@ -5385,7 +5385,7 @@ void KineticEnergyEstimator::accumulate() {
     double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
     
     beadLocator beadIndex;
-    dVec vel,pos;
+    dVec vel;//,pos;
     for (int slice = 0; slice < (numTimeSlices-1); slice+=2) {
         double K = 0.0;
         for (int eo = 0; eo < 2; eo++){
@@ -5465,7 +5465,7 @@ void TotalEnergyEstimator::accumulate() {
     double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
     
     beadLocator beadIndex;
-    dVec vel,pos;
+    dVec vel;//,pos;
     for (int slice = 0; slice < (numTimeSlices-1); slice++) {
         double K = 0.0;
 	beadIndex[0] = slice;
@@ -5952,7 +5952,7 @@ void PIGSOneBodyDensityMatrixEstimator::accumulate() {
    oldTailPos = lpath(beadIndexR);
    //oldAction = actionPtr->potentialAction(beadIndexR);
 
-   dVec pos{};
+   //dVec pos{};
 
    /* Connection the broken beads*/
    //lpath.next(beadIndexL) = beadIndexR;
