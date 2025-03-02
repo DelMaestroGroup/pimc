@@ -867,7 +867,7 @@ bool MidStagingMove::attemptMove() {
     leftBead = beadIndex;
     
     /* Check if worldline is broken */
-    while( (!allEqauls(path.next(beadIndex), XXX)) && (beadIndex[0] != path.breakSlice) ){
+    while( (!allEquals(path.next(beadIndex), XXX)) && (beadIndex[0] != path.breakSlice) ){
         beadIndex = path.next(beadIndex);
     }
     midBeadL = beadIndex;
