@@ -38,7 +38,7 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
 
     /* Construct and initialize the array of beads */
     beads.resize(numTimeSlices,numParticles);
-    beads = 0.0;
+    beads.fill(0.0);
 
     /* Copy the initial condition at all time slices (a classical initial condition)*/
     for (int n = 0; n < numParticles; n++) {
@@ -65,8 +65,8 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
         if (numberBroken > 0){
             breakSlice = (numTimeSlices-1)/2;
             for (int n=0; n<numberBroken; n++){
-                nextLink(breakSlice,n) = XXX;
-                prevLink(breakSlice+1,n) = XXX;
+                nextLink(breakSlice    , n).fill(XXX);
+                prevLink(breakSlice + 1, n).fill(XXX);
                 brokenWorldlinesL.push_back(n);
                 brokenWorldlinesR.push_back(n);
             }
@@ -79,8 +79,8 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
             for( int n=0; n<getNumParticles(); n++){
                 beadIndex[1] = n;
                 if (inSubregionA(beadIndex)){
-                    nextLink(breakSlice,n) = XXX;
-                    prevLink(breakSlice+1,n) = XXX;
+                    nextLink(breakSlice    , n).fill(XXX);
+                    prevLink(breakSlice + 1, n).fill(XXX);
                     brokenWorldlinesL.push_back(n);
                     brokenWorldlinesR.push_back(n);
                 }else{
@@ -162,8 +162,8 @@ void Path::leftPack() {
                     prev(next(bead2)) = bead1;
 
                     /* Zero out the old links */
-                    next(bead2) = XXX;
-                    prev(bead2) = XXX;
+                    next(bead2).fill(XXX);
+                    prev(bead2).fill(XXX);
 
                 } // foundBead
 
@@ -287,8 +287,8 @@ beadLocator Path::addBead(const int slice, const dVec &pos) {
     ++numBeadsAtSlice(slice);
 
     /* Initialize the connections */
-    next(lastBeadIndex) = XXX;
-    prev(lastBeadIndex) = XXX;
+    next(lastBeadIndex).fill(XXX);
+    prev(lastBeadIndex).fill(XXX);
 
     /* Update the actual path and lookup table */
     beads(lastBeadIndex) = pos;
@@ -354,9 +354,9 @@ void Path::delBead(const beadLocator &beadIndex) {
 
     /* unlink */
     if (!allEquals(next(beadIndex), XXX))
-        prev(next(beadIndex)) = XXX;
+        prev(next(beadIndex)).fill(XXX);
     if (!allEquals(prev(beadIndex), XXX))
-        next(prev(beadIndex)) = XXX;
+        next(prev(beadIndex)).fill(XXX);
 
     /* If we are not already the largest bead label, perform the value
      * and linkage swap. */
@@ -389,8 +389,8 @@ void Path::delBead(const beadLocator &beadIndex) {
     }
 
     /* Unlink */
-    next(lastBeadIndex) = XXX;
-    prev(lastBeadIndex) = XXX;
+    next(lastBeadIndex).fill(XXX);
+    prev(lastBeadIndex).fill(XXX);
 
     /* delete from the beads array */
     worm.delBead(lastBeadIndex);
@@ -404,8 +404,8 @@ void Path::delBead(const beadLocator &beadIndex) {
  ******************************************************************************/
 void Path::breakLink(const beadLocator &beadIndexL) {
     beadLocator beadIndexR = next(beadIndexL);
-    nextLink(beadIndexL[0],beadIndexL[1]) = XXX;
-    prevLink(beadIndexR[0],beadIndexR[1]) = XXX;
+    nextLink(beadIndexL[0],beadIndexL[1]).fill(XXX);
+    prevLink(beadIndexR[0],beadIndexR[1]).fill(XXX);
 }
 
 /**************************************************************************//**
@@ -640,7 +640,7 @@ void Path::outputConfig(int configNumber) const {
     /* If we are off-diagonal, we start with the worm */
     if (!worm.isConfigDiagonal) {
         startBead(nwl) = worm.tail;
-        endBead(nwl)   = XXX;
+        endBead(nwl).fill(XXX);
 
         /* Mark the beads as touched and increment the number of worldlines */
         beadIndex = startBead(nwl);
