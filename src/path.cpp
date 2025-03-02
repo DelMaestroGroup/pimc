@@ -38,7 +38,7 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
 
     /* Construct and initialize the array of beads */
     beads.resize(numTimeSlices,numParticles);
-    beads.fill(0.0);
+    beads.fill(make_array<dVec>(0.0));
 
     /* Copy the initial condition at all time slices (a classical initial condition)*/
     for (int n = 0; n < numParticles; n++) {
