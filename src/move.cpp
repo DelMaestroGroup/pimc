@@ -93,7 +93,7 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
      * std::vector and append to a matrix */
     iVec wind;
     for (int n = 0; n < numWind; n++ ) {
-        wind = 0;
+        wind.fill(0);
         for (int i = 0; i < NDIM; i++) {
 
             /* We only need to compute widing in periodic directions */
@@ -409,8 +409,7 @@ iVec MoveBase::sampleWindingSector(const beadLocator &startBead, const beadLocat
 ******************************************************************************/
 iVec MoveBase::getWindingNumber(const beadLocator &startBead, const beadLocator &endBead) { 
 
-    iVec wind;
-    wind = 0;
+    iVec wind{};
     beadLocator beadIndex;
     beadIndex = startBead;
     dVec vel;
@@ -1146,7 +1145,7 @@ bool CenterOfMassMove::attemptMove() {
 
     /* The initial bead */
     beadLocator firstBead;
-    firstBead = startSlice,random.randInt(path.numBeadsAtSlice(startSlice)-1);
+    firstBead = {startSlice, random.randInt(path.numBeadsAtSlice(startSlice)-1)};
 
     bool startSubregionA,startSubregionB,endSubregionA,endSubregionB;
 
@@ -2037,8 +2036,8 @@ void CloseMove::undoMove() {
     while (!(beadIndex == path.worm.tail) && (!allEquals(beadIndex, XXX)))
         beadIndex = path.delBeadGetNext(beadIndex);
 
-    path.next(path.worm.head) = XXX;
-    path.prev(path.worm.tail) = XXX;
+    path.next(path.worm.head).fill(XXX);
+    path.prev(path.worm.tail).fill(XXX);
 
     /* Make sure we register the off-diagonal configuration */
     path.worm.isConfigDiagonal = false;
@@ -2464,7 +2463,7 @@ bool AdvanceHeadMove::attemptMove() {
 
     /* Make the old head a special bead, and undefine the head */
     path.worm.special1 = path.worm.head;
-    path.worm.head = XXX;
+    path.worm.head.fill(XXX);
 
     /* If we have a local action, perform a single slice rejection move */
     if (actionPtr->local) {
@@ -2571,13 +2570,13 @@ void AdvanceHeadMove::undoMove() {
     beadIndex = path.next(path.worm.head);
     while (!allEquals(beadIndex, XXX))
         beadIndex = path.delBeadGetNext(beadIndex);
-    path.next(path.worm.head) = XXX;
+    path.next(path.worm.head).fill(XXX);
 
     /* Reset the configuration to off-diagonal */
     path.worm.isConfigDiagonal = false;
 
     /* Unset the special marker */
-    path.worm.special1 = XXX;
+    path.worm.special1.fill(XXX);
 
     printMoveState("Failed to advance a worm.");
     success = false;
@@ -2749,7 +2748,7 @@ void AdvanceTailMove::undoMove() {
     path.worm.isConfigDiagonal = false;
 
     /* Unset the special marker */
-    path.worm.special1 = XXX;
+    path.worm.special1.fill(XXX);
 
     printMoveState("Failed to advance a worm tail.");
     success = false;
@@ -2916,7 +2915,7 @@ void RecedeHeadMove::undoMove() {
     path.worm.isConfigDiagonal = false;
 
     /* Unset the special mark */
-    path.worm.special1 = XXX;
+    path.worm.special1.fill(XXX);
 
     printMoveState("Failed to recede a worm head.");
     success = false;
@@ -2990,7 +2989,7 @@ bool RecedeTailMove::attemptMove() {
 
     /* Make the current tail special, and undefine the tail */
     path.worm.special1 = path.worm.tail;
-    path.worm.tail = XXX;
+    path.worm.tail.fill(XXX);
 
     /* If we have a local action, perform a single slice rejection move */
     if (actionPtr->local) {
@@ -3098,13 +3097,13 @@ void RecedeTailMove::undoMove() {
     beadIndex = path.prev(path.worm.tail);
     while (!allEquals(beadIndex, XXX)) 
         beadIndex = path.delBeadGetPrev(beadIndex);
-    path.prev(path.worm.tail) = XXX;
+    path.prev(path.worm.tail).fill(XXX);
 
     /* Reset the configuration to off-diagonal */
     path.worm.isConfigDiagonal = false;
 
     /* Unset the special mark */
-    path.worm.special1 = XXX;
+    path.worm.special1.fill(XXX);
 
     printMoveState("Failed to recede a worm tail.");
     success = false;
@@ -3343,8 +3342,8 @@ bool SwapHeadMove::attemptMove() {
     if (!path.worm.isConfigDiagonal) {
 
         /* Initialize */
-        pivot = XXX;
-        swap = XXX;
+        pivot.fill(XXX);
+        swap.fill(XXX);
 
         /* Now we figure out how many beads will be involved with the swap bisection. */
         swapLength = constants()->Mbar();
@@ -3365,8 +3364,7 @@ bool SwapHeadMove::attemptMove() {
             /* We compute the normalization factors using the head bead */
             SigmaHead = getNorm(path.worm.head);
 
-            iVec wind;
-            wind = 0;
+            iVec wind{};
             /* Get the pivot bead and winding number sector */
             pivot = selectPivotBead(wind);
             
@@ -3440,7 +3438,7 @@ bool SwapHeadMove::attemptMove() {
                     /* Update the links.  Here we exploit the non-constant return reference 
                      * semantics of the next/prev methods */
                     path.next(path.worm.head) = nextSwap;
-                    path.next(swap)           = XXX; 
+                    path.next(swap).fill(XXX); 
                     path.prev(nextSwap)       = path.worm.head;
 
                     /* Change the former head to a special bead, and assign the new head */
@@ -3510,7 +3508,7 @@ void SwapHeadMove::undoMove() {
     path.worm.head = path.worm.special1;
 
     /* Return all links to their un-swapped values */
-    path.next(path.worm.head) = XXX;
+    path.next(path.worm.head).fill(XXX);
     path.next(swap) = nextSwap;
     path.prev(nextSwap) = swap;
 
@@ -3528,8 +3526,8 @@ void SwapHeadMove::undoMove() {
     path.worm.isConfigDiagonal = false;
 
     /* Unset the special beads */
-    path.worm.special1 = XXX;
-    path.worm.special2 = XXX;
+    path.worm.special1.fill(XXX);
+    path.worm.special2.fill(XXX);
 
     printMoveState("Failed to perform a head swap.");
     success = false;
@@ -3580,8 +3578,8 @@ bool SwapTailMove::attemptMove() {
     if (!path.worm.isConfigDiagonal) {
 
         /* Initialize */
-        pivot = XXX;
-        swap = XXX;
+        pivot.fill(XXX);
+        swap.fill(XXX);
 
         /* Now we figure out how many beads will be involved with the swap bisection. */
         swapLength = constants()->Mbar();
@@ -3603,8 +3601,7 @@ bool SwapTailMove::attemptMove() {
             SigmaTail = getNorm(path.worm.tail,-1);
 
             /* Get the pivot bead and winding sector */
-            iVec wind;
-            wind = 0;
+            iVec wind{};
             pivot = selectPivotBead(wind);
 
             /* Now we try to find the swap bead.  If we find the worm head, we immediatly
@@ -3676,7 +3673,7 @@ bool SwapTailMove::attemptMove() {
                     /* Update the links.  Here we exploit the non-constant return reference 
                      * semantics of the next/prev methods */
                     path.prev(path.worm.tail) = prevSwap;
-                    path.prev(swap)           = XXX;
+                    path.prev(swap).fill(XXX);
                     path.next(prevSwap)       = path.worm.tail;
 
                     /* Change the former tail to a special bead, and assign the new tail */
@@ -3749,7 +3746,7 @@ void SwapTailMove::undoMove() {
     path.worm.tail = path.worm.special1;
 
     /* Return all links to their un-swapped values */
-    path.prev(path.worm.tail) = XXX;
+    path.prev(path.worm.tail).fill(XXX);
     path.prev(swap)           = prevSwap;
     path.next(prevSwap)       = swap;
 
@@ -3763,8 +3760,8 @@ void SwapTailMove::undoMove() {
     } while (!(beadIndex == swap));
 
     /* Unset the special beads */
-    path.worm.special1 = XXX;
-    path.worm.special2 = XXX;
+    path.worm.special1.fill(XXX);
+    path.worm.special2.fill(XXX);
 
     /* Make sure the configuration is still off-diagonal */
     path.worm.isConfigDiagonal = false;
