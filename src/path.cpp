@@ -114,10 +114,6 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
  * Free up memory
 *****************************************************************************/
 Path::~Path () {
-    beads.free();
-    prevLink.free();
-    nextLink.free();
-    numBeadsAtSlice.free();
 }
 
 /*************************************************************************//**
@@ -725,12 +721,6 @@ void Path::outputConfig(int configNumber) const {
 
     /* Flush the file stream */
     communicate()->file("wl")->stream().flush();
-
-    /* Free up memory */
-    startBead.free();
-    endBead.free();
-    wlLength.free();
-    doBead.free();
 #endif
 }
 
