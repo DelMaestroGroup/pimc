@@ -661,7 +661,7 @@ void Path::outputConfig(int configNumber) const {
     for (int n = 0; n < numParticles; n++) {
 
         /* The initial bead to be moved */
-        testStart = 0,n;
+        testStart = {0, n};
 
         /* We make sure we don't try to touch the same worldline twice */
         if (doBead(testStart)) {
@@ -751,7 +751,7 @@ void Path::printWormConfig(DynamicArray <beadLocator,1> &wormBeads) {
         /* First print out the beads */
         for (int n = 0; n < numWorldLines; n++) {
             beadLocator beadIndex;
-            beadIndex = m,n;
+            beadIndex = {m, n};
             if (beadIndex == worm.head) {
                 if (worm.beadOn(beadIndex))
                     (*outFilePtr) << "^";
@@ -778,7 +778,7 @@ void Path::printWormConfig(DynamicArray <beadLocator,1> &wormBeads) {
         /* Now print out the links */
         for (int n = 0; n < numWorldLines; n++) { 
             beadLocator beadIndex;
-            beadIndex = m,n;
+            beadIndex = {m, n};
             if (allEquals(next(beadIndex), XXX))
                 (*outFilePtr) << " ";
             else
@@ -790,7 +790,7 @@ void Path::printWormConfig(DynamicArray <beadLocator,1> &wormBeads) {
         if (!worm.isConfigDiagonal) {
             for (int n = 0; n < numWorldLines; n++) {
                 beadLocator beadIndex;
-                beadIndex = m,n;
+                beadIndex = {m, n};
                 bool foundWormBead = false;
                 std::string beadOut;
                 for (int k = 0; k < static_cast<int>(wormBeads.extents()[0]); ++k) {
