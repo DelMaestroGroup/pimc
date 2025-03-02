@@ -140,7 +140,6 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
  *  Destructor.
 ******************************************************************************/
 MoveBase::~MoveBase() {
-    originalPos.free();
 }
 
 ///@cond DEBUG
@@ -154,7 +153,7 @@ inline void MoveBase::printMoveState(std::string state) {
     /* We make a list of all the beads contained in the worm */
     Array <beadLocator,1> wormBeads;    // Used for debugging
     wormBeads.resize(path.worm.length+1);
-    wormBeads = XXX;
+    wormBeads.fill(XXX);
 
     /* Output the worldline configuration */
     communicate()->file("debug")->stream() << "Move State: " << state 
@@ -177,7 +176,6 @@ inline void MoveBase::printMoveState(std::string state) {
 
     path.printWormConfig(wormBeads);
     path.printLinks<fstream>(communicate()->file("debug")->stream());
-    wormBeads.free();
 #endif
 }
 
@@ -1466,7 +1464,6 @@ BisectionMove::BisectionMove(Path &_path, ActionBase *_actionPtr,
  *  Destructor.
 ******************************************************************************/
 BisectionMove::~BisectionMove() {
-    include.free();
 }
 
 
@@ -1867,7 +1864,6 @@ CloseMove::CloseMove (Path &_path, ActionBase *_actionPtr,
  *  Destructor.
 ******************************************************************************/
 CloseMove::~CloseMove() {
-    oldBeadOn.free();
 }
 
 /*************************************************************************//**
