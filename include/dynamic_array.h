@@ -27,7 +27,7 @@ void fill_mdspan(Mdspan view, const typename Mdspan::value_type& value) {
     for (std::size_t d = 0; d < Mdspan::rank(); ++d) {
         total *= view.extent(d);
     }
-    std::fill(view.data(), view.data() + total, value);
+    std::fill(view.data_handle(), view.data_handle() + total, value);
 }
 
 // Helper to compute row‐major strides given extents.
