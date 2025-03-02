@@ -142,6 +142,26 @@ public:
         view_ = mdspan_type(data_.data(), make_dextents(extents_));
     }
 
+    // Overload for resize that accepts a container with Rank extents (e.g., std::array).
+    // This overload converts the container into a fixed-size array and unpacks its values.
+    template <typename Container,
+              typename = std::enable_if_t<std::tuple_size<std::decay_t<Container>>::value == Rank>>
+    void resize(const Container& new_extents) {
+        std::array<std::size_t, Rank> arr;
+        std::copy(std::begin(new_extents), std::end(new_extents), arr.begin());
+        resize_impl(arr, std::make_index_sequence<Rank>{});
+    }
+
+    // Overload for resizeAndPreserve that accepts a container with Rank extents.
+    // The container’s contents are unpacked to forward to the existing variadic overload.
+    template <typename Container,
+              typename = std::enable_if_t<std::tuple_size<std::decay_t<Container>>::value == Rank>>
+    void resizeAndPreserve(const Container& new_extents) {
+        std::array<std::size_t, Rank> arr;
+        std::copy(std::begin(new_extents), std::end(new_extents), arr.begin());
+        resizeAndPreserve_impl(arr, std::make_index_sequence<Rank>{});
+    }
+
     // Element access operators
     // 1. Multi-index overload: expects exactly Rank separate indices.
     template <typename... Indices,
@@ -299,6 +319,20 @@ private:
     const T& callWithContainer(const Container& indices, std::index_sequence<I...>) const {
         return (*this)(indices[I]...);
     }
+
+    // --- Private Helpers for Container-based resize Overloads ---
+
+    // Helper to unpack container extents and call the variadic resize overload.
+    template <std::size_t... I>
+    void resize_impl(const std::array<std::size_t, Rank>& arr, std::index_sequence<I...>) {
+        resize(arr[I]...);
+    }
+
+    // Helper to unpack container extents and call the variadic resizeAndPreserve overload.
+    template <std::size_t... I>
+    void resizeAndPreserve_impl(const std::array<std::size_t, Rank>& arr, std::index_sequence<I...>) {
+        resizeAndPreserve(arr[I]...);
+    }
 };
 
 // Specialization for bool.
@@ -429,7 +463,7 @@ public:
         return *this;
     }
 
-    //=== Resize functions =====================================================
+    // Resize the array without preserving data.
     template <typename... Extents, typename = std::enable_if_t<(sizeof...(Extents) == Rank)>>
     void resize(Extents... new_extents) {
         extents_ = { static_cast<std::size_t>(new_extents)... };
@@ -438,6 +472,8 @@ public:
         view_ = mdspan_type(reinterpret_cast<bool*>(data_.data()), make_dextents(extents_));
     }
 
+    // Resize and preserve data in the overlapping region.
+    // Data is preserved for indices in each dimension up to std::min(old, new) extent.
     template <typename... Extents, typename = std::enable_if_t<(sizeof...(Extents) == Rank)>>
     void resizeAndPreserve(Extents... new_extents) {
         std::array<std::size_t, Rank> newExtents = { static_cast<std::size_t>(new_extents)... };
@@ -458,6 +494,24 @@ public:
         extents_ = newExtents;
         data_ = std::move(newData);
         view_ = mdspan_type(reinterpret_cast<bool*>(data_.data()), make_dextents(extents_));
+    }
+
+    // Overload for resize that accepts a container with Rank extents.
+    template <typename Container,
+              typename = std::enable_if_t<std::tuple_size<std::decay_t<Container>>::value == Rank>>
+    void resize(const Container& new_extents) {
+        std::array<std::size_t, Rank> arr;
+        std::copy(std::begin(new_extents), std::end(new_extents), arr.begin());
+        resize_impl(arr, std::make_index_sequence<Rank>{});
+    }
+
+    // Overload for resizeAndPreserve that accepts a container with Rank extents.
+    template <typename Container,
+              typename = std::enable_if_t<std::tuple_size<std::decay_t<Container>>::value == Rank>>
+    void resizeAndPreserve(const Container& new_extents) {
+        std::array<std::size_t, Rank> arr;
+        std::copy(std::begin(new_extents), std::end(new_extents), arr.begin());
+        resizeAndPreserve_impl(arr, std::make_index_sequence<Rank>{});
     }
 
     //=== Element access =======================================================
@@ -600,6 +654,18 @@ private:
     template <typename Container, std::size_t... I>
     auto callWithContainer(const Container& indices, std::index_sequence<I...>) const {
         return (*this)(indices[I]...);
+    }
+
+    // --- Private Helpers for Container-based resize Overloads ---
+
+    template <std::size_t... I>
+    void resize_impl(const std::array<std::size_t, Rank>& arr, std::index_sequence<I...>) {
+        resize(arr[I]...);
+    }
+
+    template <std::size_t... I>
+    void resizeAndPreserve_impl(const std::array<std::size_t, Rank>& arr, std::index_sequence<I...>) {
+        resizeAndPreserve(arr[I]...);
     }
 };
 
