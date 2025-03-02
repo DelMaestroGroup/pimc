@@ -172,7 +172,7 @@ inline void MoveBase::printMoveState(std::string state) {
             wormBeads(n) = beadIndex;
             beadIndex = path.next(beadIndex);
             ++n;
-        } while(!all(beadIndex==path.next(path.worm.head)));
+        } while(!(beadIndex == path.next(path.worm.head)));
     }
 
     path.printWormConfig(wormBeads);
@@ -430,7 +430,7 @@ iVec MoveBase::getWindingNumber(const beadLocator &startBead, const beadLocator 
         }
 
         beadIndex = path.next(beadIndex);
-    } while (!all(beadIndex==endBead));
+    } while (!(beadIndex == endBead));
 
     return wind;
 }
@@ -548,20 +548,20 @@ bool DisplaceMove::attemptMove() {
         /* Check if worldline is broken */
         beadLocator brokenBead = beadIndex;
         if ( beadIndex[0] == 0){
-            while( !all(path.next(brokenBead)==XXX) ){
+            while( !allEquals(path.next(brokenBead), XXX) ){
                 brokenBead = path.next(brokenBead);
                 if ( brokenBead[0] == path.breakSlice ){
-                    if ( all(path.next(brokenBead)==XXX ) ) {
+                    if ( allEquals(path.next(brokenBead), XXX ) ) {
                         beadIndex = brokenBead;
                         start = false;
                     }
                 }
             }
         }else{
-            while( !all(path.prev(brokenBead)==XXX) ){
+            while( !allEquals(path.prev(brokenBead), XXX) ){
                 brokenBead = path.prev(brokenBead);
                 if ( brokenBead[0] == path.breakSlice+1 ){
-                    if ( all(path.prev(brokenBead)==XXX ) ) {
+                    if ( allEquals(path.prev(brokenBead), XXX ) ) {
                         beadIndex = brokenBead;
                         start = true;
                     }
@@ -701,10 +701,10 @@ bool EndStagingMove::attemptMove() {
         beadLocator brokenBead = beadIndex;
 
         if ( beadIndex[0] == 0){
-            while( !all(path.next(brokenBead)==XXX) ){
+            while( !allEquals(path.next(brokenBead), XXX) ){
                 brokenBead = path.next(brokenBead);
                 if ( brokenBead[0] == path.breakSlice ){
-                    if ( all(path.next(brokenBead)==XXX ) ){
+                    if ( allEquals(path.next(brokenBead), XXX ) ){
                         leftMoving = false;
                         rightBead = brokenBead;
                     }
@@ -712,10 +712,10 @@ bool EndStagingMove::attemptMove() {
             }
         }
         else {
-            while( !all(path.prev(brokenBead)==XXX) ){
+            while( !allEquals(path.prev(brokenBead), XXX) ){
                 brokenBead = path.prev(brokenBead);
                 if ( brokenBead[0] == path.breakSlice+1 ){
-                    if ( all(path.prev(brokenBead)==XXX ) ){
+                    if ( allEquals(path.prev(brokenBead), XXX ) ){
                         leftMoving = true;
                         leftBead = brokenBead;
                     }
@@ -730,7 +730,7 @@ bool EndStagingMove::attemptMove() {
         /*  For a left moving update, rightBead is prev(pivotIndex) */
         beadIndex = leftBead;
         for (int k = 0; k < (constants()->Mbar()/2); k++) {
-            if (!path.worm.beadOn(beadIndex) || all(path.next(beadIndex)==XXX))
+            if (!path.worm.beadOn(beadIndex) || allEquals(path.next(beadIndex), XXX))
                 return false;
             beadIndex = path.next(beadIndex);
         }
@@ -740,7 +740,7 @@ bool EndStagingMove::attemptMove() {
         /*  For a right moving update, leftBead is next(pivotIndex) */
         beadIndex = rightBead;
         for (int k = 0; k < (constants()->Mbar()/2); k++) {
-            if (!path.worm.beadOn(beadIndex) || all(path.prev(beadIndex)==XXX))
+            if (!path.worm.beadOn(beadIndex) || allEquals(path.prev(beadIndex), XXX))
                 return false;
             beadIndex = path.prev(beadIndex);
         }
@@ -771,7 +771,7 @@ bool EndStagingMove::attemptMove() {
             movedIntoSubregionB = path.inSubregionB(beadIndex);
             --k;
             neighborIndex = beadIndex;
-        } while (!all(path.prev(neighborIndex)==XXX));
+        } while (!allEquals(path.prev(neighborIndex), XXX));
     }else{
         neighborIndex = pivotIndex;
         int k = 0;
@@ -783,7 +783,7 @@ bool EndStagingMove::attemptMove() {
             movedIntoSubregionB = path.inSubregionB(beadIndex);
             ++k;
             neighborIndex = beadIndex;
-        } while (!all(path.next(neighborIndex)==XXX));
+        } while (!allEquals(path.next(neighborIndex), XXX));
 
     }
     
@@ -815,7 +815,7 @@ void EndStagingMove::undoMove() {
     beadLocator beadIndex;
     beadIndex = leftBead;
     path.updateBead(beadIndex,originalPos(k));
-    while (!all(beadIndex==rightBead)){
+    while (!(beadIndex == rightBead)){
         beadIndex = path.next(beadIndex);
         ++k;
         path.updateBead(beadIndex,originalPos(k));
@@ -870,11 +870,11 @@ bool MidStagingMove::attemptMove() {
     leftBead = beadIndex;
     
     /* Check if worldline is broken */
-    while( (!all(path.next(beadIndex)==XXX)) && (beadIndex[0] != path.breakSlice) ){
+    while( (!allEqauls(path.next(beadIndex), XXX)) && (beadIndex[0] != path.breakSlice) ){
         beadIndex = path.next(beadIndex);
     }
     midBeadL = beadIndex;
-    startBreak = all(path.next(midBeadL)==XXX);
+    startBreak = allEquals(path.next(midBeadL), XXX);
     
     double totalrho0;
     iVec wind;
@@ -891,7 +891,7 @@ bool MidStagingMove::attemptMove() {
     
     /* Move Mbar/2-1 stepts to rightBead */
     beadIndex = midBeadR;
-    while( (!all(path.next(beadIndex)==XXX))
+    while( (!allEquals(path.next(beadIndex), XXX))
             &&(beadIndex[0] != path.breakSlice+constants()->Mbar()/2) ){
         beadIndex = path.next(beadIndex);
     }
@@ -919,7 +919,7 @@ bool MidStagingMove::attemptMove() {
     path.updateBead(beadIndex,
                 newStagingPosition(path.prev(beadIndex),path.next(rightBead),constants()->Mbar()+1,k,wind));
         ++k;
-    } while (!all(beadIndex==midBeadL));
+    } while (!(beadIndex == midBeadL));
 
     beadIndex = midBeadR;
     originalPos(k) = path(beadIndex);
@@ -928,7 +928,7 @@ bool MidStagingMove::attemptMove() {
 
     k++;
 
-    while (!all(beadIndex==rightBead)){
+    while (!(beadIndex == rightBead)){
         beadIndex = path.next(beadIndex);
         originalPos(k) = path(beadIndex);
 
@@ -977,7 +977,7 @@ void MidStagingMove::undoMove() {
     beadLocator beadIndex;
     beadIndex = leftBead;
     path.updateBead(beadIndex,originalPos(k));
-    while (!all(beadIndex==midBeadL)){
+    while (!(beadIndex == midBeadL)){
         beadIndex = path.next(beadIndex);
         ++k;
         path.updateBead(beadIndex,originalPos(k));
@@ -985,7 +985,7 @@ void MidStagingMove::undoMove() {
     beadIndex = midBeadR;
     k++;
     path.updateBead(beadIndex,originalPos(k));
-    while (!all(beadIndex==rightBead)){
+    while (!(beadIndex == rightBead)){
         beadIndex = path.next(beadIndex);
         ++k;
         path.updateBead(beadIndex,originalPos(k));
@@ -1153,24 +1153,24 @@ bool CenterOfMassMove::attemptMove() {
     /* Now we traverse the path backwards, until we find 1 of two
      * possibilities, either we reach a null bead, or we wrap around */
     startBead = firstBead;
-    if (!all(path.prev(startBead)==XXX)) {
+    if (!allEquals(path.prev(startBead), XXX)) {
         do {
             startBead = path.prev(startBead);
-        } while (!all(path.prev(startBead)==firstBead) && !all(path.prev(startBead)==XXX));
+        } while (!(path.prev(startBead) == firstBead) && !allEquals(path.prev(startBead), XXX));
     }
 
     /* Get a closed worldline */
-    if (all(path.prev(startBead)==firstBead)) {
+    if (path.prev(startBead) == firstBead) {
         startBead = firstBead;
         endBead = path.prev(startBead);
     }
     /* Otherwise, find the end bead */
     else {
         endBead = firstBead;
-        if (!all(path.next(endBead)==XXX)) {
+        if (!allEquals(path.next(endBead), XXX)) {
             do {
                 endBead = path.next(endBead);
-            } while(!all(path.next(endBead)==XXX));
+            } while(!allEquals(path.next(endBead), XXX));
         }
     }
 
@@ -1183,7 +1183,7 @@ bool CenterOfMassMove::attemptMove() {
     do {
         ++wlLength;
         beadIndex = path.next(beadIndex);
-    } while (!all(beadIndex==path.next(endBead)));
+    } while (!(beadIndex == path.next(endBead)));
 
     if (wlLength > constants()->numTimeSlices())
         return false;
@@ -1211,7 +1211,7 @@ bool CenterOfMassMove::attemptMove() {
                     return false;
             }
             beadIndex = path.next(beadIndex);
-        } while (!all(beadIndex==path.next(endBead)));
+        } while (!(beadIndex == path.next(endBead)));
     }
 
     /* Determine the old potential action of the path */
@@ -1237,7 +1237,7 @@ bool CenterOfMassMove::attemptMove() {
             endSubregionB = path.inSubregionB(beadIndex);
         }
         beadIndex = path.next(beadIndex);
-    } while (!all(beadIndex==path.next(endBead)));
+    } while (!(beadIndex == path.next(endBead)));
     
     if ( (startSubregionA && endSubregionB)|| (startSubregionB && endSubregionA) ){
         undoMove();
@@ -1273,7 +1273,7 @@ void CenterOfMassMove::undoMove() {
         path.boxPtr->putInBC(pos);
         path.updateBead(beadIndex,pos);
         beadIndex = path.next(beadIndex);
-    } while (!all(beadIndex==path.next(endBead)));
+    } while (!(beadIndex == path.next(endBead)));
 
     success = false;
 }
@@ -1352,7 +1352,7 @@ bool StagingMove::attemptMove() {
     beadLocator beadIndex;
     beadIndex = startBead;
     for (int k = 0; k < (stageLength); k++) {
-        if (!path.worm.beadOn(beadIndex) || all(path.next(beadIndex)==XXX))
+        if (!path.worm.beadOn(beadIndex) || allEquals(path.next(beadIndex), XXX))
             return false;
         beadIndex = path.next(beadIndex);
     }
@@ -1386,7 +1386,7 @@ bool StagingMove::attemptMove() {
             movedIntoSubRegionA = path.inSubregionA(beadIndex);
         }
         ++k;
-    } while (!all(beadIndex==path.prev(endBead)));
+    } while (!(beadIndex == path.prev(endBead)));
 
     if ( !movedIntoSubRegionA ) {
         /* Get the new action for the updated path segment */
@@ -1422,7 +1422,7 @@ void StagingMove::undoMove() {
         beadIndex = path.next(beadIndex);
         path.updateBead(beadIndex,originalPos(k));
         ++k;
-    } while (!all(beadIndex==path.prev(endBead)));
+    } while (!(beadIndex == path.prev(endBead)));
 
     success = false;
 }
@@ -1520,7 +1520,7 @@ bool BisectionMove::attemptMove() {
     beadLocator beadIndex;
     beadIndex = startBead;
     for (int k = 0; k < (numActiveBeads+1); k++) {
-        if (!path.worm.beadOn(beadIndex) || all(path.next(beadIndex)==XXX))
+        if (!path.worm.beadOn(beadIndex) || allEquals(path.next(beadIndex), XXX))
             return false;
         beadIndex = path.next(beadIndex);
     }
@@ -1574,7 +1574,7 @@ bool BisectionMove::attemptMove() {
 
             ++k;
             beadIndex = path.next(beadIndex,shift);
-        } while (!all(beadIndex==endBead));
+        } while (!(beadIndex == endBead));
 
         /* Record the total action difference at this level */
         deltaAction = (newAction - oldAction);
@@ -1641,7 +1641,7 @@ void BisectionMove::undoMove() {
             path.updateBead(beadIndex,originalPos(k));
         }
         ++k;
-    } while (!all(beadIndex==path.prev(endBead)));
+    } while (!(beadIndex == path.prev(endBead)));
 
     actionPtr->setShift(1);
     success = false;
@@ -1765,7 +1765,7 @@ bool OpenMove::attemptMove() {
 
                 factor = 1.0; 
                 beadIndex = path.next(beadIndex);
-            } while (!all(beadIndex==tailBead));
+            } while (!(beadIndex == tailBead));
 
             /* Add the part from the tail */
             deltaAction = -(actionPtr->barePotentialAction(tailBead) - 0.5*actionShift);
@@ -1820,7 +1820,7 @@ void OpenMove::keepMove() {
     /* Remove the beads and links from the gap */
     beadLocator beadIndex;
     beadIndex = path.next(headBead);
-    while (!all(beadIndex==tailBead)) {
+    while (!(beadIndex == tailBead)) {
         beadIndex = path.delBeadGetNext(beadIndex);
     } 
 
@@ -2034,7 +2034,7 @@ void CloseMove::undoMove() {
     /* Delete all the beads that were added. */
     beadLocator beadIndex;
     beadIndex = path.next(path.worm.head);
-    while (!all(beadIndex==path.worm.tail) && (!all(beadIndex==XXX)))
+    while (!(beadIndex == path.worm.tail) && (!allEquals(beadIndex, XXX)))
         beadIndex = path.delBeadGetNext(beadIndex);
 
     path.next(path.worm.head) = XXX;
@@ -2221,7 +2221,7 @@ void InsertMove::undoMove() {
     beadIndex = tailBead;
     do {
         beadIndex = path.delBeadGetNext(beadIndex);
-    } while (!all(beadIndex==XXX));
+    } while (!allEquals(beadIndex, XXX));
 
     path.worm.reset();
 
@@ -2318,7 +2318,7 @@ bool RemoveMove::attemptMove() {
 
             factor = 1.0; 
             beadIndex = path.prev(beadIndex);
-        } while (!all(beadIndex==path.worm.tail));
+        } while (!(beadIndex == path.worm.tail));
 
         /* Add the part from the tail */
         deltaAction = -(actionPtr->barePotentialAction(path.worm.tail) - 0.5*actionShift);
@@ -2373,7 +2373,7 @@ void RemoveMove::keepMove() {
     beadIndex = path.worm.head;
     do {
         beadIndex = path.delBeadGetPrev(beadIndex);
-    } while (!all(beadIndex==XXX));
+    } while (!allEquals(beadIndex, XXX));
 
     path.worm.reset();
 
@@ -2569,7 +2569,7 @@ void AdvanceHeadMove::undoMove() {
     /* We remove all the beads and links that have been added. */
     beadLocator beadIndex;
     beadIndex = path.next(path.worm.head);
-    while (!all(beadIndex==XXX))
+    while (!allEquals(beadIndex, XXX))
         beadIndex = path.delBeadGetNext(beadIndex);
     path.next(path.worm.head) = XXX;
 
@@ -2674,7 +2674,7 @@ bool AdvanceTailMove::attemptMove() {
 
                 factor = 1.0; 
                 beadIndex = path.next(beadIndex);
-            } while (!all(beadIndex==tailBead));
+            } while (!(beadIndex == tailBead));
 
             /* Add the part from the tail */
             deltaAction = -(actionPtr->barePotentialAction(beadIndex) - 0.5*actionShift);
@@ -2727,7 +2727,7 @@ void AdvanceTailMove::keepMove() {
     beadIndex = path.prev(tailBead);
     do {
         beadIndex = path.delBeadGetPrev(beadIndex);
-    } while (!all(beadIndex==XXX));
+    } while (!allEquals(beadIndex, XXX));
 
     /* Update all the changed properties of the inserted worm */
     path.worm.update(path,path.worm.head,tailBead);
@@ -2842,7 +2842,7 @@ bool RecedeHeadMove::attemptMove() {
 
                 factor = 1.0; 
                 beadIndex = path.prev(beadIndex);
-            } while (!all(beadIndex==headBead));
+            } while (!(beadIndex == headBead));
 
             deltaAction = -(actionPtr->barePotentialAction(headBead) - 0.5*actionShift);
             deltaAction -= actionPtr->potentialActionCorrection(path.worm.special1,path.worm.head);
@@ -2894,7 +2894,7 @@ void RecedeHeadMove::keepMove() {
     beadIndex = path.next(headBead);
     do {
         beadIndex = path.delBeadGetNext(beadIndex);
-    } while (!all(beadIndex==XXX));
+    } while (!allEquals(beadIndex, XXX));
 
     /* Update all the changed properties of the inserted worm */
     path.worm.update(path,headBead,path.worm.tail);
@@ -3096,7 +3096,7 @@ void RecedeTailMove::undoMove() {
     /* We remove all the beads and links that have been added. */
     beadLocator beadIndex;
     beadIndex = path.prev(path.worm.tail);
-    while (!all(beadIndex==XXX)) 
+    while (!allEquals(beadIndex, XXX)) 
         beadIndex = path.delBeadGetPrev(beadIndex);
     path.prev(path.worm.tail) = XXX;
 
@@ -3375,7 +3375,7 @@ bool SwapHeadMove::attemptMove() {
             beadLocator beadIndex;
             beadIndex = pivot;
             for (int k = 0; k < swapLength; k++) {
-                if (all(beadIndex==path.worm.tail))
+                if (beadIndex == path.worm.tail)
                     return false;
                 beadIndex = path.prev(beadIndex);
             }
@@ -3383,7 +3383,7 @@ bool SwapHeadMove::attemptMove() {
 
             /* We only continue if the swap is not the tail, and the swap and pivot
              * grid boxes coincide. */
-            if ( !all(path.worm.tail==swap) && path.lookup.gridNeighbors(pivot,swap) ) {
+            if ( !(path.worm.tail == swap) && path.lookup.gridNeighbors(pivot,swap) ) {
 
                 checkMove(0,0.0);
 
@@ -3417,12 +3417,12 @@ bool SwapHeadMove::attemptMove() {
                     beadIndex = swap;
                     do {
                         /* Store the original positions */
-                        if (!all(beadIndex==swap) && !all(beadIndex==pivot)) {
+                        if (!(beadIndex == swap) && !(beadIndex == pivot)) {
                             originalPos(k) = path(beadIndex);
                             ++k;
                         }
                         beadIndex = path.next(beadIndex);
-                    } while (!all(beadIndex==path.next(pivot)));
+                    } while (!(beadIndex == path.next(pivot)));
 
                     /* now compute the original action for the path to be
                      * updated */
@@ -3451,13 +3451,13 @@ bool SwapHeadMove::attemptMove() {
                     beadIndex = path.worm.special1;
                     k = 0;
                     do {
-                        if (!all(beadIndex==path.worm.special1) && !all(beadIndex==pivot)) {
+                        if (!(beadIndex == path.worm.special1) && !(beadIndex == pivot)) {
                             path.updateBead(beadIndex,
                                     newStagingPosition(path.prev(beadIndex),pivot,swapLength,k,wind));
                             ++k;
                         }
                         beadIndex = path.next(beadIndex);
-                    } while (!all(beadIndex==path.next(pivot)));
+                    } while (!(beadIndex == path.next(pivot)));
 
                     /* Compute the potential action for the updated path */
                     newAction = actionPtr->potentialAction(path.worm.special1,pivot);
@@ -3522,7 +3522,7 @@ void SwapHeadMove::undoMove() {
         path.updateBead(beadIndex,originalPos(k));
         ++k;
         beadIndex = path.next(beadIndex);
-    } while (!all(beadIndex==pivot));
+    } while (!(beadIndex == pivot));
 
     /* Make sure the configuration is still off-diagonal */
     path.worm.isConfigDiagonal = false;
@@ -3612,7 +3612,7 @@ bool SwapTailMove::attemptMove() {
             beadLocator beadIndex;
             beadIndex = pivot;
             for (int k = 0; k < swapLength; k++) {
-                if (all(beadIndex==path.worm.head))
+                if (beadIndex == path.worm.head)
                     return false;
                 beadIndex = path.next(beadIndex);
             }
@@ -3620,7 +3620,7 @@ bool SwapTailMove::attemptMove() {
 
             /* We only continue if we don't find the head, and the pivot and swap grid
              * boxes coincide, otherwise we reject the move. */
-            if ( !all(path.worm.head==swap) && path.lookup.gridNeighbors(pivot,swap) ) {
+            if ( !(path.worm.head == swap) && path.lookup.gridNeighbors(pivot,swap) ) {
 
                 checkMove(0,0.0);
 
@@ -3655,12 +3655,12 @@ bool SwapTailMove::attemptMove() {
                     /* Store the old trajectory and compute its action */
                     beadIndex = pivot;
                     do {
-                        if (!all(beadIndex==swap) && !all(beadIndex==pivot)) {
+                        if (!(beadIndex == swap) && !(beadIndex == pivot)) {
                             originalPos(k) = path(beadIndex);
                             ++k;
                         }
                         beadIndex = path.next(beadIndex);
-                    } while (!all(beadIndex==path.next(swap)));
+                    } while (!(beadIndex == path.next(swap)));
 
                     oldAction = actionPtr->potentialAction(pivot,swap);
 
@@ -3687,13 +3687,13 @@ bool SwapTailMove::attemptMove() {
                     k = 0;
                     beadIndex = pivot;
                     do {
-                        if (!all(beadIndex==path.worm.special1) && !all(beadIndex==pivot)) {
+                        if (!(beadIndex == path.worm.special1) && !(beadIndex == pivot)) {
                             path.updateBead(beadIndex,
                                     newStagingPosition(path.prev(beadIndex),path.worm.special1,swapLength,k,wind));
                             ++k;
                         }
                         beadIndex = path.next(beadIndex);
-                    } while (!all(beadIndex==path.next(path.worm.special1)));
+                    } while (!(beadIndex == path.next(path.worm.special1)));
 
                     newAction = actionPtr->potentialAction(pivot,path.worm.special1);
 
@@ -3760,7 +3760,7 @@ void SwapTailMove::undoMove() {
         path.updateBead(beadIndex,originalPos(k));
         ++k;
         beadIndex = path.next(beadIndex);
-    } while (!all(beadIndex==swap));
+    } while (!(beadIndex == swap));
 
     /* Unset the special beads */
     path.worm.special1 = XXX;
