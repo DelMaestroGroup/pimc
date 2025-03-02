@@ -58,15 +58,6 @@ LookupTable::LookupTable(const Container *_boxPtr, const int _numLookupTimeSlice
  * Free all memory.
 ******************************************************************************/
 LookupTable::~LookupTable() {
-    gridNN.free(); 
-    gridNNReduced.free();
-    beadList.free();
-    fullBeadList.free();
-    beadSep.free();
-    hash.free();
-    grid.free();
-    beadLabel.free();
-    numLabels.free();
 }
 
 /**************************************************************************//**
