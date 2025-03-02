@@ -226,10 +226,11 @@ public:
     auto begin() const { return data_.begin(); }
     auto end() const { return data_.end(); }
 
-    // Fix the dimension FixedDim to a given index and return a lower-rank mdspan view.
+    // --- Slice functions ---
+    // Non-const slice: Fix the dimension FixedDim to a given index and return a lower-rank mdspan view.
     // Usage: For a 2D array, arr.slice<1>(n) returns a 1D mdspan corresponding to arr(:, n).
     template <std::size_t FixedDim>
-    auto slice(std::size_t index) const {
+    auto slice(std::size_t index) -> std::mdspan<T, std::dextents<std::size_t, Rank - 1>> {
         static_assert(FixedDim < Rank, "FixedDim out of range");
         // Compute strides for our current extents.
         const auto strides = compute_strides(extents_);
@@ -247,10 +248,36 @@ public:
                 newExtents[j++] = extents_[i];
             }
         }
+
         // Create dextents for the new rank.
         auto new_dextents = make_dextents(newExtents);
-        using new_mdspan_t = std::mdspan<T, std::dextents<std::size_t, Rank - 1>>;
-        return new_mdspan_t(new_ptr, new_dextents);
+        return std::mdspan<T, std::dextents<std::size_t, Rank - 1>>(new_ptr, new_dextents);
+    }
+
+    // Const slice: returns a lower-rank mdspan view with const elements.
+    template <std::size_t FixedDim>
+    auto slice(std::size_t index) const -> std::mdspan<const T, std::dextents<std::size_t, Rank - 1>> {
+        static_assert(FixedDim < Rank, "FixedDim out of range");
+        // Compute strides for our current extents.
+        const auto strides = compute_strides(extents_);
+        // Check index validity.
+        if (index >= extents_[FixedDim])
+            throw std::out_of_range("slice index out of range");
+
+        // Compute the offset in the linear data array.
+        const T* new_ptr = data_.data() + index * strides[FixedDim];
+
+        // Build new extents by dropping the FixedDim.
+        std::array<std::size_t, Rank - 1> newExtents{};
+        for (std::size_t i = 0, j = 0; i < Rank; ++i) {
+            if (i != FixedDim) {
+                newExtents[j++] = extents_[i];
+            }
+        }
+
+        // Create dextents for the new rank.
+        auto new_dextents = make_dextents(newExtents);
+        return std::mdspan<const T, std::dextents<std::size_t, Rank - 1>>(new_ptr, new_dextents);
     }
 
 private:
