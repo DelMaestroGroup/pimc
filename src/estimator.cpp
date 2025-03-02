@@ -4124,14 +4124,14 @@ void CylinderEnergyEstimator::accumulate() {
     for (int slice = 0; slice < numTimeSlices; slice++) {
         eo = (slice % 2);
         t1 += actionPtr->derivPotentialActionLambda(slice,maxR);
-        t2 += actionPtr->derivPotentialActionTau(slice,maxR);
+        //t2 += actionPtr->derivPotentialActionTau(slice,maxR);
         if (eo==0)
             totV  += actionPtr->potential(slice,maxR);
     }
 
     /* Normalize the action correction and the total potential*/
     t1 *= constants()->lambda()/(constants()->tau()*numTimeSlices);
-    t2 /= 1.0*numTimeSlices;
+    //t2 /= 1.0*numTimeSlices;
     totV /= (0.5 * numTimeSlices);
 
     /* Perform all the normalizations and compute the individual energy terms */
