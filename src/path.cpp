@@ -195,7 +195,7 @@ beadLocator Path::addNextBead(const beadLocator &prevIndex, const dVec &pos) {
     beadLocator beadIndex;
 
     /* We make sure that the next bead doesn't already exist */
-    PIMC_ASSERT(all(next(prevIndex)==XXX));
+    PIMC_ASSERT(allEquals(next(prevIndex), XXX));
 
     /* The bead doesn't exist, so add it */ 
     int slice = prevIndex[0] + 1;
@@ -220,7 +220,7 @@ beadLocator Path::addNextBead(const beadLocator &prevIndex, const dVec &pos) {
 beadLocator Path::addPrevBead(const beadLocator &nextIndex, const dVec &pos) {
 
     /* We make sure that the previous bead doesn't already exist */
-    PIMC_ASSERT(all(prev(nextIndex)==XXX));
+    PIMC_ASSERT(allEquals(prev(nextIndex), XXX));
 
     /* The bead doesn't exist, so add it */ 
     int slice = nextIndex[0] - 1;
@@ -353,9 +353,9 @@ void Path::delBead(const beadLocator &beadIndex) {
     lastBeadIndex[1] = numBeadsAtSlice(beadIndex[0]);
 
     /* unlink */
-    if (!all(next(beadIndex)==XXX))
+    if (!allEquals(next(beadIndex), XXX))
         prev(next(beadIndex)) = XXX;
-    if (!all(prev(beadIndex)==XXX))
+    if (!allEquals(prev(beadIndex), XXX))
         next(prev(beadIndex)) = XXX;
 
     /* If we are not already the largest bead label, perform the value
@@ -371,20 +371,20 @@ void Path::delBead(const beadLocator &beadIndex) {
         prev(beadIndex) = prev(lastBeadIndex);
         next(beadIndex) = next(lastBeadIndex);
 
-        if (!all(next(lastBeadIndex)==XXX))
+        if (!allEquals(next(lastBeadIndex), XXX))
             prev(next(lastBeadIndex)) = beadIndex;
-        if (!all(prev(lastBeadIndex)==XXX))
+        if (!allEquals(prev(lastBeadIndex), XXX))
             next(prev(lastBeadIndex)) = beadIndex;
 
         /* We have to make sure that the worm is updated correctly if the swapped bead
          * is either a head or tail */
-        if (all(worm.head==lastBeadIndex))
+        if (worm.head == lastBeadIndex)
             worm.head = beadIndex;
-        if (all(worm.tail==lastBeadIndex))
+        if (worm.tail == lastBeadIndex)
             worm.tail = beadIndex;
-        if (all(worm.special1==lastBeadIndex))
+        if (worm.special1 == lastBeadIndex)
             worm.special1 = beadIndex;
-        if (all(worm.special2==lastBeadIndex))
+        if (worm.special2 == lastBeadIndex)
             worm.special2 = beadIndex;
     }
 
@@ -470,7 +470,7 @@ void Path::resetBrokenClosedVecs(){
         beadIndex[0] = breakSlice;
         for (int ptcl = 0; ptcl < numBeadsAtSlice(beadIndex[0]); ptcl++) {
             beadIndex[1] = ptcl;
-            if( all(next(beadIndex) == XXX))
+            if( allEquals(next(beadIndex), XXX))
                 brokenWorldlinesL.push_back(ptcl);
             else
                 closedWorldlines.push_back(ptcl);
@@ -479,7 +479,7 @@ void Path::resetBrokenClosedVecs(){
         beadIndex[0] = breakSlice+1;
         for (int ptcl = 0; ptcl < numBeadsAtSlice(beadIndex[0]); ptcl++) {
             beadIndex[1] = ptcl;
-            if( all(prev(beadIndex) == XXX))
+            if( allEquals(prev(beadIndex), XXX))
                 brokenWorldlinesR.push_back(ptcl);
         }
     }
@@ -490,7 +490,7 @@ void Path::resetBrokenClosedVecs(){
 ******************************************************************************/
 bool Path::isBroken(const beadLocator &beadIndex) const{
     bool broken = false;
-    if ( all(prev(beadIndex)==XXX) || all(next(beadIndex)==XXX) )
+    if ( allEquals(prev(beadIndex), XXX) || allEquals(next(beadIndex), XXX) )
         broken = true;
     return broken;
 }
@@ -549,9 +549,9 @@ bool Path::checkSubregionLinks() const{
     for(int n=0; n<getNumParticles(); n++){
         beadIndex[1] = n;
         if( inSubregionA(beadIndex)){
-            foundError = (all(prev(beadIndex)!= XXX));
+            foundError = (noneEquals(prev(beadIndex), XXX));
         }else if( inSubregionB(beadIndex) ){
-            foundError = (all(prev(beadIndex)== XXX));
+            foundError = (allEquals(prev(beadIndex), XXX));
         }else{
             foundError=true;
         }
@@ -719,7 +719,7 @@ void Path::outputConfig(int configNumber) const {
 
             /* Advance the bead index */
             beadIndex = next(beadIndex);
-        } while (!all(beadIndex==endBead(n)));
+        } while (!(beadIndex == endBead(n)));
     }
     communicate()->file("wl")->stream() << format("# END_CONFIG %06d\n") % configNumber;
 
@@ -752,14 +752,14 @@ void Path::printWormConfig(DynamicArray <beadLocator,1> &wormBeads) {
         for (int n = 0; n < numWorldLines; n++) {
             beadLocator beadIndex;
             beadIndex = m,n;
-            if (all(beadIndex==worm.head)) {
+            if (beadIndex == worm.head) {
                 if (worm.beadOn(beadIndex))
                     (*outFilePtr) << "^";
                 else
                     (*outFilePtr) << "z";
             }
             
-            else if (all(beadIndex==worm.tail)) {
+            else if (beadIndex == worm.tail) {
                 if (worm.beadOn(beadIndex))
                     (*outFilePtr) << "v";
                 else
@@ -779,7 +779,7 @@ void Path::printWormConfig(DynamicArray <beadLocator,1> &wormBeads) {
         for (int n = 0; n < numWorldLines; n++) { 
             beadLocator beadIndex;
             beadIndex = m,n;
-            if (all(next(beadIndex)==XXX))
+            if (allEquals(next(beadIndex), XXX))
                 (*outFilePtr) << " ";
             else
                 (*outFilePtr) << "|";
@@ -816,9 +816,9 @@ void Path::printWormConfig(DynamicArray <beadLocator,1> &wormBeads) {
                 }
  
                 if (foundWormBead) {
-                    if (all(beadIndex==worm.head))
+                    if (beadIndex == worm.head)
                         (*outFilePtr) << "^";
-                    else if (all(beadIndex==worm.tail))
+                    else if (beadIndex == worm.tail)
                         (*outFilePtr) << "v";
                     else
                         (*outFilePtr) << beadOut;
