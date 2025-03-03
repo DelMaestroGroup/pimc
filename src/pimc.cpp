@@ -894,8 +894,8 @@ void PathIntegralMonteCarlo::loadClassicalState(DynamicArray <dVec,2> &tempBeads
             if (tempWormBeads(beadIndex)) {
                 
                 /* Assign the classical configuration */
-	        fill_mdspan(pathPtrVec[pIdx].beads.slice<1>(ptcl), tempBeads(beadIndex));
-	        fill_mdspan(pathPtrVec[pIdx].worm.beads.slice<1>(ptcl), 1);
+            fill_mdspan(pathPtrVec[pIdx].beads.slice<1>(ptcl), tempBeads(beadIndex));
+            fill_mdspan(pathPtrVec[pIdx].worm.beads.slice<1>(ptcl), 1);
                 ptcl++;
             }
         }
@@ -1022,7 +1022,7 @@ void PathIntegralMonteCarlo::loadState() {
         pathPtrVec[pIdx].worm.beads.resize(numTimeSlices,numWorldLines);
 
         /* A temporary container for the beads array */
-	DynamicArray <dVec,2> tempBeads;
+    DynamicArray <dVec,2> tempBeads;
 
         /* Get the worldline configuration */
         communicate()->file(fileInitStr)->stream() >> tempBeads;
@@ -1046,7 +1046,7 @@ void PathIntegralMonteCarlo::loadState() {
         else {
 
             /* Initialize the links */
-	    fill_with_function(pathPtrVec[pIdx].prevLink.slice<0>(0), [](std::size_t j){ return static_cast<int>(j) - 1; });
+            fill_with_function(pathPtrVec[pIdx].prevLink.slice<0>(0), [](std::size_t j){ return static_cast<int>(j) - 1; });
             fill_with_function(pathPtrVec[pIdx].prevLink.slice<0>(1), [](std::size_t j){ return static_cast<int>(j); });
             fill_with_function(pathPtrVec[pIdx].nextLink.slice<0>(0), [](std::size_t j){ return static_cast<int>(j) + 1; });
             fill_with_function(pathPtrVec[pIdx].nextLink.slice<0>(1), [](std::size_t j){ return static_cast<int>(j); });
@@ -1054,16 +1054,16 @@ void PathIntegralMonteCarlo::loadState() {
         
             /* Here we implement the initial periodic boundary conditions in 
              * imaginary time */
-	    pathPtrVec[pIdx].prevLink.slice<0>(0)(0) = numTimeSlices-1;
-	    pathPtrVec[pIdx].nextLink.slice<0>(numTimeSlices-1)(0) = 0;
+            fill_mdspan(pathPtrVec[pIdx].prevLink.slice<0>(                0), {numTimeSlices - 1, 0});
+            fill_mdspan(pathPtrVec[pIdx].nextLink.slice<0>(numTimeSlices - 1), {                0, 0});
 
             /* Reset the worm.beads array */
             pathPtrVec[pIdx].worm.beads.fill(0);
 
             /* Temporary containers for the links and worm beads */
-	    DynamicArray <beadLocator,2> tempNextLink;
-	    DynamicArray <beadLocator,2> tempPrevLink;
-	    DynamicArray <unsigned int,2> tempWormBeads;
+        DynamicArray <beadLocator,2> tempNextLink;
+        DynamicArray <beadLocator,2> tempPrevLink;
+        DynamicArray <unsigned int,2> tempWormBeads;
 
             /* Get the link arrays and worm file */
             communicate()->file(fileInitStr)->stream() >> tempNextLink;
