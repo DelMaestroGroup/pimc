@@ -888,7 +888,7 @@ void PathIntegralMonteCarlo::loadClassicalState(DynamicArray <dVec,2> &tempBeads
     for(uint32 pIdx=0; pIdx<Npaths; pIdx++){
         ptcl = 0;
         for (int n = 0; n < numWorldLines; n++) {
-            beadIndex = 0,n;
+            beadIndex = {0, n};
 
             /* Check if the bead is on */
             if (tempWormBeads(beadIndex)) {
@@ -919,7 +919,7 @@ void PathIntegralMonteCarlo::loadQuantumState(DynamicArray <dVec,2> &tempBeads,
     
     for(uint32 pIdx=0; pIdx<Npaths; pIdx++) {
 
-        newStartBead = 0,0;
+        newStartBead = {0, 0};
         ptcl = 0;
         slice = 0;
         doBead = true;
@@ -928,7 +928,7 @@ void PathIntegralMonteCarlo::loadQuantumState(DynamicArray <dVec,2> &tempBeads,
         for (int n = 0; n < tempNumWorldLines; n++) {
 
             /* The initial bead to be moved */
-            startBead = 0,n;
+            startBead = {0, n};
 
             /* We make sure we don't try to touch the same worldline twice */
             if (doBead(n)) {
@@ -938,7 +938,7 @@ void PathIntegralMonteCarlo::loadQuantumState(DynamicArray <dVec,2> &tempBeads,
                 /* The world line length, we simply advance until we have looped back on 
                  * ourselves. */
                 slice = 0;
-                newStartBead = slice,ptcl;
+                newStartBead = {slice, ptcl};
                 do {
                     /* We turn off any zero-slice beads we have touched */
                     if (beadIndex[0]==0)
@@ -953,8 +953,8 @@ void PathIntegralMonteCarlo::loadQuantumState(DynamicArray <dVec,2> &tempBeads,
                     /* Do a forward reconnection, provided we are not at the
                      * last bead */
                     if ( ((slice % numTimeSlices) == 0) && !(beadIndex == startBead)) {
-                        pathPtrVec[pIdx].nextLink(numTimeSlices-1,ptcl) = 0,ptcl+1;
-                        pathPtrVec[pIdx].prevLink(0,ptcl+1) = numTimeSlices-1,ptcl;
+                        pathPtrVec[pIdx].nextLink(numTimeSlices - 1, ptcl) = {0, ptcl + 1};
+                        pathPtrVec[pIdx].prevLink(0, ptcl + 1) = {numTimeSlices - 1, ptcl};
                         ++ptcl;
                     }
                 } while (!(beadIndex == startBead));
@@ -965,8 +965,8 @@ void PathIntegralMonteCarlo::loadQuantumState(DynamicArray <dVec,2> &tempBeads,
                     pathPtrVec[pIdx].beads(tslice,ptcl) = tempBeads(beadIndex);
                     pathPtrVec[pIdx].worm.beads(tslice,ptcl) = 1;
                 }
-                pathPtrVec[pIdx].nextLink(numTimeSlices-1,ptcl) = newStartBead;
-                pathPtrVec[pIdx].prevLink(newStartBead) = numTimeSlices-1,ptcl;
+                pathPtrVec[pIdx].nextLink(numTimeSlices - 1, ptcl) = newStartBead;
+                pathPtrVec[pIdx].prevLink(newStartBead) = {numTimeSlices - 1, ptcl};
                 ++ptcl;
 
             } // doBead
@@ -1061,9 +1061,9 @@ void PathIntegralMonteCarlo::loadState() {
             pathPtrVec[pIdx].worm.beads.fill(0);
 
             /* Temporary containers for the links and worm beads */
-        DynamicArray <beadLocator,2> tempNextLink;
-        DynamicArray <beadLocator,2> tempPrevLink;
-        DynamicArray <unsigned int,2> tempWormBeads;
+            DynamicArray <beadLocator,2> tempNextLink;
+            DynamicArray <beadLocator,2> tempPrevLink;
+            DynamicArray <unsigned int,2> tempWormBeads;
 
             /* Get the link arrays and worm file */
             communicate()->file(fileInitStr)->stream() >> tempNextLink;
