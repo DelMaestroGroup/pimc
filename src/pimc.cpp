@@ -952,12 +952,12 @@ void PathIntegralMonteCarlo::loadQuantumState(DynamicArray <dVec,2> &tempBeads,
 
                     /* Do a forward reconnection, provided we are not at the
                      * last bead */
-                    if ( ((slice % numTimeSlices) == 0) && !all(beadIndex==startBead)) {
+                    if ( ((slice % numTimeSlices) == 0) && !(beadIndex == startBead)) {
                         pathPtrVec[pIdx].nextLink(numTimeSlices-1,ptcl) = 0,ptcl+1;
                         pathPtrVec[pIdx].prevLink(0,ptcl+1) = numTimeSlices-1,ptcl;
                         ++ptcl;
                     }
-                } while (!all(beadIndex==startBead));
+                } while (!(beadIndex == startBead));
 
                 /* Now we have to add the remaining beads and perform the final
                  * reconnection */
@@ -1202,7 +1202,7 @@ void PathIntegralMonteCarlo::outputPDB() {
                 beadNumber++;
                 length++;
                 beadIndex = path.next(beadIndex);
-            } while (!all(beadIndex==endBead(nwl)));
+            } while (!(beadIndex == endBead(nwl)));
 
             /* We label each trajectory by the number of particles it contains.
              * a worm is always given label 0 */
@@ -1260,7 +1260,7 @@ void PathIntegralMonteCarlo::outputPDB() {
             communicate()->file("wl")->stream() << format("%14s\n") % "HE";
 
             beadIndex = path.next(beadIndex);
-        } while (!all(beadIndex==endBead(n)));
+        } while (!(beadIndex == endBead(n)));
     }
     communicate()->file("wl")->stream() <<("TER\n");
 
@@ -1294,7 +1294,7 @@ void PathIntegralMonteCarlo::outputPDB() {
             communicate()->file("wl")->stream() << std::endl;
 
             beadIndex = path.next(beadIndex);
-        } while (!all(beadIndex==endBead(n)));
+        } while (!(beadIndex == endBead(n)));
     }
     communicate()->file("wl")->stream() <<("END\n");
 }
@@ -1325,7 +1325,7 @@ void PathIntegralMonteCarlo::printWormState() {
             wormBeads(n) = beadIndex;
             beadIndex = path.next(beadIndex);
             ++n;
-        } while(!all(beadIndex==path.next(path.worm.head)));
+        } while(!(beadIndex == path.next(path.worm.head)));
     }
 
     path.printWormConfig(wormBeads);
