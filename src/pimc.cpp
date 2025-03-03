@@ -1058,7 +1058,7 @@ void PathIntegralMonteCarlo::loadState() {
 	    pathPtrVec[pIdx].nextLink.slice<0>(numTimeSlices-1)(0) = 0;
 
             /* Reset the worm.beads array */
-            pathPtrVec[pIdx].worm.beads = 0;
+            pathPtrVec[pIdx].worm.beads.fill(0);
 
             /* Temporary containers for the links and worm beads */
 	    DynamicArray <beadLocator,2> tempNextLink;
@@ -1083,11 +1083,12 @@ void PathIntegralMonteCarlo::loadState() {
             /* Now we make sure all empty beads are unlinked */
             beadLocator beadIndex;
             for (int slice = 0; slice < numTimeSlices; slice++) {
+                beadIndex[0] = slice;
                 for (int ptcl = 0; ptcl < numWorldLines; ptcl++) {
-                    beadIndex = slice,ptcl;
+                    beadIndex[1] = ptcl;
                     if (!pathPtrVec[pIdx].worm.beads(beadIndex)) {
-                        pathPtrVec[pIdx].nextLink(beadIndex) = XXX;
-                        pathPtrVec[pIdx].prevLink(beadIndex) = XXX;
+                        pathPtrVec[pIdx].nextLink(beadIndex) = {XXX, XXX};
+                        pathPtrVec[pIdx].prevLink(beadIndex) = {XXX, XXX};
                     }
                 }
             }
@@ -1163,7 +1164,7 @@ void PathIntegralMonteCarlo::outputPDB() {
 
     /* This is the index-beadNumber mapping array */
     DynamicArray <int,2> beadNum(numTimeSlices,numParticles);
-    beadNum = 0;
+    beadNum.fill(0);
 
     int numWorldLines = 0;
 
@@ -1177,7 +1178,7 @@ void PathIntegralMonteCarlo::outputPDB() {
     for (int n = 0; n < numParticles; n++) {
 
         /* The initial bead to be moved */
-        startBead(nwl) = 0,n;
+        startBead(nwl) = {0,n};
 
         /* We make sure we don't try to touch the same worldline twice */
         if (doBead(startBead(nwl))) {
