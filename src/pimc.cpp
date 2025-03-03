@@ -161,7 +161,6 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
  *  Destructor.
 ******************************************************************************/
 PathIntegralMonteCarlo::~PathIntegralMonteCarlo () {
-    PN.free();
 }
 
 /**************************************************************************//**
@@ -974,9 +973,6 @@ void PathIntegralMonteCarlo::loadQuantumState(DynamicArray <dVec,2> &tempBeads,
         } // n
     } // pIdx
 
-    /* Free local memory */
-    doBead.free();
-
 }
 
 /**************************************************************************//**
@@ -1096,11 +1092,6 @@ void PathIntegralMonteCarlo::loadState() {
                 }
             }
 
-            /* Free local memory */
-            tempPrevLink.free();
-            tempNextLink.free();
-            tempWormBeads.free();
-
         } // locBeads.rows() != numTimeSlices
 
         /* Load the state of the random number generator, only if we are restarting 
@@ -1140,9 +1131,6 @@ void PathIntegralMonteCarlo::loadState() {
         
         /* Close the file */
         communicate()->file(fileInitStr)->close();
-        
-        /* Free up memory */
-        tempBeads.free();
         
     }
 }
@@ -1309,13 +1297,6 @@ void PathIntegralMonteCarlo::outputPDB() {
         } while (!all(beadIndex==endBead(n)));
     }
     communicate()->file("wl")->stream() <<("END\n");
-
-    /* Free up memory */
-    startBead.free();
-    endBead.free();
-    wlLength.free();
-    beadNum.free();
-    doBead.free();
 }
 
 /**************************************************************************//**
@@ -1349,7 +1330,6 @@ void PathIntegralMonteCarlo::printWormState() {
 
     path.printWormConfig(wormBeads);
     path.printLinks<std::fstream>(communicate()->file("debug")->stream());
-    wormBeads.free();
 }
 
 /**************************************************************************//**
