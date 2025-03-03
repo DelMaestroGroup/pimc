@@ -9,14 +9,14 @@
 
 /* Filesystem is tricky as it is not yet widely supported.  We try to address
  * that here. */
-#if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 8))
+#if defined(USE_STD_FILESYSTEM)
     #include <filesystem>
     namespace fs = std::filesystem;
+#elif defined(USE_EXPERIMENTAL_FILESYSTEM)
+    #include <experimental/filesystem>
+    namespace fs = std::experimental::filesystem;
 #else
-#if defined(__GNUC__) && (__GNUC__ > 6)
-        #include <experimental/filesystem>
-        namespace fs = std::experimental::filesystem;
-#endif
+    #error "No filesystem support found"
 #endif
 
 // ---------------------------------------------------------------------------

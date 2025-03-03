@@ -13,6 +13,40 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/modules)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_STANDARD_REQUIRED TRUE)
 
+# --------- Filesystem Header Test ---------
+include(CheckCXXSourceCompiles)
+set(CMAKE_REQUIRED_FLAGS "-std=c++17")
+
+check_cxx_source_compiles(
+  "
+  #include <filesystem>
+  int main() {
+    std::filesystem::path p;
+    return 0;
+  }
+  " HAVE_STD_FILESYSTEM)
+
+if (HAVE_STD_FILESYSTEM)
+  message(STATUS "Found <filesystem>")
+  add_compile_definitions(USE_STD_FILESYSTEM)
+else()
+  check_cxx_source_compiles(
+    "
+    #include <experimental/filesystem>
+    int main() {
+      std::experimental::filesystem::path p;
+      return 0;
+    }
+    " HAVE_EXPERIMENTAL_FILESYSTEM)
+  if (HAVE_EXPERIMENTAL_FILESYSTEM)
+    message(STATUS "Found <experimental/filesystem>")
+    add_compile_definitions(USE_EXPERIMENTAL_FILESYSTEM)
+  else()
+    message(FATAL_ERROR "Neither <filesystem> nor <experimental/filesystem> are available")
+  endif()
+endif()
+# --------- End Filesystem Header Test ---------
+
 # Enable GPU support
 set(GPU_BACKEND "none" CACHE STRING "Enable gpu accleration: cuda, hip, sycl, none (default: none)")
 if (NOT ${GPU_BACKEND} STREQUAL "none")
