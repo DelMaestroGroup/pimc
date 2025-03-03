@@ -94,8 +94,8 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
     else {
         breakSlice = 0;
         /* Here we implement periodic boundary conditions in imaginary time */
-	prevLink.slice<0>(0)(0) = numTimeSlices-1;
-	nextLink.slice<0>(numTimeSlices-1)(0) = 0;
+        fill_mdspan(prevLink.slice<0>(                0), {numTimeSlices - 1, 0});
+        fill_mdspan(nextLink.slice<0>(numTimeSlices - 1), {                0, 0});
     }
 
     /* Initialize the number of active beads at each slice */

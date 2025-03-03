@@ -20,14 +20,25 @@ void fill_with_function(Mdspan view, Func f) {
     }
 }
 
-// Helper to fill a slice
+// Helper to fill a slice (an mdspan view) with a specified value
 template <typename Mdspan>
 void fill_mdspan(Mdspan view, const typename Mdspan::value_type& value) {
+    // Compute total number of elements.
     std::size_t total = 1;
     for (std::size_t d = 0; d < Mdspan::rank(); ++d) {
         total *= view.extent(d);
     }
-    std::fill(view.data_handle(), view.data_handle() + total, value);
+    if constexpr (Mdspan::rank() == 1) {
+        // For rank-1, check the stride at runtime.
+        if (view.mapping().stride(0) == 1) {
+            std::fill(view.data_handle(), view.data_handle() + total, value);
+            return;
+        }
+    }
+    // For other cases (or rank-1 noncontiguous), do element-wise fill.
+    for (std::size_t i = 0; i < view.extent(0); ++i) {
+        view(i) = value;
+    }
 }
 
 // Helper to compute row‐major strides given extents.
@@ -230,54 +241,66 @@ public:
     // Non-const slice: Fix the dimension FixedDim to a given index and return a lower-rank mdspan view.
     // Usage: For a 2D array, arr.slice<1>(n) returns a 1D mdspan corresponding to arr(:, n).
     template <std::size_t FixedDim>
-    auto slice(std::size_t index) -> std::mdspan<T, std::dextents<std::size_t, Rank - 1>> {
+    auto slice(std::size_t index)
+        -> std::mdspan<T, std::dextents<std::size_t, Rank - 1>, std::layout_stride>
+    {
         static_assert(FixedDim < Rank, "FixedDim out of range");
-        // Compute strides for our current extents.
-        const auto strides = compute_strides(extents_);
+        // Compute original strides for our current extents.
+        const auto orig_strides = compute_strides(extents_);
         // Check index validity.
         if (index >= extents_[FixedDim])
             throw std::out_of_range("slice index out of range");
 
         // Compute the offset in the linear data array.
-        T* new_ptr = data_.data() + index * strides[FixedDim];
+        T* new_ptr = data_.data() + index * orig_strides[FixedDim];
 
-        // Build new extents by dropping the FixedDim.
+        // Build new extents and corresponding strides by dropping the FixedDim.
         std::array<std::size_t, Rank - 1> newExtents{};
+        std::array<std::size_t, Rank - 1> newStrides{};
         for (std::size_t i = 0, j = 0; i < Rank; ++i) {
             if (i != FixedDim) {
-                newExtents[j++] = extents_[i];
+                newExtents[j] = extents_[i];
+                newStrides[j] = orig_strides[i];
+                ++j;
             }
         }
 
-        // Create dextents for the new rank.
-        auto new_dextents = make_dextents(newExtents);
-        return std::mdspan<T, std::dextents<std::size_t, Rank - 1>>(new_ptr, new_dextents);
+        // Create a layout_stride mapping using the new extents and strides.
+        auto mapping = std::layout_stride::mapping<std::dextents<std::size_t, Rank - 1>>(
+            std::dextents<std::size_t, Rank - 1>(newExtents), newStrides);
+        return std::mdspan<T, std::dextents<std::size_t, Rank - 1>, std::layout_stride>(new_ptr, mapping);
     }
 
     // Const slice: returns a lower-rank mdspan view with const elements.
     template <std::size_t FixedDim>
-    auto slice(std::size_t index) const -> std::mdspan<const T, std::dextents<std::size_t, Rank - 1>> {
+    auto slice(std::size_t index) const
+        -> std::mdspan<const T, std::dextents<std::size_t, Rank - 1>, std::layout_stride>
+    {
         static_assert(FixedDim < Rank, "FixedDim out of range");
-        // Compute strides for our current extents.
-        const auto strides = compute_strides(extents_);
+        // Compute original strides for our current extents.
+        const auto orig_strides = compute_strides(extents_);
         // Check index validity.
         if (index >= extents_[FixedDim])
             throw std::out_of_range("slice index out of range");
 
         // Compute the offset in the linear data array.
-        const T* new_ptr = data_.data() + index * strides[FixedDim];
+        const T* new_ptr = data_.data() + index * orig_strides[FixedDim];
 
-        // Build new extents by dropping the FixedDim.
+        // Build new extents and corresponding strides by dropping the FixedDim.
         std::array<std::size_t, Rank - 1> newExtents{};
+        std::array<std::size_t, Rank - 1> newStrides{};
         for (std::size_t i = 0, j = 0; i < Rank; ++i) {
             if (i != FixedDim) {
-                newExtents[j++] = extents_[i];
+                newExtents[j] = extents_[i];
+                newStrides[j] = orig_strides[i];
+                ++j;
             }
         }
 
-        // Create dextents for the new rank.
-        auto new_dextents = make_dextents(newExtents);
-        return std::mdspan<const T, std::dextents<std::size_t, Rank - 1>>(new_ptr, new_dextents);
+        // Create a layout_stride mapping using the new extents and strides.
+        auto mapping = std::layout_stride::mapping<std::dextents<std::size_t, Rank - 1>>(
+            std::dextents<std::size_t, Rank - 1>(newExtents), newStrides);
+        return std::mdspan<const T, std::dextents<std::size_t, Rank - 1>, std::layout_stride>(new_ptr, mapping);
     }
 
 private:
@@ -600,36 +623,66 @@ public:
     //=== Slice: Return a lower-rank mdspan view ===============================
     // Non-const overload.
     template <std::size_t FixedDim>
-    auto slice(std::size_t index) -> std::mdspan<bool, std::dextents<std::size_t, Rank - 1>> {
+    auto slice(std::size_t index)
+        -> std::mdspan<bool, std::dextents<std::size_t, Rank - 1>, std::layout_stride>
+    {
         static_assert(FixedDim < Rank, "FixedDim out of range");
-        const auto strides = compute_strides(extents_);
+        // Compute original strides for our current extents.
+        const auto orig_strides = compute_strides(extents_);
+        // Check index validity.
         if (index >= extents_[FixedDim])
             throw std::out_of_range("slice index out of range");
-        bool* new_ptr = data() + index * strides[FixedDim];
+
+        // Compute the offset in the linear data array.
+        bool* new_ptr = data() + index * orig_strides[FixedDim];
+
+        // Build new extents and corresponding strides by dropping the FixedDim.
         std::array<std::size_t, Rank - 1> newExtents{};
+        std::array<std::size_t, Rank - 1> newStrides{};
         for (std::size_t i = 0, j = 0; i < Rank; ++i) {
-            if (i != FixedDim)
-                newExtents[j++] = extents_[i];
+            if (i != FixedDim) {
+                newExtents[j] = extents_[i];
+                newStrides[j] = orig_strides[i];
+                ++j;
+            }
         }
-        auto new_dextents = make_dextents(newExtents);
-        return std::mdspan<bool, std::dextents<std::size_t, Rank - 1>>(new_ptr, new_dextents);
+
+        // Create a layout_stride mapping using the new extents and strides.
+        auto mapping = std::layout_stride::mapping<std::dextents<std::size_t, Rank - 1>>(
+            std::dextents<std::size_t, Rank - 1>(newExtents), newStrides);
+        return std::mdspan<bool, std::dextents<std::size_t, Rank - 1>, std::layout_stride>(new_ptr, mapping);
     }
 
     // Const overload.
     template <std::size_t FixedDim>
-    auto slice(std::size_t index) const -> std::mdspan<const bool, std::dextents<std::size_t, Rank - 1>> {
+    auto slice(std::size_t index) const
+        -> std::mdspan<const bool, std::dextents<std::size_t, Rank - 1>, std::layout_stride>
+    {
         static_assert(FixedDim < Rank, "FixedDim out of range");
-        const auto strides = compute_strides(extents_);
+        // Compute original strides for our current extents.
+        const auto orig_strides = compute_strides(extents_);
+        // Check index validity.
         if (index >= extents_[FixedDim])
             throw std::out_of_range("slice index out of range");
-        const bool* new_ptr = data() + index * strides[FixedDim];
+
+        // Compute the offset in the linear data array.
+        const bool* new_ptr = data() + index * orig_strides[FixedDim];
+
+        // Build new extents and corresponding strides by dropping the FixedDim.
         std::array<std::size_t, Rank - 1> newExtents{};
+        std::array<std::size_t, Rank - 1> newStrides{};
         for (std::size_t i = 0, j = 0; i < Rank; ++i) {
-            if (i != FixedDim)
-                newExtents[j++] = extents_[i];
+            if (i != FixedDim) {
+                newExtents[j] = extents_[i];
+                newStrides[j] = orig_strides[i];
+                ++j;
+            }
         }
-        auto new_dextents = make_dextents(newExtents);
-        return std::mdspan<const bool, std::dextents<std::size_t, Rank - 1>>(new_ptr, new_dextents);
+
+        // Create a layout_stride mapping using the new extents and strides.
+        auto mapping = std::layout_stride::mapping<std::dextents<std::size_t, Rank - 1>>(
+            std::dextents<std::size_t, Rank - 1>(newExtents), newStrides);
+        return std::mdspan<const bool, std::dextents<std::size_t, Rank - 1>, std::layout_stride>(new_ptr, mapping);
     }
 
 private:
