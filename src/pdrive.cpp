@@ -243,7 +243,5 @@ int main (int argc, char *argv[]) {
     delete boxPtr;
     delete waveFunctionPtr;
 
-    initialPos.free();
-
     return 1;
 }
