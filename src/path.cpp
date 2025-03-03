@@ -48,11 +48,25 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
     /* Construct and initialize the prevLink and nextLink arrays */
     prevLink.resize(numTimeSlices,getNumParticles());
     nextLink.resize(numTimeSlices,getNumParticles());
-    fill_with_function(prevLink.slice<0>(0), [](std::size_t j){ return static_cast<int>(j) - 1; });
-    fill_with_function(prevLink.slice<0>(1), [](std::size_t j){ return static_cast<int>(j); });
-    fill_with_function(nextLink.slice<0>(0), [](std::size_t j){ return static_cast<int>(j) + 1; });
-    fill_with_function(nextLink.slice<0>(1), [](std::size_t j){ return static_cast<int>(j); });
 
+    // Get extents of DynamicArray
+    std::array<std::size_t, 2> extents = prevLink.extents();
+    std::size_t rows = extents[0];
+    std::size_t cols = extents[1];
+    
+    // Get pointers to the underlying contiguous storage.
+    auto* pprev = prevLink.data();
+    auto* pnext = nextLink.data();
+    
+    for (std::size_t i = 0; i < rows; ++i) {
+        for (std::size_t j = 0; j < cols; ++j) {
+            std::size_t index = i * cols + j;
+            // For prevLink, assign {i-1, j}
+            pprev[index] = { static_cast<int>(i) - 1, static_cast<int>(j) };
+            // For nextLink, assign {i+1, j}
+            pnext[index] = { static_cast<int>(i) + 1, static_cast<int>(j) };
+        }
+    }
     
     if (PIGS) {
     /* Here we implement the fixed boundary conditions in imaginary time. */
@@ -255,7 +269,7 @@ beadLocator Path::addBead(const int slice, const dVec &pos) {
         /* Resize and initialize the main data array which holds all worldline 
          * configurations */
         beads.resizeAndPreserve(numTimeSlices,numWorldLines + 1);
-	fill_mdspan(beads.slice<1>(numWorldLines), 0.0);
+	fill_mdspan(beads.slice<1>(numWorldLines), dVec{});
 
         /* Resize and initialize the worm bead arrays which tells us
          * whether or not we have a bead present */
@@ -265,8 +279,8 @@ beadLocator Path::addBead(const int slice, const dVec &pos) {
         /* Resize and initialize the previous and next link arrays */
         prevLink.resizeAndPreserve(numTimeSlices,numWorldLines + 1);
         nextLink.resizeAndPreserve(numTimeSlices,numWorldLines + 1);
-	fill_mdspan(prevLink.slice<1>(numWorldLines), XXX);
-	fill_mdspan(nextLink.slice<1>(numWorldLines), XXX);
+	fill_mdspan(prevLink.slice<1>(numWorldLines), {XXX, XXX});
+	fill_mdspan(nextLink.slice<1>(numWorldLines), {XXX, XXX});
 
         /* Resize the lookup table */
         lookup.resizeList(numWorldLines + 1);
