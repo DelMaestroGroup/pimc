@@ -245,18 +245,90 @@ constexpr ArrayType make_array(const typename ArrayType::value_type& value) {
                            std::make_index_sequence<std::tuple_size<ArrayType>::value>{});
 }
 
-// Templated overload for printing any std::array<T, N>
+// FIXME These stream overloads should be backwards compatible. Should probably move to communicator.h
+// Overload for printing any std::array<T, N>
 template<typename T, std::size_t N>
 std::ostream& operator<<(std::ostream& os, const std::array<T, N>& arr) {
     os << "(";
     for (std::size_t i = 0; i < N; ++i) {
         os << arr[i];
         if (i < N - 1) {
-            os << ", ";
+            os << ",";
         }
     }
     os << ")";
     return os;
+}
+
+// Overload for printing 2D DynamicArray
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const DynamicArray<T, 2>& arr) {
+    auto extents = arr.extents();
+    os << "(" << 0 << "," << extents[0] - 1 << ") x ("
+       << 0 << "," << extents[1] - 1 << ")\n";
+    os << "[ ";
+    for (std::size_t i = 0; i < extents[0]; ++i) {
+        for (std::size_t j = 0; j < extents[1]; ++j) {
+            os << arr(i, j) << " ";
+        }
+        if (i < extents[0] - 1)
+            os << "\n  ";
+    }
+    os << "]" << std::endl;
+    return os;
+}
+
+// Overload for streaming into std::array<T, N>
+template<typename T, std::size_t N>
+std::istream& operator>>(std::istream& is, std::array<T, N>& a) {
+    char ch;
+    // Expect an opening '('.
+    is >> ch;
+    if (ch != '(') {
+        is.setstate(std::ios::failbit);
+        return is;
+    }
+    for (std::size_t i = 0; i < N; ++i) {
+        is >> a[i];
+        if (i < N - 1) {
+            // Expect a comma.
+            is >> ch;
+            if (ch != ',') {
+                is.setstate(std::ios::failbit);
+                return is;
+            }
+        }
+    }
+    // Expect a closing ')'.
+    is >> ch;
+    if (ch != ')') {
+        is.setstate(std::ios::failbit);
+    }
+    return is;
+}
+
+// Overload for streaming into 2D DynamicArray
+template<typename T>
+std::istream& operator>>(std::istream& is, DynamicArray<T, 2>& arr) {
+    char ch;
+    // Skip characters until we find '['.
+    while (is >> ch) {
+        if (ch == '[')
+            break;
+    }
+    auto extents = arr.extents();
+    // Read elements row-by-row.
+    for (std::size_t i = 0; i < extents[0]; ++i) {
+        for (std::size_t j = 0; j < extents[1]; ++j) {
+            is >> arr(i, j);
+        }
+    }
+    // Consume characters until the closing ']' is found.
+    while (is >> ch) {
+        if (ch == ']')
+            break;
+    }
+    return is;
 }
 
 // Returns true if no element in the container equals the given value.
