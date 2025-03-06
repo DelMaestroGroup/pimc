@@ -171,21 +171,24 @@ constexpr auto enumerate(T && iterable)
     return iterable_wrapper{ std::forward<T>(iterable) };
 }
 
-template <typename T>
-T weighted_average(const std::vector<T>& x) {
-
-    auto [numerator, denominator] = std::accumulate(
-        x.begin(), x.end(),
-        std::make_pair(T{0}, T{0}),
-        [i = size_t{0}](std::pair<T, T> acc, T val) mutable {
-            acc.first += static_cast<T>(i) * val; // Weighted sum
-            acc.second += val; // Sum of weights
-            ++i;
-            return acc;
-        }
-    );
-
-    return denominator != T{0} ? numerator / denominator : T{0}; // Avoid division by zero
+// Weighted average function for 1D containers.
+template <typename Container>
+auto weighted_average(const Container& container) -> double {
+    // Get the extent (assumes a 1D container).
+    const std::size_t n = container.extents()[0];
+    
+    // Use double for accumulation.
+    double weightedTotal = 0.0;
+    double total = 0.0;
+    
+    for (std::size_t i = 0; i < n; ++i) {
+        auto value = container(i);
+        weightedTotal += static_cast<double>(i) * static_cast<double>(value);
+        total += static_cast<double>(value);
+    }
+    
+    // FIXME not sure if I should throw here instead of returning 0.0
+    return total == 0.0 ? 0.0 : weightedTotal / total;
 }
 
 template <typename ResultType, typename VectorType, typename MatrixType, std::size_t Dimension>
