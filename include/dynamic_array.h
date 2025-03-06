@@ -12,14 +12,6 @@
 #include <utility>
 #include <type_traits>
 
-// Helper: fill a 1D mdspan with a linear function f(index).
-template <typename Mdspan, typename Func>
-void fill_with_function(Mdspan view, Func f) {
-    for (std::size_t i = 0; i < view.extent(0); ++i) {
-        view(i) = f(i);
-    }
-}
-
 // Helper to fill a slice (an mdspan view) with a specified value
 template <typename Mdspan>
 void fill_mdspan(Mdspan view, const typename Mdspan::value_type& value) {
