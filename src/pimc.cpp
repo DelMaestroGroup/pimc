@@ -1028,7 +1028,7 @@ void PathIntegralMonteCarlo::loadState() {
         communicate()->file(fileInitStr)->stream() >> tempBeads;
 
         /* The temporary number of time slices */
-        int tempNumTimeSlices = tempBeads.rows();
+        int tempNumTimeSlices = tempBeads.extents()[0];
 
         if (tempNumTimeSlices == numTimeSlices) {
         
