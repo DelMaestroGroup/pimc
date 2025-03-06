@@ -230,9 +230,6 @@ TabulatedPotential::TabulatedPotential() {
  * Destructor. 
 ******************************************************************************/
 TabulatedPotential::~TabulatedPotential() {
-    lookupV.free();
-    lookupdVdr.free();
-    lookupd2Vdr2.free();
 }
 
 /**************************************************************************//**
@@ -630,9 +627,6 @@ FixedAzizPotential::FixedAzizPotential(const Container *_boxPtr) :
 ******************************************************************************/
 FixedAzizPotential::~FixedAzizPotential() {
     delete lookupPtr;
-    fixedParticles.free();
-    fixedBeadsInGrid.free();
-    numFixedBeadsInGrid.free();
 }
 
 /**************************************************************************//**
@@ -804,7 +798,6 @@ FixedPositionLJPotential::FixedPositionLJPotential (double _sigma, double _epsil
  * Destructor.
 ******************************************************************************/
 FixedPositionLJPotential::~FixedPositionLJPotential() {
-    fixedParticles.free();
 }
 
 /**************************************************************************//**
@@ -2928,9 +2921,6 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
  * Destructor.
 ******************************************************************************/
 GrapheneLUTPotential::~GrapheneLUTPotential() {
-    gMagID.free();
-    vg.free();
-    gradvg.free();
 }
 
 /**************************************************************************//**
@@ -3136,12 +3126,6 @@ GrapheneLUT3DPotential::GrapheneLUT3DPotential (std::string graphenelut3d_file_p
  * Destructor.
 ******************************************************************************/
 GrapheneLUT3DPotential::~GrapheneLUT3DPotential() {
-    V3d.free(); // Potential lookup table
-    gradV3d_x.free(); // gradient of potential x direction lookup table
-    gradV3d_y.free(); // gradient of potential y direction lookup table
-    gradV3d_z.free(); // gradient of potential z direction lookup table
-    grad2V3d.free(); // Laplacian of potential
-    LUTinfo.free();  // Information about the 3D lookup table 
 }
 
 /**************************************************************************//**
@@ -4579,12 +4563,6 @@ GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (std::string grap
  * Destructor.
 ******************************************************************************/
 GrapheneLUT3DPotentialToBinary::~GrapheneLUT3DPotentialToBinary() {
-    V3d.free();
-    gradV3d_x.free();
-    gradV3d_y.free();
-    gradV3d_z.free();
-    grad2V3d.free();
-    LUTinfo.free();
 }
 #endif
 
@@ -4681,11 +4659,5 @@ GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (std::string graphene
  * Destructor.
 ******************************************************************************/
 GrapheneLUT3DPotentialToText::~GrapheneLUT3DPotentialToText() {
-    V3d.free();
-    gradV3d_x.free();
-    gradV3d_y.free();
-    gradV3d_z.free();
-    grad2V3d.free();
-    LUTinfo.free();
 }
 #endif
