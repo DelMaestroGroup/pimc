@@ -3859,13 +3859,13 @@ std::tuple< std::array<double,2>, std::array<double,2>, std::array<double,2>,
     R_strain(1,0) = 0;
     R_strain(1,1) = strain;
 
-    std::array <double,2> A_m_strain0{ (carbon_carbon_distance/2.0)*sqrt(3.0) , (carbon_carbon_distance/2.0)*3.0 }; //isotropic
-    std::array <double,2> A_m{ (carbon_carbon_distance/2.0)*sqrt(3.0)*(1.0 - strain*poisson_ratio) ,
-                               (carbon_carbon_distance/2.0)*3.0*(1.0 + strain) }; //with strain
+    //std::array <double,2> A_m_strain0{ (carbon_carbon_distance/2.0)*sqrt(3.0) , (carbon_carbon_distance/2.0)*3.0 }; //isotropic
+    //std::array <double,2> A_m{ (carbon_carbon_distance/2.0)*sqrt(3.0)*(1.0 - strain*poisson_ratio) ,
+    //                           (carbon_carbon_distance/2.0)*3.0*(1.0 + strain) }; //with strain
     
-    std::array <double,2> A_n_strain0{ -(carbon_carbon_distance/2.0)*sqrt(3.0) , (carbon_carbon_distance/2.0)*3.0 }; //isotropic
-    std::array <double,2> A_n{ -(carbon_carbon_distance/2.0)*sqrt(3.0)*(1.0 - strain*poisson_ratio) ,
-                                (carbon_carbon_distance/2.0)*3.0*(1.0 + strain) }; //with strain
+    //std::array <double,2> A_n_strain0{ -(carbon_carbon_distance/2.0)*sqrt(3.0) , (carbon_carbon_distance/2.0)*3.0 }; //isotropic
+    //std::array <double,2> A_n{ -(carbon_carbon_distance/2.0)*sqrt(3.0)*(1.0 - strain*poisson_ratio) ,
+    //                            (carbon_carbon_distance/2.0)*3.0*(1.0 + strain) }; //with strain
 
     //FIXME might have a problem here if A_m_60_strain0 is passed by reference
     std::array <double,2> A_m_60_strain0{ carbon_carbon_distance*sqrt(3.0) , 0.0 }; // A_m_strain0 rotated 60 degrees to sit on x-axis
@@ -3886,7 +3886,7 @@ std::tuple< std::array<double,2>, std::array<double,2>, std::array<double,2>,
     // reciprocal lattice vectors
     std::array <double,2> g_m{ 3.0/(1.0 - strain*poisson_ratio) , sqrt(3.0)/(1.0 + strain) };
     g_m *= (2*M_PI/3/carbon_carbon_distance);
-    std::array <double,2> g_n{ -g_m[0] , g_m[1] };
+    //std::array <double,2> g_n{ -g_m[0] , g_m[1] };
 
     std::array <double,2> g_m_60{ sqrt(3.0)/(1.0 - strain*poisson_ratio), -1.0/(1.0 + strain) };
     g_m_60 *= (2*M_PI/3/carbon_carbon_distance);
@@ -3983,10 +3983,10 @@ void GrapheneLUT3DPotentialGenerate::calculate_V3D_64(
     double y;
     double z;
  
-    for (int k = 0; k < V3D.extents()[2]; k++) {
+    for (size_t k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.extents()[1]; j++) {
-            for (int i = 0; i < V3D.extents()[0]; i++) {
+        for (size_t j = 0; j < V3D.extents()[1]; j++) {
+            for (size_t i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = V_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
@@ -4005,10 +4005,10 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_x_64(
     double x;
     double y;
     double z;
-    for (int k = 0; k < V3D.extents()[2]; k++) {
+    for (size_t k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.extents()[1]; j++) {
-            for (int i = 0; i < V3D.extents()[0]; i++) {
+        for (size_t j = 0; j < V3D.extents()[1]; j++) {
+            for (size_t i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = gradV_x_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
@@ -4027,10 +4027,10 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_y_64(
     double x;
     double y;
     double z;
-    for (int k = 0; k < V3D.extents()[2]; k++) {
+    for (size_t k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.extents()[1]; j++) {
-            for (int i = 0; i < V3D.extents()[0]; i++) {
+        for (size_t j = 0; j < V3D.extents()[1]; j++) {
+            for (size_t i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = gradV_y_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
@@ -4049,10 +4049,10 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_z_64(
     double x;
     double y;
     double z;
-    for (int k = 0; k < V3D.extents()[2]; k++) {
+    for (size_t k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.extents()[1]; j++) {
-            for (int i = 0; i < V3D.extents()[0]; i++) {
+        for (size_t j = 0; j < V3D.extents()[1]; j++) {
+            for (size_t i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = gradV_z_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
@@ -4071,10 +4071,10 @@ void GrapheneLUT3DPotentialGenerate::calculate_grad2V3D_64(
     double x;
     double y;
     double z;
-    for (int k = 0; k < V3D.extents()[2]; k++) {
+    for (size_t k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.extents()[1]; j++) {
-            for (int i = 0; i < V3D.extents()[0]; i++) {
+        for (size_t j = 0; j < V3D.extents()[1]; j++) {
+            for (size_t i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = grad2V_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
