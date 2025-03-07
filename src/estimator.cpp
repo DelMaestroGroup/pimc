@@ -246,7 +246,7 @@ void EstimatorBase::initialize(int _numEst) {
     numEst = _numEst;
     estimator.resize(numEst);
     norm.resize(numEst);
-    norm = 1.0;
+    norm.fill(1.0);
     reset();
 }
 
@@ -269,7 +269,7 @@ void EstimatorBase::initialize(std::vector<std::string> estLabel) {
     numEst = estLabel.size();
     estimator.resize(numEst);
     norm.resize(numEst);
-    norm = 1.0;
+    norm.fill(1.0);
     reset();
 }
 
@@ -310,7 +310,7 @@ void EstimatorBase::prepare() {
 ******************************************************************************/
 void EstimatorBase::reset() {
     numAccumulated = 0;
-    estimator = 0.0;
+    estimator.fill(0.0);
 }
 
 /*************************************************************************//**
@@ -389,7 +389,7 @@ void EstimatorBase::outputHist() {
         (*outFilePtr) << std::endl;
 
     /* Reset all values */
-    norm = 0.0;
+    norm.fill(0.0);
     reset();
 }
 
@@ -1315,7 +1315,7 @@ CommensurateOrderParameterEstimator::CommensurateOrderParameterEstimator (
     endLine = false;
     initialize({"Scom"});
 
-    norm = 1.0/(g.size()*constants()->numTimeSlices());
+    norm.fill(1.0/(g.size()*constants()->numTimeSlices()));
 }
 
 /*************************************************************************//**
@@ -1599,7 +1599,7 @@ LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_p
     for (int i = 0; i < NDIM-1; i++)
         A *= side[i];
 
-    norm = 1.0/(1.0*(endSlice-startSlice)*(1.0/actionPtr->period)*A*dz);
+    norm.fill(1.0/(1.0*(endSlice-startSlice)*(1.0/actionPtr->period)*A*dz));
 }
 
 /*************************************************************************//**
@@ -1678,7 +1678,7 @@ PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_pat
     for (int i = 0; i < NDIM-1; i++)
         A *= dl[i];
 
-    norm = 1.0/((endSlice-startSlice)*(1.0/actionPtr->period)*A*path.boxPtr->side[NDIM-1]);
+    norm.fill(1.0/((endSlice-startSlice)*(1.0/actionPtr->period)*A*path.boxPtr->side[NDIM-1]));
     side = path.boxPtr->side;
 }
 
@@ -1761,7 +1761,7 @@ PlaneParticleAveragePositionEstimator::PlaneParticleAveragePositionEstimator (
     for (int i = 0; i < NDIM-1; i++)
         A *= dl[i];
 
-    norm = 1.0/((endSlice-startSlice)*(1.0/actionPtr->period)*A*path.boxPtr->side[NDIM-1]);
+    norm.fill(1.0/((endSlice-startSlice)*(1.0/actionPtr->period)*A*path.boxPtr->side[NDIM-1]));
     side = path.boxPtr->side;
 }
 
@@ -2071,11 +2071,11 @@ PlaneWindingSuperfluidDensityEstimator::PlaneWindingSuperfluidDensityEstimator
     for (int n = 1; n < numGrid; n++) 
         header.append(str(format("%16.3E") % (1.0*n)));
 
-    norm = 0.5 * constants()->T()/(dx*dy*path.boxPtr->side[NDIM-1]*constants()->lambda());
+    norm.fill(0.5 * constants()->T()/(dx*dy*path.boxPtr->side[NDIM-1]*constants()->lambda()));
 
     /* Initialize the local arrays */
     locWz.resize(numGrid);
-    locWz = 0.0;
+    locWz.fill(0.0);
 
     side = path.boxPtr->side;
 }
@@ -2101,7 +2101,7 @@ void PlaneWindingSuperfluidDensityEstimator::accumulate() {
     dVec vel;
 
     Wz = 0.0;
-    locWz = 0.0;
+    locWz.fill(0.0);
     for (int slice = 0; slice < numTimeSlices; slice++) {
 	beadIndex[0] = slice;
         int numBeads = path.numBeadsAtSlice(slice);
@@ -2162,11 +2162,11 @@ PlaneAreaSuperfluidDensityEstimator::PlaneAreaSuperfluidDensityEstimator
     for (int n = 1; n < numGrid; n++) 
         header.append(str(format("%16.3E") % (1.0*n)));
 
-    norm = 0.5 * constants()->T()/(dx*dy*path.boxPtr->side[NDIM-1]*constants()->lambda());
+    norm.fill(0.5 * constants()->T()/(dx*dy*path.boxPtr->side[NDIM-1]*constants()->lambda()));
 
     /* Initialize the local arrays */
     locAz.resize(numGrid);
-    locAz = 0.0;
+    locAz.fill(0.0);
 
     side = path.boxPtr->side;
 }
@@ -2191,7 +2191,7 @@ void PlaneAreaSuperfluidDensityEstimator::accumulate() {
     dVec pos1,pos2;
 
     Az = 0.0;
-    locAz = 0.0;
+    locAz.fill(0.0);
     for (int slice = 0; slice < numTimeSlices; slice++) {
 	beadIndex[0] = slice;
         int numBeads = path.numBeadsAtSlice(slice);
@@ -2258,13 +2258,13 @@ RadialWindingSuperfluidDensityEstimator::RadialWindingSuperfluidDensityEstimator
     for (int n = 1; n < numGrid; n++) 
         header.append(str(format("%16.3E") % ((n)*dR)));
 
-    norm = 0.5 * constants()->T()/constants()->lambda();
+    norm.fill(0.5 * constants()->T()/constants()->lambda());
     for (int n = 0; n < numGrid; n++) 
         norm(n) /= (M_PI*(2*n+1)*dR*dR*path.boxPtr->side[NDIM-1]);
 
     /* Initialize the local arrays */
     locWz.resize(numGrid);
-    locWz = 0.0;
+    locWz.fill(0.0);
 }
 
 /*************************************************************************//**
@@ -2288,7 +2288,7 @@ void RadialWindingSuperfluidDensityEstimator::accumulate() {
     dVec vel;
 
     Wz = 0.0;
-    locWz = 0.0;
+    locWz.fill(0.0);
     for (int slice = 0; slice < numTimeSlices; slice++) {
 	beadIndex[0] = slice;
         int numBeads = path.numBeadsAtSlice(slice);
@@ -2346,13 +2346,13 @@ RadialAreaSuperfluidDensityEstimator::RadialAreaSuperfluidDensityEstimator
     for (int n = 1; n < numGrid; n++) 
         header.append(str(format("%16.3E") % ((n)*dR)));
 
-    norm = 0.5 * constants()->T()/constants()->lambda();
+    norm.fill(0.5 * constants()->T()/constants()->lambda());
     for (int n = 0; n < numGrid; n++) 
         norm(n) /= (M_PI*(2*n+1)*dR*dR*path.boxPtr->side[NDIM-1]);
 
     /* Initialize the local arrays */
     locAz.resize(numGrid);
-    locAz = 0.0;
+    locAz.fill(0.0);
 }
 
 /*************************************************************************//**
@@ -2375,7 +2375,7 @@ void RadialAreaSuperfluidDensityEstimator::accumulate() {
     dVec pos1,pos2;
 
     Az = 0.0;
-    locAz = 0.0;
+    locAz.fill(0.0);
     for (int slice = 0; slice < numTimeSlices; slice++) {
 	beadIndex[0] = slice;
         int numBeads = path.numBeadsAtSlice(slice);
@@ -2445,13 +2445,13 @@ LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
 
     /* Initialize the local arrays */
     locWz.resize(numGrid);
-    locWz = 0.0;
+    locWz.fill(0.0);
 
     locAz.resize(numGrid);
-    locAz = 0.0;
+    locAz.fill(0.0);
 
     locA2.resize(numGrid);
-    locA2 = 0.0;
+    locA2.fill(0.0);
 }
 
 /*************************************************************************//**
@@ -2494,9 +2494,9 @@ void LocalSuperfluidDensityEstimator::output() {
 void LocalSuperfluidDensityEstimator::accumulate() {
 
     int numTimeSlices = path.numTimeSlices;
-    locAz = 0.0;
-    locA2 = 0.0;
-    locWz = 0.0;
+    locAz.fill(0.0);
+    locA2.fill(0.0);
+    locWz.fill(0.0);
 
     beadLocator beadIndex;
     double Az,rp2,Wz;
@@ -2714,7 +2714,7 @@ void PermutationCycleEstimator::accumulate() {
     /* We create a local std::vector, which determines whether or not we have
      * already included a bead at slice 0*/
     doBead.resize(numWorldlines);
-    doBead = true;
+    doBead.fill(true);
 
     /* We go through each particle/worldline */
     for (int n = 0; n < numWorldlines; n++) {
@@ -2832,7 +2832,7 @@ void LocalPermutationEstimator::accumulate() {
     /* We create a local std::vector, which determines whether or not we have
      * already included a bead at slice 0*/
     doBead.resize(numWorldlines);
-    doBead = true;
+    doBead.fill(true);
 
     /* We go through each particle/worldline */
     for (int n = 0; n < numWorldlines; n++) {
@@ -2924,7 +2924,7 @@ OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path,
         header.append(str(format("%16.3E") % (n*dR)));
 
     numReps = 5;
-    norm = 1.0 / (1.0*numReps);
+    norm.fill(1.0 / (1.0*numReps));
 }
 
 /*************************************************************************//**
@@ -3304,7 +3304,7 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
 
     /* Initialize the accumulator intermediate scattering function*/
     sf.resize(numq);
-    sf = 0.0;
+    sf.fill(0.0);
 
     /* This is a diagonal estimator that gets its own file */
     initialize(numq);
@@ -3318,7 +3318,7 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
         /* header.append(str(format("%16.6E") % (qMag(nq)-0.5*dq))); */
 
     /* Utilize imaginary time translational symmetry */
-    norm = 1.0/constants()->numTimeSlices();
+    norm.fill(1.0/constants()->numTimeSlices());
 
     /* Normalize by the number of q-vecs (except when there are none) */
     for (int nq = 0; nq < numq; nq++) {
@@ -3343,7 +3343,7 @@ void StaticStructureFactorEstimator::accumulate() {
     int numTimeSlices = constants()->numTimeSlices();
 
     beadLocator bead1,bead2;  // The bead locator
-    sf = 0.0; // initialize
+    sf.fill(0.0); // initialize
 
     /* q-magnitudes */
     for (auto [nq,cq] : enumerate(q)) {
@@ -3532,7 +3532,7 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
 
     /* initialize the number of std::vectors with each magnitude */
     numqVecs.resize(numq);               
-    numqVecs = 0;
+    numqVecs.fill(0);
 
     /* The allowable error in the wavevector magnitude */
     double eps = 2.0*M_PI/min(path.boxPtr->side)/sqrt(NDIM);
@@ -3585,7 +3585,7 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
     /* Initialize the accumulator for the intermediate scattering function*/
     /* N.B. for now we hard-code three wave-vectors */
     isf.resize(numq*numTimeSlices);
-    isf = 0.0;
+    isf.fill(0.0);
 
     /* This is a diagonal estimator that gets its own file */
     initialize(numq*numTimeSlices);
@@ -3607,7 +3607,7 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
     }
 
     /* utilize imaginary time translational symmetry */
-    norm = 1.0/numTimeSlices;
+    norm.fill(1.0/numTimeSlices);
 }
 
 /*************************************************************************//**
@@ -3628,7 +3628,7 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
     int numTimeSlices = constants()->numTimeSlices();
 
     beadLocator bead1,bead2;  // The bead locator
-    isf = 0.0; // initialize
+    isf.fill(0.0); // initialize
     dVec pos1,pos2;         // The two bead positions
 
     /* q-magnitudes */
@@ -3974,7 +3974,7 @@ RadialDensityEstimator::RadialDensityEstimator (const Path &_path,
     for (int n = 1; n < NRADSEP; n++) 
         header.append(str(format("%16.3E") % ((n)*dR)));
 
-    norm = (actionPtr->period)/ (path.boxPtr->side[NDIM-1]*(endDiagSlice - startSlice));
+    norm.fill((actionPtr->period)/ (path.boxPtr->side[NDIM-1]*(endDiagSlice - startSlice)));
     for (int n = 0; n < NRADSEP; n++) 
         norm(n) /= (M_PI*(2*n+1)*dR*dR);
 }
@@ -4273,7 +4273,7 @@ CylinderLinearDensityEstimator::CylinderLinearDensityEstimator
         header.append(str(format("%16.3E") % (n*dz)));
 
     /* The normalization factor for the linear density*/
-    norm = 1.0/(dz * constants()->numTimeSlices());
+    norm.fill(1.0/(dz * constants()->numTimeSlices()));
 }
 
 /*************************************************************************//**
@@ -4376,7 +4376,7 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
     /* We create a local std::vector, which determines whether or not we have
      * already included a bead at slice 0*/
     doBead.resize(numWorldlines);
-    doBead = true;
+    doBead.fill(true);
 
     /* Needed to ensure an included world line */
     bool includeWorldline = true;
@@ -4487,7 +4487,7 @@ CylinderOneBodyDensityMatrixEstimator::CylinderOneBodyDensityMatrixEstimator
         header.append(str(format("%16.3E") % (n*dR)));
 
     numReps = 10;
-    norm = 1.0 / (1.0*numReps);
+    norm.fill(1.0 / (1.0*numReps));
 }
 
 /*************************************************************************//**
@@ -4688,7 +4688,7 @@ CylinderPairCorrelationEstimator::CylinderPairCorrelationEstimator (const Path &
         header.append(str(format("%16.3E") % ((n)*dR)));
 
     /* The normalization factor for the pair correlation function */
-    norm = 0.5*path.boxPtr->side[NDIM-1] / dR;
+    norm.fill(0.5*path.boxPtr->side[NDIM-1] / dR);
 }
 
 /*************************************************************************//**
@@ -4969,7 +4969,7 @@ void CylinderRadialPotentialEstimator::accumulate1() {
     beadLocator bead1,bead2;    // The bead locators
     bool found1,found2;         // Are the beads in the central chain
     found1 = found2 = false;
-    radPot = 0.0;
+    radPot.fill(0.0);
     int numFound1 = 0;
 
     /* We sum up the external and interaction energy over all slices*/
@@ -5051,7 +5051,7 @@ CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
 
     /* Initialize the accumulator intermediate scattering function*/
     sf.resize(numq);
-    sf = 0.0;
+    sf.fill(0.0);
 
     /* This is a diagonal estimator that gets its own file */
     initialize(numq);
@@ -5064,7 +5064,7 @@ CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
     }
 
     /* Utilize imaginary time translational symmetry */
-    norm = 1.0/constants()->numTimeSlices();
+    norm.fill(1.0/constants()->numTimeSlices());
 
     /* Normalize by the number of q-vecs (except when there are none) */
     for (int nq = 0; nq < numq; nq++) {
@@ -5089,7 +5089,7 @@ void CylinderStaticStructureFactorEstimator::accumulate() {
     int numTimeSlices = constants()->numTimeSlices();
 
     beadLocator bead1,bead2;  // The bead locator
-    sf = 0.0; // initialize
+    sf.fill(0.0); // initialize
 
     /* q-magnitudes */
     for (auto [nq,cq] : enumerate(q)) {
@@ -5859,7 +5859,7 @@ PIGSOneBodyDensityMatrixEstimator::PIGSOneBodyDensityMatrixEstimator (Path &_pat
         header.append(str(format("%16.3E") % (n*dR)));
 
     numReps = 5;
-    norm = 1.0 / (1.0*numReps);
+    norm.fill(1.0 / (1.0*numReps));
 }
 
 /*************************************************************************//**
