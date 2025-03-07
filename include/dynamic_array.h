@@ -56,7 +56,7 @@ public:
     template <typename... Extents,
               typename = std::enable_if_t<(sizeof...(Extents) == Rank) &&
                                           (std::conjunction_v<std::is_convertible<Extents, std::size_t>...>)>>
-    DynamicArray(Extents... extents)
+    explicit DynamicArray(Extents... extents)
       : extents_{ static_cast<std::size_t>(extents)... },
         data_( (static_cast<std::size_t>(extents) * ...) ),
         view_(data_.data(), make_dextents(extents_))
@@ -467,7 +467,7 @@ public:
     template <typename... Extents,
               typename = std::enable_if_t<(sizeof...(Extents) == Rank) &&
                                             (std::conjunction_v<std::is_convertible<Extents, std::size_t>...>)>>
-    DynamicArray(Extents... extents)
+    explicit DynamicArray(Extents... extents)
       : extents_{ static_cast<std::size_t>(extents)... },
         data_( (static_cast<std::size_t>(extents) * ...), 0 ),
         view_( reinterpret_cast<bool*>(data_.data()), make_dextents(extents_) )
