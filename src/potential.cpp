@@ -2978,7 +2978,7 @@ double GrapheneLUTPotential::V(const dVec &r) {
 ******************************************************************************/
 dVec GrapheneLUTPotential::gradV(const dVec &r) {
 
-    return 0.0;
+    return dVec{};
 
     /* double x = r[0]; */
     /* double y = r[1]; */
@@ -3162,7 +3162,7 @@ double GrapheneLUT3DPotential::V(const dVec &r) {
  *  @return the gradient of the van der Waals' potential for graphene-helium
 ******************************************************************************/
 dVec GrapheneLUT3DPotential::gradV(const dVec &r) {
-    dVec _gradV = 0.0;
+    dVec _gradV{};
     if (r[2] + Lzo2 < zmin){ 
         return _gradV;
     }
@@ -3983,10 +3983,10 @@ void GrapheneLUT3DPotentialGenerate::calculate_V3D_64(
     double y;
     double z;
  
-    for (int k = 0; k < V3D.extents(g)[2]; k++) {
+    for (int k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.extents(g)[1]; j++) {
-            for (int i = 0; i < V3D.extents(g)[0]; i++) {
+        for (int j = 0; j < V3D.extents()[1]; j++) {
+            for (int i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = V_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
@@ -4005,10 +4005,10 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_x_64(
     double x;
     double y;
     double z;
-    for (int k = 0; k < V3D.extents(g)[2]; k++) {
+    for (int k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.extents(g)[1]; j++) {
-            for (int i = 0; i < V3D.extents(g)[0]; i++) {
+        for (int j = 0; j < V3D.extents()[1]; j++) {
+            for (int i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = gradV_x_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
@@ -4027,10 +4027,10 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_y_64(
     double x;
     double y;
     double z;
-    for (int k = 0; k < V3D.extents(g)[2]; k++) {
+    for (int k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.extents(g)[1]; j++) {
-            for (int i = 0; i < V3D.extents(g)[0]; i++) {
+        for (int j = 0; j < V3D.extents()[1]; j++) {
+            for (int i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = gradV_y_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
@@ -4049,10 +4049,10 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_z_64(
     double x;
     double y;
     double z;
-    for (int k = 0; k < V3D.extents(g)[2]; k++) {
+    for (int k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.extents(g)[1]; j++) {
-            for (int i = 0; i < V3D.extents(g)[0]; i++) {
+        for (int j = 0; j < V3D.extents()[1]; j++) {
+            for (int i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = gradV_z_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
@@ -4071,10 +4071,10 @@ void GrapheneLUT3DPotentialGenerate::calculate_grad2V3D_64(
     double x;
     double y;
     double z;
-    for (int k = 0; k < V3D.extents(g)[2]; k++) {
+    for (int k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.extents(g)[1]; j++) {
-            for (int i = 0; i < V3D.extents(g)[0]; i++) {
+        for (int j = 0; j < V3D.extents()[1]; j++) {
+            for (int i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = grad2V_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
