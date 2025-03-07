@@ -2097,7 +2097,7 @@ DynamicArray<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPt
         OF << "# "<< lside[0]<<"\t"<<lside[1]<<"\t"<<lside[2] << std::endl;
         OF << "# "<< excY << "\t" << excZ << std::endl;
         for (int i=0; i< int(initialPos.size()); i++)
-            OF << initialPos[i][0] << "\t" << initialPos[i][1] << "\t" << initialPos[i][2] << std::endl;
+            OF << initialPos(i)[0] << "\t" << initialPos(i)[1] << "\t" << initialPos(i)[2] << std::endl;
         OF.close();
     }
     
