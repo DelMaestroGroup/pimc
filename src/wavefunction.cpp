@@ -113,7 +113,7 @@ double SechWaveFunction::PsiTrial(const int slice) {
     double r;
 
     for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-        beadIndex = slice,ptcl;
+        beadIndex = {slice, ptcl};
         pos = path(beadIndex);
         r = sqrt(dot(pos,pos));
         psiT *= 1.0/cosh(a*r);
