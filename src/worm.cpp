@@ -25,7 +25,7 @@ Worm::Worm(int numParticles) {
 
     /* Setup the bead array */
     beads.resize(numTimeSlices,numParticles);
-    beads = 1;
+    beads.fill(1u);
 
     /* Count the initial number of beads */
     resetNumBeadsOn();
@@ -93,12 +93,12 @@ void Worm::update(Path &path, const beadLocator &newHead,
     sep = path.getSeparation(tail,head);
 
     /* Unlink the head and tail */
-    path.next(head) = XXX;
-    path.prev(tail) = XXX;
+    path.next(head).fill(XXX);
+    path.prev(tail).fill(XXX);
 
     /* Turn off the special beads */
-    special1 = XXX;
-    special2 = XXX;
+    special1.fill(XXX);
+    special2.fill(XXX);
 }
 
 /**************************************************************************//**
