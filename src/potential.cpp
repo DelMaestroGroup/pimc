@@ -3388,7 +3388,6 @@ GrapheneLUT3DPotentialGenerate::GrapheneLUT3DPotentialGenerate (
         const double _epsilon, const int _k_max, const int _xres, const int _yres, const int _zres, const Container *_boxPtr
         ) : PotentialBase() {
 
-    static auto const aflags = boost::archive::no_header | boost::archive::no_tracking;
     // ADD FUNCTIONS TO CONVERT FROM BINARY TO TEXT AND VICE VERSA FOR SERIALIZED FILES
     /* get a local copy of the system size */
     Lzo2 = _boxPtr->side[NDIM-1]/2;
@@ -3423,15 +3422,17 @@ GrapheneLUT3DPotentialGenerate::GrapheneLUT3DPotentialGenerate (
     std::string graphenelut3d_file_prefix = str( format( "graphene_%.2f_%.2f_%d_%d_%d_") %
             strain % zmax % xres % yres % zres );
 
-    // create and open a character archive for output
-    std::ofstream ofs(graphenelut3d_file_prefix + "serialized.dat");
-
-    // save data to archive
-    {
-        boost::archive::binary_oarchive oa(ofs,aflags);
-        // write class instance to archive
-        oa << V3d << gradV3d_x << gradV3d_y << gradV3d_z << grad2V3d << LUTinfo;
-        // archive and stream closed when destructors are called
+    // Save generated LUTs
+    try {
+        saveDynamicArray(V3d,       graphenelut3d_file_prefix + "_serialized_V3d.dat");
+        saveDynamicArray(gradV3d_x, graphenelut3d_file_prefix + "_serialized_gradV3d_x.dat");
+        saveDynamicArray(gradV3d_y, graphenelut3d_file_prefix + "_serialized_gradV3d_y.dat");
+        saveDynamicArray(gradV3d_z, graphenelut3d_file_prefix + "_serialized_gradV3d_z.dat");
+        saveDynamicArray(grad2V3d,  graphenelut3d_file_prefix + "_serialized_grad2V3d.dat");
+        saveDynamicArray(LUTinfo,   graphenelut3d_file_prefix + "_serialized_LUTinfo.dat");
+    } catch (const std::exception& ex) {
+        std::cerr << "Error saving data: " << ex.what() << "\n";
+        return;
     }
 }
 
