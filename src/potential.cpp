@@ -178,8 +178,7 @@ DynamicArray<dVec,1> PotentialBase::initialConfig(const Container *boxPtr, MTRan
  * @param maxSep the maximum separation
 ******************************************************************************/
 void PotentialBase::output(const double maxSep) {
-    dVec sep;
-    sep = 0.0;
+    dVec sep{};
     for (double d = 0; d < maxSep; d+= (maxSep/1.0E6)) {
         sep[0] = d;
         communicate()->file("debug")->stream() 
@@ -221,9 +220,9 @@ DynamicArray<double,1> PotentialBase::getExcLen() {
  * Constructor.
 ******************************************************************************/
 TabulatedPotential::TabulatedPotential() { 
-    extV = 0.0;
-    extdVdr = 0.0;
-    extd2Vdr2 = 0.0;
+    extV.fill(0.0);
+    extdVdr.fill(0.0);
+    extd2Vdr2.fill(0.0);
 }
 
 /**************************************************************************//**
@@ -659,8 +658,7 @@ double FixedAzizPotential::V(const dVec &pos) {
 ******************************************************************************/
 dVec FixedAzizPotential::gradV(const dVec &pos) {
 
-    dVec totGradV;
-    totGradV = 0.0;
+    dVec totGradV{};
 
     /* We first find the grid box number that the particle resides in */
     int gridNumber = lookupPtr->gridNumber(pos);
@@ -908,8 +906,8 @@ PlatedLJCylinderPotential::PlatedLJCylinderPotential(const double Ro_, const dou
     }
 
     /* The extremal values for the lookup table */
-    extV = valueV(0.0),valueV(Ri);
-    extdVdr = valuedVdr(0.0),valuedVdr(Ri);
+    extV    = {    valueV(0.0),    valueV(Ri) };
+    extdVdr = { valuedVdr(0.0), valuedVdr(Ri) };
 }
 
 /**************************************************************************//**
@@ -1143,8 +1141,8 @@ LJCylinderPotential::LJCylinderPotential(const double radius, const double densi
     }
 
     /* The extremal values for the lookup table */
-    extV = valueV(0.0),valueV(R);
-    extdVdr = valuedVdr(0.0),valuedVdr(R);
+    extV =    {    valueV(0.0),    valueV(R) };
+    extdVdr = { valuedVdr(0.0), valuedVdr(R) };
 }
 
 /**************************************************************************//**
@@ -1511,8 +1509,7 @@ DynamicArray<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr
     DynamicArray<dVec,1> initialPos(numParticles);
     initialPos = 0.0;
 
-    dVec pos;
-    pos = 0.0;
+    dVec pos{};
 
     /* We randomly place the particles inside the cylinder taking acount of the 
      * pinched radius. 
@@ -1565,9 +1562,9 @@ AzizPotential::AzizPotential(const Container *_boxPtr) : PotentialBase(), Tabula
     C10     = 0.1781;
 
     /* The extremal values are all zero here */
-    extV = 0.0;
-    extdVdr = 0.0;
-    extd2Vdr2 = 0.0;
+    extV.fill(0.0);
+    extdVdr.fill(0.0);
+    extd2Vdr2.fill(0.0);
 
     /* We take the maximum possible separation */
     double L = _boxPtr->maxSep;
@@ -1707,9 +1704,9 @@ SzalewiczPotential::SzalewiczPotential(const Container *_boxPtr) : PotentialBase
     // FIXME Fix comments
     rm      = 2.9262186279335958;   // Angstrom (scipy.optimize.minimize())
     /* The extremal values are all zero here */
-    extV = 0.0;
-    extdVdr = 0.0;
-    extd2Vdr2 = 0.0;
+    extV.fill(0.0);
+    extdVdr.fill(0.0);
+    extd2Vdr2.fill(0.0);
 
     /* We take the maximum possible separation */
     double L = _boxPtr->maxSep;
@@ -2100,7 +2097,7 @@ DynamicArray<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPt
         OF << "# "<< lside[0]<<"\t"<<lside[1]<<"\t"<<lside[2] << std::endl;
         OF << "# "<< excY << "\t" << excZ << std::endl;
         for (int i=0; i< int(initialPos.size()); i++)
-            OF << initialPos(i)(0) << "\t" << initialPos(i)(1) << "\t" << initialPos(i)(2) << std::endl;
+            OF << initialPos[i][0] << "\t" << initialPos[i][1] << "\t" << initialPos[i][2] << std::endl;
         OF.close();
     }
     
@@ -3180,9 +3177,9 @@ dVec GrapheneLUT3DPotential::gradV(const dVec &r) {
     //double _gradV_x = direct_lookup(gradV3d_x, _r, dx, dy, dz);
     //double _gradV_y = direct_lookup(gradV3d_y, _r, dx, dy, dz);
     //double _gradV_z = direct_lookup(gradV3d_z, _r, dx, dy, dz);
-    _gradV(0) = _gradV_x;
-    _gradV(1) = _gradV_y;
-    _gradV(2) = _gradV_z;
+    _gradV[0] = _gradV_x;
+    _gradV[1] = _gradV_y;
+    _gradV[2] = _gradV_z;
     return _gradV;
 }
 
@@ -3855,42 +3852,45 @@ std::tuple< std::array<double,2>, std::array<double,2>, std::array<double,2>,
     std::array<double,2>, std::array<double,2>, std::array<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors(
         double strain, double carbon_carbon_distance, double poisson_ratio) {
-    DynamicArray<double,2> R_strain(2,2);
-    R_strain = -strain*poisson_ratio, 0,
-                                 0, strain;
 
-    std::array <double,2> A_m_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
-    std::array <double,2> A_m( (carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
-            (carbon_carbon_distance/2)*3*(1 + strain) ); //with strain
+    DynamicArray<double,2> R_strain(2,2);
+    R_strain(0,0) = -strain * poisson_ratio;
+    R_strain(0,1) = 0;
+    R_strain(1,0) = 0;
+    R_strain(1,1) = strain;
+
+    std::array <double,2> A_m_strain0{ (carbon_carbon_distance/2.0)*sqrt(3.0) , (carbon_carbon_distance/2.0)*3.0 }; //isotropic
+    std::array <double,2> A_m{ (carbon_carbon_distance/2.0)*sqrt(3.0)*(1.0 - strain*poisson_ratio) ,
+                               (carbon_carbon_distance/2.0)*3.0*(1.0 + strain) }; //with strain
     
-    std::array <double,2> A_n_strain0( -(carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
-    std::array <double,2> A_n( -(carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
-            (carbon_carbon_distance/2)*3*(1 + strain) ); //with strain
+    std::array <double,2> A_n_strain0{ -(carbon_carbon_distance/2.0)*sqrt(3.0) , (carbon_carbon_distance/2.0)*3.0 }; //isotropic
+    std::array <double,2> A_n{ -(carbon_carbon_distance/2.0)*sqrt(3.0)*(1.0 - strain*poisson_ratio) ,
+                                (carbon_carbon_distance/2.0)*3.0*(1.0 + strain) }; //with strain
 
     //FIXME might have a problem here if A_m_60_strain0 is passed by reference
-    std::array <double,2> A_m_60_strain0( carbon_carbon_distance*sqrt(3) , 0 ); // A_m_strain0 rotated 60 degrees to sit on x-axis
+    std::array <double,2> A_m_60_strain0{ carbon_carbon_distance*sqrt(3.0) , 0.0 }; // A_m_strain0 rotated 60 degrees to sit on x-axis
     std::array <double,2> A_m_60 = A_m_60_strain0; // rotated with strain
-    A_m_60(0) += R_strain(0,0)*A_m_60_strain0(0) + R_strain(0,1)*A_m_60_strain0(1);
-    A_m_60(1) += R_strain(1,0)*A_m_60_strain0(0) + R_strain(1,1)*A_m_60_strain0(1);
+    A_m_60[0] += R_strain(0,0)*A_m_60_strain0[0] + R_strain(0,1)*A_m_60_strain0[1];
+    A_m_60[1] += R_strain(1,0)*A_m_60_strain0[0] + R_strain(1,1)*A_m_60_strain0[1];
 
-    std::array <double,2> A_n_60_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); // A_n_strain0 rotated 60
+    std::array <double,2> A_n_60_strain0{ (carbon_carbon_distance/2.0)*sqrt(3.0) , (carbon_carbon_distance/2.0)*3.0 }; // A_n_strain0 rotated 60
     std::array <double,2> A_n_60 = A_n_60_strain0; // rotated with strain
-    A_n_60(0) += R_strain(0,0)*A_n_60_strain0(0) + R_strain(0,1)*A_n_60_strain0(1);
-    A_n_60(1) += R_strain(1,0)*A_n_60_strain0(0) + R_strain(1,1)*A_n_60_strain0(1);
+    A_n_60[0] += R_strain(0,0)*A_n_60_strain0[0] + R_strain(0,1)*A_n_60_strain0[1];
+    A_n_60[1] += R_strain(1,0)*A_n_60_strain0[0] + R_strain(1,1)*A_n_60_strain0[1];
 
 
     // basis vectors
-    std::array <double,2> b_1( 0, carbon_carbon_distance*(1 + strain) );
-    std::array <double,2> b_2( 0, carbon_carbon_distance*2*(1 + strain) );
+    std::array <double,2> b_1{ 0.0,   carbon_carbon_distance*(1 + strain) };
+    std::array <double,2> b_2{ 0.0, 2*carbon_carbon_distance*(1 + strain) };
 
     // reciprocal lattice vectors
-    std::array <double,2> g_m( 3/(1 - strain*poisson_ratio) , sqrt(3)/(1 + strain) );
+    std::array <double,2> g_m{ 3.0/(1.0 - strain*poisson_ratio) , sqrt(3.0)/(1.0 + strain) };
     g_m *= (2*M_PI/3/carbon_carbon_distance);
-    std::array <double,2> g_n( -g_m[0] , g_m[1] );
+    std::array <double,2> g_n{ -g_m[0] , g_m[1] };
 
-    std::array <double,2> g_m_60( sqrt(3)/(1 - strain*poisson_ratio), -1/(1 + strain) );
+    std::array <double,2> g_m_60{ sqrt(3.0)/(1.0 - strain*poisson_ratio), -1.0/(1.0 + strain) };
     g_m_60 *= (2*M_PI/3/carbon_carbon_distance);
-    std::array <double,2> g_n_60( 0 , 1/(1 + strain) );
+    std::array <double,2> g_n_60{ 0.0 , 1.0/(1.0 + strain) };
     g_n_60 *= (4*M_PI/3/carbon_carbon_distance);
 
     return { A_m_60, A_n_60, b_1, b_2, g_m_60, g_n_60 };
@@ -3900,22 +3900,22 @@ std::tuple< std::array<double,2>, std::array<double,2>, std::array<double,2>,
     std::array<double,2>, std::array<double,2>, std::array<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors_old(
         double strain, double carbon_carbon_distance, double poisson_ratio) {
-     std::array <double,2> A_m_old( sqrt(3)*(4 + strain - 3*strain*poisson_ratio) ,
-            3*(4 + 3*strain - strain*poisson_ratio) ); // wrong value previously used
+     std::array <double,2> A_m_old{ sqrt(3)*(4 + strain - 3*strain*poisson_ratio) ,
+                                    3*(4 + 3*strain - strain*poisson_ratio) }; // wrong value previously used
     A_m_old *= (carbon_carbon_distance/8);
-    std::array <double,2> A_n_old( sqrt(3)*(-4 - strain + 3*strain*poisson_ratio),
-            3*(4 + 3*strain - strain*poisson_ratio) ); // wrong value previously used
+    std::array <double,2> A_n_old{ sqrt(3)*(-4 - strain + 3*strain*poisson_ratio),
+                                   3*(4 + 3*strain - strain*poisson_ratio) }; // wrong value previously used
     A_n_old *= (carbon_carbon_distance/8);
 
     // basis vectors
-    std::array <double,2> b_1( 0 , carbon_carbon_distance*(1 + strain) );
-    std::array <double,2> b_2( 0 , carbon_carbon_distance*2*(1 + strain) );
+    std::array <double,2> b_1{ 0.0 ,   carbon_carbon_distance*(1 + strain) };
+    std::array <double,2> b_2{ 0.0 , 2*carbon_carbon_distance*(1 + strain) };
 
     // reciprocal lattice vectors
-    std::array <double,2> g_m_old( sqrt(3)*(4 + 3*strain - strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)),
-                            (4 + strain - 3*strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)) );
+    std::array <double,2> g_m_old{ sqrt(3)*(4 + 3*strain - strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)),
+                                   (4 + strain - 3*strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio))};
     g_m_old *= (8*M_PI/3/carbon_carbon_distance);
-    std::array <double,2> g_n_old( -g_m_old[0], g_m_old[1] );
+    std::array <double,2> g_n_old{ -g_m_old[0], g_m_old[1] };
 
     return { A_m_old, A_n_old, b_1, b_2, g_m_old, g_n_old };
 }
@@ -4110,10 +4110,10 @@ std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_V_to_find(
         DynamicArray<int,1> g_i_array, DynamicArray<int,1> g_j_array,
         DynamicArray<double,1> g_magnitude_array ) {
     double V_to_find = 10000.0;
-    std::array<double,2> center_of_hexagon(0.0, 0.0);
-    std::array<double,2> above_A_site(b_1[0],b_1[1]);
-    double x = center_of_hexagon(0);
-    double y = center_of_hexagon(1);
+    std::array<double,2> center_of_hexagon{0.0, 0.0};
+    std::array<double,2> above_A_site{b_1[0], b_1[1]};
+    double x = center_of_hexagon[0];
+    double y = center_of_hexagon[1];
 
     auto [_z_min, _V_min] = get_z_min_V_min(x,y,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
 
@@ -4131,7 +4131,7 @@ std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_V_to_find(
             _g_bind, z_min_limit, z_max_limit, double_bits);
 
     double _z_V_to_find = r.first;
-    double _found_V = V_64(above_A_site(0), above_A_site(1), _z_V_to_find,
+    double _found_V = V_64(above_A_site[0], above_A_site[1], _z_V_to_find,
             sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,
             g_magnitude_array);
     // return z value above hex and V value above atom
@@ -4179,9 +4179,9 @@ DynamicArray<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
     //double uc_dy = uc_y_range(1) - uc_y_range(0);
 
     DynamicArray<double,2> uc_xy_x(x_res,y_res);
-    uc_xy_x = 0;
+    uc_xy_x.fill(0.0);
     DynamicArray<double,2> uc_xy_y(x_res,y_res);
-    uc_xy_y = 0;
+    uc_xy_y.fill(0.0);
 
     for (int i=0; i < x_res; ++i) {
         for(int j=0; j < y_res; ++j) {
@@ -4190,20 +4190,23 @@ DynamicArray<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
         }
     }
     
-
+    //transfer to Cartesian
     DynamicArray<double,2> B(2,2);
-    B = 1, cos(cell_angle_gamma),
-        0, sin(cell_angle_gamma); //transfer to Cartesian
+    B(0,0) = 1;
+    B(0,1) = cos(cell_angle_gamma);
+    B(1,0) = 0;
+    B(1,1) = sin(cell_angle_gamma);
     
     // Set up transfer matrices to transfer from unit cell coordinates to Cartesian coordinates
-    //A = inv(B);
-    DynamicArray<double,2> A(2,2);
-    //A = sin(cell_angle_gamma), -cos(cell_angle_gamma),
-    //                        0, 1; 
-    //A /= sin(cell_angle_gamma);
-    A = 1, -1/tan(cell_angle_gamma),
-        0, 1/sin(cell_angle_gamma); //transfer to unit cell coords
-    
+    // A = inv(B)
+    DynamicArray<double,2> A(2,2); //transfer to unit cell coords
+    // A = {{ sin(cell_angle_gamma), -cos(cell_angle_gamma) },
+    //                            0,                      1 }};
+    // A /= sin(cell_angle_gamma);
+    A(0,0) = 1;
+    A(0,1) = -1 / tan(cell_angle_gamma);
+    A(1,0) = 0;
+    A(1,1) = 1 / sin(cell_angle_gamma);
 
     DynamicArray<double,2> xy_x(x_res,y_res);
     DynamicArray<double,2> xy_y(x_res,y_res);
@@ -4217,7 +4220,6 @@ DynamicArray<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
             xy_y(i,j) = B(1,0)*uc_x_range(i) + B(1,1)*uc_y_range(j);
         }
     }
-    
 
     DynamicArray<double,1> z_range(z_res);
     double delta_z = (z_max - z_min) / (z_res - 1);
@@ -4230,7 +4232,7 @@ DynamicArray<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
     //double dz = z_range(1) - z_range(0);
 
     DynamicArray<double,3> _V3D(x_res,y_res,z_res);
-    _V3D = 0;
+    _V3D.fill(0.0);
     calculate_V3D_64(_V3D,xy_x,xy_y,z_range,sigma,epsilon,area_lattice,b_1,b_2,
             g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
     return _V3D;
@@ -4274,9 +4276,9 @@ std::pair<DynamicArray<double,3> , DynamicArray<double,1>> GrapheneLUT3DPotentia
     double uc_dy = uc_y_range(1) - uc_y_range(0);
 
     DynamicArray<double,2> uc_xy_x(x_res,y_res);
-    uc_xy_x = 0;
+    uc_xy_x.fill(0.0);
     DynamicArray<double,2> uc_xy_y(x_res,y_res);
-    uc_xy_y = 0;
+    uc_xy_y.fill(0.0);
 
     for (int i=0; i < x_res; ++i) {
         for(int j=0; j < y_res; ++j) {
@@ -4285,20 +4287,23 @@ std::pair<DynamicArray<double,3> , DynamicArray<double,1>> GrapheneLUT3DPotentia
         }
     }
     
-
+    //transfer to Cartesian
     DynamicArray<double,2> B(2,2);
-    B = 1, cos(cell_angle_gamma),
-        0, sin(cell_angle_gamma); //transfer to Cartesian
+    B(0,0) = 1;
+    B(0,1) = cos(cell_angle_gamma);
+    B(1,0) = 0;
+    B(1,1) = sin(cell_angle_gamma);
     
     // Set up transfer matrices to transfer from unit cell coordinates to Cartesian coordinates
-    //A = inv(B);
-    DynamicArray<double,2> A(2,2);
-    //A = sin(cell_angle_gamma), -cos(cell_angle_gamma),
-    //                        0, 1; 
-    //A /= sin(cell_angle_gamma);
-    A = 1, -1/tan(cell_angle_gamma),
-        0, 1/sin(cell_angle_gamma); //transfer to unit cell coords
-    
+    // A = inv(B)
+    DynamicArray<double,2> A(2,2); //transfer to unit cell coords
+    // A = {{ sin(cell_angle_gamma), -cos(cell_angle_gamma) },
+    //                            0,                      1 }};
+    // A /= sin(cell_angle_gamma);
+    A(0,0) = 1;
+    A(0,1) = -1 / tan(cell_angle_gamma);
+    A(1,0) = 0;
+    A(1,1) = 1 / sin(cell_angle_gamma);
 
     DynamicArray<double,2> xy_x(x_res,y_res);
     DynamicArray<double,2> xy_y(x_res,y_res);
@@ -4326,7 +4331,7 @@ std::pair<DynamicArray<double,3> , DynamicArray<double,1>> GrapheneLUT3DPotentia
     double dz = z_range(1) - z_range(0);
 
     DynamicArray<double,3> _V3D(x_res,y_res,z_res);
-    _V3D = 0;
+    _V3D.fill(0.0);
     calculate_V3D_64(_V3D,xy_x,xy_y,z_range,sigma,epsilon,area_lattice,b_1,b_2,
             g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
 
@@ -4378,9 +4383,9 @@ std::tuple< DynamicArray<double,3>, DynamicArray<double,3>, DynamicArray<double,
     double uc_dy = uc_y_range(1) - uc_y_range(0);
     
     DynamicArray<double,2> uc_xy_x(x_res,y_res);
-    uc_xy_x = 0;
+    uc_xy_x.fill(0.0);
     DynamicArray<double,2> uc_xy_y(x_res,y_res);
-    uc_xy_y = 0;
+    uc_xy_y.fill(0.0);
 
     for (int i=0; i < x_res; ++i) {
         for(int j=0; j < y_res; ++j) {
@@ -4388,20 +4393,29 @@ std::tuple< DynamicArray<double,3>, DynamicArray<double,3>, DynamicArray<double,
             uc_xy_y(i,j) = uc_y_range(j);
         }
     }
-    
 
+    //transfer to Cartesian
     DynamicArray<double,2> B(2,2);
-    B = 1, cos(cell_angle_gamma),
-        0, sin(cell_angle_gamma); //transfer to Cartesian
+    B(0,0) = 1.0;
+    B(0,1) = cos(cell_angle_gamma);
+    B(1,0) = 0.0;
+    B(1,1) = sin(cell_angle_gamma); 
     
     // Set up transfer matrices to transfer from unit cell coordinates to Cartesian coordinates
     //A = inv(B);
+
     DynamicArray<double,2> A(2,2);
-    //A = sin(cell_angle_gamma), -cos(cell_angle_gamma),
-    //                        0, 1; 
+    //A = {
+    //     { sin(cell_angle_gamma), -cos(cell_angle_gamma) },
+    //     {                     0,                      1 }
+    //    }; 
     //A /= sin(cell_angle_gamma);
-    A = 1, -1/tan(cell_angle_gamma),
-        0, 1/sin(cell_angle_gamma); //transfer to unit cell coords
+
+    //transfer to unit cell coords
+    A(0,0) = 1.0;
+    A(0,1) = -1.0 / tan(cell_angle_gamma);
+    A(1,0) = 0.0;
+    A(1,1) = 1.0 / sin(cell_angle_gamma);
     
 
     DynamicArray<double,2> xy_x(x_res,y_res);
@@ -4434,11 +4448,11 @@ std::tuple< DynamicArray<double,3>, DynamicArray<double,3>, DynamicArray<double,
     DynamicArray<double,3> _gradV3D_y(x_res,y_res,z_res);
     DynamicArray<double,3> _gradV3D_z(x_res,y_res,z_res);
     DynamicArray<double,3> _grad2V3D(x_res,y_res,z_res);
-    _V3D = 0;
-    _gradV3D_x = 0;
-    _gradV3D_y = 0;
-    _gradV3D_z = 0;
-    _grad2V3D = 0;
+    _V3D.fill(0.0);
+    _gradV3D_x.fill(0.0);
+    _gradV3D_y.fill(0.0);
+    _gradV3D_z.fill(0.0);
+    _grad2V3D.fill(0.0);
 
     calculate_V3D_64( _V3D, xy_x, xy_y, z_range, sigma, epsilon, area_lattice,
             b_1, b_2, g_m, g_n, g_i_array, g_j_array, g_magnitude_array );
