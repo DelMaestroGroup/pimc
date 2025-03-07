@@ -140,8 +140,6 @@ void Parameters::setupCommandLine(boost::ptr_map<std::string,po::options_descrip
             option.add_options()(label.c_str(),initValue<uint32>(key),helpMessage[key].c_str());
         else if (type.at(key) == typeid(std::string))
             option.add_options()(label.c_str(),initValue<std::string>(key),helpMessage[key].c_str());
-        else if (type.at(key) == typeid(dVec))
-            option.add_options()(label.c_str(),initValue<dVec>(key),helpMessage[key].c_str());
         else if (type.at(key) == typeid(std::vector<std::string>)) {
 
             if (state[key] == DEFAULTED) {
