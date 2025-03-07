@@ -40,9 +40,9 @@ ActionBase::ActionBase (const Path &_path, LookupTable &_lookup,
 
     /* Initialize the separation histogram */
     sepHist.resize(NPCFSEP);
-    sepHist = 0;
+    sepHist.fill(0);
     cylSepHist.resize(NPCFSEP);
-    cylSepHist = 0;
+    cylSepHist.fill(0);
     dSep = 0.5*sqrt(NDIM)*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
     dPerSep = 0.5*sqrt(sum(path.boxPtr->periodic))*path.boxPtr->side[NDIM-1] / (1.0*NPCFSEP);
 
@@ -582,7 +582,7 @@ std::array<double,2> LocalAction::V(const int slice) {
     int numParticles = path.numBeadsAtSlice(slice);
 
     /* Initialize the separation histogram */
-    sepHist = 0;
+    sepHist.fill(0);
 
     /* Calculate the total potential, including external and interaction
      * effects*/
@@ -631,7 +631,7 @@ double LocalAction::V(const int slice, const double maxR) {
     int numParticles = path.numBeadsAtSlice(slice);
 
     /* Initialize the separation histogram */
-    cylSepHist = 0;
+    cylSepHist.fill(0);
 
     /* Calculate the total potential, including external and interaction
      * effects*/
@@ -714,7 +714,7 @@ double LocalAction::Vnn(const beadLocator &bead1) {
 double LocalAction::Vnn(const int slice) {
 
     DynamicArray <bool,1> doParticles(path.numBeadsAtSlice(slice));
-    doParticles = true;
+    doParticles.fill(true);
 
     double totVint = 0.0;
     double totVext = 0.0;
@@ -1612,7 +1612,7 @@ std::array<double,2> NonLocalAction::U(int slice) {
     int numParticles = path.numBeadsAtSlice(slice);
 
     /* Initialize the separation histogram */
-    sepHist = 0;
+    sepHist.fill(0);
 
     /* Calculate the total potential, including external and interaction
      * effects*/
@@ -1656,7 +1656,7 @@ double NonLocalAction::derivPotentialActionTau (int slice) {
     int numParticles = path.numBeadsAtSlice(slice);
 
     /* Initialize the separation histogram */
-    sepHist = 0;
+    sepHist.fill(0);
 
     /* Calculate the total potential, including external and interaction
      * effects*/
