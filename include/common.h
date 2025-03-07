@@ -30,12 +30,6 @@
 #include "array_math.h"
 #include "dynamic_array_math.h"
 
-#define BZ_HAVE_BOOST_SERIALIZATION
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-
 #include <boost/format.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
