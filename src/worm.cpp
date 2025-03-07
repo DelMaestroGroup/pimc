@@ -51,13 +51,13 @@ Worm::~Worm () {
  *  Reset the worm to a null state.
 ******************************************************************************/
 void Worm::reset() {
-    gap      = XXX;
-    length   = 0;
-    sep      = 0.0;
-    head     = XXX;
-    tail     = XXX;
-    special1 = XXX;
-    special2 = XXX;
+         gap.fill(XXX);
+      length.fill(  0);
+         sep.fill(0.0);
+        head.fill(XXX);
+        tail.fill(XXX);
+    special1.fill(XXX);
+    special2.fill(XXX);
 }
 
 /**************************************************************************//**
