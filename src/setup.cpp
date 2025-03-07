@@ -563,7 +563,7 @@ bool Setup::parseOptions() {
     definedCell = false;
     if (params("size")) {
         definedCell = true;
-        side = params["size"].as<double>();
+        side.fill(params["size"].as<double>());
         params.set<dVec>("side",side);
 
     }
@@ -1148,10 +1148,9 @@ ActionBase * Setup::action(const Path &path, LookupTable &lookup,
 
         /* The factors needed for local actions. */
         std::array <double,2> VFactor;      
-        std::array <double,2> gradVFactor;  
+        std::array <double,2> gradVFactor{};  
 
-        VFactor = 1.0;
-        gradVFactor = 0.0;
+        VFactor.fill(1.0);
         int period = 1;
 
         if (constants()->actionType() == "gsf") {
@@ -1167,7 +1166,7 @@ ActionBase * Setup::action(const Path &path, LookupTable &lookup,
             period = 2;
         }
         else if (constants()->actionType() == "li_broughton") {
-            gradVFactor = 1.0 / 12.0;
+            gradVFactor.fill(1.0/12.0);
             period = 2;
         }
 
