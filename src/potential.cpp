@@ -607,8 +607,8 @@ FixedAzizPotential::FixedAzizPotential(const Container *_boxPtr) :
     /* Resize and initialize our local grid box arrays */
     fixedBeadsInGrid.resize(lookupPtr->getTotNumGridBoxes(),numFixedParticles);
     numFixedBeadsInGrid.resize(lookupPtr->getTotNumGridBoxes());
-    fixedBeadsInGrid = XXX;
-    numFixedBeadsInGrid = 0;
+    fixedBeadsInGrid.fill(XXX);
+    numFixedBeadsInGrid.fill(0);
 
     /* Create a local copy of all beads in each grid box plus nearest neighbors.
      * This will drastically speed up the computing of potential energies. */
