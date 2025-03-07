@@ -4336,8 +4336,19 @@ std::pair<DynamicArray<double,3> , DynamicArray<double,1>> GrapheneLUT3DPotentia
             g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
 
     DynamicArray<double,1> _LUTinfo(12);
-    _LUTinfo = A(0,0), A(0,1), A(1,0), A(1,1), uc_dx, uc_dy, dz, cell_length_a,
-             cell_length_b, z_min, z_max, V_z_min;
+    _LUTinfo(0) = A(0,0);
+    _LUTinfo(1) = A(0,1);
+    _LUTinfo(2) = A(1,0);
+    _LUTinfo(3) = A(1,1);
+    _LUTinfo(4) = uc_dx;
+    _LUTinfo(5) = uc_dy;
+    _LUTinfo(6) = dz;
+    _LUTinfo(7) = cell_length_a;
+    _LUTinfo(8) = cell_length_b;
+    _LUTinfo(9) = z_min;
+    _LUTinfo(10) = z_max;
+    _LUTinfo(11) = V_z_min;
+
 
     return { _V3D, _LUTinfo };
 }
@@ -4469,12 +4480,22 @@ std::tuple< DynamicArray<double,3>, DynamicArray<double,3>, DynamicArray<double,
             area_lattice, b_1, b_2, g_m, g_n, g_i_array, g_j_array,
             g_magnitude_array );
     DynamicArray<double,1> _LUTinfo(12);
-    _LUTinfo = A(0,0), A(0,1), A(1,0), A(1,1), uc_dx, uc_dy, dz, cell_length_a,
-             cell_length_b, z_min, z_max, V_z_min;
+    _LUTinfo(0) = A(0,0);
+    _LUTinfo(1) = A(0,1);
+    _LUTinfo(2) = A(1,0);
+    _LUTinfo(3) = A(1,1);
+    _LUTinfo(4) = uc_dx;
+    _LUTinfo(5) = uc_dy;
+    _LUTinfo(6) = dz;
+    _LUTinfo(7) = cell_length_a;
+    _LUTinfo(8) = cell_length_b;
+    _LUTinfo(9) = z_min;
+    _LUTinfo(10) = z_max;
+    _LUTinfo(11) = V_z_min;
+
     return { _V3D, _gradV3D_x, _gradV3D_y, _gradV3D_z, _grad2V3D, xy_x, xy_y,
         _LUTinfo };
 }
-
 
 /**************************************************************************//**
  * Destructor.
