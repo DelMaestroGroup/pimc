@@ -44,15 +44,14 @@ Worm::Worm(int numParticles) {
  * Destructor.
 ******************************************************************************/
 Worm::~Worm () {
-    beads.free();
 }
 
 /**************************************************************************//**
  *  Reset the worm to a null state.
 ******************************************************************************/
 void Worm::reset() {
-         gap.fill(XXX);
-      length.fill(  0);
+         gap = XXX;
+      length =   0;
          sep.fill(0.0);
         head.fill(XXX);
         tail.fill(XXX);
