@@ -10,6 +10,7 @@
 #include "path.h"
 #include "lookuptable.h"
 #include "communicator.h"
+#include "dynamic_array_serialization.h"
 
 #include <boost/math/special_functions/ellint_1.hpp>
 #include <boost/math/special_functions/ellint_2.hpp>
@@ -3084,7 +3085,6 @@ DynamicArray<dVec,1> GrapheneLUTPotential::initialConfig(const Container *boxPtr
 ******************************************************************************/
 GrapheneLUT3DPotential::GrapheneLUT3DPotential (std::string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
 
-    static auto const aflags = boost::archive::no_header | boost::archive::no_tracking;
     /* get a local copy of the system size */
     Lzo2 = _boxPtr->side[NDIM-1]/2;
 
@@ -3102,6 +3102,19 @@ GrapheneLUT3DPotential::GrapheneLUT3DPotential (std::string graphenelut3d_file_p
         // write class instance to archive
         ia >> V3d >> gradV3d_x >> gradV3d_y >> gradV3d_z >> grad2V3d >> LUTinfo;
         // archive and stream closed when destructors are called
+    }
+    try {
+        loadDynamicArray(V3d,       graphenelut3d_file_prefix + "_serialized_V3d.dat");
+        loadDynamicArray(gradV3d_x, graphenelut3d_file_prefix + "_serialized_gradV3d_x.dat");
+        loadDynamicArray(gradV3d_y, graphenelut3d_file_prefix + "_serialized_gradV3d_y.dat");
+        loadDynamicArray(gradV3d_z, graphenelut3d_file_prefix + "_serialized_gradV3d_z.dat");
+        loadDynamicArray(grad2V3d,  graphenelut3d_file_prefix + "_serialized_grad2V3d.dat");
+        loadDynamicArray(LUTinfo,   graphenelut3d_file_prefix + "_serialized_LUTinfo.dat");
+    }
+    catch (const std::exception& ex) {
+        // Error handling: log and rethrow or otherwise handle the error.
+        std::cerr << "Error loading data in GrapheneLUT3DPotential: " << ex.what() << "\n";
+        throw;
     }
 
     A11           = LUTinfo( 0  );
