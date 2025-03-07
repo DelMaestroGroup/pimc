@@ -3095,14 +3095,6 @@ GrapheneLUT3DPotential::GrapheneLUT3DPotential (std::string graphenelut3d_file_p
     invWallWidth = 20.0;
 
     /* load lookup tables */
-    {
-        // create and open a character archive for input
-        std::ifstream ifs(graphenelut3d_file_prefix + std::string("serialized.dat"));
-        boost::archive::binary_iarchive ia(ifs,aflags);
-        // write class instance to archive
-        ia >> V3d >> gradV3d_x >> gradV3d_y >> gradV3d_z >> grad2V3d >> LUTinfo;
-        // archive and stream closed when destructors are called
-    }
     try {
         loadDynamicArray(V3d,       graphenelut3d_file_prefix + "_serialized_V3d.dat");
         loadDynamicArray(gradV3d_x, graphenelut3d_file_prefix + "_serialized_gradV3d_x.dat");
