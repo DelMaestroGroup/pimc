@@ -116,7 +116,7 @@ DynamicArray<dVec,1> PotentialBase::initialConfig(const Container *boxPtr, MTRan
 
     /* The particle configuration */
     DynamicArray<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    initialPos.fill(dVec{});
 
     /* Get the linear size per particle, and the number of particles */
     double initSide = pow((1.0*numParticles/boxPtr->volume),-1.0/(1.0*NDIM));
@@ -240,12 +240,12 @@ void TabulatedPotential::initLookupTable(const double _dr, const double maxSep) 
      * its first and second derivatives. */
     dr = _dr;
     tableLength = int(maxSep/dr);
-    lookupV.resize(tableLength);
-    lookupdVdr.resize(tableLength);
+         lookupV.resize(tableLength);
+      lookupdVdr.resize(tableLength);
     lookupd2Vdr2.resize(tableLength);
-    lookupV = 0.0;
-    lookupdVdr = 0.0;
-    lookupd2Vdr2 = 0.0;
+         lookupV.fill(0.0);
+      lookupdVdr.fill(0.0);
+    lookupd2Vdr2.fill(0.0);
 
     double r = 0;
 
@@ -403,7 +403,7 @@ DynamicArray<dVec,1> HarmonicPotential::initialConfig(const Container *boxPtr, M
 
     /* The particle configuration */
     DynamicArray<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    initialPos.fill(dVec{});
 
     for (int n = 0; n < numParticles; n++) {
         for (int i = 0; i < NDIM; i++) 
@@ -687,7 +687,7 @@ DynamicArray<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, 
 
     /* The particle configuration */
     DynamicArray<dVec,1> initialPos(1);
-    initialPos = 0.0;
+    initialPos.fill(dVec{});
 
     int locNumParticles = 0;    // Number of updateable particles
     char state;                 // Update or Fix
@@ -1019,7 +1019,7 @@ DynamicArray<dVec,1> PlatedLJCylinderPotential::initialConfig(const Container *b
 
     /* The particle configuration */
     DynamicArray<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    initialPos.fill(dVec{});
 
     /* We shift the radius inward to account for the excluded volume from the
      * hard wall.  This represents the largest prism that can be put
@@ -1266,7 +1266,7 @@ DynamicArray<dVec,1> LJCylinderPotential::initialConfig(const Container *boxPtr,
 
     /* The particle configuration */
     DynamicArray<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    initialPos.fill(dVec{});
 
     /* We shift the radius inward to account for the excluded volume from the
      * hard wall.  This represents the largest prism that can be put
@@ -1431,7 +1431,7 @@ DynamicArray<dVec,1> LJHourGlassPotential::initialConfig1(const Container *boxPt
 
     /* The particle configuration */
     DynamicArray<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    initialPos.fill(dVec{});
 
     /* We shift the radius inward to account for the excluded volume from the
      * hard wall.  This represents the largest prism that can be put
@@ -1506,7 +1506,7 @@ DynamicArray<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr
 
     /* The particle configuration */
     DynamicArray<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    initialPos.fill(dVec{});
 
     dVec pos{};
 
@@ -2650,7 +2650,7 @@ DynamicArray<dVec,1> GraphenePotential::initialConfig(const Container *boxPtr, M
 
     /* The particle configuration */
     DynamicArray<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    initialPos.fill(dVec{});
     double initSideCube = 1.0*numParticles;
     
     for (int i = 0; i < NDIM - 1; i++) {
@@ -3025,7 +3025,7 @@ DynamicArray<dVec,1> GrapheneLUTPotential::initialConfig(const Container *boxPtr
         const int numParticles) {
     /* The particle configuration */
     DynamicArray<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    initialPos.fill(dVec{});
     
     int Nlayer = round(boxPtr->side[0]*boxPtr->side[1]/a1x/a1y/4);
     int numX = round(boxPtr->side[0]/a1x/2);
@@ -3220,7 +3220,7 @@ DynamicArray<dVec,1> GrapheneLUT3DPotential::initialConfig1(const Container *box
 
     /* The particle configuration */
     DynamicArray<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    initialPos.fill(dVec{});
 
     /* Get the average inter-particle separation in the accessible volume. */
     double initSide = pow((1.0*numParticles/boxPtr->volume),-1.0/(1.0*NDIM));
@@ -3300,7 +3300,7 @@ DynamicArray<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxP
     
     /* The particle configuration */
     DynamicArray<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    initialPos.fill(dVec{});
 
     dVec side_; 
     side_ = boxPtr->side;
