@@ -298,7 +298,7 @@ double LiebLinigerWaveFunction::PsiTrial(const int slice) {
     /* The cumulative value */
     double psiT = 1.0;
     DynamicArray <bool,1> doParticles(path.numBeadsAtSlice(slice));
-    doParticles = true;
+    doParticles.fill(true);
 
     dVec sep;                       // The spatial separation between beads.
     double r;                       // Distance between beads
