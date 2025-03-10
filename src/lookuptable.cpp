@@ -46,9 +46,9 @@ LookupTable::LookupTable(const Container *_boxPtr, const int _numLookupTimeSlice
     resizeList(_numParticles);
     grid.fill(make_array<iVec>(XXX));
     beadLabel.fill(XXX);
-    beadList = XXX;
-    fullBeadList = XXX;
-    beadSep = 0.0;
+    beadList.fill({XXX, XXX});
+    fullBeadList.fill({XXX, XXX});
+    beadSep.fill(dVec{});
 
     /* Initialize the cutoff^2 */
     rc2 = constants()->rc2();
@@ -112,7 +112,7 @@ void LookupTable::setupNNGrid() {
      * nearest neighbors of a given grid box for general dimension.  This consists
      * of moving 'forward', 'zero' and 'back' in each dimension */
     DynamicArray <iVec,1> nnShift(numNN);
-    nnShift = 0; 
+    nnShift.fill(iVec{}); 
     /* The shift vector */
     std::array<int,3> shift{-1,0,1};
 
@@ -528,7 +528,7 @@ void LookupTable::updateFullInteractionList(const beadLocator &beadIndex, const 
 
     /* Now we loop over the central box, plus all nearest neighbors, filling
      * up the beadList and incrementing the numListBeads counter */
-    fullBeadList = XXX;
+    fullBeadList.fill({XXX, XXX});
     fullNumBeads = 0;
     for (int nn = 0; nn < numNN; nn++) {
         nnIndex[NDIM] = nn;
@@ -571,7 +571,7 @@ void LookupTable::updateFullInteractionList(const int gNumber, const int slice) 
 
     /* Now we loop over the central box, plus all nearest neighbors, filling
      * up the beadList and incrementing the numListBeads counter */
-    fullBeadList = XXX;
+    fullBeadList.fill({XXX, XXX});
     fullNumBeads = 0;
     for (int nn = 0; nn < numNN; nn++) {
         nnIndex[NDIM] = nn;
