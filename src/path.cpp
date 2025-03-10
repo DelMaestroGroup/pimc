@@ -114,7 +114,7 @@ Path::Path(const Container * _boxPtr, LookupTable &_lookup, int _numTimeSlices,
 
     /* Initialize the number of active beads at each slice */
     numBeadsAtSlice.resize(numTimeSlices);
-    numBeadsAtSlice = getNumParticles();
+    numBeadsAtSlice.fill(getNumParticles());
 
     /* Initialize the lookup table */
     lookup.resizeList(getNumParticles());
@@ -634,7 +634,7 @@ void Path::outputConfig(int configNumber) const {
 
     /* We sort the output by the number of beads in a worldline */
     DynamicArray <int,1> wlLength(numParticles);
-    wlLength = 0;
+    wlLength.fill(0);
 
     int numWorldLines = 0;
 
