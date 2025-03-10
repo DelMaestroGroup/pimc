@@ -74,8 +74,8 @@ MoveBase::MoveBase (Path &_path, ActionBase *_actionPtr, MTRand &_random,
     numAcceptedLevel.resize(b+1);
     numAttemptedLevel.resize(b+1);
 
-    numAcceptedLevel = 0;
-    numAttemptedLevel = 0;
+    numAcceptedLevel.fill(0ul);
+    numAttemptedLevel.fill(0ul);
 
     sqrtLambdaTau = sqrt(constants()->lambda() * constants()->tau());
     sqrt2LambdaTau = sqrt(2.0)*sqrtLambdaTau;
@@ -1447,8 +1447,8 @@ BisectionMove::BisectionMove(Path &_path, ActionBase *_actionPtr,
     /* These need to use the *actual* value of b */
     numAcceptedLevel.resize(constants()->b()+1);
     numAttemptedLevel.resize(constants()->b()+1);
-    numAcceptedLevel  = 0;
-    numAttemptedLevel = 0;
+    numAcceptedLevel.fill(0ul);
+    numAttemptedLevel.fill(0ul);
 
     /* The number of levels used in bisection */
     numLevels = constants()->b();
@@ -1530,7 +1530,7 @@ bool BisectionMove::attemptMove() {
     numAttempted++;
     totAttempted++;
     numAttemptedLevel(numLevels)++;
-    include = true;
+    include.fill(true);
 
     /* Now we perform the actual bisection down to level 1 */
     oldDeltaAction = 0.0;
@@ -3311,7 +3311,7 @@ SwapHeadMove::SwapHeadMove (Path &_path, ActionBase *_actionPtr,
 
     /* Update the sizes of the original position array */
     originalPos.resize(constants()->Mbar()-1);
-    originalPos = 0.0;
+    originalPos.fill(dVec{});
 }
 
 /*************************************************************************//**
@@ -3548,7 +3548,7 @@ SwapTailMove::SwapTailMove (Path &_path, ActionBase *_actionPtr,
 
     /* Update the sizes of the original position array */
     originalPos.resize(constants()->Mbar()-1);
-    originalPos = 0.0;
+    originalPos.fill(dVec{});
 }
 
 /*************************************************************************//**
