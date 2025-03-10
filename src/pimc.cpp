@@ -92,7 +92,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     /* Number probability distribution used when relaxing chemical potential.
      * We assume the maximum possible number is 2000 particles */
     PN.resize(2000);
-    PN = 0;
+    PN.fill(0);
     foundmu = false;
     muFactor = 1.0;
     sgnAveN = 0;
@@ -389,7 +389,7 @@ bool PathIntegralMonteCarlo::equilStepRelaxmu() {
                 /* std::cout << format("%12d%12d%12d\n") % peakN % aveN % path.getTrueNumParticles(); */
 
                 numNAttempted = 0;
-                PN = 0;
+                PN.fill(0);
 
             } // haven't moved peak yet
 
@@ -922,7 +922,7 @@ void PathIntegralMonteCarlo::loadQuantumState(DynamicArray <dVec,2> &tempBeads,
         newStartBead = {0, 0};
         ptcl = 0;
         slice = 0;
-        doBead = true;
+        doBead.fill(true);
         
         /* Now we iterate through each worldline exactly once */
         for (int n = 0; n < tempNumWorldLines; n++) {
@@ -1123,7 +1123,7 @@ void PathIntegralMonteCarlo::loadState() {
         /* Go through all beads, and make sure they fit inside the simulation cell.
          * At the same time, determine how many active beads there are per slice */
         beadLocator beadIndex;
-        pathPtrVec[pIdx].numBeadsAtSlice = 0;
+        pathPtrVec[pIdx].numBeadsAtSlice.fill(0);
         for (beadIndex[0] = 0; beadIndex[0] < numTimeSlices; ++beadIndex[0]) {
             for (beadIndex[1] = 0; beadIndex[1] < numWorldLines; ++beadIndex[1]) {
                 pathPtrVec[pIdx].boxPtr->putInside(path(beadIndex));
@@ -1173,7 +1173,7 @@ void PathIntegralMonteCarlo::outputPDB() {
 
     /* We sort the output by the number of beads in a worldline */
     DynamicArray <int,1> wlLength(numParticles);
-    wlLength = 0;
+    wlLength.fill(0);
 
     /* This is the index-beadNumber mapping array */
     DynamicArray <int,2> beadNum(numTimeSlices,numParticles);
@@ -1322,7 +1322,7 @@ void PathIntegralMonteCarlo::printWormState() {
     /* We make a list of all the beads contained in the worm */
     DynamicArray <beadLocator,1> wormBeads;    // Used for debugging
     wormBeads.resize(path.worm.length+1);
-    wormBeads = XXX;
+    wormBeads.fill({XXX, XXX});
 
     /* Output the worldline configuration */
     communicate()->file("debug")->stream() << " (" << path.getTrueNumParticles() << ")" << std::endl;
