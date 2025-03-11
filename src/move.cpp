@@ -1486,12 +1486,14 @@ bool BisectionMove::attemptMove() {
     success = false;
 
     /* Only perform a move if we have beads */
-    if (path.worm.getNumBeadsOn() == 0) 
+    if (path.worm.getNumBeadsOn() == 0) {
         return success;
+    }
 
     /* We cannot perform this move at present when using a pair product action */
-    if (constants()->actionType() == "pair_product")
+    if (constants()->actionType() == "pair_product") {
         return false;
+    }
 
     /* Do we perform varialble length bisection updates? */
     if (constants()->varUpdates()) {
@@ -1500,16 +1502,18 @@ bool BisectionMove::attemptMove() {
     }
 
     /* Only do bisections when we have at least one particle */
-    if (path.getTrueNumParticles()==0)
+    if (path.getTrueNumParticles()==0) {
         return false;
+    }
 
     /* Randomly select the start bead of the bisection */
     startBead[0] = random.randInt(path.numTimeSlices-1);
 
     /* We need to worry about the possibility of an empty slice for small
      * numbers of particles. */
-    if (path.numBeadsAtSlice(startBead[0]) == 0)
+    if (path.numBeadsAtSlice(startBead[0]) == 0) {
         return false;
+    }
     startBead[1] = random.randInt(path.numBeadsAtSlice(startBead[0])-1);
 
     /* Now we have to make sure that we are moving an active trajectory, 
@@ -1517,8 +1521,9 @@ bool BisectionMove::attemptMove() {
     beadLocator beadIndex;
     beadIndex = startBead;
     for (int k = 0; k < (numActiveBeads+1); k++) {
-        if (!path.worm.beadOn(beadIndex) || allEquals(path.next(beadIndex), XXX))
+        if (!path.worm.beadOn(beadIndex) || allEquals(path.next(beadIndex), XXX)) {
             return false;
+        }
         beadIndex = path.next(beadIndex);
     }
     endBead = beadIndex;
