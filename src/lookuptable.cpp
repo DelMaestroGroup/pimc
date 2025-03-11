@@ -278,7 +278,7 @@ void LookupTable::updateGrid(const DynamicArray <dVec,1> &fixedPos) {
     numLabels.fill(0);
     beadLocator beadIndex;
     beadIndex[0] = 0;
-    for (int n = 0; n < fixedPos.extents()[0]; ++n) {
+    for (int n = 0; n < static_cast<int>(fixedPos.extents()[0]); ++n) {
 
         beadIndex[1] = n;
 
