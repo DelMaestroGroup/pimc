@@ -37,7 +37,7 @@ class ClassicalMonteCarlo{
         PotentialBase *interactionPtr;  // The interaction potential
         MTRand &random;                 // A reference to the RNG
         const Container *boxPtr;        // A constant reference to the container class
-	DynamicArray <dVec,1> config;          // The particle configurations
+        DynamicArray <dVec,1> &config;  // The particle configurations
 
         double z;                       // The fugacity
         double energy;                  // The total potential energy
