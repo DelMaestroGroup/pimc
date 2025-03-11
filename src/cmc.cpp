@@ -197,7 +197,7 @@ void ClassicalMonteCarlo::insertParticle() {
     /* Now the metropolis step */
     if (random.rand() < factor*exp(-deltaV/constants()->T())) {
         energy += deltaV;
-        if (config.extents()[0] < (numParticles+1))
+        if (config.extents()[0] < static_cast<std::size_t>(numParticles+1))
             config.resizeAndPreserve(numParticles+1);
         config(numParticles) = newPos;
         numParticles++;

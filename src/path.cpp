@@ -148,13 +148,13 @@ void Path::leftPack() {
 
     /* We go through each slice, and make sure the data arrays are left packed */
     for (bead1[0] = 0; bead1[0] < numTimeSlices; ++bead1[0]) {
-        for (bead1[1] = 0; bead1[1] < beads.extents()[1]; ++bead1[1]) {
+        for (bead1[1] = 0; static_cast<std::size_t>(bead1[1]) < beads.extents()[1]; ++bead1[1]) {
             if (!worm.beadOn(bead1)) {
                 bead2 = bead1;
 
                 /* Find an active bead to the right of the inactive bead */
                 bool foundBead = false;
-                for (bead2[1] = bead1[1] + 1; bead2[1] < beads.extents()[1]; ++bead2[1]) {
+                for (bead2[1] = bead1[1] + 1; static_cast<std::size_t>(bead2[1]) < beads.extents()[1]; ++bead2[1]) {
                     if (worm.beadOn(bead2)) {
                         foundBead = true;
                         break;
