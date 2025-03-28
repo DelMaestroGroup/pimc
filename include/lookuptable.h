@@ -88,7 +88,7 @@ class LookupTable {
 
         /** Determine if two beads are in the same grid box */
         bool gridShare(const beadLocator &bead1, const beadLocator &bead2) {
-            return grid(bead1) == grid(bead2);
+            return all(grid(bead1), grid(bead2));
         }
 
     private:

@@ -129,7 +129,7 @@ Prism::Prism(const dVec &_side, const std::array<unsigned int, NDIM> &_periodic)
 
     /* are there any non-periodic boundary conditions? */
     static constexpr std::array<unsigned int, NDIM> fullPeriodicCondition = make_array<unsigned int, NDIM>(1u);
-    fullyPeriodic = periodic == fullPeriodicCondition;
+    fullyPeriodic = all(periodic, fullPeriodicCondition);
 
     /* Compute the maximum possible separation possible inside the box */
     maxSep = sqrt(dot(side/(periodic + 1u),side/(periodic + 1u)));

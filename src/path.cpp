@@ -394,13 +394,13 @@ void Path::delBead(const beadLocator &beadIndex) {
 
         /* We have to make sure that the worm is updated correctly if the swapped bead
          * is either a head or tail */
-        if (worm.head == lastBeadIndex)
+        if (all(worm.head, lastBeadIndex))
             worm.head = beadIndex;
-        if (worm.tail == lastBeadIndex)
+        if (all(worm.tail, lastBeadIndex))
             worm.tail = beadIndex;
-        if (worm.special1 == lastBeadIndex)
+        if (all(worm.special1, lastBeadIndex))
             worm.special1 = beadIndex;
-        if (worm.special2 == lastBeadIndex)
+        if (all(worm.special2, lastBeadIndex))
             worm.special2 = beadIndex;
     }
 
@@ -663,7 +663,7 @@ void Path::outputConfig(int configNumber) const {
         do {
             doBead(beadIndex) = false;
             beadIndex = next(beadIndex);
-        } while (!(beadIndex == endBead(nwl)));
+        } while (!all(beadIndex, endBead(nwl)));
 
         /* We label a worm with a XXX */
         wlLength(nwl) = XXX;
@@ -694,7 +694,7 @@ void Path::outputConfig(int configNumber) const {
                 doBead(beadIndex) = false;
                 length++;
                 beadIndex = next(beadIndex);
-            } while (!(beadIndex == endBead(nwl)));
+            } while (!all(beadIndex, endBead(nwl)));
 
             /* We label each trajectory by the number of particles it contains. */
             wlLength(nwl) = int(length/numTimeSlices)-1;
@@ -735,7 +735,7 @@ void Path::outputConfig(int configNumber) const {
 
             /* Advance the bead index */
             beadIndex = next(beadIndex);
-        } while (!(beadIndex == endBead(n)));
+        } while (!all(beadIndex, endBead(n)));
     }
     communicate()->file("wl")->stream() << format("# END_CONFIG %06d\n") % configNumber;
 
@@ -762,14 +762,14 @@ void Path::printWormConfig(DynamicArray <beadLocator,1> &wormBeads) {
         for (int n = 0; n < numWorldLines; n++) {
             beadLocator beadIndex;
             beadIndex = {m, n};
-            if (beadIndex == worm.head) {
+            if (all(beadIndex, worm.head)) {
                 if (worm.beadOn(beadIndex))
                     (*outFilePtr) << "^";
                 else
                     (*outFilePtr) << "z";
             }
             
-            else if (beadIndex == worm.tail) {
+            else if (all(beadIndex, worm.tail)) {
                 if (worm.beadOn(beadIndex))
                     (*outFilePtr) << "v";
                 else
@@ -804,7 +804,7 @@ void Path::printWormConfig(DynamicArray <beadLocator,1> &wormBeads) {
                 bool foundWormBead = false;
                 std::string beadOut;
                 for (int k = 0; k < static_cast<int>(wormBeads.extents()[0]); ++k) {
-                    if (beadIndex == wormBeads(k)) {
+                    if (all(beadIndex, wormBeads(k))) {
                         foundWormBead = true;
                         if (k > 0 && k < static_cast<int>(wormBeads.extents()[0]) - 1) {
                             if ((wormBeads(k + 1)[1] > wormBeads(k)[1]) ||
@@ -826,9 +826,9 @@ void Path::printWormConfig(DynamicArray <beadLocator,1> &wormBeads) {
                 }
  
                 if (foundWormBead) {
-                    if (beadIndex == worm.head)
+                    if (all(beadIndex, worm.head))
                         (*outFilePtr) << "^";
-                    else if (beadIndex == worm.tail)
+                    else if (all(beadIndex, worm.tail))
                         (*outFilePtr) << "v";
                     else
                         (*outFilePtr) << beadOut;

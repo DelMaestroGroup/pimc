@@ -87,7 +87,7 @@ void Worm::update(Path &path, const beadLocator &newHead,
         ++length;
         beadIndex = path.next(beadIndex);
         /* cout << head[0] << " " << head[1] << " " << tail[0] << " " << tail[1] << " " << beadIndex[0] << " " << beadIndex[1] << endl; */
-    } while (!(beadIndex == head));
+    } while (!all(beadIndex, head));
 
     /* Now we update the head-tail separation */
     sep = path.getSeparation(tail,head);
@@ -126,9 +126,9 @@ bool Worm::foundBead(const Path &path, const beadLocator &beadIndex) {
     else {
         beadLocator beadID;
         beadID = tail;
-        while ( (!(beadID == beadIndex)) && (!(beadID == path.next(head))) ) {
+        while ( (!all(beadID, beadIndex)) && (!all(beadID, path.next(head))) ) {
             beadID = path.next(beadID);
         }
-        return beadID == beadIndex;
+        return all(beadID, beadIndex);
     }
 }

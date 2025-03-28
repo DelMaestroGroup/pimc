@@ -177,7 +177,7 @@ void LookupTable::setupNNGrid() {
             for (int p = m-1; p >= 0; p--) {
                 nnIndex[NDIM] = p;
                 /* Check for a duplicate */
-                if ((gridNN(nnIndex) == dup)) 
+                if (all(gridNN(nnIndex), dup)) 
                     gridNN(nnIndex) = neg;
             } // end p
         } // end m
@@ -218,7 +218,7 @@ void LookupTable::setupNNGrid() {
                  * box */
                 for (int p = (numUniqueNN+1); p < numNN; p++) {
                     nnIndex[NDIM] = p;
-                    if ((gridNNReduced(nnIndex) == gIndex))
+                    if (all(gridNNReduced(nnIndex), gIndex))
                         gridNNReduced(nnIndex) = neg;
                 } // end p
 
@@ -358,7 +358,7 @@ void LookupTable::updateBead(const beadLocator &beadIndex, const dVec &pos) {
     gIndex = gridIndex(pos);
 
     /* If the new position, is in the same grid box, we don't have to do anything */
-    if (!(gIndex == grid(beadIndex))) {
+    if (!all(gIndex, grid(beadIndex))) {
 
         /* Delete the current bead from the grid */
         delBead(beadIndex);
@@ -495,7 +495,7 @@ void LookupTable::updateInteractionList(const Path &path, const beadLocator &bea
                 bead2[1] = hash(hI);
 
                 /* Eliminate self-interactions */
-                if (!(bead1 == bead2)) {
+                if (!all(bead1, bead2)) {
 
                     sep = path.getSeparation(bead2,bead1);
 
@@ -616,7 +616,7 @@ bool LookupTable::gridNeighbors(const beadLocator &bead1, const beadLocator &bea
      * grid */
     for (int nn = 0; nn < numNN; nn++) {
         nnIndex[NDIM] = nn;
-        if (gIndex == gridNN(nnIndex)) {
+        if (all(gIndex, gridNN(nnIndex))) {
             return true;
         }
     }
