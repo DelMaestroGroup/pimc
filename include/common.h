@@ -353,35 +353,23 @@ constexpr bool allEquals(const Container& container, const T& value) {
     });
 }
 
-// Returns true if all elements of a single element array are the same elementwise to another single element array
-template <typename T>
-constexpr bool all(const std::array<T, 1>& a, const std::array<T, 1>& b) {
-    return (a[0] == b[0]);
+// Helper function that performs elementwise comparison using a fold expression.
+// The parameter pack I... represents a compile-time sequence of indices.
+template <typename T, std::size_t N, std::size_t... I>
+constexpr bool all_impl(const std::array<T, N>& a, const std::array<T, N>& b, std::index_sequence<I...>) {
+    // The fold expression below expands to a series of element comparisons:
+    // (a[0] == b[0]) && (a[1] == b[1]) && ... && (a[N-1] == b[N-1])
+    return ((a[I] == b[I]) && ...);
 }
 
-// Returns true if all elements of a two element array are the same elementwise to another two element array
-template <typename T>
-constexpr bool all(const std::array<T, 2>& a, const std::array<T, 2>& b) {
-    return (a[0] == b[0] && a[1] == b[1]);
+// Primary function that compares two std::array objects elementwise.
+// It generates a compile-time sequence of indices [0, 1, ..., N-1] using std::make_index_sequence.
+template <typename T, std::size_t N>
+constexpr bool all(const std::array<T, N>& a, const std::array<T, N>& b) {
+    // std::make_index_sequence<N>{} creates an index sequence for all valid array indices.
+    // The helper function all_impl is then called with this sequence to perform the comparisons.
+    return all_impl(a, b, std::make_index_sequence<N>{});
 }
 
-// Returns true if all elements of a three element array are the same elementwise to another three element array
-template <typename T>
-constexpr bool all(const std::array<T, 3>& a, const std::array<T, 3>& b) {
-    return (a[0] == b[0] && a[1] == b[1] && a[2] == b[2]);
-}
-
-//FIXME Need to test using fold for generic all() function for arbitrary array size.
-//In theory, std::make_index_sequence<N> creates a compile-time sequence of indices, and the fold expression ((a[I] == b[I]) && ...) expands to a series of && comparisons.
-//This should compile down and inline the same as above and is more generic.
-//Useful if we ever have NDIM > 3 or larger array size comparisons.
-//template <typename T, std::size_t N, std::size_t... I>
-//constexpr bool all_impl(const std::array<T, N>& a, const std::array<T, N>& b, std::index_sequence<I...>) {
-//    return ((a[I] == b[I]) && ...);
-//}
-//
-//template <typename T, std::size_t N>
-//constexpr bool all(const std::array<T, N>& a, const std::array<T, N>& b) {
-//    return all_impl(a, b, std::make_index_sequence<N>{});
-//}
 #endif
+
