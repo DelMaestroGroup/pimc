@@ -79,7 +79,7 @@ REGISTER_EXTERNAL_POTENTIAL(            "hard_tube",          HardCylinderPotent
 REGISTER_EXTERNAL_POTENTIAL(       "plated_lj_tube",      PlatedLJCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["lj_width"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.params["lj_density"].as<double>())
 REGISTER_EXTERNAL_POTENTIAL(              "lj_tube",            LJCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["lj_cyl_density"].as<double>(), setup.params["lj_cyl_sigma"].as<double>(), setup.params["lj_cyl_epsilon"].as<double>())
 REGISTER_EXTERNAL_POTENTIAL(              "hg_tube",           LJHourGlassPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["hourglass_radius"].as<double>(), setup.params["hourglass_width"].as<double>())
-REGISTER_EXTERNAL_POTENTIAL(             "fixed_lj",       FixedPositionLJPotential, GET_SETUP(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(             "fixed_lj",       FixedPositionLJPotential, GET_SETUP(), setup.get_cell())
 REGISTER_EXTERNAL_POTENTIAL(            "gasp_prim",          Gasparini_1_Potential, GET_SETUP(), setup.params["empty_width_z"].as<double>(), setup.params["empty_width_y"].as<double>(), setup.get_cell())
 REGISTER_EXTERNAL_POTENTIAL(        "graphenelut3d",         GrapheneLUT3DPotential, GET_SETUP(), setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
 REGISTER_EXTERNAL_POTENTIAL("graphenelut3dgenerate", GrapheneLUT3DPotentialGenerate, GET_SETUP(), setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.params["k_max"].as<int>(), setup.params["xres"].as<int>(), setup.params["yres"].as<int>(), setup.params["zres"].as<int>(), setup.get_cell())
@@ -748,30 +748,53 @@ blitz::Array<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, 
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-FixedPositionLJPotential::FixedPositionLJPotential (double _sigma, double _epsilon, 
-        const Container *_boxPtr) : PotentialBase() {
+FixedPositionLJPotential::FixedPositionLJPotential (const Container *_boxPtr) : PotentialBase() {
 
     boxPtr = _boxPtr;
-    sigma = _sigma;
-    epsilon = _epsilon;
 
     Lz = boxPtr->side[NDIM-1];
+    Ly = boxPtr->side[NDIM-2];
+    Lx = boxPtr->side[NDIM-3];
+    /* Arbitrary hard-wall cutoff 1 van der Waals radius (1.4 A) from Lz */
+    Wallcz = Lz/2.0 - 1.4;
+    Wallcx = Lx/2.0 - 1.4;
+    Wallcy = Ly/2.0 - 1.4;
+
+    /* Inverse width of the wall onset */
+    invWallWidth = 20.0;
 
     /* Fixed positions of FILENAME */
-    dVec pos;               // The loaded position
+    blitz::TinyVector<double,2> parameters;        // Array containing the mixed LJ parameters
+    blitz::TinyVector<double,4> pos;               // The loaded position, the first number is the type of atom.
 
     /* We start with an array of size 500 */
     fixedParticles.resize(500);
+    atomArray(100);
 
     /* Here we load both the number and location of fixed positions from disk. */
     numFixedParticles = 0;
+    typesofatoms = 0;
     int n = 0;
+    int t = 0;
     while (!communicate()->file("fixed")->stream().eof()) {
         if (communicate()->file("fixed")->stream().peek() == '#') {
             communicate()->file("fixed")->stream().ignore(512,'\n');
         }
+        else if (communicate()->file("fixed")->stream().peek() == '*') {
+            communicate()->file("fixed")->stream().ignore();
+            while (communicate()->file("fixed")->stream().peek() != '#') {
+                for (int j = 0; j < 2; j++)
+                    communicate()->file("fixed")->stream() >> parameters[j];
+                typesofatoms++;
+                if (typesofatoms >= int(atomArray.size()))
+                    atomArray.resizeAndPreserve(typesofatoms);
+                atomArray(t) = parameters;
+                t++;
+                communicate()->file("fixed")->stream().ignore();
+            }                           
+        }   
         else {
-            for (int i = 0; i < NDIM; i++) 
+            for (int i = 0; i < NDIM + 1; i++) 
                 communicate()->file("fixed")->stream() >> pos[i];
             numFixedParticles++;
             if (numFixedParticles >= int(fixedParticles.size()))
@@ -781,6 +804,7 @@ FixedPositionLJPotential::FixedPositionLJPotential (double _sigma, double _epsil
             communicate()->file("fixed")->stream().ignore();
         }
     }
+    atomArray.resizeAndPreserve(typesofatoms);
     fixedParticles.resizeAndPreserve(numFixedParticles);
 
     /* print out the potential to disk */
@@ -816,31 +840,36 @@ FixedPositionLJPotential::~FixedPositionLJPotential() {
 ******************************************************************************/
 double FixedPositionLJPotential::V(const dVec &r) {
 
-    /* Notes: for now I hard-code the potential at 1.5 \AA and a LJ-cutoff of
-     * 20 \AA */
-    
-    if (r[NDIM-1] < (-0.5*Lz + 1.5) )
-        return 87292.0;
-
-    else if (r[NDIM-1] > 0.0)
-        return 0.0;
+    //Checked on 11.6.24 with Python for Benzene input and the output seems to be reasonable
+    //The LJ here has a hard-coded cutoff at 20 Angstroms, seems reasonable so far.
 
     double v = 0.0;
     double sor = 0.0;
     double x = 0.0;
+    double sigma = 0;
+    double epsilon = 0;
+    double hard_wall_height = 100000;
     dVec sep;
-    for (int i = 0; i < numFixedParticles; i++) { 
-        sep[0] = fixedParticles(i)[0] - r[0];
-        sep[1] = fixedParticles(i)[1] - r[1];
+
+    /* A sigmoid to represent the hard-wall on all three sides*/
+    v = hard_wall_height*(1/(1.0+exp(-invWallWidth*(r[0]-Wallcx))) + 1/(1.0+exp(-invWallWidth*(r[1]-Wallcy))) + 1/(1.0+exp(-invWallWidth*(r[2]-Wallcz))));
+    v += hard_wall_height*(1/(1.0+exp(-invWallWidth*(-r[0]-Wallcx))) + 1/(1.0+exp(-invWallWidth*(-r[1]-Wallcy))) + 1/(1.0+exp(-invWallWidth*(-r[2]-Wallcz)))); 
+
+    for (int i = 0; i < numFixedParticles; i++) {
+        sep[0] = fixedParticles(i)[1] - r[0];
+        sep[1] = fixedParticles(i)[2] - r[1];
         boxPtr->putInBC(sep);
-        sep[2] = fixedParticles(i)[2] - r[2];
+        sep[2] = fixedParticles(i)[3] - r[2];
         x = sqrt(dot(sep,sep));
         if (x < 20.0) {
+            sigma = atomArray(fixedParticles(i)[0])[0];
+            epsilon = atomArray(fixedParticles(i)[0])[1];
             sor = sigma/x;
-            v += pow(sor,12)-pow(sor,6);
+            v += 4*epsilon*(pow(sor,12)-pow(sor,6));
         }
     }
-    return 4.0*epsilon*v;
+    return v;
+    
 }
 #endif
 
