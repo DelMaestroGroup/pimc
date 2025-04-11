@@ -963,14 +963,14 @@ class FixedAzizPotential : public PotentialBase  {
 /** 
  * @brief Returns Lennard-Jones potential between adatoms and fixed postions in FILENAME.
  *
- * Author: Nathan Nichols
+ * Author: Nathan Nichols & Sutirtha Paul
  * Returns the potential energy resulting from interaction between adatom and fixed positions
  * given in FILENAME.
  */
 class FixedPositionLJPotential: public PotentialBase  {
 
     public:
-        FixedPositionLJPotential(const double, const double, const Container*);
+        FixedPositionLJPotential(const Container*);
         ~FixedPositionLJPotential();
 
         /* Return the sum of the Lennard-Jones potential between the supplied
@@ -979,13 +979,19 @@ class FixedPositionLJPotential: public PotentialBase  {
 
     private:
         const Container *boxPtr;
-        double sigma;
-        double epsilon;
         double Lz;
-        
-	blitz::Array <dVec,1> fixedParticles;      // The location of the fixed particles
+        double Lx;
+        double Ly;
+        double Wallcz;
+        double Wallcy; 
+        double Wallcx;
+        double invWallWidth; 
+
+        blitz::Array <blitz::TinyVector<double,4>,1> fixedParticles;      // The location of the fixed particles
+        blitz::Array <blitz::TinyVector<double,2>,1> atomArray;           // The interaction parameters for the fixed particles 
         int numFixedParticles;              // The total number of fixed particles
-};
+        int typesofatoms;                   // The various types of atom species
+};      
 #endif
 
 #if NDIM > 2
