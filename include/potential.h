@@ -771,6 +771,203 @@ inline double AzizPotential::grad2V(const dVec &r) {
     return g2V;
 }
 
+// ========================================================================
+// Hydrogen Potential Class
+// ========================================================================
+
+class H2LJ : public PotentialBase, public TabulatedPotential
+{
+     public:
+         H2LJ (const Container *);
+         ~H2LJ ();
+
+         /* The Lennard-Jones potential of H2 */
+         double V(const dVec &);
+
+         /* The gradient of the Lennard-Jones potential */
+         dVec gradV(const dVec &);
+
+         /* The Laplacian of the Lennard-Jones potential */
+         double grad2V(const dVec &);
+
+     private:
+         /* All the parameters of the Lennard Jones potential */
+         double EPSILON, SIGMA;
+
+         /* Used to construct the lookup tables */
+         double valueV (const double);
+         double valuedVdr (const double);
+         double valued2Vdr2 (const double);
+
+ };
+
+
+ inline double H2LJ::V(const dVec &r)
+ {
+     return direct(lookupV,extV,sqrt(dot(r,r)));
+ }
+
+ inline dVec H2LJ::gradV(const dVec &r)
+ {
+     double rnorm = sqrt(dot(r,r));
+     dVec gV;
+     gV = (direct(lookupdVdr,extdVdr,rnorm)/rnorm)*r;
+     return gV;
+ }
+
+ inline double H2LJ::grad2V(const dVec &r)
+ {
+     double rnorm = sqrt(dot(r,r));
+     double g2V;
+     g2V = direct(lookupd2Vdr2,extd2Vdr2,rnorm);
+     return g2V;
+ }
+
+
+ // ========================================================================
+ // Silvera-Goldman Potential Class
+ // ========================================================================
+
+ // See: I.F. Silvera and V.V. Goldman, J. Chem. Phys. 69, 4209 (1978).
+ // This implementation includes the effective Axilrod-Teller interactions.
+
+ class SilveraPotential : public PotentialBase, public TabulatedPotential {
+     public:
+         SilveraPotential (const Container *);
+         ~SilveraPotential ();
+
+         /* The Silvera-Goldman Potential */
+         double V(const dVec &);
+
+         /* The gradient of the Silvera-Goldman potential */
+         dVec gradV(const dVec &);
+
+         /* The Laplacian of the Aziz potential */
+         double grad2V(const dVec &);
+
+     private:
+         /* All the parameters of the Silvera-Goldman potential */
+         double ALPHA, BETA, GAMMA, C6, C8, C9, C10, Rc;
+         double BohrPerAngstrom, KelvinPerHartree;
+
+         /* Used to construct the lookup tables */
+         double valueV (const double);
+         double valuedVdr (const double);
+         double valued2Vdr2 (const double);
+
+         // The damping function needed for the Silvera-Golman potential.
+         // The argument must be in units of Bohr radii.
+         double F(const double r)
+         {
+             double term = -1.0*(Rc/r - 1.0)*(Rc/r - 1.0);
+             return (r < Rc ? exp(term) : 1.0);
+         }
+
+         // The 1st derivative of damping function.
+         // Calculated with Mathematica.  03/05/25 TRP.
+         double dF(const double r)
+         {
+             double ir = 1.0/r;
+             double ir3 = ir*ir*ir;
+             double term = -1.0*(Rc/r - 1.0)*(Rc/r - 1.0);
+             double express = 2.0*Rc*(Rc-r)*ir3*exp(term);
+             return (r < Rc ? express : 0.0);
+         }
+
+         // The 2nd derivative of the damping function.
+         // Calculated witwh Mathematica.  03/05/25 TRP.
+           double d2F(const double r)
+           {
+               double ir = 1.0/r;
+               double ir6 = (ir*ir*ir)*(ir*ir*ir);
+               double t1 = 2.0*Rc*Rc*Rc;
+               double t2 = -4.0*Rc*Rc*r;
+               double t3 = -1.0*Rc*r*r;
+               double t4 = 2.0*r*r*r;
+               double poly = t1 + t2 + t3 + t4;
+               double term = -1.0*(Rc/r - 1.0)*(Rc/r - 1.0);
+               double express = 2.0*Rc*exp(term)*poly*ir6;
+               return (r < Rc ? express : 0.0);
+         }
+
+         // Repulsive part of potential, along with first and second derivatives.
+         // Atomic units (r in Bohr; V in Hartree).
+         double Vrep(const double r)
+         {
+             return exp(ALPHA - BETA*r - GAMMA*r*r);
+         }
+
+         double dVrep(const double r)
+         {
+             return (BETA + 2.0*GAMMA*r)*(-1.0*Vrep(r));
+         }
+
+         double d2Vrep(const double r)
+         {
+             double term1 = 2.0*GAMMA*r*r - 1;
+             double term2 = BETA*BETA + 4.0*BETA*GAMMA*r + 2.0*GAMMA*term1;
+             return term2*Vrep(r);
+         }
+
+         // Attractive part of potential (plus three-body interaction).
+         // Atomic units (r in Bohr; V in Hartree.)
+         double Vatt(const double r)
+         {
+             double ir = 1.0/r;
+             double ir6 = (ir*ir*ir)*(ir*ir*ir);
+             double ir8 = ir6*ir*ir;
+             double ir10 = ir8*ir*ir;
+             double ir9 = ir8*ir;
+             double attract = -(C6*ir6 + C8*ir8 + C10*ir10);
+             double threebody = C9*ir9;
+
+             return attract + threebody;
+         }
+
+         double dVatt(const double r)
+         {
+             double ir = 1.0/r;
+             double ir7 = (ir*ir*ir)*(ir*ir*ir*ir);
+             double ir9 = ir7*(ir*ir);
+             double ir10 = ir9*ir;
+             double ir11 = ir10*ir;
+
+             return 6.0*C6*ir7 + 8.0*C8*ir9 - 9.0*C9*ir10 + 10.0*C10*ir11;
+         }
+
+         double d2Vatt(const double r)
+         {
+             double term1 = 7*C6*r*r*r + 12*C8*r - 15*C9;
+             double numerator = 3.0*r*term1 + 55*C10;
+             double ir = 1.0/r;
+             double ir4 = ir*ir*ir*ir;
+             double ir12 = ir4*ir4*ir4;
+             return -1.0*numerator*ir12;
+         }
+ };
+
+
+ inline double SilveraPotential::V(const dVec &r)
+ {
+     return direct(lookupV,extV,sqrt(dot(r,r)));
+ }
+
+ inline dVec SilveraPotential::gradV(const dVec &r)
+ {
+     double rnorm = sqrt(dot(r,r));
+     dVec gV;
+     gV = (direct(lookupdVdr,extdVdr,rnorm)/rnorm)*r;
+     return gV;
+ }
+
+ inline double SilveraPotential::grad2V(const dVec &r)
+ {
+     double rnorm = sqrt(dot(r,r));
+     double g2V;
+     g2V = direct(lookupd2Vdr2,extd2Vdr2,rnorm);
+     return g2V;
+ }
+
 
 // ========================================================================  
 // Szalewicz Potential Class
