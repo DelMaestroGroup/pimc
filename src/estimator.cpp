@@ -2972,9 +2972,9 @@ inline dVec OneBodyDensityMatrixEstimator::getRandomVector(const double r) {
     dVec rVec{};
 #if NDIM==1
     if (random.rand() < 0.5)
-        rVec = r;
+        rVec[0] = r;
     else
-        rVec = -r;
+        rVec[0] = -r;
 #elif NDIM==2
     double theta = 2.0*M_PI*random.rand();
     rVec[0] = r*cos(theta);
@@ -5910,9 +5910,9 @@ inline dVec PIGSOneBodyDensityMatrixEstimator::getRandomVector(const double r) {
     dVec rVec{};
 #if NDIM==1
     if (random.rand() < 0.5)
-        rVec = r;
+        rVec[0] = r;
     else
-        rVec = -r;
+        rVec[0] = -r;
 #elif NDIM==2
     double theta = 2.0*M_PI*random.rand();
     rVec[0] = r*cos(theta);
