@@ -605,7 +605,8 @@ void Path::outputConfig(int configNumber) const {
     /* We output the bead block */
     for (int n = 0; n < numParticles;  n++) {
         for (int m = 0; m < numTimeSlices; m++) {
-            beadIndex = m,n;
+            beadIndex[0] = m;
+            beadIndex[1] = n;
         
             communicate()->file("wl")->stream() << format("%8d %8d %8d") % beadIndex[0] 
             % beadIndex[1] % 1;
