@@ -1022,7 +1022,7 @@ void PathIntegralMonteCarlo::loadState() {
         pathPtrVec[pIdx].worm.beads.resize(numTimeSlices,numWorldLines);
 
         /* A temporary container for the beads array */
-    DynamicArray <dVec,2> tempBeads;
+        DynamicArray <dVec,2> tempBeads;
 
         /* Get the worldline configuration */
         communicate()->file(fileInitStr)->stream() >> tempBeads;

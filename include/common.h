@@ -307,25 +307,97 @@ std::istream& operator>>(std::istream& is, std::array<T, N>& a) {
 
 // Overload for streaming into 2D DynamicArray
 template<typename T>
-std::istream& operator>>(std::istream& is, DynamicArray<T, 2>& arr) {
+std::istream& operator>>(std::istream& is, DynamicArray<T, 2>& arr)
+{
+    // Should start with: (0,extents[0]-1) x (0,extents[1]-1)
+    int rowStart, rowEnd, colStart, colEnd;
     char ch;
-    // Skip characters until we find '['.
+
+    // Read the first '('
+    is >> ch;                 // should be '('
+    if (!is || ch != '(') {
+        is.setstate(std::ios::failbit);
+        return is;
+    }
+
+    // Read rowStart, then comma
+    is >> rowStart >> ch;     // rowStart, then ','
+    if (!is || ch != ',') {
+        is.setstate(std::ios::failbit);
+        return is;
+    }
+
+    // Read rowEnd, then ')'
+    is >> rowEnd >> ch;       // rowEnd, then ')'
+    if (!is || ch != ')') {
+        is.setstate(std::ios::failbit);
+        return is;
+    }
+
+    // Read 'x'
+    is >> ch;                 // should be 'x'
+    if (!is || ch != 'x') {
+        is.setstate(std::ios::failbit);
+        return is;
+    }
+
+    // Read '(' for columns
+    is >> ch;                 // should be '('
+    if (!is || ch != '(') {
+        is.setstate(std::ios::failbit);
+        return is;
+    }
+
+    // Read colStart, then comma
+    is >> colStart >> ch;     // colStart, then ','
+    if (!is || ch != ',') {
+        is.setstate(std::ios::failbit);
+        return is;
+    }
+
+    // Read colEnd, then ')'
+    is >> colEnd >> ch;       // colEnd, then ')'
+    if (!is || ch != ')') {
+        is.setstate(std::ios::failbit);
+        return is;
+    }
+
+    // Resize arr to (rowEnd - rowStart + 1) x (colEnd - colStart + 1)
+    arr.resize(std::size_t(rowEnd - rowStart + 1),
+               std::size_t(colEnd - colStart + 1));
+
+    // Next we expect a line beginning with '['
+    // so skip forward until we see '[':
     while (is >> ch) {
         if (ch == '[')
             break;
     }
+    if (!is) {
+        is.setstate(std::ios::failbit);
+        return is;
+    }
+
+    // Now read arr's contents, row by row
     auto extents = arr.extents();
-    // Read elements row-by-row.
     for (std::size_t i = 0; i < extents[0]; ++i) {
         for (std::size_t j = 0; j < extents[1]; ++j) {
-            is >> arr(i, j);
+            if (!(is >> arr(i, j))) {
+                is.setstate(std::ios::failbit);
+                return is;
+            }
         }
     }
-    // Consume characters until the closing ']' is found.
+
+    // Consume characters until the closing ']' is found
     while (is >> ch) {
         if (ch == ']')
             break;
     }
+    if (!is) {
+        is.setstate(std::ios::failbit);
+        return is;
+    }
+
     return is;
 }
 
