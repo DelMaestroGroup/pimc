@@ -1727,9 +1727,9 @@ H2LJ::H2LJ(const Container *_boxPtr) : PotentialBase(), TabulatedPotential()
      SIGMA = 2.928; // A
 
      /* The extremal values are all zero here */
-     extV = 0.0;
-     extdVdr = 0.0;
-     extd2Vdr2 = 0.0;
+     extV.fill(0.0);
+     extdVdr.fill(0.0);
+     extd2Vdr2.fill(0.0);
 
      /* We take the maximum possible separation */
      double L = _boxPtr->maxSep;
@@ -1836,9 +1836,9 @@ H2LJ::H2LJ(const Container *_boxPtr) : PotentialBase(), TabulatedPotential()
      KelvinPerHartree = 315775.02480398776;
 
      /* The extremal values are all zero here */
-     extV = 0.0;
-     extdVdr = 0.0;
-     extd2Vdr2 = 0.0;
+     extV.fill(0.0);
+     extdVdr.fill(0.0);
+     extd2Vdr2.fill(0.0);
 
      /* We take the maximum possible separation */
      double L = _boxPtr->maxSep;
