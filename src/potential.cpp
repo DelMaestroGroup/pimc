@@ -59,6 +59,8 @@ REGISTER_INTERACTION_POTENTIAL(   "hard_rod",    HardRodPotential, GET_SETUP(), 
 REGISTER_INTERACTION_POTENTIAL(    "delta1D",    Delta1DPotential, GET_SETUP(), setup.params["delta_strength"].as<double>())
 REGISTER_INTERACTION_POTENTIAL( "lorentzian", LorentzianPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
 REGISTER_INTERACTION_POTENTIAL(       "aziz",       AzizPotential, GET_SETUP(), setup.get_cell())
+REGISTER_INTERACTION_POTENTIAL(    "silvera",    SilveraPotential, GET_SETUP(), setup.get_cell())
+REGISTER_INTERACTION_POTENTIAL(       "H2LJ",                H2LJ, GET_SETUP(), setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(  "szalewicz",  SzalewiczPotential, GET_SETUP(), setup.get_cell())
 //REGISTER_INTERACTION_POTENTIAL(   "harmonic",   HarmonicPotential, GET_SETUP(), constants()->params()["omega"].as<double>())
 REGISTER_INTERACTION_POTENTIAL(   "harmonic",   HarmonicPotential, GET_SETUP(), setup.params["omega"].as<double>())
@@ -80,7 +82,7 @@ REGISTER_EXTERNAL_POTENTIAL(            "hard_tube",          HardCylinderPotent
 REGISTER_EXTERNAL_POTENTIAL(       "plated_lj_tube",      PlatedLJCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["lj_width"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.params["lj_density"].as<double>())
 REGISTER_EXTERNAL_POTENTIAL(              "lj_tube",            LJCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["lj_cyl_density"].as<double>(), setup.params["lj_cyl_sigma"].as<double>(), setup.params["lj_cyl_epsilon"].as<double>())
 REGISTER_EXTERNAL_POTENTIAL(              "hg_tube",           LJHourGlassPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["hourglass_radius"].as<double>(), setup.params["hourglass_width"].as<double>())
-REGISTER_EXTERNAL_POTENTIAL(             "fixed_lj",       FixedPositionLJPotential, GET_SETUP(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(             "fixed_lj",       FixedPositionLJPotential, GET_SETUP(), setup.get_cell())
 REGISTER_EXTERNAL_POTENTIAL(            "gasp_prim",          Gasparini_1_Potential, GET_SETUP(), setup.params["empty_width_z"].as<double>(), setup.params["empty_width_y"].as<double>(), setup.get_cell())
 REGISTER_EXTERNAL_POTENTIAL(        "graphenelut3d",         GrapheneLUT3DPotential, GET_SETUP(), setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
 REGISTER_EXTERNAL_POTENTIAL("graphenelut3dgenerate", GrapheneLUT3DPotentialGenerate, GET_SETUP(), setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.params["k_max"].as<int>(), setup.params["xres"].as<int>(), setup.params["yres"].as<int>(), setup.params["zres"].as<int>(), setup.get_cell())
@@ -739,30 +741,53 @@ DynamicArray<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, 
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-FixedPositionLJPotential::FixedPositionLJPotential (double _sigma, double _epsilon, 
-        const Container *_boxPtr) : PotentialBase() {
+FixedPositionLJPotential::FixedPositionLJPotential (const Container *_boxPtr) : PotentialBase() {
 
     boxPtr = _boxPtr;
-    sigma = _sigma;
-    epsilon = _epsilon;
 
     Lz = boxPtr->side[NDIM-1];
+    Ly = boxPtr->side[NDIM-2];
+    Lx = boxPtr->side[NDIM-3];
+    /* Arbitrary hard-wall cutoff 1 van der Waals radius (1.4 A) from Lz */
+    Wallcz = Lz/2.0 - 1.4;
+    Wallcx = Lx/2.0 - 1.4;
+    Wallcy = Ly/2.0 - 1.4;
+
+    /* Inverse width of the wall onset */
+    invWallWidth = 20.0;
 
     /* Fixed positions of FILENAME */
-    dVec pos;               // The loaded position
+    blitz::TinyVector<double,2> parameters;        // Array containing the mixed LJ parameters
+    blitz::TinyVector<double,4> pos;               // The loaded position, the first number is the type of atom.
 
     /* We start with an array of size 500 */
     fixedParticles.resize(500);
+    atomArray.resize(100);
 
     /* Here we load both the number and location of fixed positions from disk. */
     numFixedParticles = 0;
+    typesofatoms = 0;
     int n = 0;
+    int t = 0;
     while (!communicate()->file("fixed")->stream().eof()) {
         if (communicate()->file("fixed")->stream().peek() == '#') {
             communicate()->file("fixed")->stream().ignore(512,'\n');
         }
+        else if (communicate()->file("fixed")->stream().peek() == '*') {
+            communicate()->file("fixed")->stream().ignore();
+            while (communicate()->file("fixed")->stream().peek() != '#') {
+                for (int j = 0; j < 2; j++)
+                    communicate()->file("fixed")->stream() >> parameters[j];
+                typesofatoms++;
+                if (typesofatoms >= int(atomArray.size()))
+                    atomArray.resizeAndPreserve(typesofatoms);
+                atomArray(t) = parameters;
+                t++;
+                communicate()->file("fixed")->stream().ignore();
+            }                           
+        }   
         else {
-            for (int i = 0; i < NDIM; i++) 
+            for (int i = 0; i < NDIM + 1; i++) 
                 communicate()->file("fixed")->stream() >> pos[i];
             numFixedParticles++;
             if (numFixedParticles >= int(fixedParticles.size()))
@@ -772,6 +797,7 @@ FixedPositionLJPotential::FixedPositionLJPotential (double _sigma, double _epsil
             communicate()->file("fixed")->stream().ignore();
         }
     }
+    atomArray.resizeAndPreserve(typesofatoms);
     fixedParticles.resizeAndPreserve(numFixedParticles);
 
     /* print out the potential to disk */
@@ -806,31 +832,36 @@ FixedPositionLJPotential::~FixedPositionLJPotential() {
 ******************************************************************************/
 double FixedPositionLJPotential::V(const dVec &r) {
 
-    /* Notes: for now I hard-code the potential at 1.5 \AA and a LJ-cutoff of
-     * 20 \AA */
-    
-    if (r[NDIM-1] < (-0.5*Lz + 1.5) )
-        return 87292.0;
-
-    else if (r[NDIM-1] > 0.0)
-        return 0.0;
+    //Checked on 11.6.24 with Python for Benzene input and the output seems to be reasonable
+    //The LJ here has a hard-coded cutoff at 20 Angstroms, seems reasonable so far.
 
     double v = 0.0;
     double sor = 0.0;
     double x = 0.0;
+    double sigma = 0;
+    double epsilon = 0;
+    double hard_wall_height = 100000;
     dVec sep;
-    for (int i = 0; i < numFixedParticles; i++) { 
-        sep[0] = fixedParticles(i)[0] - r[0];
-        sep[1] = fixedParticles(i)[1] - r[1];
+
+    /* A sigmoid to represent the hard-wall on all three sides*/
+    v = hard_wall_height*(1/(1.0+exp(-invWallWidth*(r[0]-Wallcx))) + 1/(1.0+exp(-invWallWidth*(r[1]-Wallcy))) + 1/(1.0+exp(-invWallWidth*(r[2]-Wallcz))));
+    v += hard_wall_height*(1/(1.0+exp(-invWallWidth*(-r[0]-Wallcx))) + 1/(1.0+exp(-invWallWidth*(-r[1]-Wallcy))) + 1/(1.0+exp(-invWallWidth*(-r[2]-Wallcz)))); 
+
+    for (int i = 0; i < numFixedParticles; i++) {
+        sep[0] = fixedParticles(i)[1] - r[0];
+        sep[1] = fixedParticles(i)[2] - r[1];
         boxPtr->putInBC(sep);
-        sep[2] = fixedParticles(i)[2] - r[2];
+        sep[2] = fixedParticles(i)[3] - r[2];
         x = sqrt(dot(sep,sep));
         if (x < 20.0) {
+            sigma = atomArray(fixedParticles(i)[0])[0];
+            epsilon = atomArray(fixedParticles(i)[0])[1];
             sor = sigma/x;
-            v += pow(sor,12)-pow(sor,6);
+            v += 4*epsilon*(pow(sor,12)-pow(sor,6));
         }
     }
-    return 4.0*epsilon*v;
+    return v;
+    
 }
 #endif
 
@@ -1684,6 +1715,239 @@ double AzizPotential::valued2Vdr2(const double r) {
         return ( ( epsilon / (rm*rm) ) * (T1 + T2 + T3 + T4) );
     }
 }
+
+//
+// Hydrogen Lennard-Jones potential class
+//
+
+H2LJ::H2LJ(const Container *_boxPtr) : PotentialBase(), TabulatedPotential()
+ {
+     /* Define all variables for the H2 LJ potential. */
+     EPSILON = 3.19*11.60451812; // K
+     SIGMA = 2.928; // A
+
+     /* The extremal values are all zero here */
+     extV = 0.0;
+     extdVdr = 0.0;
+     extd2Vdr2 = 0.0;
+
+     /* We take the maximum possible separation */
+     double L = _boxPtr->maxSep;
+
+     /* Create the potential lookup tables */
+      initLookupTable(0.00005*SIGMA,L);
+
+     /* Now we compute the tail correction */
+     double rc = L/2.0;
+     double rat = SIGMA/rc;
+     double rat3 = rat*rat*rat;
+     double rat9 = rat3*rat3*rat3;
+     double term = (1.0/3.0)*rat9 - rat3;
+     double prefactor = (8.0/3.0)*M_PI*EPSILON*(SIGMA*SIGMA*SIGMA);
+     tailV = prefactor*term;
+
+ }
+
+ /**************************************************************************/
+ H2LJ::~H2LJ() {
+ }
+
+ /**************************************************************************/
+ double H2LJ::valueV(const double r) {
+
+    double x = r / SIGMA;
+
+    if (x < EPS)
+    {
+        return 0.0;
+    }
+    else
+    {
+         double ix2 = 1.0 / (x * x);
+         double ix6 = ix2 * ix2 * ix2;
+         double ix12 = ix6 * ix6;
+         return (4.0*EPSILON)*(ix12 - ix6);
+    }
+
+ }
+
+ /**************************************************************************/
+ double H2LJ::valuedVdr(const double r) {
+
+      double x = r / SIGMA;
+
+      /* dV/dR */
+      /* No self interactions */
+      if (x < EPS)
+          return 0.0;
+      else {
+          /* The various inverse powers of x */
+          double ir = 1.0 / r;
+          double ix = 1.0 / x;
+          double ix2 = ix * ix;
+          double ix6 = ix2 * ix2 * ix2;
+          double ix12 = ix6 * ix6;
+          return ( (4.0*EPSILON)*(-12.0*ix12 + 6.0*ix6)*ir);
+      }
+ }
+
+ /**************************************************************************/
+ double H2LJ::valued2Vdr2(const double r) {
+
+        double x = r / SIGMA;
+//      /* d^2V/dR^2 */
+//      /* No self interactions */
+      if (x < EPS)
+          return 0.0;
+      else {
+          /* The various inverse powers of x */
+         double ir = 1.0 / r;
+         double ir2 = ir * ir;
+         double ix = 1.0 / x;
+         double ix2 = ix * ix;
+         double ix6 = ix2 * ix2 * ix2;
+         double ix12 = ix6 * ix6;
+         return (4.0*EPSILON)*(12.0*13.0*ix12 - 6.0*7.0*ix6)*ir2;
+      }
+ }
+
+
+ // Silvera-Goldman potential class.
+ // See: I.F. Silvera and V.V. Goldman, J. Chem. Phys. 69, 4209 (1978).
+
+ // Constructor.
+ SilveraPotential::SilveraPotential(const Container *_boxPtr) : PotentialBase(), TabulatedPotential()
+ {
+     // Note: the parameters are defined in atomic units.
+     // When the potential is computed from the lookup table, the interparticle
+     // distance is first converted from Angstroms to Bohr radii.  The value of
+     // the potential is converted from Hartrees to Kelvins.
+     ALPHA = 1.713;
+     BETA = 1.5671;
+     GAMMA = 0.00993;
+     C6 = 12.14;
+     C8 = 215.2;
+     C9 = 143.1;
+     C10 = 4813.9;
+     Rc = 8.248;
+
+     // Unit conversions.  Using NIST CODATA values.
+     BohrPerAngstrom = 1.0/0.529177210544;
+     KelvinPerHartree = 315775.02480398776;
+
+     /* The extremal values are all zero here */
+     extV = 0.0;
+     extdVdr = 0.0;
+     extd2Vdr2 = 0.0;
+
+     /* We take the maximum possible separation */
+     double L = _boxPtr->maxSep;
+
+     /* Create the potential lookup tables */
+     double Rm = 3.41; //A
+     initLookupTable(0.00005*Rm,L);
+
+     // Tail corrections.
+     // To obtain the tail correction, I numerically integrated (x')^2*V(x') from
+     // x to 1000 Angstroms.  That expression was fit to a tenth order polynomial
+     // that is accurate to < 0.05% for 7 < x < 20.
+     // TP 03/13/25.
+
+     double cutoff = L/2.0;
+     double coeff[11] = {-6502.891909947514, 4179.6137878734, \
+                         -1262.7540932141394, 231.31230978810987, \
+                         -28.14200627626515, 2.3609501640706454, \
+                         -0.13776759131249947, 0.005506811792912634, \
+                         -0.00014404716471957445, 2.2239476347663355e-06, \
+                         -1.5376592463686986e-08};
+     double poly = 0.0;
+     double xPower = 1.0;
+
+     for (int k = 0; k <= 10; k++)
+     {
+       poly += coeff[k]*xPower;
+       xPower *= cutoff;
+     }
+
+     tailV = 2.0*M_PI*poly;
+
+ }
+
+ /**************************************************************************//**
+  *  Destructor.
+ ******************************************************************************/
+ SilveraPotential::~SilveraPotential()
+ {
+ }
+
+ /**************************************************************************//**
+  *  Return the actual value of the Silvera-Goldman potential,
+  *  used to construct a lookup table.
+ ******************************************************************************/
+ double SilveraPotential::valueV(const double r)
+ {
+   // Convert r from A to Bohr radii.
+   double q = r*BohrPerAngstrom;
+
+   // Definition of potential.  Potential is converted from Hartrees to K at end.
+   // Three cases: self-interaction, hard core, and default.
+   double output = 0.0;
+   if (q < EPS)
+     return 0.0;
+   else if (q < 0.01)
+     output = Vrep(q);
+   else
+   {
+     output = Vrep(q) + Vatt(q)*F(q);
+   }
+   output *= KelvinPerHartree;
+   return output;
+ }
+
+ // First derivative of Silvera-Goldman.
+ double SilveraPotential::valuedVdr(const double r)
+ {
+   // Convert r from A to Bohr radii.  NIST CODATA value.
+   double q = r*BohrPerAngstrom;
+
+   // Three cases: self-interaction, hard core, and default.
+   // First derivative is converted from Hartrees/Bohr to K/A at the end.
+   double output = 0.0;
+   if (q < EPS)
+     return 0.0;
+   else if (q < 0.01)
+     output = dVrep(q);
+   else
+   {
+     output = dVrep(q) + dVatt(q)*F(q) + Vatt(q)*dF(q);
+   }
+   output *= KelvinPerHartree*BohrPerAngstrom;
+   return output;
+ }
+
+ // Second radial derivative of the Silvera-Goldman potential.
+ double SilveraPotential::valued2Vdr2(const double r)
+ {
+   // Convert r from A to Bohr radii.  NIST CODATA value.
+   double q = r*BohrPerAngstrom;
+
+   // Three cases: self-interaction, hard core, and default.
+   // Second derivative is converted from Hartrees/Bohr^2 to K/A^2 at the end.
+   double output = 0.0;
+   if (q < EPS)
+     return 0.0;
+   else if (q < 0.01)
+     output = d2Vrep(q);
+   else
+   {
+     output = d2Vrep(q);
+     output += Vatt(q)*d2F(q) + 2.0*dVatt(q)*dF(q) + F(q)*d2Vatt(q);
+   }
+   output *= KelvinPerHartree*BohrPerAngstrom*BohrPerAngstrom;
+   return output;
+ }
+
+
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
