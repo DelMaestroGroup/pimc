@@ -4,8 +4,16 @@
 #include <vector>
 #include <array>
 #include <cstddef>
-//#include <mdspan>
-#include "mdspan.h"
+
+#if defined(USE_STD_MDSPAN)
+    #include <mdspan>
+#elif defined(USE_EXPERIMENTAL_MDSPAN)
+    #include <experimental/mdspan>
+#elif defined(USE_REFERENCE_MDSPAN)
+    #include "mdspan.h"
+#else
+    #error "No mdspan support found."
+#endif
 #include <numeric>
 #include <stdexcept>
 #include <algorithm>
