@@ -757,8 +757,8 @@ FixedPositionLJPotential::FixedPositionLJPotential (const Container *_boxPtr) : 
     invWallWidth = 20.0;
 
     /* Fixed positions of FILENAME */
-    blitz::TinyVector<double,2> parameters;        // Array containing the mixed LJ parameters
-    blitz::TinyVector<double,4> pos;               // The loaded position, the first number is the type of atom.
+    std::array<double,2> parameters;        // Array containing the mixed LJ parameters
+    std::array<double,4> pos;               // The loaded position, the first number is the type of atom.
 
     /* We start with an array of size 500 */
     fixedParticles.resize(500);
