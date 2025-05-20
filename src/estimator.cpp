@@ -189,8 +189,6 @@ EstimatorBase::EstimatorBase(const Path &_path, ActionBase *_actionPtr,
  *  Destructor.
 ******************************************************************************/
 EstimatorBase::~EstimatorBase() { 
-    estimator.free();
-    norm.free();
 }
 
 /**************************************************************************//**
@@ -248,7 +246,7 @@ void EstimatorBase::initialize(int _numEst) {
     numEst = _numEst;
     estimator.resize(numEst);
     norm.resize(numEst);
-    norm = 1.0;
+    norm.fill(1.0);
     reset();
 }
 
@@ -271,7 +269,7 @@ void EstimatorBase::initialize(std::vector<std::string> estLabel) {
     numEst = estLabel.size();
     estimator.resize(numEst);
     norm.resize(numEst);
-    norm = 1.0;
+    norm.fill(1.0);
     reset();
 }
 
@@ -312,7 +310,7 @@ void EstimatorBase::prepare() {
 ******************************************************************************/
 void EstimatorBase::reset() {
     numAccumulated = 0;
-    estimator = 0.0;
+    estimator.fill(0.0);
 }
 
 /*************************************************************************//**
@@ -391,7 +389,7 @@ void EstimatorBase::outputHist() {
         (*outFilePtr) << std::endl;
 
     /* Reset all values */
-    norm = 0.0;
+    norm.fill(0.0);
     reset();
 }
 
@@ -459,9 +457,9 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
 
     // Handle maximum integer and float inputs
     if ((inputType == "max_int") || (inputType == "max_float")) {
-        iVec q_max_int = 0;
-        iVec _q_int = 0;
-        dVec q_max = 0.0;
+        iVec q_max_int{};
+        iVec _q_int{};
+        dVec q_max{};
 
         // Parse maximum wavevector components
         for (int i = 0; i < NDIM; ++i) {
@@ -620,7 +618,7 @@ void EstimatorBase::getQVectorsNN(std::vector<dVec> &qValues) {
         }
         qValues.push_back(q);
 
-        std::cout << sqrt(blitz::dot(q,q)) << " " << q_int << std::endl;
+        std::cout << sqrt(std::inner_product(q.begin(), q.end(), q.begin(), 0.0)) << " " << q_int << std::endl;
 
         int pos = NDIM - 1;
         int count = 0;
@@ -767,14 +765,14 @@ std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double q
 
         /* cq = 0.0 */
         if (abs(cq) < EPS) {
-            dVec qd = 0.0;
+            dVec qd{};
             qvecs.push_back(qd);
         }
 
         /* cq > 0.0 */
         else {
             /* First do θ = 0, i.e. along the z-direction */
-            dVec qd = 0.0;
+            dVec qd{};
             qd[NDIM-1] = cq;
             qvecs.push_back(qd);
 
@@ -808,7 +806,7 @@ std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double q
     /* output */
     /* int totalNumQVecs = 0; */
     /* for (auto [nq,cq] : enumerate(q)) { */
-    /*     double qMag = sqrt(blitz::dot(cq.front(),cq.front())); */
+    /*     double qMag = sqrt(std::inner_product(cq.front().begin(), cq.front().end(), cq.front().begin(), 0.0)); */
     /*     std::cout << std::endl << std::endl << "qmag = " << qMag << std::endl; */
     /*     for (const auto &cqvec : cq) */ 
     /*         std::cout << cqvec << std::endl; */
@@ -926,7 +924,7 @@ void EnergyEstimator::accumulate() {
 
     double totK = 0.0;
     double totV = 0.0;
-    blitz::TinyVector<double,2> totVop(0.0);
+    std::array<double,2> totVop{};
 
     int numParticles  = path.getTrueNumParticles();
     int numTimeSlices = endSlice - startSlice;
@@ -949,8 +947,10 @@ void EnergyEstimator::accumulate() {
     beadLocator beadIndex;
     dVec vel;
     for (int slice = startSlice; slice < endSlice; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             vel = path.getVelocity(beadIndex);
             totK -= dot(vel,vel);
         }
@@ -1109,11 +1109,13 @@ void VirialEnergyEstimator::accumulate() {
     beadLocator bead1, beadNext, beadNextOld;
     dVec vel1, vel2;
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            bead1 = slice,ptcl; // current bead
+	bead1[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            bead1[1] = ptcl; // current bead
             vel2 = path.getVelocity(bead1);
             beadNextOld = bead1;
-            vel1 = 0.0;
+            vel1 = dVec{};
             /* get r_{current + window} - r_{current} */
             for (int gamma = 1; gamma <= virialWindow; gamma++) {
                 beadNext = path.next(bead1, gamma);
@@ -1313,7 +1315,7 @@ CommensurateOrderParameterEstimator::CommensurateOrderParameterEstimator (
     endLine = false;
     initialize({"Scom"});
 
-    norm = 1.0/(g.size()*constants()->numTimeSlices());
+    norm.fill(1.0/(g.size()*constants()->numTimeSlices()));
 }
 
 /*************************************************************************//**
@@ -1466,8 +1468,10 @@ void ParticlePositionEstimator::accumulate() {
     beadLocator beadIndex;
 
     for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
 
             /* update our particle position histogram */
             int n = path.boxPtr->gridIndex(path(beadIndex));
@@ -1523,7 +1527,7 @@ void BipartitionDensityEstimator::accumulate() {
         lside[i] = path.boxPtr->side[i];
 
     /* read in the exclusion lengths */
-    blitz::Array<double,1> excLens (actionPtr->externalPtr->getExcLen());
+    DynamicArray<double,1> excLens (actionPtr->externalPtr->getExcLen());
     double excZ = excLens(1);
     
     /* determine volume of film region and bulk region */
@@ -1537,8 +1541,10 @@ void BipartitionDensityEstimator::accumulate() {
     dVec pos;
     beadLocator beadIndex;
     for (int slice = 0; slice < path.numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
 
             pos = path(beadIndex);
             if (pos[2] > excZ)
@@ -1593,7 +1599,7 @@ LinearParticlePositionEstimator::LinearParticlePositionEstimator (const Path &_p
     for (int i = 0; i < NDIM-1; i++)
         A *= side[i];
 
-    norm = 1.0/(1.0*(endSlice-startSlice)*(1.0/actionPtr->period)*A*dz);
+    norm.fill(1.0/(1.0*(endSlice-startSlice)*(1.0/actionPtr->period)*A*dz));
 }
 
 /*************************************************************************//**
@@ -1613,8 +1619,10 @@ void LinearParticlePositionEstimator::accumulate() {
     int index;
 
     for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos = path(beadIndex);
 
             /* Get the z-index */
@@ -1670,7 +1678,7 @@ PlaneParticlePositionEstimator::PlaneParticlePositionEstimator (const Path &_pat
     for (int i = 0; i < NDIM-1; i++)
         A *= dl[i];
 
-    norm = 1.0/((endSlice-startSlice)*(1.0/actionPtr->period)*A*path.boxPtr->side[NDIM-1]);
+    norm.fill(1.0/((endSlice-startSlice)*(1.0/actionPtr->period)*A*path.boxPtr->side[NDIM-1]));
     side = path.boxPtr->side;
 }
 
@@ -1691,8 +1699,10 @@ void PlaneParticlePositionEstimator::accumulate() {
     dVec pos;
 
     for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos = path(beadIndex);
 
             int index = 0;
@@ -1751,7 +1761,7 @@ PlaneParticleAveragePositionEstimator::PlaneParticleAveragePositionEstimator (
     for (int i = 0; i < NDIM-1; i++)
         A *= dl[i];
 
-    norm = 1.0/((endSlice-startSlice)*(1.0/actionPtr->period)*A*path.boxPtr->side[NDIM-1]);
+    norm.fill(1.0/((endSlice-startSlice)*(1.0/actionPtr->period)*A*path.boxPtr->side[NDIM-1]));
     side = path.boxPtr->side;
 }
 
@@ -1771,8 +1781,10 @@ void PlaneParticleAveragePositionEstimator::accumulate() {
     dVec pos;
 
     for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos = path(beadIndex);
 
             int index = 0;
@@ -1844,8 +1856,10 @@ void PlaneAverageExternalPotentialEstimator::accumulate() {
     dVec pos;
 
     for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos = path(beadIndex);
 
             /* Obtain the index of the particle position */
@@ -1958,12 +1972,14 @@ void SuperfluidFractionEstimator::accumulate() {
 
     Az = I = 0.0;
     dVec W,vel;
-    W = 0.0;
+    W = dVec{};
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
 
             /* The winding number estimator */
-            beadIndex = slice,ptcl;
             vel = path.getVelocity(beadIndex);
             W += vel;
 
@@ -2055,11 +2071,11 @@ PlaneWindingSuperfluidDensityEstimator::PlaneWindingSuperfluidDensityEstimator
     for (int n = 1; n < numGrid; n++) 
         header.append(str(format("%16.3E") % (1.0*n)));
 
-    norm = 0.5 * constants()->T()/(dx*dy*path.boxPtr->side[NDIM-1]*constants()->lambda());
+    norm.fill(0.5 * constants()->T()/(dx*dy*path.boxPtr->side[NDIM-1]*constants()->lambda()));
 
     /* Initialize the local arrays */
     locWz.resize(numGrid);
-    locWz = 0.0;
+    locWz.fill(0.0);
 
     side = path.boxPtr->side;
 }
@@ -2068,7 +2084,6 @@ PlaneWindingSuperfluidDensityEstimator::PlaneWindingSuperfluidDensityEstimator
  *  Destructor.
 ******************************************************************************/
 PlaneWindingSuperfluidDensityEstimator::~PlaneWindingSuperfluidDensityEstimator() { 
-    locWz.free();
 }
 
 /*************************************************************************//**
@@ -2086,11 +2101,12 @@ void PlaneWindingSuperfluidDensityEstimator::accumulate() {
     dVec vel;
 
     Wz = 0.0;
-    locWz = 0.0;
+    locWz.fill(0.0);
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos1 = path(beadIndex);
             pos2 = path(path.next(beadIndex));
 
@@ -2146,11 +2162,11 @@ PlaneAreaSuperfluidDensityEstimator::PlaneAreaSuperfluidDensityEstimator
     for (int n = 1; n < numGrid; n++) 
         header.append(str(format("%16.3E") % (1.0*n)));
 
-    norm = 0.5 * constants()->T()/(dx*dy*path.boxPtr->side[NDIM-1]*constants()->lambda());
+    norm.fill(0.5 * constants()->T()/(dx*dy*path.boxPtr->side[NDIM-1]*constants()->lambda()));
 
     /* Initialize the local arrays */
     locAz.resize(numGrid);
-    locAz = 0.0;
+    locAz.fill(0.0);
 
     side = path.boxPtr->side;
 }
@@ -2159,7 +2175,6 @@ PlaneAreaSuperfluidDensityEstimator::PlaneAreaSuperfluidDensityEstimator
  *  Destructor.
 ******************************************************************************/
 PlaneAreaSuperfluidDensityEstimator::~PlaneAreaSuperfluidDensityEstimator() { 
-    locAz.free();
 }
 
 /*************************************************************************//**
@@ -2176,11 +2191,12 @@ void PlaneAreaSuperfluidDensityEstimator::accumulate() {
     dVec pos1,pos2;
 
     Az = 0.0;
-    locAz = 0.0;
+    locAz.fill(0.0);
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos1 = path(beadIndex);
             pos2 = path(path.next(beadIndex));
 
@@ -2242,20 +2258,19 @@ RadialWindingSuperfluidDensityEstimator::RadialWindingSuperfluidDensityEstimator
     for (int n = 1; n < numGrid; n++) 
         header.append(str(format("%16.3E") % ((n)*dR)));
 
-    norm = 0.5 * constants()->T()/constants()->lambda();
+    norm.fill(0.5 * constants()->T()/constants()->lambda());
     for (int n = 0; n < numGrid; n++) 
         norm(n) /= (M_PI*(2*n+1)*dR*dR*path.boxPtr->side[NDIM-1]);
 
     /* Initialize the local arrays */
     locWz.resize(numGrid);
-    locWz = 0.0;
+    locWz.fill(0.0);
 }
 
 /*************************************************************************//**
  *  Destructor.
 ******************************************************************************/
 RadialWindingSuperfluidDensityEstimator::~RadialWindingSuperfluidDensityEstimator() { 
-    locWz.free();
 }
 
 /*************************************************************************//**
@@ -2273,11 +2288,12 @@ void RadialWindingSuperfluidDensityEstimator::accumulate() {
     dVec vel;
 
     Wz = 0.0;
-    locWz = 0.0;
+    locWz.fill(0.0);
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos1 = path(beadIndex);
             pos2 = path(path.next(beadIndex));
 
@@ -2330,20 +2346,19 @@ RadialAreaSuperfluidDensityEstimator::RadialAreaSuperfluidDensityEstimator
     for (int n = 1; n < numGrid; n++) 
         header.append(str(format("%16.3E") % ((n)*dR)));
 
-    norm = 0.5 * constants()->T()/constants()->lambda();
+    norm.fill(0.5 * constants()->T()/constants()->lambda());
     for (int n = 0; n < numGrid; n++) 
         norm(n) /= (M_PI*(2*n+1)*dR*dR*path.boxPtr->side[NDIM-1]);
 
     /* Initialize the local arrays */
     locAz.resize(numGrid);
-    locAz = 0.0;
+    locAz.fill(0.0);
 }
 
 /*************************************************************************//**
  *  Destructor.
 ******************************************************************************/
 RadialAreaSuperfluidDensityEstimator::~RadialAreaSuperfluidDensityEstimator() { 
-    locAz.free();
 }
 
 /*************************************************************************//**
@@ -2360,11 +2375,12 @@ void RadialAreaSuperfluidDensityEstimator::accumulate() {
     dVec pos1,pos2;
 
     Az = 0.0;
-    locAz = 0.0;
+    locAz.fill(0.0);
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos1 = path(beadIndex);
             pos2 = path(path.next(beadIndex));
             rp2 = pos1[0]*pos1[0] + pos1[1]*pos1[1];
@@ -2429,22 +2445,19 @@ LocalSuperfluidDensityEstimator::LocalSuperfluidDensityEstimator
 
     /* Initialize the local arrays */
     locWz.resize(numGrid);
-    locWz = 0.0;
+    locWz.fill(0.0);
 
     locAz.resize(numGrid);
-    locAz = 0.0;
+    locAz.fill(0.0);
 
     locA2.resize(numGrid);
-    locA2 = 0.0;
+    locA2.fill(0.0);
 }
 
 /*************************************************************************//**
  *  Destructor.
 ******************************************************************************/
 LocalSuperfluidDensityEstimator::~LocalSuperfluidDensityEstimator() { 
-    locWz.free();
-    locAz.free();
-    locA2.free();
 }
 
 /*************************************************************************//**
@@ -2481,9 +2494,9 @@ void LocalSuperfluidDensityEstimator::output() {
 void LocalSuperfluidDensityEstimator::accumulate() {
 
     int numTimeSlices = path.numTimeSlices;
-    locAz = 0.0;
-    locA2 = 0.0;
-    locWz = 0.0;
+    locAz.fill(0.0);
+    locA2.fill(0.0);
+    locWz.fill(0.0);
 
     beadLocator beadIndex;
     double Az,rp2,Wz;
@@ -2493,9 +2506,10 @@ void LocalSuperfluidDensityEstimator::accumulate() {
 
     Az = Wz = 0.0;
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos1 = path(beadIndex);
             pos2 = path(path.next(beadIndex));
             int n = path.boxPtr->gridIndex(pos1);
@@ -2672,7 +2686,6 @@ PermutationCycleEstimator::PermutationCycleEstimator (const Path &_path,
  *  Destructor.
 ******************************************************************************/
 PermutationCycleEstimator::~PermutationCycleEstimator() { 
-    doBead.free();
 }
 
 /*************************************************************************//**
@@ -2701,13 +2714,13 @@ void PermutationCycleEstimator::accumulate() {
     /* We create a local std::vector, which determines whether or not we have
      * already included a bead at slice 0*/
     doBead.resize(numWorldlines);
-    doBead = true;
+    doBead.fill(true);
 
     /* We go through each particle/worldline */
     for (int n = 0; n < numWorldlines; n++) {
 
         /* The initial bead to be moved */
-        startBead = 0,n;
+        startBead = {0,n};
 
         /* We make sure we don't try to touch the same worldline twice */
         if (doBead(n)) {
@@ -2726,7 +2739,7 @@ void PermutationCycleEstimator::accumulate() {
                     doBead(beadIndex[1]) = false;
 
                 beadIndex = path.next(beadIndex);
-            } while (!all(beadIndex==startBead));
+            } while (!all(beadIndex, startBead));
 
             /* Accumulte the cycle length counter */
             int cycleNum = int(wlLength / path.numTimeSlices);
@@ -2775,7 +2788,6 @@ LocalPermutationEstimator::LocalPermutationEstimator (const Path &_path,
  *  Destructor.
 ******************************************************************************/
 LocalPermutationEstimator::~LocalPermutationEstimator() { 
-    doBead.free();
 }
 
 /*************************************************************************//**
@@ -2820,13 +2832,13 @@ void LocalPermutationEstimator::accumulate() {
     /* We create a local std::vector, which determines whether or not we have
      * already included a bead at slice 0*/
     doBead.resize(numWorldlines);
-    doBead = true;
+    doBead.fill(true);
 
     /* We go through each particle/worldline */
     for (int n = 0; n < numWorldlines; n++) {
 
         /* The initial bead to be moved */
-        startBead = 0,n;
+        startBead = {0,n};
 
         /* We make sure we don't try to touch the same worldline twice */
         if (doBead(n)) {
@@ -2845,7 +2857,7 @@ void LocalPermutationEstimator::accumulate() {
                     doBead(beadIndex[1]) = false;
 
                 beadIndex = path.next(beadIndex);
-            } while (!all(beadIndex==startBead)); // up to here, we have computed WL length only.
+            } while (!all(beadIndex, startBead)); // up to here, we have computed WL length only.
 
             /* Accumulate the cycle length counter */
             int cycleNum = int(wlLength / path.numTimeSlices);
@@ -2860,7 +2872,7 @@ void LocalPermutationEstimator::accumulate() {
                 }
 
                 beadIndex = path.next(beadIndex);
-            } while (!all(beadIndex==startBead));
+            } while (!all(beadIndex, startBead));
         } // doBead
     } // n
 
@@ -2900,7 +2912,7 @@ OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path,
     sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
 
     /* We chooose the maximum separation to be sqrt(NDIM)*min(L)/2 */
-    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*(blitz::min(path.boxPtr->side)) / (1.0*NOBDMSEP);
+    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*((*std::min_element(path.boxPtr->side.begin(), path.boxPtr->side.end()))) / (1.0*NOBDMSEP);
 
     /* This is an off-diagonal estimator*/
     initialize(NOBDMSEP);
@@ -2912,7 +2924,7 @@ OneBodyDensityMatrixEstimator::OneBodyDensityMatrixEstimator (Path &_path,
         header.append(str(format("%16.3E") % (n*dR)));
 
     numReps = 5;
-    norm = 1.0 / (1.0*numReps);
+    norm.fill(1.0 / (1.0*numReps));
 }
 
 /*************************************************************************//**
@@ -2957,13 +2969,12 @@ void OneBodyDensityMatrixEstimator::sample() {
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec OneBodyDensityMatrixEstimator::getRandomVector(const double r) {
-    dVec rVec;
-    rVec = 0.0;
+    dVec rVec{};
 #if NDIM==1
     if (random.rand() < 0.5)
-        rVec = r;
+        rVec[0] = r;
     else
-        rVec = -r;
+        rVec[0] = -r;
 #elif NDIM==2
     double theta = 2.0*M_PI*random.rand();
     rVec[0] = r*cos(theta);
@@ -3038,8 +3049,7 @@ void OneBodyDensityMatrixEstimator::accumulate() {
      * as we go. */
     beadLocator beadIndex;
     beadIndex = lpath.worm.head;
-    dVec pos;
-    pos = 0.0;
+    dVec pos{};
     for (int k = 0; k < (lpath.worm.gap-1); k++) 
         beadIndex = lpath.addNextBead(beadIndex,pos);
 
@@ -3072,7 +3082,7 @@ void OneBodyDensityMatrixEstimator::accumulate() {
             beadIndex = lpath.worm.head;
             int k = 0;
             do {
-                if (!all(beadIndex==lpath.worm.head) && !all(beadIndex==lpath.worm.tail)) {
+                if (!(beadIndex == lpath.worm.head) && !(beadIndex == lpath.worm.tail)) {
                     lpath.updateBead(beadIndex,
                             newStagingPosition(path.prev(beadIndex),lpath.worm.tail,lpath.worm.gap,k));
                     ++k;
@@ -3081,7 +3091,7 @@ void OneBodyDensityMatrixEstimator::accumulate() {
                 newAction += actionPtr->potentialAction(beadIndex);
 
                 beadIndex = lpath.next(beadIndex);
-            } while (!all(beadIndex==lpath.next(lpath.worm.tail)));
+            } while (!(beadIndex == lpath.next(lpath.worm.tail)));
 
             double expAction = exp(-newAction + oldAction + muShift);
 
@@ -3101,11 +3111,11 @@ void OneBodyDensityMatrixEstimator::accumulate() {
 
     /* Delete all the beads that were added. */
     beadIndex = lpath.next(lpath.worm.head);
-    while (!all(beadIndex==lpath.worm.tail)) {
+    while (!(beadIndex == lpath.worm.tail)) {
         beadIndex = lpath.delBeadGetNext(beadIndex);
     }
-    lpath.next(lpath.worm.head) = XXX;
-    lpath.prev(lpath.worm.tail) = XXX;
+    lpath.next(lpath.worm.head).fill(XXX);
+    lpath.prev(lpath.worm.tail).fill(XXX);
 }
 
 /*************************************************************************//**
@@ -3164,7 +3174,7 @@ PairCorrelationEstimator::PairCorrelationEstimator (const Path &_path,
             norm(n) = 0.5*path.boxPtr->side[NDIM-1] / dR;
     }
     else {
-	blitz::TinyVector<double,3> gNorm;
+	std::array<double,3> gNorm;
         gNorm[0] = 1.0;
         gNorm[1] = 1.0/(M_PI);
         gNorm[2] = 3.0/(2.0*M_PI);
@@ -3236,7 +3246,7 @@ void PairCorrelationEstimator::accumulate() {
 //        double cq = qMag(nq);
 //        std::vector <dVec> qvecs;
 //
-//        int maxComp = ceil(cq*blitz::max(path.boxPtr->side)/(2.0*M_PI))+1;
+//        int maxComp = ceil(cq*(*std::max_element(path.boxPtr->side.begin(), path.boxPtr->side.end())))/(2.0*M_PI))+1;
 //        int maxNumQ = ipow(2*maxComp + 1,NDIM);
 //        
 //        iVec qi;
@@ -3294,7 +3304,7 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
 
     /* Initialize the accumulator intermediate scattering function*/
     sf.resize(numq);
-    sf = 0.0;
+    sf.fill(0.0);
 
     /* This is a diagonal estimator that gets its own file */
     initialize(numq);
@@ -3302,13 +3312,13 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
     /* The magnitude of q */
     header = str(format("#%15.6E") % 0.0);
     for (int nq = 1; nq < numq; nq++)  {
-        double qMag = sqrt(blitz::dot(q[nq][0],q[nq][0]));
+        double qMag = sqrt(std::inner_product(q[nq][0].begin(), q[nq][0].end(), q[nq][0].begin(), 0.0));
         header.append(str(format("%16.6E") % (qMag)));
     }
         /* header.append(str(format("%16.6E") % (qMag(nq)-0.5*dq))); */
 
     /* Utilize imaginary time translational symmetry */
-    norm = 1.0/constants()->numTimeSlices();
+    norm.fill(1.0/constants()->numTimeSlices());
 
     /* Normalize by the number of q-vecs (except when there are none) */
     for (int nq = 0; nq < numq; nq++) {
@@ -3321,7 +3331,6 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
  *  Destructor.
 ******************************************************************************/
 StaticStructureFactorEstimator::~StaticStructureFactorEstimator() { 
-    sf.free();
 }
 
 /*************************************************************************//**
@@ -3334,7 +3343,7 @@ void StaticStructureFactorEstimator::accumulate() {
     int numTimeSlices = constants()->numTimeSlices();
 
     beadLocator bead1,bead2;  // The bead locator
-    sf = 0.0; // initialize
+    sf.fill(0.0); // initialize
 
     /* q-magnitudes */
     for (auto [nq,cq] : enumerate(q)) {
@@ -3514,13 +3523,16 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
 
     /* these are the hard-coded wavevectors for now */
     numq = 3;
-    blitz::Array <double, 1> qMag(numq);         // the wavevector magnitudes
+    DynamicArray <double, 1> qMag(numq);         // the wavevector magnitudes
     /* qMag.resize(numq); */
-    qMag = 0.761,1.75,1.81;
+    //qMag = 0.761,1.75,1.81;
+    qMag(0) = 0.761;
+    qMag(1) = 1.75;
+    qMag(2) = 1.81;
 
     /* initialize the number of std::vectors with each magnitude */
     numqVecs.resize(numq);               
-    numqVecs = 0;
+    numqVecs.fill(0);
 
     /* The allowable error in the wavevector magnitude */
     double eps = 2.0*M_PI/min(path.boxPtr->side)/sqrt(NDIM);
@@ -3532,7 +3544,7 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
         double cq = qMag(nq);
         std::vector <dVec> qvecs;
 
-        int maxComp = ceil(cq*blitz::min(path.boxPtr->side)/(2.0*M_PI))+1;
+        int maxComp = ceil(cq*(*std::min_element(path.boxPtr->side.begin(), path.boxPtr->side.end()))/(2.0*M_PI))+1;
         int maxNumQ = ipow(2*maxComp + 1,NDIM);
         
         iVec qi;
@@ -3573,7 +3585,7 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
     /* Initialize the accumulator for the intermediate scattering function*/
     /* N.B. for now we hard-code three wave-vectors */
     isf.resize(numq*numTimeSlices);
-    isf = 0.0;
+    isf.fill(0.0);
 
     /* This is a diagonal estimator that gets its own file */
     initialize(numq*numTimeSlices);
@@ -3595,7 +3607,7 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
     }
 
     /* utilize imaginary time translational symmetry */
-    norm = 1.0/numTimeSlices;
+    norm.fill(1.0/numTimeSlices);
 }
 
 /*************************************************************************//**
@@ -3616,7 +3628,7 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
     int numTimeSlices = constants()->numTimeSlices();
 
     beadLocator bead1,bead2;  // The bead locator
-    isf = 0.0; // initialize
+    isf.fill(0.0); // initialize
     dVec pos1,pos2;         // The two bead positions
 
     /* q-magnitudes */
@@ -3962,7 +3974,7 @@ RadialDensityEstimator::RadialDensityEstimator (const Path &_path,
     for (int n = 1; n < NRADSEP; n++) 
         header.append(str(format("%16.3E") % ((n)*dR)));
 
-    norm = (actionPtr->period)/ (path.boxPtr->side[NDIM-1]*(endDiagSlice - startSlice));
+    norm.fill((actionPtr->period)/ (path.boxPtr->side[NDIM-1]*(endDiagSlice - startSlice)));
     for (int n = 0; n < NRADSEP; n++) 
         norm(n) /= (M_PI*(2*n+1)*dR*dR);
 }
@@ -3982,8 +3994,10 @@ void RadialDensityEstimator::accumulate() {
     double rsq;
     beadLocator beadIndex;
     for (int slice = startSlice; slice < endDiagSlice; slice += actionPtr->period) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos = path(beadIndex);
             rsq = 0.0;
             for (int i = 0; i < NDIM-1; i++)
@@ -4088,8 +4102,10 @@ void CylinderEnergyEstimator::accumulate() {
     beadLocator beadIndex;
     dVec vel;
     for (int slice = 0; slice < numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             if (include(path(beadIndex),maxR)) {
                 vel = path.getVelocity(beadIndex);
                 totK -= dot(vel,vel);
@@ -4104,18 +4120,18 @@ void CylinderEnergyEstimator::accumulate() {
      * for V and the thermodynamic estimator for K */
     int eo;
     double t1 = 0.0;
-    double t2 = 0.0;
+    //double t2 = 0.0;
     for (int slice = 0; slice < numTimeSlices; slice++) {
         eo = (slice % 2);
         t1 += actionPtr->derivPotentialActionLambda(slice,maxR);
-        t2 += actionPtr->derivPotentialActionTau(slice,maxR);
+        //t2 += actionPtr->derivPotentialActionTau(slice,maxR);
         if (eo==0)
             totV  += actionPtr->potential(slice,maxR);
     }
 
     /* Normalize the action correction and the total potential*/
     t1 *= constants()->lambda()/(constants()->tau()*numTimeSlices);
-    t2 /= 1.0*numTimeSlices;
+    //t2 /= 1.0*numTimeSlices;
     totV /= (0.5 * numTimeSlices);
 
     /* Perform all the normalizations and compute the individual energy terms */
@@ -4257,7 +4273,7 @@ CylinderLinearDensityEstimator::CylinderLinearDensityEstimator
         header.append(str(format("%16.3E") % (n*dz)));
 
     /* The normalization factor for the linear density*/
-    norm = 1.0/(dz * constants()->numTimeSlices());
+    norm.fill(1.0/(dz * constants()->numTimeSlices()));
 }
 
 /*************************************************************************//**
@@ -4275,8 +4291,10 @@ void CylinderLinearDensityEstimator::accumulate() {
     beadLocator beadIndex;
     /* visit each bead */
     for (int slice = 0; slice < path.numTimeSlices; slice++) {
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             pos = path(beadIndex);
 
             /* If we are inside the cutoff cylinder, accumulate the density 
@@ -4346,8 +4364,8 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
 
     /* Sum up the winding number over all particles */
     dVec W,locW,vel;
-    W = 0.0;
-    locW = 0.0;
+    W = dVec{};
+    locW = dVec{};
 
     /* The start bead for each world line, and the moving index */
     beadLocator startBead;
@@ -4358,7 +4376,7 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
     /* We create a local std::vector, which determines whether or not we have
      * already included a bead at slice 0*/
     doBead.resize(numWorldlines);
-    doBead = true;
+    doBead.fill(true);
 
     /* Needed to ensure an included world line */
     bool includeWorldline = true;
@@ -4367,7 +4385,7 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
     for (int n = 0; n < numWorldlines; n++) {
 
         /* The initial bead to be moved */
-        startBead = 0,n;
+        startBead = {0,n};
 
         /* We make sure we don't try to touch the same worldline twice */
         if (doBead(n)) {
@@ -4376,7 +4394,7 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
             beadIndex = startBead;
 
             /* Go through all worldlines, summing up the winding number */
-            locW = 0.0;
+            locW = dVec{};
             includeWorldline = true;
             do {
 
@@ -4393,7 +4411,7 @@ void CylinderSuperfluidFractionEstimator::accumulate() {
                     includeWorldline = false;
 
                 beadIndex = path.next(beadIndex);
-            } while (!all(beadIndex==startBead));
+            } while (!all(beadIndex, startBead));
 
             if (includeWorldline)
                 W += locW;
@@ -4469,7 +4487,7 @@ CylinderOneBodyDensityMatrixEstimator::CylinderOneBodyDensityMatrixEstimator
         header.append(str(format("%16.3E") % (n*dR)));
 
     numReps = 10;
-    norm = 1.0 / (1.0*numReps);
+    norm.fill(1.0 / (1.0*numReps));
 }
 
 /*************************************************************************//**
@@ -4511,8 +4529,7 @@ void CylinderOneBodyDensityMatrixEstimator::sample() {
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec CylinderOneBodyDensityMatrixEstimator::getRandomVector(const double r) {
-    dVec rVec;
-    rVec = 0.0;
+    dVec rVec{};
     if (random.rand() < 0.5)
         rVec[NDIM-1] = r;
     else
@@ -4573,8 +4590,7 @@ void CylinderOneBodyDensityMatrixEstimator::accumulate() {
      * as we go. */
     beadLocator beadIndex;
     beadIndex = lpath.worm.head;
-    dVec pos;
-    pos = 0.0;
+    dVec pos{};
     for (int k = 0; k < (lpath.worm.gap-1); k++) 
         beadIndex = lpath.addNextBead(beadIndex,pos);
 
@@ -4607,7 +4623,7 @@ void CylinderOneBodyDensityMatrixEstimator::accumulate() {
             beadIndex = lpath.worm.head;
             int k = 0;
             do {
-                if (!all(beadIndex==lpath.worm.head) && !all(beadIndex==lpath.worm.tail)) {
+                if (!all(beadIndex, lpath.worm.head) && !all(beadIndex, lpath.worm.tail)) {
                     lpath.updateBead(beadIndex,
                             newStagingPosition(path.prev(beadIndex),lpath.worm.tail,lpath.worm.gap,k));
                     ++k;
@@ -4616,7 +4632,7 @@ void CylinderOneBodyDensityMatrixEstimator::accumulate() {
                 newAction += actionPtr->potentialAction(beadIndex);
 
                 beadIndex = lpath.next(beadIndex);
-            } while (!all(beadIndex==lpath.next(lpath.worm.tail)));
+            } while (!all(beadIndex, lpath.next(lpath.worm.tail)));
 
             double expAction = exp(-newAction + oldAction + muShift);
             estimator(n) += rho0Norm*expAction;
@@ -4635,11 +4651,11 @@ void CylinderOneBodyDensityMatrixEstimator::accumulate() {
 
     /* Delete all the beads that were added. */
     beadIndex = lpath.next(lpath.worm.head);
-    while (!all(beadIndex==lpath.worm.tail)) {
+    while (!all(beadIndex, lpath.worm.tail)) {
         beadIndex = lpath.delBeadGetNext(beadIndex);
     }
-    lpath.next(lpath.worm.head) = XXX;
-    lpath.prev(lpath.worm.tail) = XXX;
+    lpath.next(lpath.worm.head).fill(XXX);
+    lpath.prev(lpath.worm.tail).fill(XXX);
 }
 
 // ---------------------------------------------------------------------------
@@ -4672,7 +4688,7 @@ CylinderPairCorrelationEstimator::CylinderPairCorrelationEstimator (const Path &
         header.append(str(format("%16.3E") % ((n)*dR)));
 
     /* The normalization factor for the pair correlation function */
-    norm = 0.5*path.boxPtr->side[NDIM-1] / dR;
+    norm.fill(0.5*path.boxPtr->side[NDIM-1] / dR);
 }
 
 /*************************************************************************//**
@@ -4758,7 +4774,7 @@ void CylinderLinearPotentialEstimator::accumulate1() {
 
     double totV = 0.0;
     dVec r1,r2;         // The two bead positions
-    r1 = 0.0;
+    r1 = dVec{};
 
     dVec sep;           // The bead separation
     beadLocator bead2;  // The bead locator
@@ -4953,7 +4969,7 @@ void CylinderRadialPotentialEstimator::accumulate1() {
     beadLocator bead1,bead2;    // The bead locators
     bool found1,found2;         // Are the beads in the central chain
     found1 = found2 = false;
-    radPot = 0.0;
+    radPot.fill(0.0);
     int numFound1 = 0;
 
     /* We sum up the external and interaction energy over all slices*/
@@ -5035,7 +5051,7 @@ CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
 
     /* Initialize the accumulator intermediate scattering function*/
     sf.resize(numq);
-    sf = 0.0;
+    sf.fill(0.0);
 
     /* This is a diagonal estimator that gets its own file */
     initialize(numq);
@@ -5043,12 +5059,12 @@ CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
     /* The magnitude of q */
     header = str(format("#%15.6E") % 0.0);
     for (int nq = 1; nq < numq; nq++)  {
-        double qMag = sqrt(blitz::dot(q[nq][0],q[nq][0]));
+        double qMag = sqrt(std::inner_product(q[nq][0].begin(), q[nq][0].end(), q[nq][0].begin(), 0.0));
         header.append(str(format("%16.6E") % (qMag)));
     }
 
     /* Utilize imaginary time translational symmetry */
-    norm = 1.0/constants()->numTimeSlices();
+    norm.fill(1.0/constants()->numTimeSlices());
 
     /* Normalize by the number of q-vecs (except when there are none) */
     for (int nq = 0; nq < numq; nq++) {
@@ -5062,7 +5078,6 @@ CylinderStaticStructureFactorEstimator::CylinderStaticStructureFactorEstimator(
  *  Destructor.
 ******************************************************************************/
 CylinderStaticStructureFactorEstimator::~CylinderStaticStructureFactorEstimator() { 
-    sf.free();
 }
 
 /*************************************************************************//**
@@ -5074,7 +5089,7 @@ void CylinderStaticStructureFactorEstimator::accumulate() {
     int numTimeSlices = constants()->numTimeSlices();
 
     beadLocator bead1,bead2;  // The bead locator
-    sf = 0.0; // initialize
+    sf.fill(0.0); // initialize
 
     /* q-magnitudes */
     for (auto [nq,cq] : enumerate(q)) {
@@ -5370,12 +5385,14 @@ void KineticEnergyEstimator::accumulate() {
     double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
     
     beadLocator beadIndex;
-    dVec vel,pos;
+    dVec vel;//,pos;
     for (int slice = 0; slice < (numTimeSlices-1); slice+=2) {
         double K = 0.0;
         for (int eo = 0; eo < 2; eo++){
-            for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice+eo); ptcl++) {
-                beadIndex = slice+eo,ptcl;
+	    beadIndex[0] = slice + eo;
+            int numBeads = path.numBeadsAtSlice(slice + eo);
+            for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+                beadIndex[1] = ptcl;
                 vel = path.getVelocity(beadIndex);
                 K -= dot(vel,vel);
             }
@@ -5448,11 +5465,13 @@ void TotalEnergyEstimator::accumulate() {
     double classicalKinetic = (0.5 * NDIM / constants()->tau()) * numParticles;
     
     beadLocator beadIndex;
-    dVec vel,pos;
+    dVec vel;//,pos;
     for (int slice = 0; slice < (numTimeSlices-1); slice++) {
         double K = 0.0;
-        for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-            beadIndex = slice,ptcl;
+	beadIndex[0] = slice;
+        int numBeads = path.numBeadsAtSlice(slice);
+        for (int ptcl = 0; ptcl < numBeads; ptcl++) {
+            beadIndex[1] = ptcl;
             vel = path.getVelocity(beadIndex);
             K -= dot(vel,vel);
         }
@@ -5665,8 +5684,7 @@ void ParticleCorrelationEstimator::accumulate() {
     
     beadIndex0[0] = (path.numTimeSlices-1)/2;
     beadIndex[0] = beadIndex0[0];
-    dVec r;
-    r = 0.0;
+    dVec r{};
     
     beadIndex0[1]=0;
     for (beadIndex[1] = 1; beadIndex[1] <path.numBeadsAtSlice(beadIndex[0]);
@@ -5721,14 +5739,17 @@ void VelocityEstimator::accumulate() {
     beadLocator beadIndex;
     dVec vel;
     
+    constexpr beadLocator inactiveBead = {XXX, XXX};
     beadIndex[1] = 0;
     for (beadIndex[0] = 0; beadIndex[0] < (path.numTimeSlices-1); ++beadIndex[0]) {
-        if ( (path.breakSlice > 0) && (beadIndex[0] == path.breakSlice)
-                                    &&( all(path.next(beadIndex)==XXX) ) ){
+        if ( (path.breakSlice > 0) &&
+             (beadIndex[0] == path.breakSlice) && 
+             all(path.next(beadIndex), inactiveBead)
+           ) {
             beadLocator nextBead = beadIndex;
             nextBead[0]++;
             vel = path.getSeparation(beadIndex,nextBead);
-        }else
+        } else
             vel = path.getVelocity(beadIndex);
         estimator(beadIndex[0]) += sqrt(dot(vel,vel));
     }
@@ -5828,7 +5849,7 @@ PIGSOneBodyDensityMatrixEstimator::PIGSOneBodyDensityMatrixEstimator (Path &_pat
     sqrt2LambdaTau = sqrt(2.0 * constants()->lambda() * constants()->tau());
 
     /* We chooose the maximum separation to be sqrt(NDIM)*min(L)/2 */
-    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*(blitz::min(path.boxPtr->side)) / (1.0*NOBDMSEP);
+    dR = 0.5*sqrt(sum(path.boxPtr->periodic))*(*std::min_element(path.boxPtr->side.begin(), path.boxPtr->side.end())) / (1.0*NOBDMSEP);
 
     /* This is an off-diagonal estimator*/
     initialize(NOBDMSEP);
@@ -5840,7 +5861,7 @@ PIGSOneBodyDensityMatrixEstimator::PIGSOneBodyDensityMatrixEstimator (Path &_pat
         header.append(str(format("%16.3E") % (n*dR)));
 
     numReps = 5;
-    norm = 1.0 / (1.0*numReps);
+    norm.fill(1.0 / (1.0*numReps));
 }
 
 /*************************************************************************//**
@@ -5886,13 +5907,12 @@ void PIGSOneBodyDensityMatrixEstimator::sample() {
  *  @return a random NDIM-vector of length r
 ******************************************************************************/
 inline dVec PIGSOneBodyDensityMatrixEstimator::getRandomVector(const double r) {
-    dVec rVec;
-    rVec = 0.0;
+    dVec rVec{};
 #if NDIM==1
     if (random.rand() < 0.5)
-        rVec = r;
+        rVec[0] = r;
     else
-        rVec = -r;
+        rVec[0] = -r;
 #elif NDIM==2
     double theta = 2.0*M_PI*random.rand();
     rVec[0] = r*cos(theta);
@@ -5934,8 +5954,7 @@ void PIGSOneBodyDensityMatrixEstimator::accumulate() {
    oldTailPos = lpath(beadIndexR);
    //oldAction = actionPtr->potentialAction(beadIndexR);
 
-   dVec pos;
-   pos = 0.0;
+   //dVec pos{};
 
    /* Connection the broken beads*/
    //lpath.next(beadIndexL) = beadIndexR;

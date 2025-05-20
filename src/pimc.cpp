@@ -92,7 +92,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     /* Number probability distribution used when relaxing chemical potential.
      * We assume the maximum possible number is 2000 particles */
     PN.resize(2000);
-    PN = 0;
+    PN.fill(0);
     foundmu = false;
     muFactor = 1.0;
     sgnAveN = 0;
@@ -161,7 +161,6 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
  *  Destructor.
 ******************************************************************************/
 PathIntegralMonteCarlo::~PathIntegralMonteCarlo () {
-    PN.free();
 }
 
 /**************************************************************************//**
@@ -216,7 +215,7 @@ void PathIntegralMonteCarlo::equilStepDiagonal() {
             if ( (move.at(index).getNumAttempted() > 0) 
                     && (move.at(index).getNumAttempted() > prevNumCoMAttempted)
                     && (move.at(index).getNumAttempted() % numCoMAttempted == 0) 
-                    && (constants()->comDelta() < 0.5*blitz::min(path.boxPtr->side)) ) {
+                    && (constants()->comDelta() < 0.5*(*std::min_element(path.boxPtr->side.begin(), path.boxPtr->side.end()))) ) {
 
                 numCoMAccepted  = move.at(index).getNumAccepted() - numCoMAccepted;
                 double CoMRatio = 1.0*numCoMAccepted / numCoMAttempted;
@@ -327,9 +326,8 @@ bool PathIntegralMonteCarlo::equilStepRelaxmu() {
             std::cout << printHistogram();
 
             /* Compute the peak loation and average number of particles */
-            int peakN = blitz::maxIndex(PN)[0];
-	    blitz::firstIndex i;
-            int aveN = round(blitz::sum(i*PN)/blitz::sum(PN));
+            int peakN = static_cast<int>(std::distance(PN.begin(), std::max_element(PN.begin(), PN.end())));
+            int aveN = round(weighted_average(PN));
 
             /* If we have shifted the peak to the desired value, exit */
             if (peakN == N0) {
@@ -391,7 +389,7 @@ bool PathIntegralMonteCarlo::equilStepRelaxmu() {
                 /* std::cout << format("%12d%12d%12d\n") % peakN % aveN % path.getTrueNumParticles(); */
 
                 numNAttempted = 0;
-                PN = 0;
+                PN.fill(0);
 
             } // haven't moved peak yet
 
@@ -879,8 +877,8 @@ void PathIntegralMonteCarlo::saveState(const int finalSave) {
 /**************************************************************************//**
  *  Load a classical ground state from file.
 ******************************************************************************/
-void PathIntegralMonteCarlo::loadClassicalState(blitz::Array <dVec,2> &tempBeads,
-        blitz::Array <unsigned int, 2> &tempWormBeads, int numWorldLines) {
+void PathIntegralMonteCarlo::loadClassicalState(DynamicArray <dVec,2> &tempBeads,
+        DynamicArray <unsigned int, 2> &tempWormBeads, int numWorldLines) {
 
     /* We go through each active worldline and create a new classical
      * configuration */
@@ -890,14 +888,14 @@ void PathIntegralMonteCarlo::loadClassicalState(blitz::Array <dVec,2> &tempBeads
     for(uint32 pIdx=0; pIdx<Npaths; pIdx++){
         ptcl = 0;
         for (int n = 0; n < numWorldLines; n++) {
-            beadIndex = 0,n;
+            beadIndex = {0, n};
 
             /* Check if the bead is on */
             if (tempWormBeads(beadIndex)) {
                 
                 /* Assign the classical configuration */
-                pathPtrVec[pIdx].beads(blitz::Range::all(),ptcl) = tempBeads(beadIndex);
-                pathPtrVec[pIdx].worm.beads(blitz::Range::all(),ptcl) = 1;
+            fill_mdspan(pathPtrVec[pIdx].beads.slice<1>(ptcl), tempBeads(beadIndex));
+            fill_mdspan(pathPtrVec[pIdx].worm.beads.slice<1>(ptcl), 1);
                 ptcl++;
             }
         }
@@ -907,12 +905,12 @@ void PathIntegralMonteCarlo::loadClassicalState(blitz::Array <dVec,2> &tempBeads
 /**************************************************************************//**
  *  Load a quantum ground state from file.
 ******************************************************************************/
-void PathIntegralMonteCarlo::loadQuantumState(blitz::Array <dVec,2> &tempBeads, 
-        blitz::Array <beadLocator,2> &tempNextLink, blitz::Array <beadLocator,2> &tempPrevLink,
+void PathIntegralMonteCarlo::loadQuantumState(DynamicArray <dVec,2> &tempBeads, 
+        DynamicArray <beadLocator,2> &tempNextLink, DynamicArray <beadLocator,2> &tempPrevLink,
         int numTimeSlices, int tempNumWorldLines) {
 
     /* Prevent double counting of worldlines */
-    blitz::Array <bool, 1> doBead(tempNumWorldLines);
+    DynamicArray <bool, 1> doBead(tempNumWorldLines);
 
     beadLocator startBead,beadIndex;
     beadLocator newStartBead;
@@ -921,16 +919,16 @@ void PathIntegralMonteCarlo::loadQuantumState(blitz::Array <dVec,2> &tempBeads,
     
     for(uint32 pIdx=0; pIdx<Npaths; pIdx++) {
 
-        newStartBead = 0,0;
+        newStartBead = {0, 0};
         ptcl = 0;
         slice = 0;
-        doBead = true;
+        doBead.fill(true);
         
         /* Now we iterate through each worldline exactly once */
         for (int n = 0; n < tempNumWorldLines; n++) {
 
             /* The initial bead to be moved */
-            startBead = 0,n;
+            startBead = {0, n};
 
             /* We make sure we don't try to touch the same worldline twice */
             if (doBead(n)) {
@@ -940,7 +938,7 @@ void PathIntegralMonteCarlo::loadQuantumState(blitz::Array <dVec,2> &tempBeads,
                 /* The world line length, we simply advance until we have looped back on 
                  * ourselves. */
                 slice = 0;
-                newStartBead = slice,ptcl;
+                newStartBead = {slice, ptcl};
                 do {
                     /* We turn off any zero-slice beads we have touched */
                     if (beadIndex[0]==0)
@@ -954,12 +952,12 @@ void PathIntegralMonteCarlo::loadQuantumState(blitz::Array <dVec,2> &tempBeads,
 
                     /* Do a forward reconnection, provided we are not at the
                      * last bead */
-                    if ( ((slice % numTimeSlices) == 0) && !all(beadIndex==startBead)) {
-                        pathPtrVec[pIdx].nextLink(numTimeSlices-1,ptcl) = 0,ptcl+1;
-                        pathPtrVec[pIdx].prevLink(0,ptcl+1) = numTimeSlices-1,ptcl;
+                    if ( ((slice % numTimeSlices) == 0) && !all(beadIndex, startBead)) {
+                        pathPtrVec[pIdx].nextLink(numTimeSlices - 1, ptcl) = {0, ptcl + 1};
+                        pathPtrVec[pIdx].prevLink(0, ptcl + 1) = {numTimeSlices - 1, ptcl};
                         ++ptcl;
                     }
-                } while (!all(beadIndex==startBead));
+                } while (!all(beadIndex, startBead));
 
                 /* Now we have to add the remaining beads and perform the final
                  * reconnection */
@@ -967,16 +965,13 @@ void PathIntegralMonteCarlo::loadQuantumState(blitz::Array <dVec,2> &tempBeads,
                     pathPtrVec[pIdx].beads(tslice,ptcl) = tempBeads(beadIndex);
                     pathPtrVec[pIdx].worm.beads(tslice,ptcl) = 1;
                 }
-                pathPtrVec[pIdx].nextLink(numTimeSlices-1,ptcl) = newStartBead;
-                pathPtrVec[pIdx].prevLink(newStartBead) = numTimeSlices-1,ptcl;
+                pathPtrVec[pIdx].nextLink(numTimeSlices - 1, ptcl) = newStartBead;
+                pathPtrVec[pIdx].prevLink(newStartBead) = {numTimeSlices - 1, ptcl};
                 ++ptcl;
 
             } // doBead
         } // n
     } // pIdx
-
-    /* Free local memory */
-    doBead.free();
 
 }
 
@@ -1027,13 +1022,13 @@ void PathIntegralMonteCarlo::loadState() {
         pathPtrVec[pIdx].worm.beads.resize(numTimeSlices,numWorldLines);
 
         /* A temporary container for the beads array */
-	blitz::Array <dVec,2> tempBeads;
+        DynamicArray <dVec,2> tempBeads;
 
         /* Get the worldline configuration */
         communicate()->file(fileInitStr)->stream() >> tempBeads;
 
         /* The temporary number of time slices */
-        int tempNumTimeSlices = tempBeads.rows();
+        int tempNumTimeSlices = tempBeads.extents()[0];
 
         if (tempNumTimeSlices == numTimeSlices) {
         
@@ -1051,25 +1046,44 @@ void PathIntegralMonteCarlo::loadState() {
         else {
 
             /* Initialize the links */
-	    blitz::firstIndex i1;
-	    blitz::secondIndex i2;
-            pathPtrVec[pIdx].prevLink[0] = i1-1;
-            pathPtrVec[pIdx].prevLink[1] = i2;
-            pathPtrVec[pIdx].nextLink[0] = i1+1;
-            pathPtrVec[pIdx].nextLink[1] = i2;
+            // Get extents of DynamicArray
+            std::array<std::size_t, 2> extents = pathPtrVec[pIdx].prevLink.extents();
+            std::size_t rows = extents[0];
+            std::size_t cols = extents[1];
+            
+            // Get pointers to the underlying contiguous storage.
+            auto* pprev = pathPtrVec[pIdx].prevLink.data();
+            auto* pnext = pathPtrVec[pIdx].nextLink.data();
+            
+            for (std::size_t i = 0; i < rows; ++i) {
+                for (std::size_t j = 0; j < cols; ++j) {
+                    std::size_t index = i * cols + j;
+                    // For prevLink, assign {i-1, j}
+                    pprev[index] = { static_cast<int>(i) - 1, static_cast<int>(j) };
+                    // For nextLink, assign {i+1, j}
+                    pnext[index] = { static_cast<int>(i) + 1, static_cast<int>(j) };
+                }
+            }
         
             /* Here we implement the initial periodic boundary conditions in 
              * imaginary time */
-            pathPtrVec[pIdx].prevLink(0,blitz::Range::all())[0] = numTimeSlices-1;
-            pathPtrVec[pIdx].nextLink(numTimeSlices-1,blitz::Range::all())[0] = 0;
+            auto pLrow = pathPtrVec[pIdx].prevLink.slice<0>(0);
+            for (std::size_t j = 0; j < pLrow.extent(0); ++j) {
+                pLrow(j) = { numTimeSlices - 1, static_cast<int>(j) };
+            }
+
+            auto nLrow = pathPtrVec[pIdx].nextLink.slice<0>(numTimeSlices - 1);
+            for (std::size_t j = 0; j < nLrow.extent(0); ++j) {
+                nLrow(j) = { 0, static_cast<int>(j) };
+            }
 
             /* Reset the worm.beads array */
-            pathPtrVec[pIdx].worm.beads = 0;
+            pathPtrVec[pIdx].worm.beads.fill(0);
 
             /* Temporary containers for the links and worm beads */
-	    blitz::Array <beadLocator,2> tempNextLink;
-	    blitz::Array <beadLocator,2> tempPrevLink;
-	    blitz::Array <unsigned int,2> tempWormBeads;
+            DynamicArray <beadLocator,2> tempNextLink;
+            DynamicArray <beadLocator,2> tempPrevLink;
+            DynamicArray <unsigned int,2> tempWormBeads;
 
             /* Get the link arrays and worm file */
             communicate()->file(fileInitStr)->stream() >> tempNextLink;
@@ -1089,19 +1103,15 @@ void PathIntegralMonteCarlo::loadState() {
             /* Now we make sure all empty beads are unlinked */
             beadLocator beadIndex;
             for (int slice = 0; slice < numTimeSlices; slice++) {
+                beadIndex[0] = slice;
                 for (int ptcl = 0; ptcl < numWorldLines; ptcl++) {
-                    beadIndex = slice,ptcl;
+                    beadIndex[1] = ptcl;
                     if (!pathPtrVec[pIdx].worm.beads(beadIndex)) {
-                        pathPtrVec[pIdx].nextLink(beadIndex) = XXX;
-                        pathPtrVec[pIdx].prevLink(beadIndex) = XXX;
+                        pathPtrVec[pIdx].nextLink(beadIndex) = {XXX, XXX};
+                        pathPtrVec[pIdx].prevLink(beadIndex) = {XXX, XXX};
                     }
                 }
             }
-
-            /* Free local memory */
-            tempPrevLink.free();
-            tempNextLink.free();
-            tempWormBeads.free();
 
         } // locBeads.rows() != numTimeSlices
 
@@ -1120,7 +1130,7 @@ void PathIntegralMonteCarlo::loadState() {
         /* Go through all beads, and make sure they fit inside the simulation cell.
          * At the same time, determine how many active beads there are per slice */
         beadLocator beadIndex;
-        pathPtrVec[pIdx].numBeadsAtSlice = 0;
+        pathPtrVec[pIdx].numBeadsAtSlice.fill(0);
         for (beadIndex[0] = 0; beadIndex[0] < numTimeSlices; ++beadIndex[0]) {
             for (beadIndex[1] = 0; beadIndex[1] < numWorldLines; ++beadIndex[1]) {
                 pathPtrVec[pIdx].boxPtr->putInside(path(beadIndex));
@@ -1143,9 +1153,6 @@ void PathIntegralMonteCarlo::loadState() {
         /* Close the file */
         communicate()->file(fileInitStr)->close();
         
-        /* Free up memory */
-        tempBeads.free();
-        
     }
 }
 
@@ -1167,23 +1174,23 @@ void PathIntegralMonteCarlo::outputPDB() {
 
     /* We go through all beads, and find the start and end bead for each
      * worldline, adding them to an array */
-    blitz::Array <beadLocator,1> startBead,endBead;
+    DynamicArray <beadLocator,1> startBead,endBead;
     startBead.resize(numParticles);
     endBead.resize(numParticles);
 
     /* We sort the output by the number of beads in a worldline */
-    blitz::Array <int,1> wlLength(numParticles);
-    wlLength = 0;
+    DynamicArray <int,1> wlLength(numParticles);
+    wlLength.fill(0);
 
     /* This is the index-beadNumber mapping array */
-    blitz::Array <int,2> beadNum(numTimeSlices,numParticles);
-    beadNum = 0;
+    DynamicArray <int,2> beadNum(numTimeSlices,numParticles);
+    beadNum.fill(0);
 
     int numWorldLines = 0;
 
     /* Get the list of beads that are active in the simulation */
-    blitz::Array <bool,2> doBead(numTimeSlices,numParticles);      
-    doBead = blitz::cast<bool>(path.worm.getBeads());
+    DynamicArray <bool,2> doBead(numTimeSlices,numParticles);      
+    doBead = castArray<bool>(path.worm.getBeads());
 
     /* We go through each particle/worldline */
     int nwl = 0;
@@ -1191,7 +1198,7 @@ void PathIntegralMonteCarlo::outputPDB() {
     for (int n = 0; n < numParticles; n++) {
 
         /* The initial bead to be moved */
-        startBead(nwl) = 0,n;
+        startBead(nwl) = {0,n};
 
         /* We make sure we don't try to touch the same worldline twice */
         if (doBead(startBead(nwl))) {
@@ -1216,7 +1223,7 @@ void PathIntegralMonteCarlo::outputPDB() {
                 beadNumber++;
                 length++;
                 beadIndex = path.next(beadIndex);
-            } while (!all(beadIndex==endBead(nwl)));
+            } while (!all(beadIndex, endBead(nwl)));
 
             /* We label each trajectory by the number of particles it contains.
              * a worm is always given label 0 */
@@ -1274,7 +1281,7 @@ void PathIntegralMonteCarlo::outputPDB() {
             communicate()->file("wl")->stream() << format("%14s\n") % "HE";
 
             beadIndex = path.next(beadIndex);
-        } while (!all(beadIndex==endBead(n)));
+        } while (!all(beadIndex, endBead(n)));
     }
     communicate()->file("wl")->stream() <<("TER\n");
 
@@ -1308,16 +1315,9 @@ void PathIntegralMonteCarlo::outputPDB() {
             communicate()->file("wl")->stream() << std::endl;
 
             beadIndex = path.next(beadIndex);
-        } while (!all(beadIndex==endBead(n)));
+        } while (!all(beadIndex, endBead(n)));
     }
     communicate()->file("wl")->stream() <<("END\n");
-
-    /* Free up memory */
-    startBead.free();
-    endBead.free();
-    wlLength.free();
-    beadNum.free();
-    doBead.free();
 }
 
 /**************************************************************************//**
@@ -1327,9 +1327,9 @@ void PathIntegralMonteCarlo::outputPDB() {
 void PathIntegralMonteCarlo::printWormState() {
 
     /* We make a list of all the beads contained in the worm */
-    blitz::Array <beadLocator,1> wormBeads;    // Used for debugging
+    DynamicArray <beadLocator,1> wormBeads;    // Used for debugging
     wormBeads.resize(path.worm.length+1);
-    wormBeads = XXX;
+    wormBeads.fill({XXX, XXX});
 
     /* Output the worldline configuration */
     communicate()->file("debug")->stream() << " (" << path.getTrueNumParticles() << ")" << std::endl;
@@ -1346,12 +1346,11 @@ void PathIntegralMonteCarlo::printWormState() {
             wormBeads(n) = beadIndex;
             beadIndex = path.next(beadIndex);
             ++n;
-        } while(!all(beadIndex==path.next(path.worm.head)));
+        } while(!all(beadIndex, path.next(path.worm.head)));
     }
 
     path.printWormConfig(wormBeads);
     path.printLinks<std::fstream>(communicate()->file("debug")->stream());
-    wormBeads.free();
 }
 
 /**************************************************************************//**
@@ -1376,7 +1375,7 @@ std::string PathIntegralMonteCarlo::printHistogram() {
     if (end > PN.size()-1)
         end = PN.size()-1;
 
-    double factor = 50.0/blitz::max(PN);
+    double factor = 50.0/(*std::max_element(PN.begin(),PN.end()));
     int sumPN = 0;
     for (decltype(start) n = start; n <= end; n++) {
         int numStars = int(PN(n)*factor);
@@ -1394,8 +1393,7 @@ std::string PathIntegralMonteCarlo::printHistogram() {
         /* std::cout << "setting mu" << std::endl; */
     /* } */
 
-    blitz::firstIndex i;
-    double aveN = (blitz::sum(i*PN)/blitz::sum(PN));
+    double aveN = (weighted_average(PN));
 
     double diffAveN = abs(N0-aveN);
 

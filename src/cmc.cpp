@@ -23,7 +23,7 @@
 ******************************************************************************/
 ClassicalMonteCarlo::ClassicalMonteCarlo (PotentialBase *_externalPtr,
         PotentialBase *_interactionPtr, MTRand &_random, const Container *_boxPtr,
-        blitz::Array <dVec,1> &initialPos) :
+        DynamicArray <dVec,1> &initialPos) :
     externalPtr(_externalPtr), 
     interactionPtr(_interactionPtr),
     random(_random),
@@ -31,7 +31,8 @@ ClassicalMonteCarlo::ClassicalMonteCarlo (PotentialBase *_externalPtr,
     config(initialPos)
 {
     /* The number of particles */
-    numParticles = config.extent(blitz::firstDim);
+    numParticles = config.extents()[0];
+
 
     /* Set the fugacity z*/
     z = exp(constants()->mu()/constants()->T())/pow(constants()->dBWavelength(),NDIM);
@@ -69,7 +70,7 @@ ClassicalMonteCarlo::~ClassicalMonteCarlo ()
 double ClassicalMonteCarlo::getTotalEnergy()
 {
     double locEnergy = 0.0;
-    sep = 0.0;
+    sep = dVec{};
     for (int part1 = 0; part1 < numParticles; part1++) {
         locEnergy += externalPtr->V(config(part1));
 
@@ -86,8 +87,7 @@ double ClassicalMonteCarlo::getTotalEnergy()
  * Perform the monte carlo simulation.
 ******************************************************************************/
 void ClassicalMonteCarlo::run(uint32 numMCSteps, bool gce) {
-
-    int numMeasure = 0;
+    //int numMeasure = 0;
     double x;
     for(uint32 n = 1; n < numMCSteps; n++) {
         int m = 0;
@@ -109,7 +109,7 @@ void ClassicalMonteCarlo::run(uint32 numMCSteps, bool gce) {
             aveEnergy += energy;
             aveNumParticles += numParticles;
             aveEoN += energy/(1.0*numParticles);
-            numMeasure++;
+            //numMeasure++;
 
             m++;
         } while (m < numParticles);
@@ -128,8 +128,7 @@ void ClassicalMonteCarlo::run(uint32 numMCSteps, bool gce) {
 ******************************************************************************/
 void ClassicalMonteCarlo::moveParticle() {
 
-    dVec oldPos;
-    oldPos = 0.0;
+    dVec oldPos{};
     double oldV,newV;
 
     numMoveTotal++;
@@ -179,8 +178,7 @@ void ClassicalMonteCarlo::moveParticle() {
 ******************************************************************************/
 void ClassicalMonteCarlo::insertParticle() {
 
-    dVec newPos;
-    newPos = 0.0;
+    dVec newPos{};
 
     numInsertTotal++;
 
@@ -199,7 +197,7 @@ void ClassicalMonteCarlo::insertParticle() {
     /* Now the metropolis step */
     if (random.rand() < factor*exp(-deltaV/constants()->T())) {
         energy += deltaV;
-        if (config.extent(blitz::firstDim) < (numParticles+1))
+        if (config.extents()[0] < static_cast<std::size_t>(numParticles+1))
             config.resizeAndPreserve(numParticles+1);
         config(numParticles) = newPos;
         numParticles++;

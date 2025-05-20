@@ -40,33 +40,24 @@ LookupTable::LookupTable(const Container *_boxPtr, const int _numLookupTimeSlice
 
     /* Resize and initialize the main hash array */
     hash.resize(hashSize);
-    hash = XXX;
+    hash.fill(XXX);
 
     /* Resize and initialize the grid and bead label and list arrays */
     resizeList(_numParticles);
-    grid = XXX;
-    beadLabel= XXX;
-    beadList = XXX;
-    fullBeadList = XXX;
-    beadSep = 0.0;
+    grid.fill(make_array<iVec>(XXX));
+    beadLabel.fill(XXX);
+    beadList.fill({XXX, XXX});
+    fullBeadList.fill({XXX, XXX});
+    beadSep.fill(dVec{});
 
     /* Initialize the cutoff^2 */
     rc2 = constants()->rc2();
 }
 
 /**************************************************************************//**
- * Free all blitz arrays.
+ * Free all memory.
 ******************************************************************************/
 LookupTable::~LookupTable() {
-    gridNN.free(); 
-    gridNNReduced.free();
-    beadList.free();
-    fullBeadList.free();
-    beadSep.free();
-    hash.free();
-    grid.free();
-    beadLabel.free();
-    numLabels.free();
 }
 
 /**************************************************************************//**
@@ -93,19 +84,19 @@ void LookupTable::setupNNGrid() {
     }
 
     /* Resize and initialize the numLabels array*/
-    blitz::TinyVector <int,NDIM+1> initNumLabels;
+    std::array <int,NDIM+1> initNumLabels;
     for (int i = 0; i < NDIM; i++) 
         initNumLabels[i] = numNNGrid[i];
     initNumLabels[NDIM] = constants()->numTimeSlices();
     numLabels.resize(initNumLabels);
-    numLabels= 0;
+    numLabels.fill(0);
 
     /* Now we set the array which holds the nearest neighbors of each
      * grid box which will be used in calculating the potential.  We need
      * to take into account that we may have periodic boundary conditions */
     numNN = ipow(3,NDIM);                           // The total number of NN
     numUniqueNN = (int) floor(0.5*(numNN-1) + EPS); // The unique NN
-    blitz::TinyVector <int,NDIM+1> init;
+    std::array <int,NDIM+1> init;
 
     /* Get the init vector used to resize data structures */
     for (int i = 0; i < NDIM; i++) 
@@ -120,11 +111,10 @@ void LookupTable::setupNNGrid() {
     /* This is somewhat complicated.  Basically we want to construct the list of 
      * nearest neighbors of a given grid box for general dimension.  This consists
      * of moving 'forward', 'zero' and 'back' in each dimension */
-    blitz::Array <iVec,1> nnShift(numNN);
-    nnShift = 0; 
+    DynamicArray <iVec,1> nnShift(numNN);
+    nnShift.fill(iVec{}); 
     /* The shift vector */
-    blitz::TinyVector<int,3> shift;
-    shift = -1,0,1;
+    std::array<int,3> shift{-1,0,1};
 
     /* For each of the unique nearest neighbors, we construct shift vectors 
      * this includes all redundancies and even a zero shift, this is taken
@@ -172,7 +162,7 @@ void LookupTable::setupNNGrid() {
      * other corresponding to the same box.  We simply set such neighbors to -1 and
      * have logic in the potential class to skip these. */
     iVec neg,dup;
-    neg = -1;
+    neg.fill(-1);
     /* We go through each grid box */
     for (int n = 0; n < totNumGridBoxes; n++) {
         gIndex = gridIndex(n);
@@ -187,7 +177,7 @@ void LookupTable::setupNNGrid() {
             for (int p = m-1; p >= 0; p--) {
                 nnIndex[NDIM] = p;
                 /* Check for a duplicate */
-                if (all(gridNN(nnIndex)==dup)) 
+                if (all(gridNN(nnIndex), dup)) 
                     gridNN(nnIndex) = neg;
             } // end p
         } // end m
@@ -218,7 +208,7 @@ void LookupTable::setupNNGrid() {
             dup = gridNNReduced(nnIndex); 
 
             /* We only follow links for real grid boxes */
-            if (!any(dup == -1)) {
+            if (noneEquals(dup, XXX)) {
 
                 for (int i = 0; i < NDIM; i++) 
                     nnIndex[i] = dup[i];
@@ -228,7 +218,7 @@ void LookupTable::setupNNGrid() {
                  * box */
                 for (int p = (numUniqueNN+1); p < numNN; p++) {
                     nnIndex[NDIM] = p;
-                    if (all(gridNNReduced(nnIndex) == gIndex))
+                    if (all(gridNNReduced(nnIndex), gIndex))
                         gridNNReduced(nnIndex) = neg;
                 } // end p
 
@@ -283,12 +273,13 @@ void LookupTable::printGrid() {
  *  Update the full nearest neighbor for a set of fixed particles, which are
  *  never updated and have the same position at all time slices.
 ******************************************************************************/
-void LookupTable::updateGrid(const blitz::Array <dVec,1> &fixedPos) {
+void LookupTable::updateGrid(const DynamicArray <dVec,1> &fixedPos) {
 
-    numLabels = 0;
+    numLabels.fill(0);
     beadLocator beadIndex;
     beadIndex[0] = 0;
-    for (int n = 0; n < fixedPos.extent(blitz::firstDim); ++n) {
+    for (int n = 0; n < static_cast<int>(fixedPos.extents()[0]); ++n) {
+
         beadIndex[1] = n;
 
         /* First we figure out which grid box the particle is currently in */
@@ -322,7 +313,7 @@ void LookupTable::updateGrid(const blitz::Array <dVec,1> &fixedPos) {
 ******************************************************************************/
 void LookupTable::updateGrid(const Path &path) {
 
-    numLabels = 0;
+    numLabels.fill(0);
     beadLocator beadIndex;
     for (beadIndex[0] = 0; beadIndex[0] < constants()->numTimeSlices(); ++beadIndex[0]) {
         for (beadIndex[1] = 0; beadIndex[1] < path.getNumParticles(); ++beadIndex[1]) {
@@ -367,7 +358,7 @@ void LookupTable::updateBead(const beadLocator &beadIndex, const dVec &pos) {
     gIndex = gridIndex(pos);
 
     /* If the new position, is in the same grid box, we don't have to do anything */
-    if (!all(gIndex==grid(beadIndex))) {
+    if (!all(gIndex, grid(beadIndex))) {
 
         /* Delete the current bead from the grid */
         delBead(beadIndex);
@@ -460,7 +451,7 @@ void LookupTable::delBead(const beadLocator &beadIndex) {
 
     /* Reset the label and grid */
     beadLabel(beadIndex) = XXX;
-    grid(beadIndex) = XXX;
+    grid(beadIndex).fill(XXX);
     
     /* Decrement the number of labels */
     numLabels(nI)--;
@@ -492,7 +483,7 @@ void LookupTable::updateInteractionList(const Path &path, const beadLocator &bea
         gIndex = gridNN(nnIndex);
 
         /* Make sure we don't access any illegal grid boxes */
-        if (!any(gIndex == -1)) {
+        if (noneEquals(gIndex, XXX)) {
 
             int maxNL = numLabels(numLabelIndex(gIndex,bead1[0]));
             hI = hashIndex(gIndex,bead1[0],0);
@@ -504,7 +495,7 @@ void LookupTable::updateInteractionList(const Path &path, const beadLocator &bea
                 bead2[1] = hash(hI);
 
                 /* Eliminate self-interactions */
-                if (!all(bead1 == bead2)) {
+                if (!all(bead1, bead2)) {
 
                     sep = path.getSeparation(bead2,bead1);
 
@@ -537,7 +528,7 @@ void LookupTable::updateFullInteractionList(const beadLocator &beadIndex, const 
 
     /* Now we loop over the central box, plus all nearest neighbors, filling
      * up the beadList and incrementing the numListBeads counter */
-    fullBeadList = XXX;
+    fullBeadList.fill({XXX, XXX});
     fullNumBeads = 0;
     for (int nn = 0; nn < numNN; nn++) {
         nnIndex[NDIM] = nn;
@@ -545,7 +536,7 @@ void LookupTable::updateFullInteractionList(const beadLocator &beadIndex, const 
         /* Get the grid index of the nearest neighbor box */
         gIndex = gridNN(nnIndex);
 
-        if (!any(gIndex == -1)) {
+        if (noneEquals(gIndex, XXX)) {
 
             /* Get the hash table index, and max number of labels*/
             int maxNL = numLabels(numLabelIndex(gIndex,slice));
@@ -555,7 +546,7 @@ void LookupTable::updateFullInteractionList(const beadLocator &beadIndex, const 
 
                 /* Get the interacting bead */
                 hI[NDIM+1] = label;
-                fullBeadList(fullNumBeads) = slice,hash(hI);
+                fullBeadList(fullNumBeads) = {slice, hash(hI)};
                 fullNumBeads++;
 
             } // label
@@ -580,7 +571,7 @@ void LookupTable::updateFullInteractionList(const int gNumber, const int slice) 
 
     /* Now we loop over the central box, plus all nearest neighbors, filling
      * up the beadList and incrementing the numListBeads counter */
-    fullBeadList = XXX;
+    fullBeadList.fill({XXX, XXX});
     fullNumBeads = 0;
     for (int nn = 0; nn < numNN; nn++) {
         nnIndex[NDIM] = nn;
@@ -588,7 +579,7 @@ void LookupTable::updateFullInteractionList(const int gNumber, const int slice) 
         /* Get the grid index of the nearest neighbor box */
         gIndex = gridNN(nnIndex);
 
-        if (!any(gIndex == -1)) {
+        if (noneEquals(gIndex, XXX)) {
 
             /* Get the hash table index, and max number of labels*/
             int maxNL = numLabels(numLabelIndex(gIndex,slice));
@@ -598,7 +589,7 @@ void LookupTable::updateFullInteractionList(const int gNumber, const int slice) 
 
                 /* Get the interacting bead */
                 hI[NDIM+1] = label;
-                fullBeadList(fullNumBeads) = slice,hash(hI);
+                fullBeadList(fullNumBeads) = {slice, hash(hI)};
                 fullNumBeads++;
 
             } // label
@@ -625,7 +616,7 @@ bool LookupTable::gridNeighbors(const beadLocator &bead1, const beadLocator &bea
      * grid */
     for (int nn = 0; nn < numNN; nn++) {
         nnIndex[NDIM] = nn;
-        if (all(gIndex == gridNN(nnIndex))) {
+        if (all(gIndex, gridNN(nnIndex))) {
             return true;
         }
     }

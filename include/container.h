@@ -26,7 +26,7 @@ class Container {
         Container();
         virtual ~Container();
 
-	blitz::TinyVector <unsigned int, NDIM> periodic;   ///< Determines which dimensions have periodic bc
+	std::array <unsigned int, NDIM> periodic;   ///< Determines which dimensions have periodic bc
 
         dVec side;                          ///< The linear dimensions of the box
         dVec sideInv;                       ///< The inverse box dimensions
@@ -48,7 +48,9 @@ class Container {
          * @see: Z. Phys. Chem. 227 (2013) 345–352
          */
         void putInBC(dVec & r) const {
-            r -= pSide*blitz::floor(r*sideInv + 0.5);
+	    for (std::size_t i = 0; i < NDIM; ++i) {
+                r[i] -= pSide[i] * std::floor(r[i] * sideInv[i] + 0.5);
+            }
             /* int k; */
             /* for (int i = 0; i < NDIM; ++i) { */
             /*     k = int(r[i]*sideInv[i] + ((r[i]>=0.0)?0.5:-0.5)); */
@@ -107,8 +109,9 @@ class Container {
  */
 class Prism: public Container {
     public:
+	inline static constexpr std::array<unsigned int, NDIM> defaultPeriodic = make_array<unsigned int, NDIM>(1u);
         Prism(const double, const int);
-        Prism(const dVec &, const iVec &_periodic=1);
+        Prism(const dVec &, const std::array<unsigned int, NDIM> &_periodic=defaultPeriodic);
         ~Prism();
 
         /** For PBC, this is identical to putInBC */

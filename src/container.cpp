@@ -18,11 +18,11 @@
  * Initialize all variables.
 ******************************************************************************/
 Container::Container() {
-    side     = 0.0;
-    sideInv  = 0.0;
-    sideInv2 = 0.0;
-    pSide    = 0.0;
-    periodic = 1;
+    side     = dVec{};
+    sideInv  = dVec{};
+    sideInv2 = dVec{};
+    pSide    = dVec{};
+    periodic.fill(1);
     maxSep   = 0.0;
     volume   = 0.0;
     rcut2    = 0.0;
@@ -85,19 +85,19 @@ Prism::Prism(double density, int numParticles) {
 
     /* Here we can only create a cube */
     /* Setup the cube size in each dimension */
-    side = pow(1.0*numParticles / density, 1.0/(1.0*NDIM));
+    side.fill(pow(1.0*numParticles / density, 1.0/(1.0*NDIM)));
     sideInv = 1.0/side;
     sideInv2 = 2.0*sideInv;
 
     rcut2 = 0.25*side[NDIM-1]*side[NDIM-1];
 
     /* The hyper cube has periodic boundary conditions */
-    periodic = 1; 
+    periodic.fill(1); 
     pSide = side;
     fullyPeriodic = true;
 
     /* Compute the maximum possible separation possible inside the box */
-    maxSep = sqrt(dot(side/(periodic + 1.0),side/(periodic + 1.0)));
+    maxSep = sqrt(dot(side/(periodic + 1u),side/(periodic + 1u)));
 
     /* Calculate the volume of the cube */
     volume = product(side);
@@ -114,7 +114,7 @@ Prism::Prism(double density, int numParticles) {
  *  We create a NDIM hyperprism with periodic boundary conditions in all
  *  dimensions with sides that are set at teh command line.
 ******************************************************************************/
-Prism::Prism(const dVec &_side, const iVec &_periodic) {
+Prism::Prism(const dVec &_side, const std::array<unsigned int, NDIM> &_periodic) {
 
     /* Setup the cube size in each dimension */
     side = _side;
@@ -128,10 +128,11 @@ Prism::Prism(const dVec &_side, const iVec &_periodic) {
     pSide = periodic*side;
 
     /* are there any non-periodic boundary conditions? */
-    fullyPeriodic = all(periodic == 1u);
+    static constexpr std::array<unsigned int, NDIM> fullPeriodicCondition = make_array<unsigned int, NDIM>(1u);
+    fullyPeriodic = all(periodic, fullPeriodicCondition);
 
     /* Compute the maximum possible separation possible inside the box */
-    maxSep = sqrt(dot(side/(periodic + 1.0),side/(periodic + 1.0)));
+    maxSep = sqrt(dot(side/(periodic + 1u),side/(periodic + 1u)));
 
     /* Calculate the volume of the cube */
     volume = product(side);
@@ -212,7 +213,8 @@ int Prism::gridIndex(const dVec &pos) const {
  *  @return The hyper volume of the grid box
 ******************************************************************************/
 double Prism::gridBoxVolume(const int n) const {
-    return blitz::product(gridSize);
+    return std::accumulate(gridSize.begin(), gridSize.end(), 1.0, std::multiplies<>());
+
 }
 
 // ---------------------------------------------------------------------------
@@ -263,7 +265,7 @@ Cylinder::Cylinder(const double _rho, const double radius, const int numParticle
         pSide = periodic*side;
 
         /* Compute the maximum possible separation possible inside the box */
-        maxSep = sqrt(dot(side/(periodic + 1.0),side/(periodic + 1.0)));
+        maxSep = sqrt(dot(side/(periodic + 1),side/(periodic + 1)));
 
         /* Compute the cylinder volume. We use the radius here instead of the actual
          * side.  This is the 'active' volume */
@@ -472,6 +474,6 @@ int Cylinder::gridIndex(const dVec &pos) const {
 double Cylinder::gridBoxVolume(const int n) const {
 
     /* Get the first grid box index */
-    return blitz::product(gridSize);
+    return std::accumulate(gridSize.begin(), gridSize.end(), 1.0, std::multiplies<>());
 }
 

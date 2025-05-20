@@ -42,7 +42,7 @@ class PotentialBase {
         virtual double V(const dVec &, const dVec &) { return 0.0; }
 
         /** The gradient of the potential*/
-        virtual dVec gradV(const dVec &) { return 0.0; }
+        virtual dVec gradV(const dVec &) { return dVec{}; }
 
         /** Grad^2 of the potential*/
         virtual double grad2V(const dVec &) { return 0.0; }
@@ -53,7 +53,7 @@ class PotentialBase {
         virtual double dVdtau(const dVec &, const dVec &) {return 0.0;}
         
         /** Default Initial configuration of particles*/
-        virtual blitz::Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+        virtual DynamicArray<dVec,1> initialConfig(const Container*, MTRand &, const int); 
 
         /** A debug method that output's the potential to a supplied separation */
         void output(const double);
@@ -61,7 +61,7 @@ class PotentialBase {
         double tailV;       ///< Tail correction factor.
 
         /** Array to hold data elements*/
-        virtual blitz::Array<double,1> getExcLen();
+        virtual DynamicArray<double,1> getExcLen();
 
     protected:
         double deltaSeparation(double sep1,double sep2) const;
@@ -83,25 +83,25 @@ class TabulatedPotential {
         virtual ~TabulatedPotential();
 
     protected:
-	blitz::Array <double,1> lookupV;           ///< A potential lookup table
-	blitz::Array <double,1> lookupdVdr;        ///< A lookup table for dVint/dr
-	blitz::Array <double,1> lookupd2Vdr2;      ///< A lookup table for d2Vint/dr2
+	DynamicArray <double,1> lookupV;           ///< A potential lookup table
+	DynamicArray <double,1> lookupdVdr;        ///< A lookup table for dVint/dr
+	DynamicArray <double,1> lookupd2Vdr2;      ///< A lookup table for d2Vint/dr2
 
         double dr;                          ///< The discretization for the lookup table
         int tableLength;                    ///< The number of elements in the lookup table
 
-	blitz::TinyVector<double,2> extV;          ///< Extremal value of V
-	blitz::TinyVector<double,2> extdVdr;       ///< Extremal value of dV/dr
-	blitz::TinyVector<double,2> extd2Vdr2;     ///< Extremal value of d2V/dr2
+	std::array<double,2> extV;          ///< Extremal value of V
+	std::array<double,2> extdVdr;       ///< Extremal value of dV/dr
+	std::array<double,2> extd2Vdr2;     ///< Extremal value of d2V/dr2
 
         /* Initialize all data structures */
         void initLookupTable(const double, const double);
 
         /* Returns the 2-point spline fit to the lookup table */
-        virtual double newtonGregory(const blitz::Array<double,1>&, const blitz::TinyVector<double,2>&, const double);
+        virtual double newtonGregory(const DynamicArray<double,1>&, const std::array<double,2>&, const double);
 
         /* Returns a bare lookup value */
-        virtual double direct(const blitz::Array<double,1>&, const blitz::TinyVector<double,2>&, const double);
+        virtual double direct(const DynamicArray<double,1>&, const std::array<double,2>&, const double);
 
         /** The functional value of V */
         virtual double valueV (const double) = 0;               
@@ -163,7 +163,7 @@ class HarmonicPotential : public PotentialBase {
         }
 
         /** Initial configuration corresponding to Harmonic potential */
-	blitz::Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+	DynamicArray<dVec,1> initialConfig(const Container*, MTRand &, const int); 
 };
 
 // ========================================================================  
@@ -214,8 +214,7 @@ class HarmonicCylinderPotential : public PotentialBase {
 
         /** The gradient of the potential. */
         dVec gradV(const dVec &r) {
-            dVec tempr;
-            tempr = 0.0;
+            dVec tempr{};
             for (int i=0; i < NDIM-1; i++)
                 tempr[i] = r[i];
             return ( c * constants()->m() * w * w * tempr );
@@ -379,7 +378,7 @@ class DipolePotential : public PotentialBase  {
         dVec gradV(const dVec &r) {
             double x = sqrt(dot(r,r));
             if (x < EPS)
-                return 0.0;
+                return dVec{};
             return (-3.0/(x*x*x*x*x)) * r;
         }
 
@@ -461,7 +460,7 @@ class PlatedLJCylinderPotential : public PotentialBase, public TabulatedPotentia
         double grad2V(const dVec &);
 
         /** Initial configuration corresponding to the LJ cylinder potential */
-	blitz::Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+	DynamicArray<dVec,1> initialConfig(const Container*, MTRand &, const int); 
 
     private:
         /** local methods for computing the potential of a LJ cylinder */
@@ -558,7 +557,7 @@ class LJCylinderPotential : public PotentialBase, public TabulatedPotential {
         double grad2V(const dVec &);
 
         /** Initial configuration corresponding to the LJ cylinder potential */
-	blitz::Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+	DynamicArray<dVec,1> initialConfig(const Container*, MTRand &, const int); 
 
     private:
         /* All the parameters needed for the LJ wall potential */
@@ -646,8 +645,8 @@ class LJHourGlassPotential : public PotentialBase {
         }
 
         /** Initial configuration corresponding to the LJ cylinder potential */
-	blitz::Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
-	blitz::Array<dVec,1> initialConfig1(const Container*, MTRand &, const int); 
+	DynamicArray<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+	DynamicArray<dVec,1> initialConfig1(const Container*, MTRand &, const int); 
 
     private:
         /* All the parameters needed for the LJ wall potential */
@@ -1140,13 +1139,13 @@ class FixedAzizPotential : public PotentialBase  {
         dVec gradV(const dVec &r);
 
         /** Initial configuration corresponding to FixedAziz potential */
-	blitz::Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+	DynamicArray<dVec,1> initialConfig(const Container*, MTRand &, const int); 
 
     private:
         AzizPotential aziz;                 // A copy of the aziz potential
-	blitz::Array <dVec,1> fixedParticles;      // The location of the fixed particles
-	blitz::Array <int,2> fixedBeadsInGrid;     // The local grid hash table
-	blitz::Array <int,1> numFixedBeadsInGrid;  // The number of fixed particles in each grid box
+	DynamicArray <dVec,1> fixedParticles;      // The location of the fixed particles
+	DynamicArray <int,2> fixedBeadsInGrid;     // The local grid hash table
+	DynamicArray <int,1> numFixedBeadsInGrid;  // The number of fixed particles in each grid box
         int numFixedParticles;              // The total number of fixed particles
         LookupTable *lookupPtr;             // A lookup table pointer
         double rc2;                         // A local copy of the potential cutoff squared
@@ -1184,10 +1183,10 @@ class FixedPositionLJPotential: public PotentialBase  {
         double Wallcx;
         double invWallWidth; 
 
-        blitz::Array <blitz::TinyVector<double,4>,1> fixedParticles;      // The location of the fixed particles
-        blitz::Array <blitz::TinyVector<double,2>,1> atomArray;           // The interaction parameters for the fixed particles 
-        int numFixedParticles;              // The total number of fixed particles
-        int typesofatoms;                   // The various types of atom species
+        DynamicArray <std::array<double,4>,1> fixedParticles; // The location of the fixed particles
+        DynamicArray <std::array<double,2>,1> atomArray;      // The interaction parameters for the fixed particles 
+        int numFixedParticles;                                // The total number of fixed particles
+        int typesofatoms;                                     // The various types of atom species
 };      
 #endif
 
@@ -1213,17 +1212,17 @@ class Gasparini_1_Potential : public PotentialBase {
         }
 
         /** The gradient of the potential. */
-        dVec gradV(const dVec &) { return 0.0; }
+        dVec gradV(const dVec &) { return dVec{}; }
 
         /** Laplacian of the potential. */
         double grad2V(const dVec &r) { return 0.0; }
 
     
         /** Initial configuration corresponding to FixedAziz potential */
-	blitz::Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+	DynamicArray<dVec,1> initialConfig(const Container*, MTRand &, const int); 
 
         /** get the exclusion lengths ay and az */
-	blitz::Array<double,1> getExcLen(); 
+	DynamicArray<double,1> getExcLen(); 
 
         /* parameters needed for Gasp Potential_1 */
         const double excZ;      //half amt. of exclusion (z)
@@ -1396,7 +1395,7 @@ class GraphenePotential: public PotentialBase  {
         double V(const dVec &r);
 
         /** Initial configuration corresponding to graphene-helium vdW potential */
-	blitz::Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+	DynamicArray<dVec,1> initialConfig(const Container*, MTRand &, const int); 
 
     private:
         double sigma;
@@ -1450,7 +1449,7 @@ class GrapheneLUTPotential: public PotentialBase  {
         dVec gradV(const dVec &r);
         
         /** Initial configuration corresponding to graphene-helium vdW potential */
-	blitz::Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+	DynamicArray<dVec,1> initialConfig(const Container*, MTRand &, const int); 
 
     private:
         double sigma;
@@ -1492,11 +1491,11 @@ class GrapheneLUTPotential: public PotentialBase  {
         /* Array<int,2> karr; */
         /* double garr [gtot]; */
 
-	blitz::Array<int,1> gMagID;    // g-magnitude lookup index
+	DynamicArray<int,1> gMagID;    // g-magnitude lookup index
         
         /* The lookup tables */
-	blitz::Array<double,2> vg;
-	blitz::Array<double,2> gradvg;
+	DynamicArray<double,2> vg;
+	DynamicArray<double,2> gradvg;
 };
 #endif
 
@@ -1527,13 +1526,13 @@ class GrapheneLUT3DPotential: public PotentialBase  {
         double grad2V(const dVec &);
         
         /** Initial configuration corresponding to graphene-helium vdW potential */
-	blitz::Array<dVec,1> initialConfig(const Container*, MTRand &, const int); 
-	blitz::Array<dVec,1> initialConfig1(const Container*, MTRand &, const int); 
+	DynamicArray<dVec,1> initialConfig(const Container*, MTRand &, const int); 
+	DynamicArray<dVec,1> initialConfig1(const Container*, MTRand &, const int); 
 
         void put_in_uc( dVec &, double, double);
         void cartesian_to_uc( dVec &, double, double, double, double);
-        double trilinear_interpolation(blitz::Array<double,3>,dVec,double,double,double);
-        double direct_lookup(blitz::Array<double,3>,dVec,double,double,double);
+        double trilinear_interpolation(DynamicArray<double,3>,dVec,double,double,double);
+        double direct_lookup(DynamicArray<double,3>,dVec,double,double,double);
 
     private:
         double Lzo2;      ///< half the system size in the z-direction
@@ -1558,12 +1557,12 @@ class GrapheneLUT3DPotential: public PotentialBase  {
         double A21;
         double A22;
 
-	blitz::Array<double,3> V3d; // Potential lookup table
-	blitz::Array<double,3> gradV3d_x; // gradient of potential x direction lookup table
-	blitz::Array<double,3> gradV3d_y; // gradient of potential y direction lookup table
-	blitz::Array<double,3> gradV3d_z; // gradient of potential z direction lookup table
-	blitz::Array<double,3> grad2V3d; // Laplacian of potential
-	blitz::Array<double,1> LUTinfo;
+	DynamicArray<double,3> V3d; // Potential lookup table
+	DynamicArray<double,3> gradV3d_x; // gradient of potential x direction lookup table
+	DynamicArray<double,3> gradV3d_y; // gradient of potential y direction lookup table
+	DynamicArray<double,3> gradV3d_z; // gradient of potential z direction lookup table
+	DynamicArray<double,3> grad2V3d; // Laplacian of potential
+	DynamicArray<double,1> LUTinfo;
 
 };
 
@@ -1586,7 +1585,7 @@ inline void GrapheneLUT3DPotential::cartesian_to_uc( dVec &r, double A11, double
     r[1] = _y;
 }
 
-inline double GrapheneLUT3DPotential::trilinear_interpolation(blitz::Array<double,3> P,dVec r,double dx,double dy,double dz) {
+inline double GrapheneLUT3DPotential::trilinear_interpolation(DynamicArray<double,3> P,dVec r,double dx,double dy,double dz) {
     double x = r[0];
     double y = r[1];
     double z = r[2];
@@ -1614,7 +1613,7 @@ inline double GrapheneLUT3DPotential::trilinear_interpolation(blitz::Array<doubl
     return c;
 }
 
-inline double GrapheneLUT3DPotential::direct_lookup(blitz::Array<double,3> P,dVec r,double dx,double dy,double dz) {
+inline double GrapheneLUT3DPotential::direct_lookup(DynamicArray<double,3> P,dVec r,double dx,double dy,double dz) {
     double x = r[0];
     double y = r[1];
     double z = r[2];
@@ -1709,52 +1708,52 @@ class GrapheneLUT3DPotentialGenerate: public PotentialBase  {
                 double, double );
 
         double V_64( double, double, double, double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::Array<int,1>,
-                blitz::Array<int,1>, blitz::Array<double,1> );
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>, DynamicArray<int,1>,
+                DynamicArray<int,1>, DynamicArray<double,1> );
 
         double gradV_x_64( double, double, double, double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::Array<int,1>,
-                blitz::Array<int,1>, blitz::Array<double,1> );
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>, DynamicArray<int,1>,
+                DynamicArray<int,1>, DynamicArray<double,1> );
 
         double gradV_y_64( double, double, double, double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::Array<int,1>,
-                blitz::Array<int,1>, blitz::Array<double,1> );
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>, DynamicArray<int,1>,
+                DynamicArray<int,1>, DynamicArray<double,1> );
 
         double gradV_z_64( double, double, double, double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::Array<int,1>,
-                blitz::Array<int,1>, blitz::Array<double,1> );
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>, DynamicArray<int,1>,
+                DynamicArray<int,1>, DynamicArray<double,1> );
 
         double grad2V_64( double, double, double, double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::Array<int,1>,
-                blitz::Array<int,1>, blitz::Array<double,1> );
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>, DynamicArray<int,1>,
+                DynamicArray<int,1>, DynamicArray<double,1> );
         
         std::tuple<
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>
                 > get_graphene_vectors();
         std::tuple<
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>
                 > get_graphene_vectors( double );
         std::tuple<
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>
                 > get_graphene_vectors( double, double, double );
         std::tuple<
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-            blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>,
+            std::array<double,2>, std::array<double,2>
                 > get_graphene_vectors_old( double, double, double );
-        std::tuple< blitz::Array<int,1>, blitz::Array<int,1>, blitz::Array<double,1>
-            > get_g_magnitudes( blitz::TinyVector<double,2>, blitz::TinyVector<double,2> );
+        std::tuple< DynamicArray<int,1>, DynamicArray<int,1>, DynamicArray<double,1>
+            > get_g_magnitudes( std::array<double,2>, std::array<double,2> );
 
         template <class T> double calculate_magnitude( T vec ) {
             return sqrt(dot(vec,vec));
@@ -1770,123 +1769,68 @@ class GrapheneLUT3DPotentialGenerate: public PotentialBase  {
         }
 
         void calculate_V3D_64(
-                blitz::Array<double,3>, blitz::Array<double,2>, blitz::Array<double,2>,
-                blitz::Array<double,1>, double, double,
-                double, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::Array<int,1>, blitz::Array<int,1>,
-                blitz::Array<double,1> );
+                DynamicArray<double,3>, DynamicArray<double,2>, DynamicArray<double,2>,
+                DynamicArray<double,1>, double, double,
+                double, std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
+                DynamicArray<int,1>, DynamicArray<int,1>,
+                DynamicArray<double,1> );
 
         void calculate_gradV3D_x_64(
-                blitz::Array<double,3>, blitz::Array<double,2>, blitz::Array<double,2>,
-                blitz::Array<double,1>, double, double,
-                double, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::Array<int,1>, blitz::Array<int,1>,
-                blitz::Array<double,1> );
+                DynamicArray<double,3>, DynamicArray<double,2>, DynamicArray<double,2>,
+                DynamicArray<double,1>, double, double,
+                double, std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
+                DynamicArray<int,1>, DynamicArray<int,1>,
+                DynamicArray<double,1> );
 
         void calculate_gradV3D_y_64(
-                blitz::Array<double,3>, blitz::Array<double,2>, blitz::Array<double,2>,
-                blitz::Array<double,1>, double, double,
-                double, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::Array<int,1>, blitz::Array<int,1>,
-                blitz::Array<double,1> );
+                DynamicArray<double,3>, DynamicArray<double,2>, DynamicArray<double,2>,
+                DynamicArray<double,1>, double, double,
+                double, std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
+                DynamicArray<int,1>, DynamicArray<int,1>,
+                DynamicArray<double,1> );
 
         void calculate_gradV3D_z_64(
-                blitz::Array<double,3>, blitz::Array<double,2>, blitz::Array<double,2>,
-                blitz::Array<double,1>, double, double,
-                double, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::Array<int,1>, blitz::Array<int,1>,
-                blitz::Array<double,1> );
+                DynamicArray<double,3>, DynamicArray<double,2>, DynamicArray<double,2>,
+                DynamicArray<double,1>, double, double,
+                double, std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
+                DynamicArray<int,1>, DynamicArray<int,1>,
+                DynamicArray<double,1> );
 
         void calculate_grad2V3D_64(
-                blitz::Array<double,3>, blitz::Array<double,2>, blitz::Array<double,2>,
-                blitz::Array<double,1>, double, double,
-                double, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::Array<int,1>, blitz::Array<int,1>,
-                blitz::Array<double,1> );
+                DynamicArray<double,3>, DynamicArray<double,2>, DynamicArray<double,2>,
+                DynamicArray<double,1>, double, double,
+                double, std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
+                DynamicArray<int,1>, DynamicArray<int,1>,
+                DynamicArray<double,1> );
 
         std::pair<double, double> get_z_min_V_min( 
                 double, double, double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::Array<int,1>, blitz::Array<int,1>, blitz::Array<double,1> );
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
+                DynamicArray<int,1>, DynamicArray<int,1>, DynamicArray<double,1> );
 
         std::pair<double, double> get_z_V_to_find( 
                 double, double, double,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-                blitz::Array<int,1>, blitz::Array<int,1>, blitz::Array<double,1> );
+                std::array<double,2>, std::array<double,2>,
+                std::array<double,2>, std::array<double,2>,
+                DynamicArray<int,1>, DynamicArray<int,1>, DynamicArray<double,1> );
 
-	blitz::Array<double,3> get_V3D(
+	DynamicArray<double,3> get_V3D(
                 double, double, double, int, int, int, double, double ); 
-        std::pair<blitz::Array<double,3> , blitz::Array<double,1>> get_V3D(
+        std::pair<DynamicArray<double,3> , DynamicArray<double,1>> get_V3D(
                 double, double, double, int, int, int, double );
         std::tuple<
-            blitz::Array<double,3>, blitz::Array<double,3>, blitz::Array<double,3>,
-            blitz::Array<double,3>, blitz::Array<double,3>, blitz::Array<double,2>,
-            blitz::Array<double,2>, blitz::Array<double,1>
+            DynamicArray<double,3>, DynamicArray<double,3>, DynamicArray<double,3>,
+            DynamicArray<double,3>, DynamicArray<double,3>, DynamicArray<double,2>,
+            DynamicArray<double,2>, DynamicArray<double,1>
             > get_V3D_all( double, double, double, int, int, int, double );
 };
 #endif
 
-#if NDIM > 2
-// ========================================================================
-// GrapheneLUT3DPotentialToBinary Class
-// ========================================================================
-/**
- * \brief FIXME Returns van der Waals' potential between a helium adatom and a graphene sheet using summation in reciprocal sp
- *
- * Author: Nathan Nichols
- * Returns the potential energy resulting from a van der Waals' interaction
- * between a helium adatom and a fixed infinite graphene lattice
- */
-class GrapheneLUT3DPotentialToBinary: public PotentialBase  {
+#endif // POTENTIAL_H
 
-    public:
-        GrapheneLUT3DPotentialToBinary(const std::string, const Container*);
-        ~GrapheneLUT3DPotentialToBinary();
-
-    private:
-	blitz::Array<double,3> V3d; // Potential lookup table
-	blitz::Array<double,3> gradV3d_x; // gradient of potential x direction lookup table
-	blitz::Array<double,3> gradV3d_y; // gradient of potential y direction lookup table
-	blitz::Array<double,3> gradV3d_z; // gradient of potential z direction lookup table
-	blitz::Array<double,3> grad2V3d; // Laplacian of potential
-	blitz::Array<double,1> LUTinfo;
-
-};
-#endif
-
-#if NDIM > 2
-// ========================================================================
-// GrapheneLUT3DPotentialToText Class
-// ========================================================================
-/**
- * \brief FIXME Returns van der Waals' potential between a helium adatom and a graphene sheet using summation in reciprocal sp
- *
- * Author: Nathan Nichols
- * Returns the potential energy resulting from a van der Waals' interaction
- * between a helium adatom and a fixed infinite graphene lattice
- */
-class GrapheneLUT3DPotentialToText: public PotentialBase  {
-
-    public:
-        GrapheneLUT3DPotentialToText(const std::string, const Container*);
-        ~GrapheneLUT3DPotentialToText();
-
-    private:
-	blitz::Array<double,3> V3d; // Potential lookup table
-	blitz::Array<double,3> gradV3d_x; // gradient of potential x direction lookup table
-	blitz::Array<double,3> gradV3d_y; // gradient of potential y direction lookup table
-	blitz::Array<double,3> gradV3d_z; // gradient of potential z direction lookup table
-	blitz::Array<double,3> grad2V3d; // Laplacian of potential
-	blitz::Array<double,1> LUTinfo;
-
-};
-#endif
-
-#endif

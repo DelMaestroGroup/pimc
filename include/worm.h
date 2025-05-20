@@ -81,7 +81,7 @@ class Worm {
         }
 
         /** Return the bead list.*/
-        const blitz::Array <unsigned int, 2> & getBeads() const { return beads; }
+        const DynamicArray <unsigned int, 2> & getBeads() const { return beads; }
 
         /* Test whether a given bead is on a worm */
         /** Return the number of active beads. */
@@ -91,13 +91,13 @@ class Worm {
         /** Decrement the number of active beads. */
         void decNumBeadsOn() {--numBeadsOn;}
         /** Reset the number of active beads. */
-        void resetNumBeadsOn() {numBeadsOn = blitz::sum(beads);}
+        void resetNumBeadsOn() {numBeadsOn = std::accumulate(beads.begin(), beads.end(), 0.0);}
 
         friend class Path;                      // Path needs access to beads
         friend class PathIntegralMonteCarlo;    // Friends for I/O
 
     private:
-	blitz::Array <unsigned int,2> beads;           // Is a bead present?
+	DynamicArray <unsigned int,2> beads;           // Is a bead present?
         int numBeadsOn;                         // How many beads are present
 };
 
@@ -108,9 +108,9 @@ class Worm {
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 /** Get the state of the supplied bead? */
 inline beadState Worm::getState(const beadLocator &beadIndex) const {
-    if (all(beadIndex==head) || all(beadIndex==tail))
+    if (all(beadIndex, head) || all(beadIndex, tail))
         return HEADTAIL;
-    else if (all(beadIndex==special1) || all(beadIndex==special2))
+    else if (all(beadIndex, special1) || all(beadIndex, special2))
         return SPECIAL;
     else
         return NONE;

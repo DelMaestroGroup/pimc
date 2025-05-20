@@ -25,7 +25,7 @@ Worm::Worm(int numParticles) {
 
     /* Setup the bead array */
     beads.resize(numTimeSlices,numParticles);
-    beads = 1;
+    beads.fill(1u);
 
     /* Count the initial number of beads */
     resetNumBeadsOn();
@@ -44,20 +44,19 @@ Worm::Worm(int numParticles) {
  * Destructor.
 ******************************************************************************/
 Worm::~Worm () {
-    beads.free();
 }
 
 /**************************************************************************//**
  *  Reset the worm to a null state.
 ******************************************************************************/
 void Worm::reset() {
-    gap      = XXX;
-    length   = 0;
-    sep      = 0.0;
-    head     = XXX;
-    tail     = XXX;
-    special1 = XXX;
-    special2 = XXX;
+         gap = XXX;
+      length =   0;
+         sep.fill(0.0);
+        head.fill(XXX);
+        tail.fill(XXX);
+    special1.fill(XXX);
+    special2.fill(XXX);
 }
 
 /**************************************************************************//**
@@ -88,18 +87,18 @@ void Worm::update(Path &path, const beadLocator &newHead,
         ++length;
         beadIndex = path.next(beadIndex);
         /* cout << head[0] << " " << head[1] << " " << tail[0] << " " << tail[1] << " " << beadIndex[0] << " " << beadIndex[1] << endl; */
-    } while (!all(beadIndex==head));
+    } while (!all(beadIndex, head));
 
     /* Now we update the head-tail separation */
     sep = path.getSeparation(tail,head);
 
     /* Unlink the head and tail */
-    path.next(head) = XXX;
-    path.prev(tail) = XXX;
+    path.next(head).fill(XXX);
+    path.prev(tail).fill(XXX);
 
     /* Turn off the special beads */
-    special1 = XXX;
-    special2 = XXX;
+    special1.fill(XXX);
+    special2.fill(XXX);
 }
 
 /**************************************************************************//**
@@ -127,9 +126,9 @@ bool Worm::foundBead(const Path &path, const beadLocator &beadIndex) {
     else {
         beadLocator beadID;
         beadID = tail;
-        while ( (!all(beadID==beadIndex)) && (!all(beadID==path.next(head))) ) {
+        while ( (!all(beadID, beadIndex)) && (!all(beadID, path.next(head))) ) {
             beadID = path.next(beadID);
         }
-        return all(beadID==beadIndex);
+        return all(beadID, beadIndex);
     }
 }

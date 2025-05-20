@@ -29,7 +29,7 @@ class LookupTable;
 class Path {
 
     public:
-        Path (const Container *, LookupTable &, int, const blitz::Array<dVec,1>&, int numberBroken = 0);
+        Path (const Container *, LookupTable &, int, const DynamicArray<dVec,1>&, int numberBroken = 0);
         ~Path();
 
         /* Path* clone() const{ return new Path(*this); } */
@@ -45,10 +45,10 @@ class Path {
 
         LookupTable &lookup;            ///< A reference to the nearest neighbor lookup table.
 
-	blitz::Array <int,1> numBeadsAtSlice;  ///< The number of active beads at a given time slice
+	DynamicArray <int,1> numBeadsAtSlice;  ///< The number of active beads at a given time slice
 
         /** Get the size of the worldline array */
-        int getNumParticles() const {return beads.extent(blitz::secondDim);}
+        int getNumParticles() const {return beads.extents()[1];}
 
         /** The number of active particles */
         int getTrueNumParticles() const {return ( worm.getNumBeadsOn() / numTimeSlices );}
@@ -80,7 +80,7 @@ class Path {
         auto get_beads_data_pointer() const;
 
         /** Return the extent of the beads array data */
-        auto get_beads_extent() const;
+        auto get_beads_extents() const;
 
         /** Output bead-link info, used for debugging */
         template<class Tstream> void printLinks(Tstream &);
@@ -150,7 +150,7 @@ class Path {
         void updateBead(const beadLocator&, const dVec&);
 
         /** Used when debugging worm configurations */
-        void printWormConfig(blitz::Array <beadLocator,1> &);
+        void printWormConfig(DynamicArray <beadLocator,1> &);
 
         /** Initialize any loaded state by left packing the array */
         void leftPack();
@@ -161,8 +161,8 @@ class Path {
     private:
         friend class PathIntegralMonteCarlo;        // Friends for I/O
 
-	blitz::Array<dVec,2> beads;                        // The wordline array
-	blitz::Array<beadLocator,2> prevLink, nextLink;    // Bead connection matrices
+	DynamicArray<dVec,2> beads;                        // The wordline array
+	DynamicArray<beadLocator,2> prevLink, nextLink;    // Bead connection matrices
 
         beadLocator lastBeadIndex;                  // Holds the index of the last bead on a slice
 };
@@ -189,8 +189,9 @@ inline dVec Path::getSeparation(const beadLocator &bead1, const beadLocator &bea
 inline dVec Path::getVelocity (const beadLocator &beadIndex) const {
     dVec vel;
 
-    if (all(beadIndex==XXX) || all(next(beadIndex)==XXX)) {
-        vel = 0.0;
+    constexpr std::array<int,2> compareArr = { XXX, XXX };
+    if (all(beadIndex, compareArr) || all(next(beadIndex), compareArr)) {
+        vel.fill(0.0);
         return (vel);
     }
 
@@ -210,9 +211,9 @@ inline auto Path::get_beads_data_pointer() const {
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-/** Return the extent of the beads array */
-inline auto Path::get_beads_extent() const {
-    return (*this).beads.extent();
+/** Return the extents of the beads array */
+inline auto Path::get_beads_extents() const {
+    return (*this).beads.extents();
 }
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -220,8 +221,7 @@ inline auto Path::get_beads_extent() const {
 /** Move an integer number of links forward in imaginary time */
 inline beadLocator Path::next(int slice, int ptcl, int numLinks) const {
     PIMC_ASSERT(slice>=0 && slice<numTimeSlices && ptcl>=0);
-    beadLocator bI;
-    bI = slice,ptcl;
+    beadLocator bI{slice,ptcl};
     for (int m = 0; m < numLinks; m++)
         bI = next(bI);
     return bI;
@@ -244,8 +244,7 @@ inline beadLocator Path::next(const beadLocator &beadIndex, int numLinks) const 
 /** Move an integer number of links backward in imaginary time */
 inline beadLocator Path::prev(int slice, int ptcl, int numLinks) const {
     PIMC_ASSERT(slice>=0 && slice<numTimeSlices && ptcl>=0);
-    beadLocator bI;
-    bI = slice,ptcl;
+    beadLocator bI{slice,ptcl};
     for (int m = 0; m < numLinks; m++)
         bI = prev(bI);
     return bI;
@@ -272,13 +271,13 @@ void Path::printLinks(Tstream &outStream) {
     for (int m = numTimeSlices-1; m >= 0; m--) {
         beadLocator beadIndex;
         for (int n = 0; n < numParticles; n++) {
-            beadIndex = m,n;
+            beadIndex = {m,n};
             outStream << std::setw(2) << prevLink(beadIndex)[1] << " ";
         }
                         
         outStream << "\t";
         for (int n = 0; n < numParticles; n++) { 
-            beadIndex = m,n;
+            beadIndex = {m,n};
             outStream << std::setw(2) << nextLink(beadIndex)[1] << " ";
         }
         outStream << std::endl;
