@@ -167,24 +167,24 @@ if (NOT ${GPU_BACKEND} STREQUAL "none")
         message(FATAL_ERROR "Unknown GPU implementation '${GPU_BACKEND}',"
             " please select from 'cuda, hip, sycl, none'.")
     endif()
+
+    # Set number of threads per block
+    set(GPU_BLOCK_SIZE "1024" CACHE STRING "Set gpu block size (default: 1024)")
+    add_definitions(-D GPU_BLOCK_SIZE=${GPU_BLOCK_SIZE})
+    
+    # Set sub-group size (warpsize/wavefront/SIMD lanes/etc.)
+    if(${GPU_BACKEND} STREQUAL "hip")
+        set(SUB_GROUP_SIZE "64" CACHE STRING "Set sub-group size (default: 32)")
+        message("HIP detected. Set SUB_GROUP_SIZE to ${SUB_GROUP_SIZE}.")
+    else()
+        set(SUB_GROUP_SIZE "32" CACHE STRING "Set sub-group size (default: 32)")
+    endif()
+    add_definitions(-D SUB_GROUP_SIZE=${SUB_GROUP_SIZE})
+    
+    # Set number of GPU streams
+    set(MAX_GPU_STREAMS "1" CACHE STRING "Set number of gpu streams (default: 1)")
+    add_definitions(-D MAX_GPU_STREAMS=${MAX_GPU_STREAMS})
 endif()
-
-# Set number of threads per block
-set(GPU_BLOCK_SIZE "1024" CACHE STRING "Set gpu block size (default: 1024)")
-add_definitions(-D GPU_BLOCK_SIZE=${GPU_BLOCK_SIZE})
-
-# Set sub-group size (warpsize/wavefront/SIMD lanes/etc.)
-if(${GPU_BACKEND} STREQUAL "hip")
-    set(SUB_GROUP_SIZE "64" CACHE STRING "Set sub-group size (default: 32)")
-    message("HIP detected. Set SUB_GROUP_SIZE to ${SUB_GROUP_SIZE}.")
-else()
-    set(SUB_GROUP_SIZE "32" CACHE STRING "Set sub-group size (default: 32)")
-endif()
-add_definitions(-D SUB_GROUP_SIZE=${SUB_GROUP_SIZE})
-
-# Set number of GPU streams
-set(MAX_GPU_STREAMS "1" CACHE STRING "Set number of gpu streams (default: 1)")
-add_definitions(-D MAX_GPU_STREAMS=${MAX_GPU_STREAMS})
 
 # Check for static build
 if(STATIC)
