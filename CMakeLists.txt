@@ -146,6 +146,7 @@ endif()
 # --------- End MDSpan Header Test ---------
 
 # Enable GPU support
+set(GPU_COMPILE_FLAGS "")
 set(GPU_BACKEND "none" CACHE STRING "Enable gpu accleration: cuda, hip, sycl, none (default: none)")
 if (NOT ${GPU_BACKEND} STREQUAL "none")
     add_definitions(-D USE_GPU=1)
@@ -163,6 +164,15 @@ if (NOT ${GPU_BACKEND} STREQUAL "none")
         add_definitions(-D USE_HIP=1)
     elseif(${GPU_BACKEND} STREQUAL "sycl")
         add_definitions(-D USE_SYCL=1)
+        if (NOT SYCL_FLAGS)
+            list(APPEND GPU_COMPILE_FLAGS
+                "-fsycl"
+            )
+        else()
+            list(APPEND GPU_COMPILE_FLAGS
+                ${SYCL_FLAGS}
+            )
+        endif()
     else()
         message(FATAL_ERROR "Unknown GPU implementation '${GPU_BACKEND}',"
             " please select from 'cuda, hip, sycl, none'.")
@@ -306,6 +316,9 @@ find_package( Boost 1.71.0 REQUIRED COMPONENTS program_options serialization )
 
 # Add include directories
 include_directories( ${Boost_INCLUDE_DIRS} )
+
+# Add compile flags
+target_compile_options(${exe} PRIVATE ${GPU_COMPILE_FLAGS})
 
 # Link libraries
 target_link_libraries (${exe} ${Boost_LIBRARIES} )
