@@ -229,7 +229,7 @@ The output of the above command should yield something like:
 during the relaxation process where the string following `PIMCID:` is a uuid that uniquely tags your run, and 20 measurements will be output to disk.  To analyze the results the code, you will need to obtain and install the [pimcscripts](https://github.com/DelMaestroGroup/pimcscripts) package via: 
 
 
-	pip install --upgrade git+git://github.com/DelMaestroGroup/pimcscripts.git#egg=pimcscripts
+	pip install --upgrade git+https://github.com/DelMaestroGroup/pimcscripts.git#egg=pimcscripts
 
 Which will add the `pimcscripts` library and a number of useful python analysis programs to your path. 
 
