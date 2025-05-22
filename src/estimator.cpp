@@ -3708,7 +3708,7 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
 
     /* Initialize the accumulator for the intermediate scattering function*/
     isf.resize(numq*(int(numTimeSlices/2) + 1));
-    isf = 0.0;
+    isf.fill(0.0);
 
     // Create multiple gpu streams
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
@@ -3730,7 +3730,7 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
         header.append(str(format("%16d") % n));
     }
     /* utilize imaginary time translational symmetry */
-    norm = 0.5;
+    norm.fill(0.5);
 
     bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
     bytes_isf = isf.size()*sizeof(double);
@@ -3844,7 +3844,7 @@ ElasticScatteringEstimatorGpu::ElasticScatteringEstimatorGpu(
 
     /* Initialize the accumulator for the elastic scattering*/
     es.resize(numq);
-    es = 0.0;
+    es.fill(0.0);
 
     // Create multiple gpu streams
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
@@ -3866,7 +3866,7 @@ ElasticScatteringEstimatorGpu::ElasticScatteringEstimatorGpu(
         header.append(str(format("%16d") % n));
     }
     /* utilize imaginary time translational symmetry */
-    norm = 0.5;
+    norm.fill(0.5);
 
     bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
     bytes_es = es.size()*sizeof(double);
@@ -5166,7 +5166,7 @@ CylinderStaticStructureFactorGPUEstimator::CylinderStaticStructureFactorGPUEstim
 
     /* Initialize the accumulator for the static structure factor */
     ssf.resize(numq);
-    ssf = 0.0;
+    ssf.fill(0.0);
 
     // Create multiple gpu streams
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
@@ -5188,7 +5188,7 @@ CylinderStaticStructureFactorGPUEstimator::CylinderStaticStructureFactorGPUEstim
         header += str(format("%16d") % n);
 
     /* utilize imaginary time translational symmetry */
-    norm = 0.5/constants()->numTimeSlices();
+    norm.fill(0.5/constants()->numTimeSlices());
 
     bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
     bytes_ssf = ssf.size()*sizeof(double);
