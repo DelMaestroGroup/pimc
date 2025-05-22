@@ -20,7 +20,7 @@
 
 // GPU Kernel for reduction using warp (uses appropriate warp for NVIDIA vs AMD devices i. e. "portable wave aware code")
 void warp_reduce(volatile double *sdata, unsigned int thread_idx) {
-    if (warpSize == 64) { if (GPU_BLOCK_SIZE >= 128) sdata[thread_idx] += sdata[thread_idx + 64]; }
+    if (SUB_GROUP_SIZE == 64) { if (GPU_BLOCK_SIZE >= 128) sdata[thread_idx] += sdata[thread_idx + 64]; }
     if (GPU_BLOCK_SIZE >= 64) sdata[thread_idx] += sdata[thread_idx + 32];
     if (GPU_BLOCK_SIZE >= 32) sdata[thread_idx] += sdata[thread_idx + 16];
     if (GPU_BLOCK_SIZE >= 16) sdata[thread_idx] += sdata[thread_idx + 8];
@@ -51,7 +51,7 @@ void gpu_reduce(volatile double *sdata, unsigned int thread_idx) {
         __syncthreads();
     } 
 
-    if (warpSize == 32) {
+    if (SUB_GROUP_SIZE == 32) {
         if (GPU_BLOCK_SIZE >= 128) {
             if (thread_idx < 64) {
                 sdata[thread_idx] += sdata[thread_idx + 64];
@@ -60,7 +60,7 @@ void gpu_reduce(volatile double *sdata, unsigned int thread_idx) {
         } 
     }
 
-    if (thread_idx < warpSize) {
+    if (thread_idx < SUB_GROUP_SIZE) {
         warp_reduce(sdata, thread_idx);
     }
 }
@@ -145,7 +145,7 @@ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double* __res
         __syncthreads();
     } 
 
-    if (warpSize == 32) {
+    if (SUB_GROUP_SIZE == 32) {
         if (GPU_BLOCK_SIZE >= 128) {
             if (threadIdx.x < 64) {
                 s_isf[threadIdx.x] += s_isf[threadIdx.x + 64];
@@ -154,7 +154,7 @@ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double* __res
         } 
     }
 
-    if (threadIdx.x < warpSize) {
+    if (threadIdx.x < SUB_GROUP_SIZE) {
         warp_reduce(s_isf, threadIdx.x);
     }
 
@@ -270,7 +270,7 @@ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs, double* _
         __syncthreads();
     } 
 
-    if (warpSize == 32) {
+    if (SUB_GROUP_SIZE == 32) {
         if (GPU_BLOCK_SIZE >= 128) {
             if (threadIdx.x < 64) {
                 s_ssf[threadIdx.x] += s_ssf[threadIdx.x + 64];
@@ -279,7 +279,7 @@ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs, double* _
         } 
     }
 
-    if (threadIdx.x < warpSize) {
+    if (threadIdx.x < SUB_GROUP_SIZE) {
         warp_reduce(s_ssf, threadIdx.x);
     }
 
@@ -365,7 +365,7 @@ __global__ void gpu_ssf(double* __restrict__ ssf, double* __restrict__ qvecs, do
         __syncthreads();
     } 
 
-    if (warpSize == 32) {
+    if (SUB_GROUP_SIZE == 32) {
         if (GPU_BLOCK_SIZE >= 128) {
             if (threadIdx.x < 64) {
                 s_ssf[threadIdx.x] += s_ssf[threadIdx.x + 64];
@@ -374,7 +374,7 @@ __global__ void gpu_ssf(double* __restrict__ ssf, double* __restrict__ qvecs, do
         } 
     }
 
-    if (threadIdx.x < warpSize) {
+    if (threadIdx.x < SUB_GROUP_SIZE) {
         warp_reduce(s_ssf, threadIdx.x);
     }
 
