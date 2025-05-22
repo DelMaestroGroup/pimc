@@ -147,6 +147,7 @@ endif()
 
 # Enable GPU support
 set(GPU_COMPILE_FLAGS "")
+set(GPU_LINK_FLAGS "")
 set(GPU_BACKEND "none" CACHE STRING "Enable gpu accleration: cuda, hip, sycl, none (default: none)")
 if (NOT ${GPU_BACKEND} STREQUAL "none")
     add_definitions(-D USE_GPU=1)
@@ -167,9 +168,17 @@ if (NOT ${GPU_BACKEND} STREQUAL "none")
         if (NOT SYCL_FLAGS)
             list(APPEND GPU_COMPILE_FLAGS
                 "-fsycl"
+                "-fsycl-enable-function-pointers"
+            )
+            list(APPEND GPU_LINK_FLAGS
+                "-fsycl"
+                "-fsycl-enable-function-pointers"
             )
         else()
             list(APPEND GPU_COMPILE_FLAGS
+                ${SYCL_FLAGS}
+            )
+            list(APPEND GPU_LINK_FLAGS
                 ${SYCL_FLAGS}
             )
         endif()
@@ -319,6 +328,7 @@ include_directories( ${Boost_INCLUDE_DIRS} )
 
 # Add compile flags
 target_compile_options(${exe} PRIVATE ${GPU_COMPILE_FLAGS})
+target_link_options(${exe} PRIVATE ${GPU_LINK_FLAGS})
 
 # Link libraries
 target_link_libraries (${exe} ${Boost_LIBRARIES} )
