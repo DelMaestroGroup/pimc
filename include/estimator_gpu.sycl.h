@@ -71,7 +71,7 @@ template <bool ZERO_FREQUENCY = false>
 void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double* __restrict__ beads, double inorm, int M, int N, int N_extent) {
     //Get item and group
     auto ndItem = sycl::ext::oneapi::this_work_item::get_nd_item<1>()
-    auto grp = ext::oneapi::this_work_item::get_work_group<1>();
+    auto grp = sycl::ext::oneapi::this_work_item::get_work_group<1>();
 
     //Set thread index (work item) and block index (group)
     int threadIdx_x = ndItem.get_local_id(0);
@@ -182,7 +182,7 @@ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double* __res
 void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs, double* __restrict__ beads, double inorm, double maxR, int M, int N, int N_extent) {
     //Get item and group
     auto ndItem = sycl::ext::oneapi::this_work_item::get_nd_item<1>()
-    auto grp = ext::oneapi::this_work_item::get_work_group<1>();
+    auto grp = sycl::ext::oneapi::this_work_item::get_work_group<1>();
 
     //Set thread index (work item) and block index (group)
     int threadIdx_x = ndItem.get_local_id(0);
@@ -310,7 +310,7 @@ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs, double* _
 __global__ void gpu_ssf(double* __restrict__ ssf, double* __restrict__ qvecs, double* __restrict__ beads, double inorm, int M, int N, int N_extent) {
     //Get item and group
     auto ndItem = sycl::ext::oneapi::this_work_item::get_nd_item<1>()
-    auto grp = ext::oneapi::this_work_item::get_work_group<1>();
+    auto grp = sycl::ext::oneapi::this_work_item::get_work_group<1>();
 
     //Set thread index (work item) and block index (group)
     int threadIdx_x = ndItem.get_local_id(0);
