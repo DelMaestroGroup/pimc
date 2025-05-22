@@ -308,7 +308,7 @@ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs, double* _
 }
 
 // GPU Kernel for SSF calculation
-__global__ void gpu_ssf(double* __restrict__ ssf, double* __restrict__ qvecs, double* __restrict__ beads, double inorm, int M, int N, int N_extent) {
+void gpu_ssf(double* __restrict__ ssf, double* __restrict__ qvecs, double* __restrict__ beads, double inorm, int M, int N, int N_extent) {
     //Get item and group
     auto ndItem = sycl::ext::oneapi::this_work_item::get_nd_item<1>();
     auto grp = sycl::ext::oneapi::this_work_item::get_work_group<1>();
