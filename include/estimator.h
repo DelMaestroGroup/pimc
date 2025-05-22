@@ -11,14 +11,8 @@
 #ifndef ESTIMATOR_H 
 #define ESTIMATOR_H
 
-#ifdef USE_HIP
-    #include "estimator_gpu.hip.h"
-#endif
-#ifdef USE_CUDA
-    #include "estimator_gpu.cuh"
-#endif
-#ifdef USE_SYCL
-    #include "estimator_gpu.sycl.h"
+#ifdef USE_GPU
+    #include "common_gpu.h"
 #endif
 
 class Path;
