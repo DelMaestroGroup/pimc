@@ -3468,7 +3468,7 @@ void StaticStructureFactorGPUEstimator::accumulate() {
     double _inorm = 1.0/numParticles;
 
     /* We need to copy over the current beads array to the device */
-    auto beads_extent = path.get_beads_extent();
+    auto beads_extent = path.get_beads_extents();
     int full_number_of_beads = beads_extent[0]*beads_extent[1];
     int full_numParticles = beads_extent[1];
 
@@ -3772,7 +3772,7 @@ void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
 
     double _inorm = 1.0/number_of_beads;
 
-    auto beads_extent = path.get_beads_extent();
+    auto beads_extent = path.get_beads_extents();
     int full_number_of_beads = beads_extent[0]*beads_extent[1];
     int full_numParticles = beads_extent[1];
 
@@ -3906,7 +3906,7 @@ void ElasticScatteringEstimatorGpu::accumulate() {
 
     double _inorm = 1.0/number_of_beads;
 
-    auto beads_extent = path.get_beads_extent();
+    auto beads_extent = path.get_beads_extents();
     int full_number_of_beads = beads_extent[0]*beads_extent[1];
     int full_numParticles = beads_extent[1];
 
@@ -5228,7 +5228,7 @@ void CylinderStaticStructureFactorGPUEstimator::accumulate() {
     double _inorm = 1.0/numParticles;
 
     /* We need to copy over the current beads array to the device */
-    auto beads_extent = path.get_beads_extent();
+    auto beads_extent = path.get_beads_extents();
     int full_number_of_beads = beads_extent[0]*beads_extent[1];
     int full_numParticles = beads_extent[1];
 
