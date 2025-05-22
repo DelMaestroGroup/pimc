@@ -18,6 +18,17 @@
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
+// Atomic add function
+template <typename T1, typename T2>
+static inline T1
+atomicAdd(T1* addr, const T2 val) {
+    sycl::atomic_ref<T1,
+        sycl::memory_order::relaxed,
+        sycl::memory_scope::device,
+        sycl::access::address_space::global_space> atom(*addr);
+    return atom.fetch_add(static_cast<T1>(val));
+}
+
 // GPU Kernel for reduction using warp (uses appropriate warp for NVIDIA vs AMD devices i. e. "portable wave aware code")
 void warp_reduce(volatile double *sdata, unsigned int thread_idx) {
     if (SUB_GROUP_SIZE == 64) { if (GPU_BLOCK_SIZE >= 128) sdata[thread_idx] += sdata[thread_idx + 64]; }
