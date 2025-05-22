@@ -30,25 +30,26 @@ void warp_reduce(volatile double *sdata, unsigned int thread_idx) {
 }
 
 void gpu_reduce(volatile double *sdata, unsigned int thread_idx) {
+    auto grp = sycl::ext::oneapi::this_work_item::get_work_group<1>();
     if (GPU_BLOCK_SIZE >= 1024) {
         if (thread_idx < 512) {
             sdata[thread_idx] += sdata[thread_idx + 512];
         }
-        __syncthreads();
+        sycl::group_barrier(grp);
     } 
 
     if (GPU_BLOCK_SIZE >= 512) {
         if (thread_idx < 256) {
             sdata[thread_idx] += sdata[thread_idx + 256];
         }
-        __syncthreads();
+        sycl::group_barrier(grp);
     } 
 
     if (GPU_BLOCK_SIZE >= 256) {
         if (thread_idx < 128) {
             sdata[thread_idx] += sdata[thread_idx + 128];
         }
-        __syncthreads();
+        sycl::group_barrier(grp);
     } 
 
     if (SUB_GROUP_SIZE == 32) {
@@ -56,7 +57,7 @@ void gpu_reduce(volatile double *sdata, unsigned int thread_idx) {
             if (thread_idx < 64) {
                 sdata[thread_idx] += sdata[thread_idx + 64];
             }
-            __syncthreads();
+            sycl::group_barrier(grp);
         } 
     }
 
@@ -129,7 +130,7 @@ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double* __res
             s_isf[threadIdx_x] += cos(q_dot_sep);
         }
     }
-    __syncthreads();
+    sycl::group_barrier(grp);
     
     //FIXME This can be abstracted
     // NEED TO REDUCE isf ON SHARED MEMORY AND ADD TO GLOBAL isf
@@ -137,21 +138,21 @@ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double* __res
         if (threadIdx_x < 512) {
             s_isf[threadIdx_x] += s_isf[threadIdx_x + 512];
         }
-        __syncthreads();
+        sycl::group_barrier(grp);
     } 
 
     if (GPU_BLOCK_SIZE >= 512) {
         if (threadIdx_x < 256) {
             s_isf[threadIdx_x] += s_isf[threadIdx_x + 256];
         }
-        __syncthreads();
+        sycl::group_barrier(grp);
     } 
 
     if (GPU_BLOCK_SIZE >= 256) {
         if (threadIdx_x < 128) {
             s_isf[threadIdx_x] += s_isf[threadIdx_x + 128];
         }
-        __syncthreads();
+        sycl::group_barrier(grp);
     } 
 
     if (SUB_GROUP_SIZE == 32) {
@@ -159,7 +160,7 @@ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double* __res
             if (threadIdx_x < 64) {
                 s_isf[threadIdx_x] += s_isf[threadIdx_x + 64];
             }
-            __syncthreads();
+            sycl::group_barrier(grp);
         } 
     }
 
@@ -263,7 +264,7 @@ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs, double* _
             s_ssf[threadIdx_x] = ((mag_bead1 > maxR*maxR) || (mag_bead2 > maxR*maxR)) ? 0.0 : cos(q_dot_sep);
         }
     }
-    __syncthreads();
+    sycl::group_barrier(grp);
     
     //FIXME This can be abstracted
     // NEED TO REDUCE ssf ON SHARED MEMORY AND ADD TO GLOBAL ssf
@@ -271,21 +272,21 @@ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs, double* _
         if (threadIdx_x < 512) {
             s_ssf[threadIdx_x] += s_ssf[threadIdx_x + 512];
         }
-        __syncthreads();
+        sycl::group_barrier(grp);
     } 
 
     if (GPU_BLOCK_SIZE >= 512) {
         if (threadIdx_x < 256) {
             s_ssf[threadIdx_x] += s_ssf[threadIdx_x + 256];
         }
-        __syncthreads();
+        sycl::group_barrier(grp);
     } 
 
     if (GPU_BLOCK_SIZE >= 256) {
         if (threadIdx_x < 128) {
             s_ssf[threadIdx_x] += s_ssf[threadIdx_x + 128];
         }
-        __syncthreads();
+        sycl::group_barrier(grp);
     } 
 
     if (SUB_GROUP_SIZE == 32) {
@@ -293,7 +294,7 @@ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs, double* _
             if (threadIdx_x < 64) {
                 s_ssf[threadIdx_x] += s_ssf[threadIdx_x + 64];
             }
-            __syncthreads();
+            sycl::group_barrier(grp);
         } 
     }
 
@@ -367,7 +368,7 @@ __global__ void gpu_ssf(double* __restrict__ ssf, double* __restrict__ qvecs, do
             s_ssf[threadIdx_x] += cos(q_dot_sep);
         }
     }
-    __syncthreads();
+    sycl::group_barrier(grp);
     
     //FIXME This can be abstracted
     // NEED TO REDUCE ssf ON SHARED MEMORY AND ADD TO GLOBAL ssf
@@ -375,21 +376,21 @@ __global__ void gpu_ssf(double* __restrict__ ssf, double* __restrict__ qvecs, do
         if (threadIdx_x < 512) {
             s_ssf[threadIdx_x] += s_ssf[threadIdx_x + 512];
         }
-        __syncthreads();
+        sycl::group_barrier(grp);
     } 
 
     if (GPU_BLOCK_SIZE >= 512) {
         if (threadIdx_x < 256) {
             s_ssf[threadIdx_x] += s_ssf[threadIdx_x + 256];
         }
-        __syncthreads();
+        sycl::group_barrier(grp);
     } 
 
     if (GPU_BLOCK_SIZE >= 256) {
         if (threadIdx_x < 128) {
             s_ssf[threadIdx_x] += s_ssf[threadIdx_x + 128];
         }
-        __syncthreads();
+        sycl::group_barrier(grp);
     } 
 
     if (SUB_GROUP_SIZE == 32) {
@@ -397,7 +398,7 @@ __global__ void gpu_ssf(double* __restrict__ ssf, double* __restrict__ qvecs, do
             if (threadIdx_x < 64) {
                 s_ssf[threadIdx_x] += s_ssf[threadIdx_x + 64];
             }
-            __syncthreads();
+            sycl::group_barrier(grp);
         } 
     }
 
