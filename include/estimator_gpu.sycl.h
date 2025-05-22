@@ -79,7 +79,7 @@ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double* __res
     int blockIdx_x = ndItem.get_group(0);
 
     //Allocate shared memory
-    __shared__ double s_isf[GPU_BLOCK_SIZE]; // temporarily store isf on shared memory of gpu
+    auto s_isf = *sycl::ext::oneapi::group_local_memory_for_overwrite<double[GPU_BLOCK_SIZE]>(grp);
 
 
     int NNM = N*N*M;
@@ -90,7 +90,7 @@ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double* __res
 
         int m_idx2 = (m_idx1 + blockIdx_x) % M;   // Imaginary time index for second bead
         int n_idx2 = (threadIdx_x - bead_idx1*N); // Particle index for second bead
-        int bead_idx2 = m_idx2*N + n_idx2;        // Bead index for second bead
+        //int bead_idx2 = m_idx2*N + n_idx2;        // Bead index for second bead
 
         //Get true bead indices in padded beads array
         int true_bead_idx1 = m_idx1*N_extent + n_idx1;
@@ -115,7 +115,7 @@ void gpu_isf(double* __restrict__ isf, double* __restrict__ qvecs, double* __res
 
             int m_idx2 = (m_idx1 + blockIdx_x) % M; // Imaginary time index for second bead
             int n_idx2 = (local_idx - bead_idx1*N); // Particle index for second bead
-            int bead_idx2 = m_idx2*N + n_idx2;      // Bead index for second bead
+            //int bead_idx2 = m_idx2*N + n_idx2;      // Bead index for second bead
 
             //Get true bead indices in padded beads array
             int true_bead_idx1 = m_idx1*N_extent + n_idx1;
@@ -190,7 +190,7 @@ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs, double* _
     int blockIdx_x = ndItem.get_group(0);
 
     //Allocate shared memory
-    __shared__ double s_ssf[GPU_BLOCK_SIZE]; // temporarily store ssf on shared memory of gpu
+    auto s_ssf = *sycl::ext::oneapi::group_local_memory_for_overwrite<double[GPU_BLOCK_SIZE]>(grp);
 
     int NNM = N*N*M;
     if (threadIdx_x < NNM) {
@@ -200,7 +200,7 @@ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs, double* _
 
         int m_idx2 = m_idx1;                      // Imaginary time index for second bead
         int n_idx2 = (threadIdx_x - bead_idx1*N); // Particle index for second bead
-        int bead_idx2 = m_idx2*N + n_idx2;        // Bead index for second bead
+        //int bead_idx2 = m_idx2*N + n_idx2;        // Bead index for second bead
 
         //Get true bead indices in padded beads array
         int true_bead_idx1 = m_idx1*N_extent + n_idx1;
@@ -237,7 +237,7 @@ void gpu_ssf_cyl(double* __restrict__ ssf, double* __restrict__ qvecs, double* _
 
             int m_idx2 = m_idx1;                    // Imaginary time index for second bead
             int n_idx2 = (local_idx - bead_idx1*N); // Particle index for second bead
-            int bead_idx2 = m_idx2*N + n_idx2;      // Bead index for second bead
+            //int bead_idx2 = m_idx2*N + n_idx2;      // Bead index for second bead
 
             //Get true bead indices in padded beads array
             int true_bead_idx1 = m_idx1*N_extent + n_idx1;
@@ -318,7 +318,11 @@ void gpu_ssf(double* __restrict__ ssf, double* __restrict__ qvecs, double* __res
     int blockIdx_x = ndItem.get_group(0);
 
     //Allocate shared memory
-    __shared__ double s_ssf[GPU_BLOCK_SIZE]; // temporarily store ssf on shared memory of gpu
+    auto s_ssf = *sycl::ext::oneapi::group_local_memory_for_overwrite<double[GPU_BLOCK_SIZE]>(grp);
+
+    // Access it like a normal array via reference or pointer:
+    //auto s_ssf_ptr = sycl::ext::oneapi::group_local_memory_for_overwrite<double[GPU_BLOCK_SIZE]>(grp);
+    //auto& s_ssf = *s_ssf_ptr;  // localMem is double[GPU_BLOCK_SIZE]&
 
     int NNM = N*N*M;
     if (threadIdx_x < NNM) {
@@ -328,7 +332,7 @@ void gpu_ssf(double* __restrict__ ssf, double* __restrict__ qvecs, double* __res
 
         int m_idx2 = m_idx1;                      // Imaginary time index for second bead
         int n_idx2 = (threadIdx_x - bead_idx1*N); // Particle index for second bead
-        int bead_idx2 = m_idx2*N + n_idx2;        // Bead index for second bead
+        //int bead_idx2 = m_idx2*N + n_idx2;        // Bead index for second bead
 
         //Get true bead indices in padded beads array
         int true_bead_idx1 = m_idx1*N_extent + n_idx1;
@@ -353,7 +357,7 @@ void gpu_ssf(double* __restrict__ ssf, double* __restrict__ qvecs, double* __res
 
             int m_idx2 = m_idx1;                    // Imaginary time index for second bead
             int n_idx2 = (local_idx - bead_idx1*N); // Particle index for second bead
-            int bead_idx2 = m_idx2*N + n_idx2;      // Bead index for second bead
+            //int bead_idx2 = m_idx2*N + n_idx2;      // Bead index for second bead
 
             //Get true bead indices in padded beads array
             int true_bead_idx1 = m_idx1*N_extent + n_idx1;
