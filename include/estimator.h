@@ -17,6 +17,9 @@
 #ifdef USE_CUDA
     #include "estimator_gpu.cuh"
 #endif
+#ifdef USE_SYCL
+    #include "estimator_gpu.sycl.h"
+#endif
 
 class Path;
 class ActionBase;
