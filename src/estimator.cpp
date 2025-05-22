@@ -11,6 +11,15 @@
 #include "potential.h"
 #include "communicator.h"
 #include "factory.h"
+#ifdef USE_HIP
+    #include "estimator_gpu.hip.h"
+#endif
+#ifdef USE_CUDA
+    #include "estimator_gpu.cuh"
+#endif
+#ifdef USE_SYCL
+    #include "estimator_gpu.sycl.h"
+#endif
 
 /**************************************************************************//**
  * Setup the estimator factory.
@@ -3406,7 +3415,7 @@ StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
 
     /* Initialize the accumulator for the static structure factor */
     ssf.resize(numq);
-    ssf = 0.0;
+    ssf.fill(0.0);
 
     // Create multiple gpu streams
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
@@ -3428,7 +3437,7 @@ StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
         header += str(format("%16d") % n);
 
     /* utilize imaginary time translational symmetry */
-    norm = 0.5/constants()->numTimeSlices();
+    norm.fill(0.5/constants()->numTimeSlices());
 
     bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
     bytes_ssf = ssf.size()*sizeof(double);
@@ -3444,8 +3453,6 @@ StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
  *  Destructor.
 ******************************************************************************/
 StaticStructureFactorGPUEstimator::~StaticStructureFactorGPUEstimator() { 
-    ssf.free();
-
     // Release device memory
     GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
     GPU_ASSERT(gpu_free(d_qvecs, stream_array[0]));
@@ -3470,7 +3477,7 @@ void StaticStructureFactorGPUEstimator::accumulate() {
     double _inorm = 1.0/numParticles;
 
     /* We need to copy over the current beads array to the device */
-    auto beads_extent = path.get_beads_extent();
+    auto beads_extent = path.get_beads_extents();
     int full_number_of_beads = beads_extent[0]*beads_extent[1];
     int full_numParticles = beads_extent[1];
 
@@ -3710,7 +3717,7 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
 
     /* Initialize the accumulator for the intermediate scattering function*/
     isf.resize(numq*(int(numTimeSlices/2) + 1));
-    isf = 0.0;
+    isf.fill(0.0);
 
     // Create multiple gpu streams
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
@@ -3732,7 +3739,7 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
         header.append(str(format("%16d") % n));
     }
     /* utilize imaginary time translational symmetry */
-    norm = 0.5;
+    norm.fill(0.5);
 
     bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
     bytes_isf = isf.size()*sizeof(double);
@@ -3748,9 +3755,6 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
  *  Destructor.
 ******************************************************************************/
 IntermediateScatteringFunctionEstimatorGpu::~IntermediateScatteringFunctionEstimatorGpu() { 
-    isf.free();
-    qValues_dVec.free();
-
     // Release device memory
     GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
     GPU_ASSERT(gpu_free(d_qvecs, stream_array[0]));
@@ -3777,7 +3781,7 @@ void IntermediateScatteringFunctionEstimatorGpu::accumulate() {
 
     double _inorm = 1.0/number_of_beads;
 
-    auto beads_extent = path.get_beads_extent();
+    auto beads_extent = path.get_beads_extents();
     int full_number_of_beads = beads_extent[0]*beads_extent[1];
     int full_numParticles = beads_extent[1];
 
@@ -3849,7 +3853,7 @@ ElasticScatteringEstimatorGpu::ElasticScatteringEstimatorGpu(
 
     /* Initialize the accumulator for the elastic scattering*/
     es.resize(numq);
-    es = 0.0;
+    es.fill(0.0);
 
     // Create multiple gpu streams
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
@@ -3871,7 +3875,7 @@ ElasticScatteringEstimatorGpu::ElasticScatteringEstimatorGpu(
         header.append(str(format("%16d") % n));
     }
     /* utilize imaginary time translational symmetry */
-    norm = 0.5;
+    norm.fill(0.5);
 
     bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
     bytes_es = es.size()*sizeof(double);
@@ -3887,9 +3891,6 @@ ElasticScatteringEstimatorGpu::ElasticScatteringEstimatorGpu(
  *  Destructor.
 ******************************************************************************/
 ElasticScatteringEstimatorGpu::~ElasticScatteringEstimatorGpu() { 
-    es.free();
-    qValues_dVec.free();
-
     // Release device memory
     GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
     GPU_ASSERT(gpu_free(d_qvecs, stream_array[0]));
@@ -3914,7 +3915,7 @@ void ElasticScatteringEstimatorGpu::accumulate() {
 
     double _inorm = 1.0/number_of_beads;
 
-    auto beads_extent = path.get_beads_extent();
+    auto beads_extent = path.get_beads_extents();
     int full_number_of_beads = beads_extent[0]*beads_extent[1];
     int full_numParticles = beads_extent[1];
 
@@ -5174,7 +5175,7 @@ CylinderStaticStructureFactorGPUEstimator::CylinderStaticStructureFactorGPUEstim
 
     /* Initialize the accumulator for the static structure factor */
     ssf.resize(numq);
-    ssf = 0.0;
+    ssf.fill(0.0);
 
     // Create multiple gpu streams
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
@@ -5196,7 +5197,7 @@ CylinderStaticStructureFactorGPUEstimator::CylinderStaticStructureFactorGPUEstim
         header += str(format("%16d") % n);
 
     /* utilize imaginary time translational symmetry */
-    norm = 0.5/constants()->numTimeSlices();
+    norm.fill(0.5/constants()->numTimeSlices());
 
     bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
     bytes_ssf = ssf.size()*sizeof(double);
@@ -5212,8 +5213,6 @@ CylinderStaticStructureFactorGPUEstimator::CylinderStaticStructureFactorGPUEstim
  *  Destructor.
 ******************************************************************************/
 CylinderStaticStructureFactorGPUEstimator::~CylinderStaticStructureFactorGPUEstimator() { 
-    ssf.free();
-
     // Release device memory
     GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
     GPU_ASSERT(gpu_free(d_qvecs, stream_array[0]));
@@ -5238,7 +5237,7 @@ void CylinderStaticStructureFactorGPUEstimator::accumulate() {
     double _inorm = 1.0/numParticles;
 
     /* We need to copy over the current beads array to the device */
-    auto beads_extent = path.get_beads_extent();
+    auto beads_extent = path.get_beads_extents();
     int full_number_of_beads = beads_extent[0]*beads_extent[1];
     int full_numParticles = beads_extent[1];
 

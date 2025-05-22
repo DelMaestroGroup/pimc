@@ -68,10 +68,10 @@
         #endif
     #endif
     #ifdef USE_SYCL
-        #include <CL/sycl.hpp>
+        #include <sycl/sycl.hpp>
         #define GPU_ASSERT(x) x
         #ifndef SUB_GROUP_SIZE
-            #define SUB_GROUP_SIZE 8 ///< number of threads per subgroup
+            #define SUB_GROUP_SIZE 32 ///< number of threads per subgroup
         #endif
         #if !IS_POWER_OF_TWO(SUB_GROUP_SIZE)
             #error "SUB_GROUP_SIZE must be a power of two"
@@ -89,7 +89,7 @@
         #define gpu_memset(w, x, y, z) z.memset(w, x, y)
         #define gpu_free(x, y) sycl::free(x, y)
         #ifdef USE_BLAS
-            #include "oneapi/mkl.hpp"
+            #include "onemath/mkl.hpp"
             typedef sycl::queue gpu_blas_handle_t;
             #define GPU_BLAS_ASSERT(x) x
             #define gpu_create_blas_handle(x) do {} while(0)

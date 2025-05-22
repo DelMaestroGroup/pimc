@@ -146,6 +146,8 @@ endif()
 # --------- End MDSpan Header Test ---------
 
 # Enable GPU support
+set(GPU_COMPILE_FLAGS "")
+set(GPU_LINK_FLAGS "")
 set(GPU_BACKEND "none" CACHE STRING "Enable gpu accleration: cuda, hip, sycl, none (default: none)")
 if (NOT ${GPU_BACKEND} STREQUAL "none")
     add_definitions(-D USE_GPU=1)
@@ -163,28 +165,45 @@ if (NOT ${GPU_BACKEND} STREQUAL "none")
         add_definitions(-D USE_HIP=1)
     elseif(${GPU_BACKEND} STREQUAL "sycl")
         add_definitions(-D USE_SYCL=1)
+        if (NOT SYCL_FLAGS)
+            list(APPEND GPU_COMPILE_FLAGS
+                "-fsycl"
+                "-fsycl-enable-function-pointers"
+            )
+            list(APPEND GPU_LINK_FLAGS
+                "-fsycl"
+                "-fsycl-enable-function-pointers"
+            )
+        else()
+            list(APPEND GPU_COMPILE_FLAGS
+                ${SYCL_FLAGS}
+            )
+            list(APPEND GPU_LINK_FLAGS
+                ${SYCL_FLAGS}
+            )
+        endif()
     else()
         message(FATAL_ERROR "Unknown GPU implementation '${GPU_BACKEND}',"
             " please select from 'cuda, hip, sycl, none'.")
     endif()
+
+    # Set number of threads per block
+    set(GPU_BLOCK_SIZE "1024" CACHE STRING "Set gpu block size (default: 1024)")
+    add_definitions(-D GPU_BLOCK_SIZE=${GPU_BLOCK_SIZE})
+    
+    # Set sub-group size (warpsize/wavefront/SIMD lanes/etc.)
+    if(${GPU_BACKEND} STREQUAL "hip")
+        set(SUB_GROUP_SIZE "64" CACHE STRING "Set sub-group size (default: 32)")
+        message("HIP detected. Set SUB_GROUP_SIZE to ${SUB_GROUP_SIZE}.")
+    else()
+        set(SUB_GROUP_SIZE "32" CACHE STRING "Set sub-group size (default: 32)")
+    endif()
+    add_definitions(-D SUB_GROUP_SIZE=${SUB_GROUP_SIZE})
+    
+    # Set number of GPU streams
+    set(MAX_GPU_STREAMS "1" CACHE STRING "Set number of gpu streams (default: 1)")
+    add_definitions(-D MAX_GPU_STREAMS=${MAX_GPU_STREAMS})
 endif()
-
-# Set number of threads per block
-set(GPU_BLOCK_SIZE "1024" CACHE STRING "Set gpu block size (default: 1024)")
-add_definitions(-D GPU_BLOCK_SIZE=${GPU_BLOCK_SIZE})
-
-# Set sub-group size (warpsize/wavefront/SIMD lanes/etc.)
-if(${GPU_BACKEND} STREQUAL "hip")
-    set(SUB_GROUP_SIZE "64" CACHE STRING "Set sub-group size (default: 32)")
-    message("HIP detected. Set SUB_GROUP_SIZE to ${SUB_GROUP_SIZE}.")
-else()
-    set(SUB_GROUP_SIZE "32" CACHE STRING "Set sub-group size (default: 32)")
-endif()
-add_definitions(-D SUB_GROUP_SIZE=${SUB_GROUP_SIZE})
-
-# Set number of GPU streams
-set(MAX_GPU_STREAMS "1" CACHE STRING "Set number of gpu streams (default: 1)")
-add_definitions(-D MAX_GPU_STREAMS=${MAX_GPU_STREAMS})
 
 # Check for static build
 if(STATIC)
@@ -306,6 +325,10 @@ find_package( Boost 1.71.0 REQUIRED COMPONENTS program_options serialization )
 
 # Add include directories
 include_directories( ${Boost_INCLUDE_DIRS} )
+
+# Add compile flags
+target_compile_options(${exe} PRIVATE ${GPU_COMPILE_FLAGS})
+target_link_options(${exe} PRIVATE ${GPU_LINK_FLAGS})
 
 # Link libraries
 target_link_libraries (${exe} ${Boost_LIBRARIES} )
