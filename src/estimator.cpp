@@ -3406,7 +3406,7 @@ StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
 
     /* Initialize the accumulator for the static structure factor */
     ssf.resize(numq);
-    ssf = 0.0;
+    ssf.fill(0.0);
 
     // Create multiple gpu streams
     for (int i = 0; i < MAX_GPU_STREAMS; i++) {
@@ -3428,7 +3428,7 @@ StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
         header += str(format("%16d") % n);
 
     /* utilize imaginary time translational symmetry */
-    norm = 0.5/constants()->numTimeSlices();
+    norm.fill(0.5/constants()->numTimeSlices());
 
     bytes_beads = NDIM*(1 + constants()->initialNumParticles())*sizeof(double);
     bytes_ssf = ssf.size()*sizeof(double);
@@ -3444,8 +3444,6 @@ StaticStructureFactorGPUEstimator::StaticStructureFactorGPUEstimator(
  *  Destructor.
 ******************************************************************************/
 StaticStructureFactorGPUEstimator::~StaticStructureFactorGPUEstimator() { 
-    ssf.free();
-
     // Release device memory
     GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
     GPU_ASSERT(gpu_free(d_qvecs, stream_array[0]));
@@ -3748,9 +3746,6 @@ IntermediateScatteringFunctionEstimatorGpu::IntermediateScatteringFunctionEstima
  *  Destructor.
 ******************************************************************************/
 IntermediateScatteringFunctionEstimatorGpu::~IntermediateScatteringFunctionEstimatorGpu() { 
-    isf.free();
-    qValues_dVec.free();
-
     // Release device memory
     GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
     GPU_ASSERT(gpu_free(d_qvecs, stream_array[0]));
@@ -3887,9 +3882,6 @@ ElasticScatteringEstimatorGpu::ElasticScatteringEstimatorGpu(
  *  Destructor.
 ******************************************************************************/
 ElasticScatteringEstimatorGpu::~ElasticScatteringEstimatorGpu() { 
-    es.free();
-    qValues_dVec.free();
-
     // Release device memory
     GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
     GPU_ASSERT(gpu_free(d_qvecs, stream_array[0]));
@@ -5212,8 +5204,6 @@ CylinderStaticStructureFactorGPUEstimator::CylinderStaticStructureFactorGPUEstim
  *  Destructor.
 ******************************************************************************/
 CylinderStaticStructureFactorGPUEstimator::~CylinderStaticStructureFactorGPUEstimator() { 
-    ssf.free();
-
     // Release device memory
     GPU_ASSERT(gpu_free(d_beads, stream_array[0]));
     GPU_ASSERT(gpu_free(d_qvecs, stream_array[0]));
