@@ -19,51 +19,19 @@ If you have questions, bug reports or plan to use this code for scientific resea
 
 ## Installation
 
-This program has been successfully compiled and run on both Intel and AMD systems using clang, g++, pathscale and icpc. Before installing, one needs to ensure that all dependencies are met.  We recommend that the required libraries (boost and blitz) are installed in a `local` folder inside your home directory: `$HOME/local`.
+This program has been successfully compiled and run on both Intel and AMD systems using clang, g++, pathscale and icpc. Before installing, one needs to ensure that all dependencies are met.  We recommend that the required library (boost) is installed in a `local` folder inside your home directory: `$HOME/local`.
 
 ## Dependencies 
 
-The code is written in c++ and makes use of both the <a href="https://github.com/blitzpp/blitz">blitz++</a> and <a href="http://www.boost.org/">boost</a> libraries.  You should be able to grab `blitz` from github and compile from source via the instructions below.
+The code is written in c++ and makes use of the <a href="http://www.boost.org/">boost</a> library.
 
-We use many of the boost header-only libraries, but two libraries will need to be compiled: boost_program_options and boost_serialization libraries.  Let us assume that you will be installing both blitz and boost in the folder `$HOME/local` using the GNU C++ compiler.  For icpc or clang, the changes should be obvious, and in particular for the Intel compiler you will need to use `intel-linux` as the toolset while for clang you will use `darwin`.
+We use many of the boost header-only libraries, but two libraries will need to be compiled: boost_program_options and boost_serialization libraries.  Let us assume that you will be installing boost in the folder `$HOME/local` using the GNU C++ compiler.  For icpc or clang, the changes should be obvious, and in particular for the Intel compiler you will need to use `intel-linux` as the toolset while for clang you will use `darwin`.
 
 If you don't have a `$HOME/local` you should create this directory now via
 
 ```bash
 mkdir $HOME/local
 ```
-
-### Blitz ###
-
-Unless you need to use the blitz++'s internal debug functionality initiated through \#`define BZ_DEBUG` which is set by including `debug=1` when compiling, blitz can be used as a 'header only' library and does not need to be compiled.  This is the most common use case.  However, as it doesn't take very long to compile one can proceed as follows:
-
-1. Move into your source directory (create if necessary).
-```bash
-cd $HOME/local/src
-```
-2. Clone the latest version of blitz++ from  [github](https://github.com/blitzpp/blitz) into `$HOME/local/src`
-3. Move into the blitz source directory
-4. Read the instructions in the `INSTALL` file to determine if there is anything special you need to do on your system.
-5. Execute
-
-```bash
-mkdir build; cd build
-cmake -DCMAKE_INSTALL_PREFIX=PREFIX ..
-make lib
-make install
-```
-
-where `PREFIX` is the location you want to install the libraries, we suggest `$HOME/local` where `$HOME` is your expanded home directory.
-
-<!-- *Note:* If attempting to compile the old version of blitz-0.9 with gcc version 4.3 or later you may encounter errors
-when attempting to build blitz++.  To fix this, before issuing `make lib` and/or
-`make install` one needs to add headers to a couple of files.  Move to
-`$HOME/local/src/blitz-0.9/blitz` (or similarly, `PREFIX/src/blitz-0.9/blitz`) and
-add the line
-
-    #include <cstdlib>
-
-to the top of the files `funcs.h` and `mathfunc.h` and save.  -->
 
 ### Boost ###
 
@@ -83,10 +51,10 @@ If you want to compile for a specific toolset you could add `--with-toolset=clan
     ./b2 install --prefix=PREFIX --toolset=clang --with-program_options --with-serialization cxxflags="-std=c++17 -stdlib=libc++" linkflags="-std=c++17 -stdlib=libc++" 
     ```
 
-4. If you want to have multiple versions of the library compiled with different compilers you can use the `--layout=versioned` flag above, or you could add `option.set layout : versioned ;` to your `project-config.jam`.  Note: you may have to rename the `$HOME/include/blitz_VER` directory to remove the version number.
-5. You should now have a `PREFIX/include` directory containing the header files for `blitz`, `boost` and `random` and your `PREFIX/lib` directory will contain the following files (the `.dylib` files will only appear on Mac OS X)
+4. If you want to have multiple versions of the library compiled with different compilers you can use the `--layout=versioned` flag above, or you could add `option.set layout : versioned ;` to your `project-config.jam`.  Note: you may have to rename the `$HOME/include/boost_VER` directory to remove the version number.
+5. You should now have a `PREFIX/include` directory containing the header files for `boost` and `random` and your `PREFIX/lib` directory will contain the following files (the `.dylib` files will only appear on Mac OS X)
     ```bash
-    libblitz.a   libboost_program_options.a  libblitz.la  libboost_program_options.dylib 
+    libboost_program_options.a  libboost_program_options.dylib 
     ```
 
 6. Update the `LD_LIBRARY_PATH` (or `DYLD_LIBRARY_PATH` on mac os) variable inside your `.bahsrc` or `.bash_profile` to include `PREFIX/lib` e.g.
@@ -103,7 +71,7 @@ If you want to compile for a specific toolset you could add `--with-toolset=clan
 
 ## Path Integral Monte Carlo
 
-After successfully installing blitz and boost you are now ready to compile the
+After successfully installing boost you are now ready to compile the
 main pimc program on your system.
 PIMC uses CMake for build, test and installation automation. For details on using CMake consult https://cmake.org/documentation/. In short, the following steps should work on UNIX-like systems:
 
@@ -136,7 +104,6 @@ As above, and with further details below, but you should consider using the foll
 - `-D CMAKE_PREFIX_PATH=xxx` to add a non-standard location for CMake to search for libraries, headers or programs
 - `-D CMAKE_INSTALL_PREFIX=xxx` to install pimc to a non-standard location
 - `-D BOOST_ROOT=xxx` to add non-standard location for Boost install
-- `-D BLITZ_ROOT=xxx` to add non-standard location for Blitz++ install
 - `-D STATIC=1` to enable a static build
 - `-D CMAKE_BUILD_TYPE=Debug` to build pimc in debug mode
 - `-D CMAKE_BUILD_TYPE=PIGS` to build pigs
@@ -262,7 +229,7 @@ The output of the above command should yield something like:
 during the relaxation process where the string following `PIMCID:` is a uuid that uniquely tags your run, and 20 measurements will be output to disk.  To analyze the results the code, you will need to obtain and install the [pimcscripts](https://github.com/DelMaestroGroup/pimcscripts) package via: 
 
 
-	pip install --upgrade git+git://github.com/DelMaestroGroup/pimcscripts.git#egg=pimcscripts
+	pip install --upgrade git+https://github.com/DelMaestroGroup/pimcscripts.git#egg=pimcscripts
 
 Which will add the `pimcscripts` library and a number of useful python analysis programs to your path. 
 

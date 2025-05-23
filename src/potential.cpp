@@ -10,6 +10,7 @@
 #include "path.h"
 #include "lookuptable.h"
 #include "communicator.h"
+#include "dynamic_array_serialization.h"
 
 #include <boost/math/special_functions/ellint_1.hpp>
 #include <boost/math/special_functions/ellint_2.hpp>
@@ -58,6 +59,8 @@ REGISTER_INTERACTION_POTENTIAL(   "hard_rod",    HardRodPotential, GET_SETUP(), 
 REGISTER_INTERACTION_POTENTIAL(    "delta1D",    Delta1DPotential, GET_SETUP(), setup.params["delta_strength"].as<double>())
 REGISTER_INTERACTION_POTENTIAL( "lorentzian", LorentzianPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
 REGISTER_INTERACTION_POTENTIAL(       "aziz",       AzizPotential, GET_SETUP(), setup.get_cell())
+REGISTER_INTERACTION_POTENTIAL(    "silvera",    SilveraPotential, GET_SETUP(), setup.get_cell())
+REGISTER_INTERACTION_POTENTIAL(       "H2LJ",                H2LJ, GET_SETUP(), setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(  "szalewicz",  SzalewiczPotential, GET_SETUP(), setup.get_cell())
 //REGISTER_INTERACTION_POTENTIAL(   "harmonic",   HarmonicPotential, GET_SETUP(), constants()->params()["omega"].as<double>())
 REGISTER_INTERACTION_POTENTIAL(   "harmonic",   HarmonicPotential, GET_SETUP(), setup.params["omega"].as<double>())
@@ -79,12 +82,10 @@ REGISTER_EXTERNAL_POTENTIAL(            "hard_tube",          HardCylinderPotent
 REGISTER_EXTERNAL_POTENTIAL(       "plated_lj_tube",      PlatedLJCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["lj_width"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.params["lj_density"].as<double>())
 REGISTER_EXTERNAL_POTENTIAL(              "lj_tube",            LJCylinderPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["lj_cyl_density"].as<double>(), setup.params["lj_cyl_sigma"].as<double>(), setup.params["lj_cyl_epsilon"].as<double>())
 REGISTER_EXTERNAL_POTENTIAL(              "hg_tube",           LJHourGlassPotential, GET_SETUP(), setup.params["radius"].as<double>(), setup.params["hourglass_radius"].as<double>(), setup.params["hourglass_width"].as<double>())
-REGISTER_EXTERNAL_POTENTIAL(             "fixed_lj",       FixedPositionLJPotential, GET_SETUP(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.get_cell())
+REGISTER_EXTERNAL_POTENTIAL(             "fixed_lj",       FixedPositionLJPotential, GET_SETUP(), setup.get_cell())
 REGISTER_EXTERNAL_POTENTIAL(            "gasp_prim",          Gasparini_1_Potential, GET_SETUP(), setup.params["empty_width_z"].as<double>(), setup.params["empty_width_y"].as<double>(), setup.get_cell())
 REGISTER_EXTERNAL_POTENTIAL(        "graphenelut3d",         GrapheneLUT3DPotential, GET_SETUP(), setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
 REGISTER_EXTERNAL_POTENTIAL("graphenelut3dgenerate", GrapheneLUT3DPotentialGenerate, GET_SETUP(), setup.params["strain"].as<double>(), setup.params["poisson"].as<double>(), setup.params["carbon_carbon_dist"].as<double>(), setup.params["lj_sigma"].as<double>(), setup.params["lj_epsilon"].as<double>(), setup.params["k_max"].as<int>(), setup.params["xres"].as<int>(), setup.params["yres"].as<int>(), setup.params["zres"].as<int>(), setup.get_cell())
-REGISTER_EXTERNAL_POTENTIAL("graphenelut3dtobinary", GrapheneLUT3DPotentialToBinary, GET_SETUP(), setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
-REGISTER_EXTERNAL_POTENTIAL(  "graphenelut3dtotext",   GrapheneLUT3DPotentialToText, GET_SETUP(), setup.params["graphenelut3d_file_prefix"].as<std::string>(), setup.get_cell())
 #endif
 
 // ---------------------------------------------------------------------------
@@ -112,12 +113,12 @@ PotentialBase::~PotentialBase () {
  * The default version creates a list of particle positions in an equally
  * spaced grid.
 ******************************************************************************/
-blitz::Array<dVec,1> PotentialBase::initialConfig(const Container *boxPtr, MTRand &random,
+DynamicArray<dVec,1> PotentialBase::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
 
     /* The particle configuration */
-    blitz::Array<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    DynamicArray<dVec,1> initialPos(numParticles);
+    initialPos.fill(dVec{});
 
     /* Get the linear size per particle, and the number of particles */
     double initSide = pow((1.0*numParticles/boxPtr->volume),-1.0/(1.0*NDIM));
@@ -178,8 +179,7 @@ blitz::Array<dVec,1> PotentialBase::initialConfig(const Container *boxPtr, MTRan
  * @param maxSep the maximum separation
 ******************************************************************************/
 void PotentialBase::output(const double maxSep) {
-    dVec sep;
-    sep = 0.0;
+    dVec sep{};
     for (double d = 0; d < maxSep; d+= (maxSep/1.0E6)) {
         sep[0] = d;
         communicate()->file("debug")->stream() 
@@ -206,9 +206,9 @@ double PotentialBase::deltaSeparation(double sep1, double sep2) const {
  *
  * This is only used for Gasparini potential, could probably be better.
 ******************************************************************************/
-blitz::Array<double,1> PotentialBase::getExcLen() {
+DynamicArray<double,1> PotentialBase::getExcLen() {
     /* The particle configuration */
-    blitz::Array<double,1> excLens(0);
+    DynamicArray<double,1> excLens(0);
     return excLens;
 }
 // ---------------------------------------------------------------------------
@@ -221,18 +221,15 @@ blitz::Array<double,1> PotentialBase::getExcLen() {
  * Constructor.
 ******************************************************************************/
 TabulatedPotential::TabulatedPotential() { 
-    extV = 0.0;
-    extdVdr = 0.0;
-    extd2Vdr2 = 0.0;
+    extV.fill(0.0);
+    extdVdr.fill(0.0);
+    extd2Vdr2.fill(0.0);
 }
 
 /**************************************************************************//**
  * Destructor. 
 ******************************************************************************/
 TabulatedPotential::~TabulatedPotential() {
-    lookupV.free();
-    lookupdVdr.free();
-    lookupd2Vdr2.free();
 }
 
 /**************************************************************************//**
@@ -245,12 +242,12 @@ void TabulatedPotential::initLookupTable(const double _dr, const double maxSep) 
      * its first and second derivatives. */
     dr = _dr;
     tableLength = int(maxSep/dr);
-    lookupV.resize(tableLength);
-    lookupdVdr.resize(tableLength);
+         lookupV.resize(tableLength);
+      lookupdVdr.resize(tableLength);
     lookupd2Vdr2.resize(tableLength);
-    lookupV = 0.0;
-    lookupdVdr = 0.0;
-    lookupd2Vdr2 = 0.0;
+         lookupV.fill(0.0);
+      lookupdVdr.fill(0.0);
+    lookupd2Vdr2.fill(0.0);
 
     double r = 0;
 
@@ -297,8 +294,8 @@ void TabulatedPotential::initLookupTable(const double _dr, const double maxSep) 
  *  @see M.P. Allen and D.J. Tildesley, "Computer Simulation of Liquids" 
  *  (Oxford Press, London, England) p 144 (2004).
 ******************************************************************************/
-double TabulatedPotential::newtonGregory(const blitz::Array<double,1> &VTable, 
-        const blitz::TinyVector<double,2> &extVal, const double r) {
+double TabulatedPotential::newtonGregory(const DynamicArray<double,1> &VTable, 
+        const std::array<double,2> &extVal, const double r) {
 
     double rdr = r/dr;
     int k = int(rdr);
@@ -326,8 +323,8 @@ double TabulatedPotential::newtonGregory(const blitz::Array<double,1> &VTable,
  *  This is faster thant Newton-Gregory and may give similar results for a fine
  *  enough mesh.
 ******************************************************************************/
-double TabulatedPotential::direct(const blitz::Array<double,1> &VTable, 
-        const blitz::TinyVector<double,2> &extVal, const double r) {
+double TabulatedPotential::direct(const DynamicArray<double,1> &VTable, 
+        const std::array<double,2> &extVal, const double r) {
 
     int k = int(r/dr);
     if (k <= 0) 
@@ -403,12 +400,12 @@ HarmonicPotential::~HarmonicPotential() {
  *
  * We create particles at random locations close to the origin.
 ******************************************************************************/
-blitz::Array<dVec,1> HarmonicPotential::initialConfig(const Container *boxPtr, MTRand &random,
+DynamicArray<dVec,1> HarmonicPotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
 
     /* The particle configuration */
-    blitz::Array<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    DynamicArray<dVec,1> initialPos(numParticles);
+    initialPos.fill(dVec{});
 
     for (int n = 0; n < numParticles; n++) {
         for (int i = 0; i < NDIM; i++) 
@@ -611,8 +608,8 @@ FixedAzizPotential::FixedAzizPotential(const Container *_boxPtr) :
     /* Resize and initialize our local grid box arrays */
     fixedBeadsInGrid.resize(lookupPtr->getTotNumGridBoxes(),numFixedParticles);
     numFixedBeadsInGrid.resize(lookupPtr->getTotNumGridBoxes());
-    fixedBeadsInGrid = XXX;
-    numFixedBeadsInGrid = 0;
+    fixedBeadsInGrid.fill(XXX);
+    numFixedBeadsInGrid.fill(0);
 
     /* Create a local copy of all beads in each grid box plus nearest neighbors.
      * This will drastically speed up the computing of potential energies. */
@@ -630,9 +627,6 @@ FixedAzizPotential::FixedAzizPotential(const Container *_boxPtr) :
 ******************************************************************************/
 FixedAzizPotential::~FixedAzizPotential() {
     delete lookupPtr;
-    fixedParticles.free();
-    fixedBeadsInGrid.free();
-    numFixedBeadsInGrid.free();
 }
 
 /**************************************************************************//**
@@ -665,8 +659,7 @@ double FixedAzizPotential::V(const dVec &pos) {
 ******************************************************************************/
 dVec FixedAzizPotential::gradV(const dVec &pos) {
 
-    dVec totGradV;
-    totGradV = 0.0;
+    dVec totGradV{};
 
     /* We first find the grid box number that the particle resides in */
     int gridNumber = lookupPtr->gridNumber(pos);
@@ -691,12 +684,12 @@ dVec FixedAzizPotential::gradV(const dVec &pos) {
  * updateable positions.  These positions are stored as NDIM vectors and
  * proceeded by a letter 'U'.
 ******************************************************************************/
-blitz::Array<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, MTRand &random,
+DynamicArray<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
 
     /* The particle configuration */
-    blitz::Array<dVec,1> initialPos(1);
-    initialPos = 0.0;
+    DynamicArray<dVec,1> initialPos(1);
+    initialPos.fill(dVec{});
 
     int locNumParticles = 0;    // Number of updateable particles
     char state;                 // Update or Fix
@@ -748,30 +741,53 @@ blitz::Array<dVec,1> FixedAzizPotential::initialConfig(const Container *boxPtr, 
 /**************************************************************************//**
  * Constructor.
 ******************************************************************************/
-FixedPositionLJPotential::FixedPositionLJPotential (double _sigma, double _epsilon, 
-        const Container *_boxPtr) : PotentialBase() {
+FixedPositionLJPotential::FixedPositionLJPotential (const Container *_boxPtr) : PotentialBase() {
 
     boxPtr = _boxPtr;
-    sigma = _sigma;
-    epsilon = _epsilon;
 
     Lz = boxPtr->side[NDIM-1];
+    Ly = boxPtr->side[NDIM-2];
+    Lx = boxPtr->side[NDIM-3];
+    /* Arbitrary hard-wall cutoff 1 van der Waals radius (1.4 A) from Lz */
+    Wallcz = Lz/2.0 - 1.4;
+    Wallcx = Lx/2.0 - 1.4;
+    Wallcy = Ly/2.0 - 1.4;
+
+    /* Inverse width of the wall onset */
+    invWallWidth = 20.0;
 
     /* Fixed positions of FILENAME */
-    dVec pos;               // The loaded position
+    std::array<double,2> parameters;        // Array containing the mixed LJ parameters
+    std::array<double,4> pos;               // The loaded position, the first number is the type of atom.
 
     /* We start with an array of size 500 */
     fixedParticles.resize(500);
+    atomArray.resize(100);
 
     /* Here we load both the number and location of fixed positions from disk. */
     numFixedParticles = 0;
+    typesofatoms = 0;
     int n = 0;
+    int t = 0;
     while (!communicate()->file("fixed")->stream().eof()) {
         if (communicate()->file("fixed")->stream().peek() == '#') {
             communicate()->file("fixed")->stream().ignore(512,'\n');
         }
+        else if (communicate()->file("fixed")->stream().peek() == '*') {
+            communicate()->file("fixed")->stream().ignore();
+            while (communicate()->file("fixed")->stream().peek() != '#') {
+                for (int j = 0; j < 2; j++)
+                    communicate()->file("fixed")->stream() >> parameters[j];
+                typesofatoms++;
+                if (typesofatoms >= int(atomArray.size()))
+                    atomArray.resizeAndPreserve(typesofatoms);
+                atomArray(t) = parameters;
+                t++;
+                communicate()->file("fixed")->stream().ignore();
+            }                           
+        }   
         else {
-            for (int i = 0; i < NDIM; i++) 
+            for (int i = 0; i < NDIM + 1; i++) 
                 communicate()->file("fixed")->stream() >> pos[i];
             numFixedParticles++;
             if (numFixedParticles >= int(fixedParticles.size()))
@@ -781,6 +797,7 @@ FixedPositionLJPotential::FixedPositionLJPotential (double _sigma, double _epsil
             communicate()->file("fixed")->stream().ignore();
         }
     }
+    atomArray.resizeAndPreserve(typesofatoms);
     fixedParticles.resizeAndPreserve(numFixedParticles);
 
     /* print out the potential to disk */
@@ -804,7 +821,6 @@ FixedPositionLJPotential::FixedPositionLJPotential (double _sigma, double _epsil
  * Destructor.
 ******************************************************************************/
 FixedPositionLJPotential::~FixedPositionLJPotential() {
-    fixedParticles.free();
 }
 
 /**************************************************************************//**
@@ -816,31 +832,36 @@ FixedPositionLJPotential::~FixedPositionLJPotential() {
 ******************************************************************************/
 double FixedPositionLJPotential::V(const dVec &r) {
 
-    /* Notes: for now I hard-code the potential at 1.5 \AA and a LJ-cutoff of
-     * 20 \AA */
-    
-    if (r[NDIM-1] < (-0.5*Lz + 1.5) )
-        return 87292.0;
-
-    else if (r[NDIM-1] > 0.0)
-        return 0.0;
+    //Checked on 11.6.24 with Python for Benzene input and the output seems to be reasonable
+    //The LJ here has a hard-coded cutoff at 20 Angstroms, seems reasonable so far.
 
     double v = 0.0;
     double sor = 0.0;
     double x = 0.0;
+    double sigma = 0;
+    double epsilon = 0;
+    double hard_wall_height = 100000;
     dVec sep;
-    for (int i = 0; i < numFixedParticles; i++) { 
-        sep[0] = fixedParticles(i)[0] - r[0];
-        sep[1] = fixedParticles(i)[1] - r[1];
+
+    /* A sigmoid to represent the hard-wall on all three sides*/
+    v = hard_wall_height*(1/(1.0+exp(-invWallWidth*(r[0]-Wallcx))) + 1/(1.0+exp(-invWallWidth*(r[1]-Wallcy))) + 1/(1.0+exp(-invWallWidth*(r[2]-Wallcz))));
+    v += hard_wall_height*(1/(1.0+exp(-invWallWidth*(-r[0]-Wallcx))) + 1/(1.0+exp(-invWallWidth*(-r[1]-Wallcy))) + 1/(1.0+exp(-invWallWidth*(-r[2]-Wallcz)))); 
+
+    for (int i = 0; i < numFixedParticles; i++) {
+        sep[0] = fixedParticles(i)[1] - r[0];
+        sep[1] = fixedParticles(i)[2] - r[1];
         boxPtr->putInBC(sep);
-        sep[2] = fixedParticles(i)[2] - r[2];
+        sep[2] = fixedParticles(i)[3] - r[2];
         x = sqrt(dot(sep,sep));
         if (x < 20.0) {
+            sigma = atomArray(fixedParticles(i)[0])[0];
+            epsilon = atomArray(fixedParticles(i)[0])[1];
             sor = sigma/x;
-            v += pow(sor,12)-pow(sor,6);
+            v += 4*epsilon*(pow(sor,12)-pow(sor,6));
         }
     }
-    return 4.0*epsilon*v;
+    return v;
+    
 }
 #endif
 
@@ -915,8 +936,8 @@ PlatedLJCylinderPotential::PlatedLJCylinderPotential(const double Ro_, const dou
     }
 
     /* The extremal values for the lookup table */
-    extV = valueV(0.0),valueV(Ri);
-    extdVdr = valuedVdr(0.0),valuedVdr(Ri);
+    extV    = {    valueV(0.0),    valueV(Ri) };
+    extdVdr = { valuedVdr(0.0), valuedVdr(Ri) };
 }
 
 /**************************************************************************//**
@@ -1024,12 +1045,12 @@ double PlatedLJCylinderPotential::valued2Vdr2(const double r) {
  *
  * Return a set of initial positions inside the cylinder.
 ******************************************************************************/
-blitz::Array<dVec,1> PlatedLJCylinderPotential::initialConfig(const Container *boxPtr, MTRand &random,
+DynamicArray<dVec,1> PlatedLJCylinderPotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
 
     /* The particle configuration */
-    blitz::Array<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    DynamicArray<dVec,1> initialPos(numParticles);
+    initialPos.fill(dVec{});
 
     /* We shift the radius inward to account for the excluded volume from the
      * hard wall.  This represents the largest prism that can be put
@@ -1150,8 +1171,8 @@ LJCylinderPotential::LJCylinderPotential(const double radius, const double densi
     }
 
     /* The extremal values for the lookup table */
-    extV = valueV(0.0),valueV(R);
-    extdVdr = valuedVdr(0.0),valuedVdr(R);
+    extV =    {    valueV(0.0),    valueV(R) };
+    extdVdr = { valuedVdr(0.0), valuedVdr(R) };
 }
 
 /**************************************************************************//**
@@ -1271,12 +1292,12 @@ double LJCylinderPotential::valued2Vdr2(const double r) {
  *
  * Return a set of initial positions inside the cylinder.
 ******************************************************************************/
-blitz::Array<dVec,1> LJCylinderPotential::initialConfig(const Container *boxPtr, MTRand &random,
+DynamicArray<dVec,1> LJCylinderPotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
 
     /* The particle configuration */
-    blitz::Array<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    DynamicArray<dVec,1> initialPos(numParticles);
+    initialPos.fill(dVec{});
 
     /* We shift the radius inward to account for the excluded volume from the
      * hard wall.  This represents the largest prism that can be put
@@ -1436,12 +1457,12 @@ double LJHourGlassPotential::V(const dVec &r) {
  * @param numParticles The initial number of particles
  * @return An array of classical particle positions
 ******************************************************************************/
-blitz::Array<dVec,1> LJHourGlassPotential::initialConfig1(const Container *boxPtr, 
+DynamicArray<dVec,1> LJHourGlassPotential::initialConfig1(const Container *boxPtr, 
         MTRand &random, const int numParticles) {
 
     /* The particle configuration */
-    blitz::Array<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    DynamicArray<dVec,1> initialPos(numParticles);
+    initialPos.fill(dVec{});
 
     /* We shift the radius inward to account for the excluded volume from the
      * hard wall.  This represents the largest prism that can be put
@@ -1511,15 +1532,14 @@ blitz::Array<dVec,1> LJHourGlassPotential::initialConfig1(const Container *boxPt
  * @param numParticles The initial number of particles
  * @return An array of classical particle positions
 ******************************************************************************/
-blitz::Array<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr, 
+DynamicArray<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr, 
         MTRand &random, const int numParticles) {
 
     /* The particle configuration */
-    blitz::Array<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    DynamicArray<dVec,1> initialPos(numParticles);
+    initialPos.fill(dVec{});
 
-    dVec pos;
-    pos = 0.0;
+    dVec pos{};
 
     /* We randomly place the particles inside the cylinder taking acount of the 
      * pinched radius. 
@@ -1572,9 +1592,9 @@ AzizPotential::AzizPotential(const Container *_boxPtr) : PotentialBase(), Tabula
     C10     = 0.1781;
 
     /* The extremal values are all zero here */
-    extV = 0.0;
-    extdVdr = 0.0;
-    extd2Vdr2 = 0.0;
+    extV.fill(0.0);
+    extdVdr.fill(0.0);
+    extd2Vdr2.fill(0.0);
 
     /* We take the maximum possible separation */
     double L = _boxPtr->maxSep;
@@ -1696,6 +1716,239 @@ double AzizPotential::valued2Vdr2(const double r) {
     }
 }
 
+//
+// Hydrogen Lennard-Jones potential class
+//
+
+H2LJ::H2LJ(const Container *_boxPtr) : PotentialBase(), TabulatedPotential()
+ {
+     /* Define all variables for the H2 LJ potential. */
+     EPSILON = 3.19*11.60451812; // K
+     SIGMA = 2.928; // A
+
+     /* The extremal values are all zero here */
+     extV.fill(0.0);
+     extdVdr.fill(0.0);
+     extd2Vdr2.fill(0.0);
+
+     /* We take the maximum possible separation */
+     double L = _boxPtr->maxSep;
+
+     /* Create the potential lookup tables */
+      initLookupTable(0.00005*SIGMA,L);
+
+     /* Now we compute the tail correction */
+     double rc = L/2.0;
+     double rat = SIGMA/rc;
+     double rat3 = rat*rat*rat;
+     double rat9 = rat3*rat3*rat3;
+     double term = (1.0/3.0)*rat9 - rat3;
+     double prefactor = (8.0/3.0)*M_PI*EPSILON*(SIGMA*SIGMA*SIGMA);
+     tailV = prefactor*term;
+
+ }
+
+ /**************************************************************************/
+ H2LJ::~H2LJ() {
+ }
+
+ /**************************************************************************/
+ double H2LJ::valueV(const double r) {
+
+    double x = r / SIGMA;
+
+    if (x < EPS)
+    {
+        return 0.0;
+    }
+    else
+    {
+         double ix2 = 1.0 / (x * x);
+         double ix6 = ix2 * ix2 * ix2;
+         double ix12 = ix6 * ix6;
+         return (4.0*EPSILON)*(ix12 - ix6);
+    }
+
+ }
+
+ /**************************************************************************/
+ double H2LJ::valuedVdr(const double r) {
+
+      double x = r / SIGMA;
+
+      /* dV/dR */
+      /* No self interactions */
+      if (x < EPS)
+          return 0.0;
+      else {
+          /* The various inverse powers of x */
+          double ir = 1.0 / r;
+          double ix = 1.0 / x;
+          double ix2 = ix * ix;
+          double ix6 = ix2 * ix2 * ix2;
+          double ix12 = ix6 * ix6;
+          return ( (4.0*EPSILON)*(-12.0*ix12 + 6.0*ix6)*ir);
+      }
+ }
+
+ /**************************************************************************/
+ double H2LJ::valued2Vdr2(const double r) {
+
+        double x = r / SIGMA;
+//      /* d^2V/dR^2 */
+//      /* No self interactions */
+      if (x < EPS)
+          return 0.0;
+      else {
+          /* The various inverse powers of x */
+         double ir = 1.0 / r;
+         double ir2 = ir * ir;
+         double ix = 1.0 / x;
+         double ix2 = ix * ix;
+         double ix6 = ix2 * ix2 * ix2;
+         double ix12 = ix6 * ix6;
+         return (4.0*EPSILON)*(12.0*13.0*ix12 - 6.0*7.0*ix6)*ir2;
+      }
+ }
+
+
+ // Silvera-Goldman potential class.
+ // See: I.F. Silvera and V.V. Goldman, J. Chem. Phys. 69, 4209 (1978).
+
+ // Constructor.
+ SilveraPotential::SilveraPotential(const Container *_boxPtr) : PotentialBase(), TabulatedPotential()
+ {
+     // Note: the parameters are defined in atomic units.
+     // When the potential is computed from the lookup table, the interparticle
+     // distance is first converted from Angstroms to Bohr radii.  The value of
+     // the potential is converted from Hartrees to Kelvins.
+     ALPHA = 1.713;
+     BETA = 1.5671;
+     GAMMA = 0.00993;
+     C6 = 12.14;
+     C8 = 215.2;
+     C9 = 143.1;
+     C10 = 4813.9;
+     Rc = 8.248;
+
+     // Unit conversions.  Using NIST CODATA values.
+     BohrPerAngstrom = 1.0/0.529177210544;
+     KelvinPerHartree = 315775.02480398776;
+
+     /* The extremal values are all zero here */
+     extV.fill(0.0);
+     extdVdr.fill(0.0);
+     extd2Vdr2.fill(0.0);
+
+     /* We take the maximum possible separation */
+     double L = _boxPtr->maxSep;
+
+     /* Create the potential lookup tables */
+     double Rm = 3.41; //A
+     initLookupTable(0.00005*Rm,L);
+
+     // Tail corrections.
+     // To obtain the tail correction, I numerically integrated (x')^2*V(x') from
+     // x to 1000 Angstroms.  That expression was fit to a tenth order polynomial
+     // that is accurate to < 0.05% for 7 < x < 20.
+     // TP 03/13/25.
+
+     double cutoff = L/2.0;
+     double coeff[11] = {-6502.891909947514, 4179.6137878734, \
+                         -1262.7540932141394, 231.31230978810987, \
+                         -28.14200627626515, 2.3609501640706454, \
+                         -0.13776759131249947, 0.005506811792912634, \
+                         -0.00014404716471957445, 2.2239476347663355e-06, \
+                         -1.5376592463686986e-08};
+     double poly = 0.0;
+     double xPower = 1.0;
+
+     for (int k = 0; k <= 10; k++)
+     {
+       poly += coeff[k]*xPower;
+       xPower *= cutoff;
+     }
+
+     tailV = 2.0*M_PI*poly;
+
+ }
+
+ /**************************************************************************//**
+  *  Destructor.
+ ******************************************************************************/
+ SilveraPotential::~SilveraPotential()
+ {
+ }
+
+ /**************************************************************************//**
+  *  Return the actual value of the Silvera-Goldman potential,
+  *  used to construct a lookup table.
+ ******************************************************************************/
+ double SilveraPotential::valueV(const double r)
+ {
+   // Convert r from A to Bohr radii.
+   double q = r*BohrPerAngstrom;
+
+   // Definition of potential.  Potential is converted from Hartrees to K at end.
+   // Three cases: self-interaction, hard core, and default.
+   double output = 0.0;
+   if (q < EPS)
+     return 0.0;
+   else if (q < 0.01)
+     output = Vrep(q);
+   else
+   {
+     output = Vrep(q) + Vatt(q)*F(q);
+   }
+   output *= KelvinPerHartree;
+   return output;
+ }
+
+ // First derivative of Silvera-Goldman.
+ double SilveraPotential::valuedVdr(const double r)
+ {
+   // Convert r from A to Bohr radii.  NIST CODATA value.
+   double q = r*BohrPerAngstrom;
+
+   // Three cases: self-interaction, hard core, and default.
+   // First derivative is converted from Hartrees/Bohr to K/A at the end.
+   double output = 0.0;
+   if (q < EPS)
+     return 0.0;
+   else if (q < 0.01)
+     output = dVrep(q);
+   else
+   {
+     output = dVrep(q) + dVatt(q)*F(q) + Vatt(q)*dF(q);
+   }
+   output *= KelvinPerHartree*BohrPerAngstrom;
+   return output;
+ }
+
+ // Second radial derivative of the Silvera-Goldman potential.
+ double SilveraPotential::valued2Vdr2(const double r)
+ {
+   // Convert r from A to Bohr radii.  NIST CODATA value.
+   double q = r*BohrPerAngstrom;
+
+   // Three cases: self-interaction, hard core, and default.
+   // Second derivative is converted from Hartrees/Bohr^2 to K/A^2 at the end.
+   double output = 0.0;
+   if (q < EPS)
+     return 0.0;
+   else if (q < 0.01)
+     output = d2Vrep(q);
+   else
+   {
+     output = d2Vrep(q);
+     output += Vatt(q)*d2F(q) + 2.0*dVatt(q)*dF(q) + F(q)*d2Vatt(q);
+   }
+   output *= KelvinPerHartree*BohrPerAngstrom*BohrPerAngstrom;
+   return output;
+ }
+
+
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // SZALEWICZ POTENTIAL CLASS ------------------------------------------------------
@@ -1714,9 +1967,9 @@ SzalewiczPotential::SzalewiczPotential(const Container *_boxPtr) : PotentialBase
     // FIXME Fix comments
     rm      = 2.9262186279335958;   // Angstrom (scipy.optimize.minimize())
     /* The extremal values are all zero here */
-    extV = 0.0;
-    extdVdr = 0.0;
-    extd2Vdr2 = 0.0;
+    extV.fill(0.0);
+    extdVdr.fill(0.0);
+    extd2Vdr2.fill(0.0);
 
     /* We take the maximum possible separation */
     double L = _boxPtr->maxSep;
@@ -1957,7 +2210,7 @@ Gasparini_1_Potential::~Gasparini_1_Potential() {
  *
  * Return initial positions to exclude volume in the simulation cell.
 ******************************************************************************/
-blitz::Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
+DynamicArray<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPtr,
         MTRand &random, const int numParticles) {
 
     /* label the lengths of the sides of the simulation cell */
@@ -1979,7 +2232,7 @@ blitz::Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPt
     int correctNum = int(numParticles-density*volExc);
 
     /* The particle configuration */
-    blitz::Array<dVec,1> initialPos(correctNum);
+    DynamicArray<dVec,1> initialPos(correctNum);
 
     /* get linear size per particle  */
     double initSide = pow((1.0*correctNum/(volTot-volExc)),-1.0/(1.0*NDIM));
@@ -2107,7 +2360,7 @@ blitz::Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPt
         OF << "# "<< lside[0]<<"\t"<<lside[1]<<"\t"<<lside[2] << std::endl;
         OF << "# "<< excY << "\t" << excZ << std::endl;
         for (int i=0; i< int(initialPos.size()); i++)
-            OF << initialPos(i)(0) << "\t" << initialPos(i)(1) << "\t" << initialPos(i)(2) << std::endl;
+            OF << initialPos(i)[0] << "\t" << initialPos(i)[1] << "\t" << initialPos(i)[2] << std::endl;
         OF.close();
     }
     
@@ -2116,9 +2369,9 @@ blitz::Array<dVec,1> Gasparini_1_Potential::initialConfig(const Container *boxPt
 /*************************************************************************//**
  *  Returns the exclusion lengths ay and az
 ******************************************************************************/
-blitz::Array<double,1> Gasparini_1_Potential::getExcLen(){
+DynamicArray<double,1> Gasparini_1_Potential::getExcLen(){
 
-    blitz::Array<double, 1> excLens(2);
+    DynamicArray<double, 1> excLens(2);
     excLens(0) = excY; // was ay
     excLens(1) = excZ; // was az
     
@@ -2656,12 +2909,12 @@ double GraphenePotential::V(const dVec &r) {
  *
  * We create particles at random locations above the graphene sheet.
 ******************************************************************************/
-blitz::Array<dVec,1> GraphenePotential::initialConfig(const Container *boxPtr, MTRand &random,
+DynamicArray<dVec,1> GraphenePotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
 
     /* The particle configuration */
-    blitz::Array<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    DynamicArray<dVec,1> initialPos(numParticles);
+    initialPos.fill(dVec{});
     double initSideCube = 1.0*numParticles;
     
     for (int i = 0; i < NDIM - 1; i++) {
@@ -2928,9 +3181,6 @@ GrapheneLUTPotential::GrapheneLUTPotential (double _strain, double _poisson, dou
  * Destructor.
 ******************************************************************************/
 GrapheneLUTPotential::~GrapheneLUTPotential() {
-    gMagID.free();
-    vg.free();
-    gradvg.free();
 }
 
 /**************************************************************************//**
@@ -2991,7 +3241,7 @@ double GrapheneLUTPotential::V(const dVec &r) {
 ******************************************************************************/
 dVec GrapheneLUTPotential::gradV(const dVec &r) {
 
-    return 0.0;
+    return dVec{};
 
     /* double x = r[0]; */
     /* double y = r[1]; */
@@ -3035,11 +3285,11 @@ dVec GrapheneLUTPotential::gradV(const dVec &r) {
  *
  * We create particles at random locations above the graphene sheet.
 ******************************************************************************/
-blitz::Array<dVec,1> GrapheneLUTPotential::initialConfig(const Container *boxPtr, MTRand &random,
+DynamicArray<dVec,1> GrapheneLUTPotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
     /* The particle configuration */
-    blitz::Array<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    DynamicArray<dVec,1> initialPos(numParticles);
+    initialPos.fill(dVec{});
     
     int Nlayer = round(boxPtr->side[0]*boxPtr->side[1]/a1x/a1y/4);
     int numX = round(boxPtr->side[0]/a1x/2);
@@ -3097,7 +3347,6 @@ blitz::Array<dVec,1> GrapheneLUTPotential::initialConfig(const Container *boxPtr
 ******************************************************************************/
 GrapheneLUT3DPotential::GrapheneLUT3DPotential (std::string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
 
-    static auto const aflags = boost::archive::no_header | boost::archive::no_tracking;
     /* get a local copy of the system size */
     Lzo2 = _boxPtr->side[NDIM-1]/2;
 
@@ -3108,13 +3357,18 @@ GrapheneLUT3DPotential::GrapheneLUT3DPotential (std::string graphenelut3d_file_p
     invWallWidth = 20.0;
 
     /* load lookup tables */
-    {
-        // create and open a character archive for input
-        std::ifstream ifs(graphenelut3d_file_prefix + std::string("serialized.dat"));
-        boost::archive::binary_iarchive ia(ifs,aflags);
-        // write class instance to archive
-        ia >> V3d >> gradV3d_x >> gradV3d_y >> gradV3d_z >> grad2V3d >> LUTinfo;
-        // archive and stream closed when destructors are called
+    try {
+        loadDynamicArray(V3d,       graphenelut3d_file_prefix + "_serialized_V3d.dat");
+        loadDynamicArray(gradV3d_x, graphenelut3d_file_prefix + "_serialized_gradV3d_x.dat");
+        loadDynamicArray(gradV3d_y, graphenelut3d_file_prefix + "_serialized_gradV3d_y.dat");
+        loadDynamicArray(gradV3d_z, graphenelut3d_file_prefix + "_serialized_gradV3d_z.dat");
+        loadDynamicArray(grad2V3d,  graphenelut3d_file_prefix + "_serialized_grad2V3d.dat");
+        loadDynamicArray(LUTinfo,   graphenelut3d_file_prefix + "_serialized_LUTinfo.dat");
+    }
+    catch (const std::exception& ex) {
+        // Error handling: log and rethrow or otherwise handle the error.
+        std::cerr << "Error loading data in GrapheneLUT3DPotential: " << ex.what() << "\n";
+        throw;
     }
 
     A11           = LUTinfo( 0  );
@@ -3136,12 +3390,6 @@ GrapheneLUT3DPotential::GrapheneLUT3DPotential (std::string graphenelut3d_file_p
  * Destructor.
 ******************************************************************************/
 GrapheneLUT3DPotential::~GrapheneLUT3DPotential() {
-    V3d.free(); // Potential lookup table
-    gradV3d_x.free(); // gradient of potential x direction lookup table
-    gradV3d_y.free(); // gradient of potential y direction lookup table
-    gradV3d_z.free(); // gradient of potential z direction lookup table
-    grad2V3d.free(); // Laplacian of potential
-    LUTinfo.free();  // Information about the 3D lookup table 
 }
 
 /**************************************************************************//**
@@ -3181,7 +3429,7 @@ double GrapheneLUT3DPotential::V(const dVec &r) {
  *  @return the gradient of the van der Waals' potential for graphene-helium
 ******************************************************************************/
 dVec GrapheneLUT3DPotential::gradV(const dVec &r) {
-    dVec _gradV = 0.0;
+    dVec _gradV{};
     if (r[2] + Lzo2 < zmin){ 
         return _gradV;
     }
@@ -3196,9 +3444,9 @@ dVec GrapheneLUT3DPotential::gradV(const dVec &r) {
     //double _gradV_x = direct_lookup(gradV3d_x, _r, dx, dy, dz);
     //double _gradV_y = direct_lookup(gradV3d_y, _r, dx, dy, dz);
     //double _gradV_z = direct_lookup(gradV3d_z, _r, dx, dy, dz);
-    _gradV(0) = _gradV_x;
-    _gradV(1) = _gradV_y;
-    _gradV(2) = _gradV_z;
+    _gradV[0] = _gradV_x;
+    _gradV[1] = _gradV_y;
+    _gradV[2] = _gradV_z;
     return _gradV;
 }
 
@@ -3229,14 +3477,14 @@ double GrapheneLUT3DPotential::grad2V(const dVec &r) {
  *
  * We create particles at random locations above the graphene sheet.
 ******************************************************************************/
-blitz::Array<dVec,1> GrapheneLUT3DPotential::initialConfig1(const Container *boxPtr, MTRand &random,
+DynamicArray<dVec,1> GrapheneLUT3DPotential::initialConfig1(const Container *boxPtr, MTRand &random,
         const int numParticles) {
     //FIXME We initialize on grid here above zmin, should I do C_1/3 here. I think not because might
     // be hard to get out of if other configurations are more favorable
 
     /* The particle configuration */
-    blitz::Array<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    DynamicArray<dVec,1> initialPos(numParticles);
+    initialPos.fill(dVec{});
 
     /* Get the average inter-particle separation in the accessible volume. */
     double initSide = pow((1.0*numParticles/boxPtr->volume),-1.0/(1.0*NDIM));
@@ -3311,12 +3559,12 @@ blitz::Array<dVec,1> GrapheneLUT3DPotential::initialConfig1(const Container *box
  *
  * We create particles at random locations above the graphene sheet.
 ******************************************************************************/
-blitz::Array<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTRand &random,
+DynamicArray<dVec,1> GrapheneLUT3DPotential::initialConfig(const Container *boxPtr, MTRand &random,
         const int numParticles) {
     
     /* The particle configuration */
-    blitz::Array<dVec,1> initialPos(numParticles);
-    initialPos = 0.0;
+    DynamicArray<dVec,1> initialPos(numParticles);
+    initialPos.fill(dVec{});
 
     dVec side_; 
     side_ = boxPtr->side;
@@ -3402,7 +3650,6 @@ GrapheneLUT3DPotentialGenerate::GrapheneLUT3DPotentialGenerate (
         const double _epsilon, const int _k_max, const int _xres, const int _yres, const int _zres, const Container *_boxPtr
         ) : PotentialBase() {
 
-    static auto const aflags = boost::archive::no_header | boost::archive::no_tracking;
     // ADD FUNCTIONS TO CONVERT FROM BINARY TO TEXT AND VICE VERSA FOR SERIALIZED FILES
     /* get a local copy of the system size */
     Lzo2 = _boxPtr->side[NDIM-1]/2;
@@ -3437,15 +3684,17 @@ GrapheneLUT3DPotentialGenerate::GrapheneLUT3DPotentialGenerate (
     std::string graphenelut3d_file_prefix = str( format( "graphene_%.2f_%.2f_%d_%d_%d_") %
             strain % zmax % xres % yres % zres );
 
-    // create and open a character archive for output
-    std::ofstream ofs(graphenelut3d_file_prefix + "serialized.dat");
-
-    // save data to archive
-    {
-        boost::archive::binary_oarchive oa(ofs,aflags);
-        // write class instance to archive
-        oa << V3d << gradV3d_x << gradV3d_y << gradV3d_z << grad2V3d << LUTinfo;
-        // archive and stream closed when destructors are called
+    // Save generated LUTs
+    try {
+        saveDynamicArray(V3d,       graphenelut3d_file_prefix + "_serialized_V3d.dat");
+        saveDynamicArray(gradV3d_x, graphenelut3d_file_prefix + "_serialized_gradV3d_x.dat");
+        saveDynamicArray(gradV3d_y, graphenelut3d_file_prefix + "_serialized_gradV3d_y.dat");
+        saveDynamicArray(gradV3d_z, graphenelut3d_file_prefix + "_serialized_gradV3d_z.dat");
+        saveDynamicArray(grad2V3d,  graphenelut3d_file_prefix + "_serialized_grad2V3d.dat");
+        saveDynamicArray(LUTinfo,   graphenelut3d_file_prefix + "_serialized_LUTinfo.dat");
+    } catch (const std::exception& ex) {
+        std::cerr << "Error saving data: " << ex.what() << "\n";
+        return;
     }
 }
 
@@ -3597,13 +3846,13 @@ double GrapheneLUT3DPotentialGenerate::grad2Vg_64(
 
 double GrapheneLUT3DPotentialGenerate::V_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
-        blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n, DynamicArray<int,1> g_i_array,
+        DynamicArray<int,1> g_j_array, DynamicArray<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    blitz::TinyVector <double,2> g;
+    std::array <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;    
     double _V = 0.0;
     _V += 2*Vz_64(z, sigma);
@@ -3653,13 +3902,13 @@ double GrapheneLUT3DPotentialGenerate::V_64(
 
 double GrapheneLUT3DPotentialGenerate::gradV_x_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
-        blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n, DynamicArray<int,1> g_i_array,
+        DynamicArray<int,1> g_j_array, DynamicArray<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    blitz::TinyVector <double,2> g;
+    std::array <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
     double _V = 0.0;
     _V += 2*gradVz_x_64(z, sigma);
@@ -3704,13 +3953,13 @@ double GrapheneLUT3DPotentialGenerate::gradV_x_64(
 
 double GrapheneLUT3DPotentialGenerate::gradV_y_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
-        blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n, DynamicArray<int,1> g_i_array,
+        DynamicArray<int,1> g_j_array, DynamicArray<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    blitz::TinyVector <double,2> g;
+    std::array <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
     double _V = 0.0;
     _V += 2*gradVz_y_64(z, sigma);
@@ -3755,13 +4004,13 @@ double GrapheneLUT3DPotentialGenerate::gradV_y_64(
 
 double GrapheneLUT3DPotentialGenerate::gradV_z_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
-        blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n, DynamicArray<int,1> g_i_array,
+        DynamicArray<int,1> g_j_array, DynamicArray<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    blitz::TinyVector <double,2> g;
+    std::array <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
     double _V = 0.0;
     _V += 2*gradVz_z_64(z, sigma);
@@ -3806,13 +4055,13 @@ double GrapheneLUT3DPotentialGenerate::gradV_z_64(
 
 double GrapheneLUT3DPotentialGenerate::grad2V_64(
         double x, double y, double z, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n, blitz::Array<int,1> g_i_array,
-        blitz::Array<int,1> g_j_array, blitz::Array<double,1> g_magnitude_array ) {
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n, DynamicArray<int,1> g_i_array,
+        DynamicArray<int,1> g_j_array, DynamicArray<double,1> g_magnitude_array ) {
     bool flag_1 = false;
     bool flag_2 = false;
     bool flag_3 = false;
-    blitz::TinyVector <double,2> g;
+    std::array <double,2> g;
     double pf = 2*M_PI*epsilon*pow(sigma,2)/area_lattice;
     double _V = 0.0;
     _V += 2*grad2Vz_64(z, sigma);
@@ -3855,99 +4104,102 @@ double GrapheneLUT3DPotentialGenerate::grad2V_64(
     return pf * _V;
 }
 
-std::tuple< blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-    blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+std::tuple< std::array<double,2>, std::array<double,2>, std::array<double,2>,
+    std::array<double,2>, std::array<double,2>, std::array<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors() {
     return get_graphene_vectors(0.00);
 }
 
-std::tuple< blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-    blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+std::tuple< std::array<double,2>, std::array<double,2>, std::array<double,2>,
+    std::array<double,2>, std::array<double,2>, std::array<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors( double strain ) {
     return get_graphene_vectors(strain, 1.42, 0.165);
 }
 
-std::tuple< blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-    blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+std::tuple< std::array<double,2>, std::array<double,2>, std::array<double,2>,
+    std::array<double,2>, std::array<double,2>, std::array<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors(
         double strain, double carbon_carbon_distance, double poisson_ratio) {
-    blitz::Array<double,2> R_strain(2,2);
-    R_strain = -strain*poisson_ratio, 0,
-                                 0, strain;
 
-    blitz::TinyVector <double,2> A_m_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
-    blitz::TinyVector <double,2> A_m( (carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
-            (carbon_carbon_distance/2)*3*(1 + strain) ); //with strain
+    DynamicArray<double,2> R_strain(2,2);
+    R_strain(0,0) = -strain * poisson_ratio;
+    R_strain(0,1) = 0;
+    R_strain(1,0) = 0;
+    R_strain(1,1) = strain;
+
+    //std::array <double,2> A_m_strain0{ (carbon_carbon_distance/2.0)*sqrt(3.0) , (carbon_carbon_distance/2.0)*3.0 }; //isotropic
+    //std::array <double,2> A_m{ (carbon_carbon_distance/2.0)*sqrt(3.0)*(1.0 - strain*poisson_ratio) ,
+    //                           (carbon_carbon_distance/2.0)*3.0*(1.0 + strain) }; //with strain
     
-    blitz::TinyVector <double,2> A_n_strain0( -(carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); //isotropic
-    blitz::TinyVector <double,2> A_n( -(carbon_carbon_distance/2)*sqrt(3)*(1 - strain*poisson_ratio) ,
-            (carbon_carbon_distance/2)*3*(1 + strain) ); //with strain
+    //std::array <double,2> A_n_strain0{ -(carbon_carbon_distance/2.0)*sqrt(3.0) , (carbon_carbon_distance/2.0)*3.0 }; //isotropic
+    //std::array <double,2> A_n{ -(carbon_carbon_distance/2.0)*sqrt(3.0)*(1.0 - strain*poisson_ratio) ,
+    //                            (carbon_carbon_distance/2.0)*3.0*(1.0 + strain) }; //with strain
 
     //FIXME might have a problem here if A_m_60_strain0 is passed by reference
-    blitz::TinyVector <double,2> A_m_60_strain0( carbon_carbon_distance*sqrt(3) , 0 ); // A_m_strain0 rotated 60 degrees to sit on x-axis
-    blitz::TinyVector <double,2> A_m_60 = A_m_60_strain0; // rotated with strain
-    A_m_60(0) += R_strain(0,0)*A_m_60_strain0(0) + R_strain(0,1)*A_m_60_strain0(1);
-    A_m_60(1) += R_strain(1,0)*A_m_60_strain0(0) + R_strain(1,1)*A_m_60_strain0(1);
+    std::array <double,2> A_m_60_strain0{ carbon_carbon_distance*sqrt(3.0) , 0.0 }; // A_m_strain0 rotated 60 degrees to sit on x-axis
+    std::array <double,2> A_m_60 = A_m_60_strain0; // rotated with strain
+    A_m_60[0] += R_strain(0,0)*A_m_60_strain0[0] + R_strain(0,1)*A_m_60_strain0[1];
+    A_m_60[1] += R_strain(1,0)*A_m_60_strain0[0] + R_strain(1,1)*A_m_60_strain0[1];
 
-    blitz::TinyVector <double,2> A_n_60_strain0( (carbon_carbon_distance/2)*sqrt(3) , (carbon_carbon_distance/2)*3 ); // A_n_strain0 rotated 60
-    blitz::TinyVector <double,2> A_n_60 = A_n_60_strain0; // rotated with strain
-    A_n_60(0) += R_strain(0,0)*A_n_60_strain0(0) + R_strain(0,1)*A_n_60_strain0(1);
-    A_n_60(1) += R_strain(1,0)*A_n_60_strain0(0) + R_strain(1,1)*A_n_60_strain0(1);
+    std::array <double,2> A_n_60_strain0{ (carbon_carbon_distance/2.0)*sqrt(3.0) , (carbon_carbon_distance/2.0)*3.0 }; // A_n_strain0 rotated 60
+    std::array <double,2> A_n_60 = A_n_60_strain0; // rotated with strain
+    A_n_60[0] += R_strain(0,0)*A_n_60_strain0[0] + R_strain(0,1)*A_n_60_strain0[1];
+    A_n_60[1] += R_strain(1,0)*A_n_60_strain0[0] + R_strain(1,1)*A_n_60_strain0[1];
 
 
     // basis vectors
-    blitz::TinyVector <double,2> b_1( 0, carbon_carbon_distance*(1 + strain) );
-    blitz::TinyVector <double,2> b_2( 0, carbon_carbon_distance*2*(1 + strain) );
+    std::array <double,2> b_1{ 0.0,   carbon_carbon_distance*(1 + strain) };
+    std::array <double,2> b_2{ 0.0, 2*carbon_carbon_distance*(1 + strain) };
 
     // reciprocal lattice vectors
-    blitz::TinyVector <double,2> g_m( 3/(1 - strain*poisson_ratio) , sqrt(3)/(1 + strain) );
+    std::array <double,2> g_m{ 3.0/(1.0 - strain*poisson_ratio) , sqrt(3.0)/(1.0 + strain) };
     g_m *= (2*M_PI/3/carbon_carbon_distance);
-    blitz::TinyVector <double,2> g_n( -g_m[0] , g_m[1] );
+    //std::array <double,2> g_n{ -g_m[0] , g_m[1] };
 
-    blitz::TinyVector <double,2> g_m_60( sqrt(3)/(1 - strain*poisson_ratio), -1/(1 + strain) );
+    std::array <double,2> g_m_60{ sqrt(3.0)/(1.0 - strain*poisson_ratio), -1.0/(1.0 + strain) };
     g_m_60 *= (2*M_PI/3/carbon_carbon_distance);
-    blitz::TinyVector <double,2> g_n_60( 0 , 1/(1 + strain) );
+    std::array <double,2> g_n_60{ 0.0 , 1.0/(1.0 + strain) };
     g_n_60 *= (4*M_PI/3/carbon_carbon_distance);
 
     return { A_m_60, A_n_60, b_1, b_2, g_m_60, g_n_60 };
 }
 
-std::tuple< blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>,
-    blitz::TinyVector<double,2>, blitz::TinyVector<double,2>, blitz::TinyVector<double,2>
+std::tuple< std::array<double,2>, std::array<double,2>, std::array<double,2>,
+    std::array<double,2>, std::array<double,2>, std::array<double,2>
     > GrapheneLUT3DPotentialGenerate::get_graphene_vectors_old(
         double strain, double carbon_carbon_distance, double poisson_ratio) {
-     blitz::TinyVector <double,2> A_m_old( sqrt(3)*(4 + strain - 3*strain*poisson_ratio) ,
-            3*(4 + 3*strain - strain*poisson_ratio) ); // wrong value previously used
+     std::array <double,2> A_m_old{ sqrt(3)*(4 + strain - 3*strain*poisson_ratio) ,
+                                    3*(4 + 3*strain - strain*poisson_ratio) }; // wrong value previously used
     A_m_old *= (carbon_carbon_distance/8);
-    blitz::TinyVector <double,2> A_n_old( sqrt(3)*(-4 - strain + 3*strain*poisson_ratio),
-            3*(4 + 3*strain - strain*poisson_ratio) ); // wrong value previously used
+    std::array <double,2> A_n_old{ sqrt(3)*(-4 - strain + 3*strain*poisson_ratio),
+                                   3*(4 + 3*strain - strain*poisson_ratio) }; // wrong value previously used
     A_n_old *= (carbon_carbon_distance/8);
 
     // basis vectors
-    blitz::TinyVector <double,2> b_1( 0 , carbon_carbon_distance*(1 + strain) );
-    blitz::TinyVector <double,2> b_2( 0 , carbon_carbon_distance*2*(1 + strain) );
+    std::array <double,2> b_1{ 0.0 ,   carbon_carbon_distance*(1 + strain) };
+    std::array <double,2> b_2{ 0.0 , 2*carbon_carbon_distance*(1 + strain) };
 
     // reciprocal lattice vectors
-    blitz::TinyVector <double,2> g_m_old( sqrt(3)*(4 + 3*strain - strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)),
-                            (4 + strain - 3*strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)) );
+    std::array <double,2> g_m_old{ sqrt(3)*(4 + 3*strain - strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio)),
+                                   (4 + strain - 3*strain*poisson_ratio)/((4 + strain - 3*strain*poisson_ratio)*(4 + 3*strain - strain*poisson_ratio))};
     g_m_old *= (8*M_PI/3/carbon_carbon_distance);
-    blitz::TinyVector <double,2> g_n_old( -g_m_old[0], g_m_old[1] );
+    std::array <double,2> g_n_old{ -g_m_old[0], g_m_old[1] };
 
     return { A_m_old, A_n_old, b_1, b_2, g_m_old, g_n_old };
 }
 
-std::tuple< blitz::Array<int,1>, blitz::Array<int,1>, blitz::Array<double,1> >
+std::tuple< DynamicArray<int,1>, DynamicArray<int,1>, DynamicArray<double,1> >
 GrapheneLUT3DPotentialGenerate::get_g_magnitudes( 
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n ) {
+        std::array<double,2> g_m, std::array<double,2> g_n ) {
     int number_of_g_i = 200;
     int number_of_g_j = 200;
     
     int size_of_arrays = pow(number_of_g_i + number_of_g_j + 1,2);
-    blitz::Array<double,1> g_magnitude_array(size_of_arrays);
-    blitz::Array<int,1> g_i_array(size_of_arrays);
-    blitz::Array<int,1> g_j_array(size_of_arrays);
+    DynamicArray<double,1> g_magnitude_array(size_of_arrays);
+    DynamicArray<int,1> g_i_array(size_of_arrays);
+    DynamicArray<int,1> g_j_array(size_of_arrays);
 
-    blitz::TinyVector<double,2> g;
+    std::array<double,2> g;
     int k = 0;
     for (int g_i = -number_of_g_i; g_i < number_of_g_i + 1; g_i++) {
         for (int g_j = -number_of_g_j; g_j < number_of_g_j + 1; g_j++){
@@ -3973,9 +4225,9 @@ GrapheneLUT3DPotentialGenerate::get_g_magnitudes(
     // FIXME may need to pass reference to g_magnitude_array in labmda function
     // i.e. [&g_magnitude_array](...)
     
-    blitz::Array<double,1> g_magnitude_array2(size_of_arrays);
-    blitz::Array<int,1> g_i_array2(size_of_arrays);
-    blitz::Array<int,1> g_j_array2(size_of_arrays);
+    DynamicArray<double,1> g_magnitude_array2(size_of_arrays);
+    DynamicArray<int,1> g_i_array2(size_of_arrays);
+    DynamicArray<int,1> g_j_array2(size_of_arrays);
     
     for (int i = 0; i < size_of_arrays; i++) {
         int p = sort_indeces[i];
@@ -3989,20 +4241,20 @@ GrapheneLUT3DPotentialGenerate::get_g_magnitudes(
 
 
 void GrapheneLUT3DPotentialGenerate::calculate_V3D_64(
-        blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
-        blitz::Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
-        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
-        blitz::Array<double,1> g_magnitude_array ) {
+        DynamicArray<double,3> V3D, DynamicArray<double,2> xy_x, DynamicArray<double,2> xy_y,
+        DynamicArray<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
+        DynamicArray<int,1> g_i_array, DynamicArray<int,1> g_j_array,
+        DynamicArray<double,1> g_magnitude_array ) {
     double x;
     double y;
     double z;
  
-    for (int k = 0; k < V3D.shape()[2]; k++) {
+    for (size_t k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.shape()[1]; j++) {
-            for (int i = 0; i < V3D.shape()[0]; i++) {
+        for (size_t j = 0; j < V3D.extents()[1]; j++) {
+            for (size_t i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = V_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
@@ -4012,19 +4264,19 @@ void GrapheneLUT3DPotentialGenerate::calculate_V3D_64(
 }
 
 void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_x_64(
-        blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
-        blitz::Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
-        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
-        blitz::Array<double,1> g_magnitude_array ) {
+        DynamicArray<double,3> V3D, DynamicArray<double,2> xy_x, DynamicArray<double,2> xy_y,
+        DynamicArray<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
+        DynamicArray<int,1> g_i_array, DynamicArray<int,1> g_j_array,
+        DynamicArray<double,1> g_magnitude_array ) {
     double x;
     double y;
     double z;
-    for (int k = 0; k < V3D.shape()[2]; k++) {
+    for (size_t k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.shape()[1]; j++) {
-            for (int i = 0; i < V3D.shape()[0]; i++) {
+        for (size_t j = 0; j < V3D.extents()[1]; j++) {
+            for (size_t i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = gradV_x_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
@@ -4034,19 +4286,19 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_x_64(
 }
 
 void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_y_64(
-        blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
-        blitz::Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
-        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
-        blitz::Array<double,1> g_magnitude_array ) {
+        DynamicArray<double,3> V3D, DynamicArray<double,2> xy_x, DynamicArray<double,2> xy_y,
+        DynamicArray<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
+        DynamicArray<int,1> g_i_array, DynamicArray<int,1> g_j_array,
+        DynamicArray<double,1> g_magnitude_array ) {
     double x;
     double y;
     double z;
-    for (int k = 0; k < V3D.shape()[2]; k++) {
+    for (size_t k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.shape()[1]; j++) {
-            for (int i = 0; i < V3D.shape()[0]; i++) {
+        for (size_t j = 0; j < V3D.extents()[1]; j++) {
+            for (size_t i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = gradV_y_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
@@ -4056,19 +4308,19 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_y_64(
 }
 
 void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_z_64(
-        blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
-        blitz::Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
-        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
-        blitz::Array<double,1> g_magnitude_array ) {
+        DynamicArray<double,3> V3D, DynamicArray<double,2> xy_x, DynamicArray<double,2> xy_y,
+        DynamicArray<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
+        DynamicArray<int,1> g_i_array, DynamicArray<int,1> g_j_array,
+        DynamicArray<double,1> g_magnitude_array ) {
     double x;
     double y;
     double z;
-    for (int k = 0; k < V3D.shape()[2]; k++) {
+    for (size_t k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.shape()[1]; j++) {
-            for (int i = 0; i < V3D.shape()[0]; i++) {
+        for (size_t j = 0; j < V3D.extents()[1]; j++) {
+            for (size_t i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = gradV_z_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
@@ -4078,19 +4330,19 @@ void GrapheneLUT3DPotentialGenerate::calculate_gradV3D_z_64(
 }
 
 void GrapheneLUT3DPotentialGenerate::calculate_grad2V3D_64(
-        blitz::Array<double,3> V3D, blitz::Array<double,2> xy_x, blitz::Array<double,2> xy_y,
-        blitz::Array<double,1> z_range, double sigma, double epsilon,
-        double area_lattice, blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
-        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
-        blitz::Array<double,1> g_magnitude_array ) {
+        DynamicArray<double,3> V3D, DynamicArray<double,2> xy_x, DynamicArray<double,2> xy_y,
+        DynamicArray<double,1> z_range, double sigma, double epsilon,
+        double area_lattice, std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
+        DynamicArray<int,1> g_i_array, DynamicArray<int,1> g_j_array,
+        DynamicArray<double,1> g_magnitude_array ) {
     double x;
     double y;
     double z;
-    for (int k = 0; k < V3D.shape()[2]; k++) {
+    for (size_t k = 0; k < V3D.extents()[2]; k++) {
         z = z_range(k);
-        for (int j = 0; j < V3D.shape()[1]; j++) {
-            for (int i = 0; i < V3D.shape()[0]; i++) {
+        for (size_t j = 0; j < V3D.extents()[1]; j++) {
+            for (size_t i = 0; i < V3D.extents()[0]; i++) {
                 x = xy_x(i,j);
                 y = xy_y(i,j);
                 V3D(i,j,k) = grad2V_64(x,y,z,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
@@ -4101,10 +4353,10 @@ void GrapheneLUT3DPotentialGenerate::calculate_grad2V3D_64(
 
 std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_min_V_min(double x, double y,
         double sigma, double epsilon, double area_lattice,
-        blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
-        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
-        blitz::Array<double,1> g_magnitude_array ) {
+        std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
+        DynamicArray<int,1> g_i_array, DynamicArray<int,1> g_j_array,
+        DynamicArray<double,1> g_magnitude_array ) {
 
     double z_min_limit = 1.0;
     double z_max_limit = 5.0;
@@ -4121,15 +4373,15 @@ std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_min_V_min(double
 
 std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_V_to_find(
         double sigma, double epsilon, double area_lattice,
-        blitz::TinyVector<double,2> b_1, blitz::TinyVector<double,2> b_2,
-        blitz::TinyVector<double,2> g_m, blitz::TinyVector<double,2> g_n,
-        blitz::Array<int,1> g_i_array, blitz::Array<int,1> g_j_array,
-        blitz::Array<double,1> g_magnitude_array ) {
+        std::array<double,2> b_1, std::array<double,2> b_2,
+        std::array<double,2> g_m, std::array<double,2> g_n,
+        DynamicArray<int,1> g_i_array, DynamicArray<int,1> g_j_array,
+        DynamicArray<double,1> g_magnitude_array ) {
     double V_to_find = 10000.0;
-    blitz::TinyVector<double,2> center_of_hexagon(0.0, 0.0);
-    blitz::TinyVector<double,2> above_A_site(b_1[0],b_1[1]);
-    double x = center_of_hexagon(0);
-    double y = center_of_hexagon(1);
+    std::array<double,2> center_of_hexagon{0.0, 0.0};
+    std::array<double,2> above_A_site{b_1[0], b_1[1]};
+    double x = center_of_hexagon[0];
+    double y = center_of_hexagon[1];
 
     auto [_z_min, _V_min] = get_z_min_V_min(x,y,sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
 
@@ -4147,14 +4399,14 @@ std::pair<double, double> GrapheneLUT3DPotentialGenerate::get_z_V_to_find(
             _g_bind, z_min_limit, z_max_limit, double_bits);
 
     double _z_V_to_find = r.first;
-    double _found_V = V_64(above_A_site(0), above_A_site(1), _z_V_to_find,
+    double _found_V = V_64(above_A_site[0], above_A_site[1], _z_V_to_find,
             sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,
             g_magnitude_array);
     // return z value above hex and V value above atom
     return { _z_V_to_find, _found_V };
 }
 
-blitz::Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
+DynamicArray<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
         double strain, double sigma, double epsilon, int x_res, int y_res,
         int z_res, double z_min, double z_max ) {
     auto [A_m, A_n, b_1, b_2, g_m, g_n] = get_graphene_vectors(strain);
@@ -4170,7 +4422,7 @@ blitz::Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
     //double cell_angle_gamma_degrees = cell_angle_gamma*180/M_PI;
     double area_lattice = cell_length_a * cell_length_b * sin(cell_angle_gamma);
     
-    blitz::Array<double,1> uc_x_range(x_res);
+    DynamicArray<double,1> uc_x_range(x_res);
     double uc_x_min = 0.0;
     double uc_x_max = cell_length_a;
     double delta_uc_x = (uc_x_max - uc_x_min) / (x_res - 1);
@@ -4182,7 +4434,7 @@ blitz::Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
 
     //double uc_dx = uc_x_range(1) - uc_x_range(0);
     
-    blitz::Array<double,1> uc_y_range(y_res);
+    DynamicArray<double,1> uc_y_range(y_res);
     double uc_y_min = 0.0;
     double uc_y_max = cell_length_b;
     double delta_uc_y = (uc_y_max - uc_y_min) / (y_res - 1);
@@ -4194,10 +4446,10 @@ blitz::Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
     
     //double uc_dy = uc_y_range(1) - uc_y_range(0);
 
-    blitz::Array<double,2> uc_xy_x(x_res,y_res);
-    uc_xy_x = 0;
-    blitz::Array<double,2> uc_xy_y(x_res,y_res);
-    uc_xy_y = 0;
+    DynamicArray<double,2> uc_xy_x(x_res,y_res);
+    uc_xy_x.fill(0.0);
+    DynamicArray<double,2> uc_xy_y(x_res,y_res);
+    uc_xy_y.fill(0.0);
 
     for (int i=0; i < x_res; ++i) {
         for(int j=0; j < y_res; ++j) {
@@ -4206,23 +4458,26 @@ blitz::Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
         }
     }
     
-
-    blitz::Array<double,2> B(2,2);
-    B = 1, cos(cell_angle_gamma),
-        0, sin(cell_angle_gamma); //transfer to Cartesian
+    //transfer to Cartesian
+    DynamicArray<double,2> B(2,2);
+    B(0,0) = 1;
+    B(0,1) = cos(cell_angle_gamma);
+    B(1,0) = 0;
+    B(1,1) = sin(cell_angle_gamma);
     
     // Set up transfer matrices to transfer from unit cell coordinates to Cartesian coordinates
-    //A = inv(B);
-    blitz::Array<double,2> A(2,2);
-    //A = sin(cell_angle_gamma), -cos(cell_angle_gamma),
-    //                        0, 1; 
-    //A /= sin(cell_angle_gamma);
-    A = 1, -1/tan(cell_angle_gamma),
-        0, 1/sin(cell_angle_gamma); //transfer to unit cell coords
-    
+    // A = inv(B)
+    DynamicArray<double,2> A(2,2); //transfer to unit cell coords
+    // A = {{ sin(cell_angle_gamma), -cos(cell_angle_gamma) },
+    //                            0,                      1 }};
+    // A /= sin(cell_angle_gamma);
+    A(0,0) = 1;
+    A(0,1) = -1 / tan(cell_angle_gamma);
+    A(1,0) = 0;
+    A(1,1) = 1 / sin(cell_angle_gamma);
 
-    blitz::Array<double,2> xy_x(x_res,y_res);
-    blitz::Array<double,2> xy_y(x_res,y_res);
+    DynamicArray<double,2> xy_x(x_res,y_res);
+    DynamicArray<double,2> xy_y(x_res,y_res);
 
     for (int i=0; i < x_res; ++i) {
         for(int j=0; j < y_res; ++j) {
@@ -4233,9 +4488,8 @@ blitz::Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
             xy_y(i,j) = B(1,0)*uc_x_range(i) + B(1,1)*uc_y_range(j);
         }
     }
-    
 
-    blitz::Array<double,1> z_range(z_res);
+    DynamicArray<double,1> z_range(z_res);
     double delta_z = (z_max - z_min) / (z_res - 1);
 
     for (int i=0; i < z_res - 1; ++i) {
@@ -4245,14 +4499,14 @@ blitz::Array<double,3> GrapheneLUT3DPotentialGenerate::get_V3D(
 
     //double dz = z_range(1) - z_range(0);
 
-    blitz::Array<double,3> _V3D(x_res,y_res,z_res);
-    _V3D = 0;
+    DynamicArray<double,3> _V3D(x_res,y_res,z_res);
+    _V3D.fill(0.0);
     calculate_V3D_64(_V3D,xy_x,xy_y,z_range,sigma,epsilon,area_lattice,b_1,b_2,
             g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
     return _V3D;
 }
 
-std::pair<blitz::Array<double,3> , blitz::Array<double,1>> GrapheneLUT3DPotentialGenerate::get_V3D(
+std::pair<DynamicArray<double,3> , DynamicArray<double,1>> GrapheneLUT3DPotentialGenerate::get_V3D(
         double strain, double sigma, double epsilon, int x_res, int y_res,
         int z_res, double z_max ) {
     auto [A_m, A_n, b_1, b_2, g_m, g_n] = get_graphene_vectors(strain);
@@ -4265,7 +4519,7 @@ std::pair<blitz::Array<double,3> , blitz::Array<double,1>> GrapheneLUT3DPotentia
     //double cell_angle_gamma_degrees = cell_angle_gamma*180/M_PI;
     double area_lattice = cell_length_a * cell_length_b * sin(cell_angle_gamma);
     
-    blitz::Array<double,1> uc_x_range(x_res);
+    DynamicArray<double,1> uc_x_range(x_res);
     double uc_x_min = 0.0;
     double uc_x_max = cell_length_a;
     double delta_uc_x = (uc_x_max - uc_x_min) / (x_res - 1);
@@ -4277,7 +4531,7 @@ std::pair<blitz::Array<double,3> , blitz::Array<double,1>> GrapheneLUT3DPotentia
 
     double uc_dx = uc_x_range(1) - uc_x_range(0);
     
-    blitz::Array<double,1> uc_y_range(y_res);
+    DynamicArray<double,1> uc_y_range(y_res);
     double uc_y_min = 0.0;
     double uc_y_max = cell_length_b;
     double delta_uc_y = (uc_y_max - uc_y_min) / (y_res - 1);
@@ -4289,10 +4543,10 @@ std::pair<blitz::Array<double,3> , blitz::Array<double,1>> GrapheneLUT3DPotentia
     
     double uc_dy = uc_y_range(1) - uc_y_range(0);
 
-    blitz::Array<double,2> uc_xy_x(x_res,y_res);
-    uc_xy_x = 0;
-    blitz::Array<double,2> uc_xy_y(x_res,y_res);
-    uc_xy_y = 0;
+    DynamicArray<double,2> uc_xy_x(x_res,y_res);
+    uc_xy_x.fill(0.0);
+    DynamicArray<double,2> uc_xy_y(x_res,y_res);
+    uc_xy_y.fill(0.0);
 
     for (int i=0; i < x_res; ++i) {
         for(int j=0; j < y_res; ++j) {
@@ -4301,23 +4555,26 @@ std::pair<blitz::Array<double,3> , blitz::Array<double,1>> GrapheneLUT3DPotentia
         }
     }
     
-
-    blitz::Array<double,2> B(2,2);
-    B = 1, cos(cell_angle_gamma),
-        0, sin(cell_angle_gamma); //transfer to Cartesian
+    //transfer to Cartesian
+    DynamicArray<double,2> B(2,2);
+    B(0,0) = 1;
+    B(0,1) = cos(cell_angle_gamma);
+    B(1,0) = 0;
+    B(1,1) = sin(cell_angle_gamma);
     
     // Set up transfer matrices to transfer from unit cell coordinates to Cartesian coordinates
-    //A = inv(B);
-    blitz::Array<double,2> A(2,2);
-    //A = sin(cell_angle_gamma), -cos(cell_angle_gamma),
-    //                        0, 1; 
-    //A /= sin(cell_angle_gamma);
-    A = 1, -1/tan(cell_angle_gamma),
-        0, 1/sin(cell_angle_gamma); //transfer to unit cell coords
-    
+    // A = inv(B)
+    DynamicArray<double,2> A(2,2); //transfer to unit cell coords
+    // A = {{ sin(cell_angle_gamma), -cos(cell_angle_gamma) },
+    //                            0,                      1 }};
+    // A /= sin(cell_angle_gamma);
+    A(0,0) = 1;
+    A(0,1) = -1 / tan(cell_angle_gamma);
+    A(1,0) = 0;
+    A(1,1) = 1 / sin(cell_angle_gamma);
 
-    blitz::Array<double,2> xy_x(x_res,y_res);
-    blitz::Array<double,2> xy_y(x_res,y_res);
+    DynamicArray<double,2> xy_x(x_res,y_res);
+    DynamicArray<double,2> xy_y(x_res,y_res);
 
     for (int i=0; i < x_res; ++i) {
         for(int j=0; j < y_res; ++j) {
@@ -4331,7 +4588,7 @@ std::pair<blitz::Array<double,3> , blitz::Array<double,1>> GrapheneLUT3DPotentia
     
     auto [z_min, V_z_min] = get_z_V_to_find(sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
 
-    blitz::Array<double,1> z_range(z_res);
+    DynamicArray<double,1> z_range(z_res);
     double delta_z = (z_max - z_min) / (z_res - 1);
 
     for (int i=0; i < z_res - 1; ++i) {
@@ -4341,20 +4598,31 @@ std::pair<blitz::Array<double,3> , blitz::Array<double,1>> GrapheneLUT3DPotentia
 
     double dz = z_range(1) - z_range(0);
 
-    blitz::Array<double,3> _V3D(x_res,y_res,z_res);
-    _V3D = 0;
+    DynamicArray<double,3> _V3D(x_res,y_res,z_res);
+    _V3D.fill(0.0);
     calculate_V3D_64(_V3D,xy_x,xy_y,z_range,sigma,epsilon,area_lattice,b_1,b_2,
             g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
 
-    blitz::Array<double,1> _LUTinfo(12);
-    _LUTinfo = A(0,0), A(0,1), A(1,0), A(1,1), uc_dx, uc_dy, dz, cell_length_a,
-             cell_length_b, z_min, z_max, V_z_min;
+    DynamicArray<double,1> _LUTinfo(12);
+    _LUTinfo(0) = A(0,0);
+    _LUTinfo(1) = A(0,1);
+    _LUTinfo(2) = A(1,0);
+    _LUTinfo(3) = A(1,1);
+    _LUTinfo(4) = uc_dx;
+    _LUTinfo(5) = uc_dy;
+    _LUTinfo(6) = dz;
+    _LUTinfo(7) = cell_length_a;
+    _LUTinfo(8) = cell_length_b;
+    _LUTinfo(9) = z_min;
+    _LUTinfo(10) = z_max;
+    _LUTinfo(11) = V_z_min;
+
 
     return { _V3D, _LUTinfo };
 }
 
-std::tuple< blitz::Array<double,3>, blitz::Array<double,3>, blitz::Array<double,3>, blitz::Array<double,3>,
-    blitz::Array<double,3>, blitz::Array<double,2>, blitz::Array<double,2>, blitz::Array<double,1>
+std::tuple< DynamicArray<double,3>, DynamicArray<double,3>, DynamicArray<double,3>, DynamicArray<double,3>,
+    DynamicArray<double,3>, DynamicArray<double,2>, DynamicArray<double,2>, DynamicArray<double,1>
     > GrapheneLUT3DPotentialGenerate::get_V3D_all(
         double strain, double sigma, double epsilon, int x_res, int y_res,
         int z_res, double z_max ) {
@@ -4369,7 +4637,7 @@ std::tuple< blitz::Array<double,3>, blitz::Array<double,3>, blitz::Array<double,
     //double cell_angle_gamma_degrees = cell_angle_gamma*180/M_PI;
     double area_lattice = cell_length_a * cell_length_b * sin(cell_angle_gamma);
     
-    blitz::Array<double,1> uc_x_range(x_res);
+    DynamicArray<double,1> uc_x_range(x_res);
     double uc_x_min = 0.0;
     double uc_x_max = cell_length_a;
     double delta_uc_x = (uc_x_max - uc_x_min) / (x_res - 1);
@@ -4381,7 +4649,7 @@ std::tuple< blitz::Array<double,3>, blitz::Array<double,3>, blitz::Array<double,
 
     double uc_dx = uc_x_range(1) - uc_x_range(0);
     
-    blitz::Array<double,1> uc_y_range(y_res);
+    DynamicArray<double,1> uc_y_range(y_res);
     double uc_y_min = 0.0;
     double uc_y_max = cell_length_b;
     double delta_uc_y = (uc_y_max - uc_y_min) / (y_res - 1);
@@ -4393,10 +4661,10 @@ std::tuple< blitz::Array<double,3>, blitz::Array<double,3>, blitz::Array<double,
 
     double uc_dy = uc_y_range(1) - uc_y_range(0);
     
-    blitz::Array<double,2> uc_xy_x(x_res,y_res);
-    uc_xy_x = 0;
-    blitz::Array<double,2> uc_xy_y(x_res,y_res);
-    uc_xy_y = 0;
+    DynamicArray<double,2> uc_xy_x(x_res,y_res);
+    uc_xy_x.fill(0.0);
+    DynamicArray<double,2> uc_xy_y(x_res,y_res);
+    uc_xy_y.fill(0.0);
 
     for (int i=0; i < x_res; ++i) {
         for(int j=0; j < y_res; ++j) {
@@ -4404,24 +4672,33 @@ std::tuple< blitz::Array<double,3>, blitz::Array<double,3>, blitz::Array<double,
             uc_xy_y(i,j) = uc_y_range(j);
         }
     }
-    
 
-    blitz::Array<double,2> B(2,2);
-    B = 1, cos(cell_angle_gamma),
-        0, sin(cell_angle_gamma); //transfer to Cartesian
+    //transfer to Cartesian
+    DynamicArray<double,2> B(2,2);
+    B(0,0) = 1.0;
+    B(0,1) = cos(cell_angle_gamma);
+    B(1,0) = 0.0;
+    B(1,1) = sin(cell_angle_gamma); 
     
     // Set up transfer matrices to transfer from unit cell coordinates to Cartesian coordinates
     //A = inv(B);
-    blitz::Array<double,2> A(2,2);
-    //A = sin(cell_angle_gamma), -cos(cell_angle_gamma),
-    //                        0, 1; 
+
+    DynamicArray<double,2> A(2,2);
+    //A = {
+    //     { sin(cell_angle_gamma), -cos(cell_angle_gamma) },
+    //     {                     0,                      1 }
+    //    }; 
     //A /= sin(cell_angle_gamma);
-    A = 1, -1/tan(cell_angle_gamma),
-        0, 1/sin(cell_angle_gamma); //transfer to unit cell coords
+
+    //transfer to unit cell coords
+    A(0,0) = 1.0;
+    A(0,1) = -1.0 / tan(cell_angle_gamma);
+    A(1,0) = 0.0;
+    A(1,1) = 1.0 / sin(cell_angle_gamma);
     
 
-    blitz::Array<double,2> xy_x(x_res,y_res);
-    blitz::Array<double,2> xy_y(x_res,y_res);
+    DynamicArray<double,2> xy_x(x_res,y_res);
+    DynamicArray<double,2> xy_y(x_res,y_res);
 
     for (int i=0; i < x_res; ++i) {
         for(int j=0; j < y_res; ++j) {
@@ -4435,7 +4712,7 @@ std::tuple< blitz::Array<double,3>, blitz::Array<double,3>, blitz::Array<double,
     
     auto [z_min, V_z_min] = get_z_V_to_find(sigma,epsilon,area_lattice,b_1,b_2,g_m,g_n,g_i_array,g_j_array,g_magnitude_array);
 
-    blitz::Array<double,1> z_range(z_res);
+    DynamicArray<double,1> z_range(z_res);
     double delta_z = (z_max - z_min) / (z_res - 1);
 
     for (int i=0; i < z_res - 1; ++i) {
@@ -4445,16 +4722,16 @@ std::tuple< blitz::Array<double,3>, blitz::Array<double,3>, blitz::Array<double,
 
     double dz = z_range(1) - z_range(0);
 
-    blitz::Array<double,3> _V3D(x_res,y_res,z_res);
-    blitz::Array<double,3> _gradV3D_x(x_res,y_res,z_res);
-    blitz::Array<double,3> _gradV3D_y(x_res,y_res,z_res);
-    blitz::Array<double,3> _gradV3D_z(x_res,y_res,z_res);
-    blitz::Array<double,3> _grad2V3D(x_res,y_res,z_res);
-    _V3D = 0;
-    _gradV3D_x = 0;
-    _gradV3D_y = 0;
-    _gradV3D_z = 0;
-    _grad2V3D = 0;
+    DynamicArray<double,3> _V3D(x_res,y_res,z_res);
+    DynamicArray<double,3> _gradV3D_x(x_res,y_res,z_res);
+    DynamicArray<double,3> _gradV3D_y(x_res,y_res,z_res);
+    DynamicArray<double,3> _gradV3D_z(x_res,y_res,z_res);
+    DynamicArray<double,3> _grad2V3D(x_res,y_res,z_res);
+    _V3D.fill(0.0);
+    _gradV3D_x.fill(0.0);
+    _gradV3D_y.fill(0.0);
+    _gradV3D_z.fill(0.0);
+    _grad2V3D.fill(0.0);
 
     calculate_V3D_64( _V3D, xy_x, xy_y, z_range, sigma, epsilon, area_lattice,
             b_1, b_2, g_m, g_n, g_i_array, g_j_array, g_magnitude_array );
@@ -4470,13 +4747,23 @@ std::tuple< blitz::Array<double,3>, blitz::Array<double,3>, blitz::Array<double,
     calculate_grad2V3D_64( _grad2V3D, xy_x, xy_y, z_range, sigma, epsilon,
             area_lattice, b_1, b_2, g_m, g_n, g_i_array, g_j_array,
             g_magnitude_array );
-    blitz::Array<double,1> _LUTinfo(12);
-    _LUTinfo = A(0,0), A(0,1), A(1,0), A(1,1), uc_dx, uc_dy, dz, cell_length_a,
-             cell_length_b, z_min, z_max, V_z_min;
+    DynamicArray<double,1> _LUTinfo(12);
+    _LUTinfo(0) = A(0,0);
+    _LUTinfo(1) = A(0,1);
+    _LUTinfo(2) = A(1,0);
+    _LUTinfo(3) = A(1,1);
+    _LUTinfo(4) = uc_dx;
+    _LUTinfo(5) = uc_dy;
+    _LUTinfo(6) = dz;
+    _LUTinfo(7) = cell_length_a;
+    _LUTinfo(8) = cell_length_b;
+    _LUTinfo(9) = z_min;
+    _LUTinfo(10) = z_max;
+    _LUTinfo(11) = V_z_min;
+
     return { _V3D, _gradV3D_x, _gradV3D_y, _gradV3D_z, _grad2V3D, xy_x, xy_y,
         _LUTinfo };
 }
-
 
 /**************************************************************************//**
  * Destructor.
@@ -4485,207 +4772,3 @@ GrapheneLUT3DPotentialGenerate::~GrapheneLUT3DPotentialGenerate() {
 }
 #endif
 
-#if NDIM > 2
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// GrapheneLUT3DPotential Class---------------------------------------------
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-
-/**************************************************************************//**
- * Constructor.
-******************************************************************************/
-GrapheneLUT3DPotentialToBinary::GrapheneLUT3DPotentialToBinary (std::string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
-
-    static auto const aflags = boost::archive::no_header | boost::archive::no_tracking;
-    /* load lookup tables */
-    {
-        // create and open a character archive for input
-        std::ifstream ifs_V3d(graphenelut3d_file_prefix + "V3d.txt");
-        // save data to archive
-        boost::archive::text_iarchive ia_V3d(ifs_V3d,aflags);
-        // write class instance to archive
-        ia_V3d >> V3d;
-        // archive and stream closed when destructors are called
-    }
-
-    {
-        // create and open a character archive for input
-        std::ifstream ifs_gradV3d_x(graphenelut3d_file_prefix + "gradV3d_x.txt");
-        // save data to archive
-        boost::archive::text_iarchive ia_gradV3d_x(ifs_gradV3d_x,aflags);
-        // write class instance to archive
-        ia_gradV3d_x >> gradV3d_x;
-        // archive and stream closed when destructors are called
-    }
-
-    {
-        // create and open a character archive for input
-        std::ifstream ifs_gradV3d_y(graphenelut3d_file_prefix + "gradV3d_y.txt");
-        // save data to archive
-        boost::archive::text_iarchive ia_gradV3d_y(ifs_gradV3d_y,aflags);
-        // write class instance to archive
-        ia_gradV3d_y >> gradV3d_y;
-        // archive and stream closed when destructors are called
-    }
-
-    {
-        // create and open a character archive for input
-        std::ifstream ifs_gradV3d_z(graphenelut3d_file_prefix + "gradV3d_z.txt");
-        // save data to archive
-        boost::archive::text_iarchive ia_gradV3d_z(ifs_gradV3d_z,aflags);
-        // write class instance to archive
-        ia_gradV3d_z >> gradV3d_z;
-        // archive and stream closed when destructors are called
-    }
-
-    {
-        // create and open a character archive for input
-        std::ifstream ifs_grad2V3d(graphenelut3d_file_prefix + "grad2V3d.txt");
-        // save data to archive
-        boost::archive::text_iarchive ia_grad2V3d(ifs_grad2V3d,aflags);
-        // write class instance to archive
-        ia_grad2V3d >> grad2V3d;
-        // archive and stream closed when destructors are called
-    }
-
-    {
-        // create and open a character archive for input
-        std::ifstream ifs_LUTinfo(graphenelut3d_file_prefix + "LUTinfo.txt");
-        // save data to archive
-        boost::archive::text_iarchive ia_LUTinfo(ifs_LUTinfo,aflags);
-        // write class instance to archive
-        ia_LUTinfo >> LUTinfo;
-        // archive and stream closed when destructors are called
-    }
-
-    // create and open a character archive for output
-    std::ofstream ofs(graphenelut3d_file_prefix + "serialized.dat");
-    {
-    // save data to archive
-        boost::archive::binary_oarchive oa(ofs,aflags);
-        // write class instance to archive
-        oa << V3d << gradV3d_x << gradV3d_y << gradV3d_z << grad2V3d << LUTinfo;
-        // archive and stream closed when destructors are called
-    }
-
-    std::cout << "Finished converting binary file " <<
-        graphenelut3d_file_prefix + "serialized.txt"  << " to binary file " <<
-        graphenelut3d_file_prefix + "serialized.dat" << ", exiting." <<
-        std::endl;
-}
-
-/**************************************************************************//**
- * Destructor.
-******************************************************************************/
-GrapheneLUT3DPotentialToBinary::~GrapheneLUT3DPotentialToBinary() {
-    V3d.free();
-    gradV3d_x.free();
-    gradV3d_y.free();
-    gradV3d_z.free();
-    grad2V3d.free();
-    LUTinfo.free();
-}
-#endif
-
-#if NDIM > 2
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// GrapheneLUT3DPotential Class---------------------------------------------
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-
-/**************************************************************************//**
- * Constructor.
-******************************************************************************/
-GrapheneLUT3DPotentialToText::GrapheneLUT3DPotentialToText (std::string graphenelut3d_file_prefix, const Container *_boxPtr) : PotentialBase() {
-
-    static auto const aflags = boost::archive::no_header | boost::archive::no_tracking;
-    /* load lookup tables */
-    {
-        // create and open an archive for input
-        std::ifstream ifs(graphenelut3d_file_prefix + "serialized.dat");
-        boost::archive::binary_iarchive ia(ifs,aflags);
-        // read class state from archive
-        ia >> V3d >> gradV3d_x >> gradV3d_y >> gradV3d_z >> grad2V3d >> LUTinfo;
-        // archive and stream closed when destructors are called
-    }
-
-    // create and open a character archive for output
-    std::ofstream ofs_V3d(graphenelut3d_file_prefix + "V3d.txt");
-    {
-        // save data to archive
-        boost::archive::text_oarchive oa_V3d(ofs_V3d,aflags);
-        // write class instance to archive
-        oa_V3d << V3d;
-        // archive and stream closed when destructors are called
-    }
-
-    // create and open a character archive for output
-    std::ofstream ofs_gradV3d_x(graphenelut3d_file_prefix + "gradV3d_x.txt");
-    {
-        // save data to archive
-        boost::archive::text_oarchive oa_gradV3d_x(ofs_gradV3d_x,aflags);
-        // write class instance to archive
-        oa_gradV3d_x << gradV3d_x;
-        // archive and stream closed when destructors are called
-    }
-
-    // create and open a character archive for output
-    std::ofstream ofs_gradV3d_y(graphenelut3d_file_prefix + "gradV3d_y.txt");
-    {
-        // save data to archive
-        boost::archive::text_oarchive oa_gradV3d_y(ofs_gradV3d_y,aflags);
-        // write class instance to archive
-        oa_gradV3d_y << gradV3d_y;
-        // archive and stream closed when destructors are called
-    }
-
-    // create and open a character archive for output
-    std::ofstream ofs_gradV3d_z(graphenelut3d_file_prefix + "gradV3d_z.txt");
-    {
-        // save data to archive
-        boost::archive::text_oarchive oa_gradV3d_z(ofs_gradV3d_z,aflags);
-        // write class instance to archive
-        oa_gradV3d_z << gradV3d_z;
-        // archive and stream closed when destructors are called
-    }
-
-    // create and open a character archive for output
-    std::ofstream ofs_grad2V3d(graphenelut3d_file_prefix + "grad2V3d.txt");
-    {
-        // save data to archive
-        boost::archive::text_oarchive oa_grad2V3d(ofs_grad2V3d,aflags);
-        // write class instance to archive
-        oa_grad2V3d << grad2V3d;
-        // archive and stream closed when destructors are called
-    }
-
-    // create and open a character archive for output
-    std::ofstream ofs_LUTinfo(graphenelut3d_file_prefix + "LUTinfo.txt");
-    {
-        // save data to archive
-        boost::archive::text_oarchive oa_LUTinfo(ofs_LUTinfo,aflags);
-        // write class instance to archive
-        oa_LUTinfo << LUTinfo;
-        // archive and stream closed when destructors are called
-    }
-
-    std::cout << "Finished converting binary file " << 
-        graphenelut3d_file_prefix + "serialized.dat"  << " to text files " <<
-        graphenelut3d_file_prefix + "<V3d|gradV3d_x|gradV3d_y|gradV3d_z|grad2V3d|LUTinfo>.txt" << ", exiting." <<
-        std::endl;
-}
-
-/**************************************************************************//**
- * Destructor.
-******************************************************************************/
-GrapheneLUT3DPotentialToText::~GrapheneLUT3DPotentialToText() {
-    V3d.free();
-    gradV3d_x.free();
-    gradV3d_y.free();
-    gradV3d_z.free();
-    grad2V3d.free();
-    LUTinfo.free();
-}
-#endif

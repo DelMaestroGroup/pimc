@@ -140,8 +140,6 @@ void Parameters::setupCommandLine(boost::ptr_map<std::string,po::options_descrip
             option.add_options()(label.c_str(),initValue<uint32>(key),helpMessage[key].c_str());
         else if (type.at(key) == typeid(std::string))
             option.add_options()(label.c_str(),initValue<std::string>(key),helpMessage[key].c_str());
-        else if (type.at(key) == typeid(dVec))
-            option.add_options()(label.c_str(),initValue<dVec>(key),helpMessage[key].c_str());
         else if (type.at(key) == typeid(std::vector<std::string>)) {
 
             if (state[key] == DEFAULTED) {
@@ -564,7 +562,7 @@ bool Setup::parseOptions() {
     definedCell = false;
     if (params("size")) {
         definedCell = true;
-        side = params["size"].as<double>();
+        side.fill(params["size"].as<double>());
         params.set<dVec>("side",side);
 
     }
@@ -881,10 +879,10 @@ void Setup::set_cell() {
 
         /* we determine if we are using a non-periodic cell for 
          * the graphene potential */
-        iVec periodic;
-        periodic = 1;
+        std::array<unsigned int, NDIM> periodic;
+        periodic.fill(1u);
         if (params["external"].as<std::string>().find("graphene") != std::string::npos)
-            periodic[NDIM-1] = 0;
+            periodic[NDIM-1] = 0u;
 
         if (definedCell && params("number_particles")) 
             boxPtr = new Prism(params["side"].as<dVec>(),periodic);
@@ -1148,11 +1146,10 @@ ActionBase * Setup::action(const Path &path, LookupTable &lookup,
     else {
 
         /* The factors needed for local actions. */
-        blitz::TinyVector <double,2> VFactor;      
-        blitz::TinyVector <double,2> gradVFactor;  
+        std::array <double,2> VFactor;      
+        std::array <double,2> gradVFactor{};  
 
-        VFactor = 1.0;
-        gradVFactor = 0.0;
+        VFactor.fill(1.0);
         int period = 1;
 
         if (constants()->actionType() == "gsf") {
@@ -1168,7 +1165,7 @@ ActionBase * Setup::action(const Path &path, LookupTable &lookup,
             period = 2;
         }
         else if (constants()->actionType() == "li_broughton") {
-            gradVFactor = 1.0 / 12.0;
+            gradVFactor.fill(1.0/12.0);
             period = 2;
         }
 

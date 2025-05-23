@@ -113,7 +113,7 @@ double SechWaveFunction::PsiTrial(const int slice) {
     double r;
 
     for (int ptcl = 0; ptcl < path.numBeadsAtSlice(slice); ptcl++) {
-        beadIndex = slice,ptcl;
+        beadIndex = {slice, ptcl};
         pos = path(beadIndex);
         r = sqrt(dot(pos,pos));
         psiT *= 1.0/cosh(a*r);
@@ -297,8 +297,8 @@ double LiebLinigerWaveFunction::PsiTrial(const int slice) {
     
     /* The cumulative value */
     double psiT = 1.0;
-    blitz::Array <bool,1> doParticles(path.numBeadsAtSlice(slice));
-    doParticles = true;
+    DynamicArray <bool,1> doParticles(path.numBeadsAtSlice(slice));
+    doParticles.fill(true);
 
     dVec sep;                       // The spatial separation between beads.
     double r;                       // Distance between beads
