@@ -386,6 +386,7 @@ void Setup::initParameters() {
     params.add<double>("potential_cutoff,l","interaction potential cutoff length [angstroms]",oClass);
     params.add<double>("empty_width_y,y","how much space (in y-) around Gasparini barrier",oClass);
     params.add<double>("empty_width_z,z","how much space (in z-) around Gasparini barrier",oClass);
+    params.add<int>("aziz_year", "the year of the Aziz potential [1979,1987,1995]",oClass,1979);
 
     /* These are graphene potential options */
     params.add<double>("strain","strain of graphene lattice in y-direction",oClass,0.00);
