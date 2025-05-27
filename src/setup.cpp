@@ -384,7 +384,7 @@ void Setup::initParameters() {
     params.add<double>("potential_cutoff,l","interaction potential cutoff length [angstroms]",oClass);
     params.add<double>("empty_width_y,y","how much space (in y-) around Gasparini barrier",oClass);
     params.add<double>("empty_width_z,z","how much space (in z-) around Gasparini barrier",oClass);
-    params.add<int>("aziz_year", "the year of the Aziz potential [1979,1987,1995]",oClass,1979);
+    params.add<int>("aziz_year", "the year of the Aziz potential: [1979,1987,1995]",oClass,1979);
 
     /* These are graphene potential options */
     params.add<double>("strain","strain of graphene lattice in y-direction",oClass,0.00);
@@ -719,6 +719,15 @@ bool Setup::parseOptions() {
     if ((params["interaction"].as<std::string>().find("delta1D") != std::string::npos) && (NDIM != 1)) {
         std::cerr << std::endl << "ERROR: Can only use delta1D potentials for a 1D system!" << std::endl << std::endl;
         std::cerr << "Action: change the potential or recompile with ndim=1." << std::endl;
+        return 1;
+    }
+    
+    /* Parse the aziz_year option to make sure it is valid */
+    if (!((params["aziz_year"].as<int>() == 1979) || 
+        (params["aziz_year"].as<int>() == 1987) || 
+        (params["aziz_year"].as<int>() == 1995))) {
+        std::cerr << std::endl << "ERROR: Aziz year must be in {1979,1987,1995}!" << std::endl << std::endl;
+        std::cerr << "Action: change the aziz_year to a valid option." << std::endl;
         return 1;
     }
 
@@ -1525,10 +1534,14 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
         communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Simulation Type" % "PIGS";
     else
         communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Simulation Type" % "PIMC";
+
     communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Action Type" % params["action"].as<std::string>();
-    communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Number of paths" % params["number_paths"].as<int>();
+    communicate()->file("log")->stream() << format("%-24s\t:\t%d\n") % "Number of paths" % params["number_paths"].as<int>();
     communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Interaction Potential" % 
         params["interaction"].as<std::string>();
+
+    if (params["interaction"].as<std::string>().find("aziz") != std::string::npos)
+        communicate()->file("log")->stream() << format("%-24s\t:\t%d\n") % "Aziz Year" % params["aziz_year"].as<int>();
 
     /* Ouptut a possible delta function width and strength */
     if ( (params["interaction"].as<std::string>().find("delta") != std::string::npos) ||

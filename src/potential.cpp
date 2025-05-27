@@ -58,11 +58,10 @@ REGISTER_INTERACTION_POTENTIAL("hard_sphere", HardSpherePotential, GET_SETUP(), 
 REGISTER_INTERACTION_POTENTIAL(   "hard_rod",    HardRodPotential, GET_SETUP(), setup.params["scattering_length"].as<double>())
 REGISTER_INTERACTION_POTENTIAL(    "delta1D",    Delta1DPotential, GET_SETUP(), setup.params["delta_strength"].as<double>())
 REGISTER_INTERACTION_POTENTIAL( "lorentzian", LorentzianPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
-REGISTER_INTERACTION_POTENTIAL(       "aziz",       AzizPotential, GET_SETUP(), setup.get_cell())
+REGISTER_INTERACTION_POTENTIAL(       "aziz",       AzizPotential, GET_SETUP(), setup.params["aziz_year"].as<int>(),setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(    "silvera",    SilveraPotential, GET_SETUP(), setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(       "H2LJ",                H2LJ, GET_SETUP(), setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(  "szalewicz",  SzalewiczPotential, GET_SETUP(), setup.get_cell())
-//REGISTER_INTERACTION_POTENTIAL(   "harmonic",   HarmonicPotential, GET_SETUP(), constants()->params()["omega"].as<double>())
 REGISTER_INTERACTION_POTENTIAL(   "harmonic",   HarmonicPotential, GET_SETUP(), setup.params["omega"].as<double>())
 REGISTER_INTERACTION_POTENTIAL(     "dipole",     DipolePotential,  NO_SETUP())
 
@@ -559,7 +558,7 @@ DipolePotential::~DipolePotential() {
  *  The interactions with the fixed particles are assumed to be Aziz.
 ******************************************************************************/
 FixedAzizPotential::FixedAzizPotential(const Container *_boxPtr) :
-    aziz(_boxPtr) {
+    aziz(1979,_boxPtr) {
 
     char state;             // Fixed or updateable?
     dVec pos;               // The loaded position
@@ -1578,18 +1577,51 @@ DynamicArray<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr
  *  Create the Aziz interaction potential.  We use the standard 1979 values.
  *  @see R.A. Aziz et al. J. Chem. Phys. 70, 4330 (1979).
 ******************************************************************************/
-AzizPotential::AzizPotential(const Container *_boxPtr) : PotentialBase(), TabulatedPotential()
+AzizPotential::AzizPotential(const int year, const Container *_boxPtr) : 
+    PotentialBase(), TabulatedPotential()
 {
-    /* Define all variables for the Aziz potential */
-    /* R.A. Aziz et al. J. Chem. Phys. 70, 4330 (1979) */
-    rm      = 2.9673;   // A
-    A       = 0.5448504E6; 
-    epsilon = 10.8;     // K
-    alpha   = 13.353384; 
-    D       = 1.241314; 
-    C6      = 1.3732412;
-    C8      = 0.4253785;
-    C10     = 0.1781;
+    /* We choose a set of parameters based on the year.  Validation has 
+     * already been performed in setup.*/
+
+    /* R. A. Aziz, V. P. S. Nain, J. S. Carley, W. L. Taylor, and G. T. McConville, 
+     * J. of Chem. Phys. 70, 4330 (1979).  https://doi.org/10.1063/1.438007 */
+    if (year == 1979) {
+        epsilon = 10.8;     // K
+        rm      = 2.9673;   // Å
+        D       = 1.241314; 
+        alpha   = 13.353384; 
+        beta    = 0.0;
+        C6      = 1.3732412;
+        C8      = 0.4253785;
+        C10     = 0.1781;
+        A       = 0.5448504E6; 
+    }
+    /* R. A. Aziz, F. McCourt, and C. Wong, Mol. Phys. 61, 1487 (1987). 
+     * https://doi.org/10.1080/00268978700101941 */
+    else if (year == 1987) {
+        epsilon = 10.948; // K
+        rm      = 2.9673; // Å
+        D       = 1.4826;
+        alpha   = 10.43329537;
+        beta    = -2.27965105;
+        C6      = 1.36745214;
+        C8      = 0.42123807;
+        C10     = 0.17473318;
+        A       = 1.8443101E5;
+    }
+    /* R. A. Aziz, A. R. Janzen, and M. R. Moldover, Phys. Rev. Lett. 74, 1586 (1995).  
+     * https://doi.org/10.1103/PhysRevLett.74.1586 */
+    else if (year == 1995) {
+        epsilon = 10.956; // K
+        rm      = 2.9683; // Å
+        D       = 1.438;
+        alpha   = 10.5717543;
+        beta    = -2.07758779;
+        C6      = 1.35186623;
+        C8      = 0.4149514;
+        C10     = 0.17151143;
+        A       = 1.86924404E5;
+    }
 
     /* The extremal values are all zero here */
     extV.fill(0.0);
@@ -1600,19 +1632,17 @@ AzizPotential::AzizPotential(const Container *_boxPtr) : PotentialBase(), Tabula
     double L = _boxPtr->maxSep;
 
     /* Create the potential lookup tables */
-    // initLookupTable(0.00005*rm,L);
     initLookupTable((1.0E-6)*rm,L);
 
-    /* Now we compute the tail correction */
-    double rmoL = rm / L;
-    double rm3 = rm*rm*rm;
-    double t1 = A*exp(-alpha*L/(2.0*rm))*rm*(8.0*rm*rm + 4.0*L*rm * alpha + L*L*alpha*alpha)
-        / (4.0*alpha*alpha*alpha);
-    double t2 = 8.0*C6*pow(rmoL,3.0)/3.0;
-    double t3 = 32.0*C8*pow(rmoL,5.0)/5.0;
-    double t4 = 128.0*C10*pow(rmoL,7.0)/7.0;
+    /* Compute the tail correction, we ignore the first (short-range) 
+     * part of the potential.
+     * Checked and working via python 2025-05-27 */
+    double rmorc = rm / constants()->rc();
+    double t2 = C6*pow(rmorc,3.0)/3.0;
+    double t3 = C8*pow(rmorc,5.0)/5.0;
+    double t4 = C10*pow(rmorc,7.0)/7.0;
     
-    tailV = 2.0*M_PI*epsilon*(t1 - rm3*(t2+t3+t4));
+    tailV = 2.0*M_PI*epsilon*(-rm*rm*rm*(t2+t3+t4));
 }
 
 /**************************************************************************//**
@@ -1630,7 +1660,7 @@ AzizPotential::~AzizPotential() {
 double AzizPotential::valueV(const double r) {
     double x = r / rm;
 
-    double Urep = A * exp(-alpha*x);
+    double Urep = A * exp(-alpha*x + beta*x*x);
 
     /* No self interactions */
     if (x < EPS) 
@@ -1656,7 +1686,7 @@ double AzizPotential::valueV(const double r) {
 double AzizPotential::valuedVdr(const double r) {
     double x = r / rm;
 
-    double T1 = -A * alpha * exp(-alpha*x);
+    double T1 = A * (-alpha + 2.0*beta*x) * exp(-alpha*x + beta*x*x);
     
     /* dV/dR */
     /* No self interactions */
@@ -1689,7 +1719,8 @@ double AzizPotential::valuedVdr(const double r) {
 double AzizPotential::valued2Vdr2(const double r) {
     double x = r / rm;
 
-    double T1 = A * alpha * alpha * exp(-alpha*x);
+    double abFactor2 = (alpha - 2.0*beta*x)*(alpha-2.0*beta*x);
+    double T1 = A * (2*beta + abFactor2) * exp(-alpha*x + beta*x*x);
     
     /* d^2V/dR^2 */
     /* No self interactions */
