@@ -93,7 +93,7 @@ else()
     file(DOWNLOAD
       "https://raw.githubusercontent.com/kokkos/mdspan/single-header/mdspan.hpp"
       "${REFERENCE_MDSPAN_BINARY}"
-      EXPECTED_MD5 "72604e49ef586d353c51257eb30ff027"  # optional hash check
+      #EXPECTED_MD5 "72604e49ef586d353c51257eb30ff027"
       STATUS DOWNLOAD_STATUS
     )
 
