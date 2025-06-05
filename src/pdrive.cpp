@@ -243,5 +243,5 @@ int main (int argc, char *argv[]) {
     delete boxPtr;
     delete waveFunctionPtr;
 
-    return 1;
+    return 0;
 }
