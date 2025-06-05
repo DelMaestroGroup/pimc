@@ -765,7 +765,7 @@ std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double q
     if ((qGeometry != "line") && (qGeometry != "sphere")) {
         std::cerr << "\nERROR: A valid geometry wasn't chosen for q-space." << std::endl
                   << "Action: choose \"line\" or \"sphere\"" << std::endl;
-        exit(0);
+        exit(1);
     }
 
     /* Determine the set of wavevectors that have these magnitudes.  */
@@ -3579,7 +3579,7 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
             std::cerr << "\nERROR: Intermediate Scattering function: "
                  << "No valid wavevectors were added to the list for measurment." 
                  << std::endl << "Action: modify q-magintudes." << std::endl;
-            exit(0);
+            exit(1);
         }
         
         q.push_back(qvecs);
