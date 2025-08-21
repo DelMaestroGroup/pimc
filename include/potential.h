@@ -684,7 +684,7 @@ class LJHourGlassPotential : public PotentialBase {
  */
 class AzizPotential : public PotentialBase, public TabulatedPotential {
     public:
-        AzizPotential (const Container *);
+        AzizPotential (const int, const Container *);
         ~AzizPotential ();
 
         /* The Aziz HFDHE2 Potential */
@@ -698,7 +698,7 @@ class AzizPotential : public PotentialBase, public TabulatedPotential {
 
     private:
         /* All the parameters of the Aziz potential */
-        double rm, A, epsilon, alpha, D, C6, C8, C10;
+        double rm, A, epsilon, alpha, beta, D, C6, C8, C10;
 
         /* Used to construct the lookup tables */
         double valueV (const double);               

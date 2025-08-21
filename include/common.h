@@ -44,9 +44,6 @@
  * the code is compiled with PIMC_DEBUG on.*/
 #ifdef PIMC_DEBUG
 
-/** Switch on the debug flag for Blitz++ */
-#define BZ_DEBUG
-
 /** A PIMC debugging message */
 #define PIMC_DEBUG_MESSAGE(X)\
 { std::cerr << "[pimc] " << __FILE__ << ": " << __LINE__ << " " << X << std::endl; }
