@@ -765,7 +765,7 @@ std::vector <std::vector<dVec> > EstimatorBase::getQVectors2(double dq, double q
     if ((qGeometry != "line") && (qGeometry != "sphere")) {
         std::cerr << "\nERROR: A valid geometry wasn't chosen for q-space." << std::endl
                   << "Action: choose \"line\" or \"sphere\"" << std::endl;
-        exit(0);
+        exit(1);
     }
 
     /* Determine the set of wavevectors that have these magnitudes.  */
@@ -3528,66 +3528,14 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
 
     int numTimeSlices = constants()->numTimeSlices();
 
-    /* these are the hard-coded wavevectors for now */
-    numq = 3;
-    DynamicArray <double, 1> qMag(numq);         // the wavevector magnitudes
-    /* qMag.resize(numq); */
-    //qMag = 0.761,1.75,1.81;
-    qMag(0) = 0.761;
-    qMag(1) = 1.75;
-    qMag(2) = 1.81;
+    /* getQVectors */
+    getQVectors(qValues);
 
-    /* initialize the number of std::vectors with each magnitude */
-    numqVecs.resize(numq);               
-    numqVecs.fill(0);
-
-    /* The allowable error in the wavevector magnitude */
-    double eps = 2.0*M_PI/min(path.boxPtr->side)/sqrt(NDIM);
-    eps *= eps;
-
-    /* Determine the set of wavevectors that have these magintudes */
-    for (int nq = 0; nq < numq; nq++)
-    {
-        double cq = qMag(nq);
-        std::vector <dVec> qvecs;
-
-        int maxComp = ceil(cq*(*std::min_element(path.boxPtr->side.begin(), path.boxPtr->side.end()))/(2.0*M_PI))+1;
-        int maxNumQ = ipow(2*maxComp + 1,NDIM);
-        
-        iVec qi;
-        for (int n = 0; n < maxNumQ; n++) {
-            for (int i = 0; i < NDIM; i++) {
-                int scale = 1;
-                for (int j = i+1; j < NDIM; j++) 
-                    scale *= (2*maxComp + 1);
-                qi[i] = (n/scale) % (2*maxComp + 1);
-
-                /* Wrap into the appropriate winding sector */
-                qi[i] -= (qi[i] > maxComp)*(2*maxComp + 1);
-            }
-            dVec qd = 2.0*M_PI*qi/path.boxPtr->side;
-
-            /* Store the winding number */
-            if (abs(dot(qd,qd)-cq*cq) < eps) {
-                qvecs.push_back(qd);
-                numqVecs(nq)++;
-            }
-        }
-
-        /* Make sure we have some wavevectors */
-        if (qvecs.size() < 1) {
-            std::cerr << "\nERROR: Intermediate Scattering function: "
-                 << "No valid wavevectors were added to the list for measurment." 
-                 << std::endl << "Action: modify q-magintudes." << std::endl;
-            exit(0);
-        }
-        
-        q.push_back(qvecs);
+    numq = qValues.size();
+    qValues_dVec.resize(numq);
+    for (int nq = 0; nq < numq; nq++) {
+        qValues_dVec(nq) = qValues[nq];
     }
-
-    /* get more accurate q-magnitudes */
-    for (int nq = 0; nq < numq; nq++) 
-        qMag(nq) = sqrt(dot(q[nq][0],q[nq][0]));
 
     /* Initialize the accumulator for the intermediate scattering function*/
     /* N.B. for now we hard-code three wave-vectors */
@@ -3597,20 +3545,10 @@ IntermediateScatteringFunctionEstimator::IntermediateScatteringFunctionEstimator
     /* This is a diagonal estimator that gets its own file */
     initialize(numq*numTimeSlices);
 
-    /* the q-values */
-    header = str(format("#%15.6E") % qMag(0));
-    for (int n = 1; n < numq; n++)
-        header.append(str(format("%16.6E") % qMag(n)));
-    header.append("\n");
-
-    /* The imaginary time values */
-    header.append(str(format("#%15.6E") % 0.0));
-    for (int n = 1; n < numTimeSlices; n++) 
-        header.append(str(format("%16.6E") % (constants()->tau()*n)));
-
-    for (int nq = 1; nq < numq; nq++) {
-        for (int n = 0; n < numTimeSlices; n++) 
-            header.append(str(format("%16.6E") % (constants()->tau()*n)));
+    /* Enumerate header */
+    header = str(format("#%15d") % 0);
+    for (unsigned int n = 1; n < isf.size(); n++) {
+        header.append(str(format("%16d") % n));
     }
 
     /* utilize imaginary time translational symmetry */
@@ -3638,37 +3576,33 @@ void IntermediateScatteringFunctionEstimator::accumulate() {
     isf.fill(0.0); // initialize
     dVec pos1,pos2;         // The two bead positions
 
-    /* q-magnitudes */
-    for (int nq = 0; nq < numq; nq++) {
+    /* wavevectors */
+    for (int i = 0; i < numq; i++) {
+        auto cqvec = qValues_dVec(i);
+        /* Average over all initial time slices */
+        for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
 
-        /* wavevectors */
-        for (const auto &cqvec : q[nq]) {
+            /* compute for each tau separation */
+            for (int tausep = 0;  tausep < numTimeSlices; tausep++){
 
-            /* Average over all initial time slices */
-            for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
+                bead2[0] = (bead1[0] + tausep) % numTimeSlices;
 
-                /* compute for each tau separation */
-                for (int tausep = 0;  tausep < numTimeSlices; tausep++){
+                for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(bead1[0]); bead1[1]++) {
 
-                    bead2[0] = (bead1[0] + tausep) % numTimeSlices;
+                    pos1 = path(bead1);
+                    double lq1 = dot(cqvec,pos1);
 
-                    for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(bead1[0]); bead1[1]++) {
+                    for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
 
-                        pos1 = path(bead1);
-                        double lq1 = dot(cqvec,pos1);
+                        pos2 = path(bead2);
+                        double lq2 = dot(cqvec,pos2);
 
-                        for (bead2[1] = 0; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
-
-                            pos2 = path(bead2);
-                            double lq2 = dot(cqvec,pos2);
-
-                            isf(nq*numTimeSlices + tausep) += (cos(lq1)*cos(lq2) + sin(lq1)*sin(lq2))/numqVecs(nq);
-                        } // bead2[1]
-                    } // bead1[1]
-                } //tausep   
-            } //bead1[0]
-        } //wavevectors
-    } //q-magnitudes
+                        isf(i*numTimeSlices + tausep) += (cos(lq1)*cos(lq2) + sin(lq1)*sin(lq2));
+                    } // bead2[1]
+                } // bead1[1]
+            } //tausep   
+        } //bead1[0]
+    } //wavevectors
 
     estimator += isf/numParticles;
 }

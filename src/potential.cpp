@@ -2026,7 +2026,7 @@ SzalewiczPotential::SzalewiczPotential(const Container *_boxPtr) : PotentialBase
     //std::copy(outv2.begin(), outv2.end(), output_iterator2);
     write_container(outv2,output_file2);
     output_file2.close();
-    exit(0);
+    exit(1);
     */
     
     /* Create the potential lookup tables */
@@ -2054,7 +2054,7 @@ SzalewiczPotential::SzalewiczPotential(const Container *_boxPtr) : PotentialBase
     std::cout << t1*315774.65 << std::endl;
     std::cout << t2*315774.65 << std::endl;
 
-    exit(0);
+    exit(1);
     */
 }
 

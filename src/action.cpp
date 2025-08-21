@@ -1535,6 +1535,12 @@ double NonLocalAction::potentialAction (const beadLocator &bead1) {
     /* Evaluate the external potential */
     double totVext = externalPtr->V(path(bead1))+externalPtr->V(path(nextBead1));
 
+    /* Check if neighboring beads vector needs to grow */
+    // Note: commented out code showing intent.
+    //if (NNbead.size() < path.get_beads_extents()[1]) {
+        NNbead.resize(path.get_beads_extents()[1], false);
+    //}
+
     /* Get the interaction list */
     lookup.updateInteractionList(path,bead1);
     for (int n = 0; n < lookup.numBeads; n++) {
