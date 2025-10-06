@@ -42,6 +42,7 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     
     /* Initialize stateStrings */
     stateStrings.resize(Npaths);
+    stateVector.resize(Npaths);
     
     /* We keep simulating until we have stored a certain number of measurements */
     numStoredBins = 0;
@@ -667,8 +668,10 @@ void PathIntegralMonteCarlo::equilStep(const uint32 iStep, const bool relaxC0, c
     } // equilfrac > 0.2
 
     /* Save a state every binsize equilibrium steps provided we are diagonal*/
-    if ( path.worm.isConfigDiagonal && (iStep > 0) && (iStep % binSize) == 0) 
+    if ( path.worm.isConfigDiagonal && (iStep > 0) && (iStep % binSize) == 0) {
         saveState();
+        saveStateHDF5();
+    }
 
     if ((iStep == constants()->numEqSteps()-1) && equilMessage){
         for (int nb = numBars; nb < 44; nb++)
@@ -713,6 +716,7 @@ void PathIntegralMonteCarlo::step() {
                 }
                 if(Npaths==1) 
                     saveState();
+					saveStateHDF5();
                 if (pIdx == 0)
                     ++numStoredBins;
             }
@@ -736,6 +740,7 @@ void PathIntegralMonteCarlo::step() {
 
             /* Save to disk or store a state file */
             saveState();
+            saveStateHDF5();
 
             if (estimator.size() == 0)
                 ++numStoredBins;
@@ -797,12 +802,285 @@ void PathIntegralMonteCarlo::finalOutput() {
     communicate()->file("log")->stream() << "---------- End Estimator Data ------------------" << std::endl;
 }
 
+
+/**************************************************************************//**
+*  Save the state of the simulation to disk, including all path, worm,
+*  move and estimator data.
+*
+*  A state object is created for each path and is stored in the stateobjectvector.
+*  We then write state from this vector.
+******************************************************************************/
+void PathIntegralMonteCarlo::saveStateHDF5(const int finalSave) {
+
+    /* We only update the std::string during the simulation */
+    if (!finalSave) {
+
+        for(uint32 pIdx=0; pIdx<Npaths; pIdx++){
+			StateObject state = {};
+
+			std::string stateFileName = "state";
+			if (pIdx > 0){
+            	stateFileName += str(format("%d") % (pIdx+1));
+			}
+			
+			stateFileName += ".hdf5";
+
+            /* leftpack and update the lookup table arrays */
+            pathPtrVec[pIdx].leftPack();
+            pathPtrVec[pIdx].lookup.updateGrid(path);
+
+			uint32 numParticles = pathPtrVec[pIdx].getNumParticles();
+			int numTimeSlices = pathPtrVec[pIdx].numTimeSlices;
+			/* ^^ This honestly might not be the safest way to do this.
+			 * I essentially only use this as an hsize_t type. So, I should
+			 * probably have this cast to an hsize_t from the beginning with
+			 * dynamic_cast<hsize_t>() and check if narrowing occurred.
+			 * I should do this with both variables. Then an implicit cast
+			 * from hsize_t to uint32 will be safe when I have to do that
+			 * the one time.
+			 */
+
+            /* We First write the current total number of world lines */
+
+			std::vector<hsize_t> worldOrderDims = {1, 1};
+			std::vector<uint32> worldOrderData;
+            worldOrderData.push_back(numParticles);
+			HDF5DataObject<uint32> worldOrder = {
+				"/worldOrder",
+				DataType::UNSIGNEDLONG,
+				worldOrderDims,
+				worldOrderData
+			};
+
+			state.worldOrder = worldOrder;
+
+			/* ^^^ World lines ^^^ */
+
+            /* Now write the total acceptance information for all moves */
+			std::vector<hsize_t> acceptanceInfoDims = {2};
+			std::vector<uint32> acceptanceInfoData = {movePtrVec[pIdx].front().totAccepted, movePtrVec[pIdx].front().totAttempted};
+			HDF5DataObject<uint32> acceptanceInfo = {
+				"/acceptanceInfo",
+				DataType::UNSIGNEDLONG,
+				acceptanceInfoDims,
+				acceptanceInfoData
+			};
+			state.acceptanceInfo = acceptanceInfo;
+
+			/* ^^^ AcceptanceInfo ^^^ */
+
+			/* vvv moveAcceptance vvv */
+            /* Now record the individual move acceptance information,
+             * first for the diagonal, then off-diagonal*/
+			hsize_t moveVecLength;
+			moveVecLength = (hsize_t) movePtrVec[pIdx].size();
+			std::vector<hsize_t> moveAcceptanceDims = {moveVecLength, 2};
+
+			std::vector<uint32> moveAcceptanceData;
+			for (hsize_t i=0; i < moveVecLength; i++){
+				uint32 numAccepted = movePtrVec[pIdx][i].numAccepted;
+				uint32 numAttempted = movePtrVec[pIdx][i].numAttempted;
+			 	moveAcceptanceData.push_back(numAccepted);
+			 	moveAcceptanceData.push_back(numAttempted);
+			}
+
+
+			HDF5DataObject<uint32> moveAcceptance = {
+				"/moveAcceptance",
+				DataType::UNSIGNEDLONG,
+				moveAcceptanceDims,
+				moveAcceptanceData
+			};
+			state.moveAcceptance = moveAcceptance;
+
+			/* ^^^ moveAcceptance ^^^ */
+
+            /* Output the estimator sampling information */
+			hsize_t estimatorVecLength = (hsize_t) estimatorPtrVec[pIdx].size();
+			std::vector<hsize_t> estimatorSamplingDims = {estimatorVecLength, 2};
+
+			std::vector<uint32> estimatorSamplingData;
+			for (hsize_t i=0; i < estimatorVecLength; i++){
+				uint32 totNumAccumulated = estimatorPtrVec[pIdx][i].getTotNumAccumulated();
+				uint32 numSampled = estimatorPtrVec[pIdx][i].getNumSampled();
+			 	estimatorSamplingData.push_back(totNumAccumulated);
+			 	estimatorSamplingData.push_back(numSampled);
+			}
+
+
+			HDF5DataObject<uint32> estimatorSampling = {
+				"/estimatorSampling",
+				DataType::UNSIGNEDLONG,
+				estimatorSamplingDims,
+				estimatorSamplingData
+			};
+			state.estimatorSampling = estimatorSampling;
+
+			/* ^^^ estimatorSamplingInformation ^^^ */
+
+            /* vvv path data vvv */
+
+			std::vector<hsize_t> pathsDims = {
+				(hsize_t) numTimeSlices,
+				(hsize_t) numParticles,
+				NDIM
+			};
+
+			/* create an array of length numTimeSlices x numParticles x NDIM 
+			 * that holds all the data in contiguous memory
+			*/ 
+			dVec * pathsDataArray = pathPtrVec[pIdx].beads.data();
+			std::vector<double> pathsData;
+			for (uint32 i = 0; i < numTimeSlices * numParticles; i++){
+				double * pathsEntry = pathsDataArray[i].data();
+				for (uint32 j = 0; j < NDIM; j++){
+					pathsData.push_back(pathsEntry[j]);
+				}
+			}
+
+			HDF5DataObject<double> paths = {
+				"/paths",
+				DataType::DOUBLE,
+				pathsDims,
+				pathsData
+			};
+			state.paths = paths;
+
+            /* ^^^ path data ^^^ */
+
+            /* vvv Next data vvv */
+
+			hsize_t nextDim3 = 2; // How is this dimension determined?
+			std::vector<hsize_t> nextDims = {
+				(hsize_t) numTimeSlices,
+				(hsize_t) numParticles,
+				nextDim3
+			};
+
+			/* create an array of length numTimeSlices x numParticles x 2 
+			 * that holds all the data in contiguous memory
+			 */
+			beadLocator * nextDataArray = pathPtrVec[pIdx].nextLink.data();
+			std::vector<double> nextData;
+			for (hsize_t i = 0; i < numTimeSlices * numParticles; i++){
+				int * nextEntry = nextDataArray[i].data();
+				for (hsize_t j = 0; j < nextDim3; j++){
+					nextData.push_back(nextEntry[j]);
+				}
+			}
+
+			HDF5DataObject<double> next = {
+				"/next",
+				DataType::DOUBLE,
+				nextDims,
+				nextData
+			};
+			state.next = next;
+
+            /* ^^^ Next data ^^^ */
+
+            /* vvv Previous data vvv */
+			hsize_t prevDim3 = 2;
+			std::vector<hsize_t> prevDims = {
+				(hsize_t) numTimeSlices,
+				(hsize_t) numParticles,
+				prevDim3
+			};
+
+			/* create an array of length numTimeSlices x numParticles x 2 
+			 * that holds all the data in contiguous memory
+			*/ 
+			beadLocator * prevDataArray = pathPtrVec[pIdx].prevLink.data();
+			std::vector<double> prevData;
+			for (uint32 i = 0; i < numTimeSlices * numParticles; i++){
+				int * prevEntry = prevDataArray[i].data();
+				for (hsize_t j = 0; j < prevDim3; j++){
+					prevData.push_back(prevEntry[j]);
+				}
+			}
+
+			HDF5DataObject<double> prev = {
+				"/prev",
+				DataType::DOUBLE,
+				prevDims,
+				prevData
+			};
+			state.prev = prev;
+
+            /* ^^^ actual path and worldline data ^^^ */
+
+            /* vvv worm data vvv */
+			std::vector<hsize_t> wormDims = {
+				(hsize_t) numTimeSlices,
+				(hsize_t) numParticles
+			};
+
+			blitz::Array <unsigned int, 2> beads = pathPtrVec[pIdx].worm.beads;
+			std::vector<uint32> wormData;
+			// Convert from unsigned int to uint32
+			for (size_t i = 0; i < beads.size(); ++i) {
+				wormData.push_back(static_cast<uint32>(beads.data()[i]));
+			}
+
+			HDF5DataObject<uint32> worm = {
+				"/worm",
+				DataType::UNSIGNEDLONG,
+				wormDims,
+				wormData
+			};
+			state.worm = worm;
+
+            /* ^^^ worm data ^^^ */
+
+			/* vvv Random State vvv */
+
+			std::vector<hsize_t> randomStateDims = {random.SAVE};
+			uint32 randomSave[random.SAVE];
+			random.save(randomSave);
+
+			std::vector<uint32> randomStateData(randomSave, randomSave + random.SAVE);
+
+			
+			HDF5DataObject<uint32> randomState = {
+				"/randomState",
+				DataType::UNSIGNEDLONG,
+				randomStateDims,
+				randomStateData
+			};
+			state.randomState = randomState;
+
+			// stateObjectVector.push_back(state);
+
+            stateVector[pIdx] = state;
+        } // for pidx
+    }
+
+	
+    /* Save the state file to disk */
+    std::string stateFileName;
+    if (constants()->saveStateFiles() || finalSave) {
+        for(uint32 pIdx=0; pIdx<Npaths; pIdx++) {
+            stateFileName = "state";
+            if(pIdx > 0)
+                stateFileName += str(format("%d") % (pIdx+1));
+
+            /* Prepare the state file for writing */
+            communicate()->hdf5File(stateFileName.c_str())->reset();
+
+            /* Write the stateString to disk */
+            communicate()->hdf5File(stateFileName.c_str())->writeState(stateVector[pIdx]);
+
+            /* Rename and copy the file. */
+            communicate()->hdf5File(stateFileName.c_str())->rename();
+		}
+	}
+}
+
 /**************************************************************************//**
 *  Save the state of the simulation to disk, including all path, worm,
 *  move and estimator data.
 ******************************************************************************/
 void PathIntegralMonteCarlo::saveState(const int finalSave) {
-
     std::stringstream stateStrStrm;
     
     /* We only update the std::string during the simulation */
@@ -868,7 +1146,7 @@ void PathIntegralMonteCarlo::saveState(const int finalSave) {
             communicate()->file(stateFileName.c_str())->reset();
 
             /* Write the stateString to disk */
-            communicate()->file(stateFileName.c_str())->stream() << stateStrings[pIdx];
+            communicate()->file(stateFileName.c_str())->write(stateStrings[pIdx]);
 
             /* Rename and copy the file. */
             communicate()->file(stateFileName.c_str())->rename();
@@ -985,15 +1263,25 @@ void PathIntegralMonteCarlo::loadQuantumState(blitz::Array <dVec,2> &tempBeads,
 ******************************************************************************/
 void PathIntegralMonteCarlo::loadState() {
 
+
     std::string tempString;
     
-    std::string fileInitStr = "init";
+    // Use the filename provided via command line (-s flag)
+    std::string fileInitStr = communicate()->getInitName();
     
-    for( uint32 pIdx=0; pIdx<Npaths; pIdx++){
-        
-        if(pIdx>0){
+    // If no specific state file was provided, fall back to default "init"
+    if (fileInitStr.empty()) {
+        fileInitStr = "init";
+    }
+    
+    for( uint32_t pIdx=0; pIdx<Npaths; pIdx++){
+		// use the newStateObject to set the appropriate values on the PIMC object
+			
+        if(pIdx>0 && communicate()->getInitName().empty()){
+            // Only use numbered init files if no specific file was provided
             fileInitStr = str(format("init%d") % (pIdx+1));
         }
+		StateObject newStateObject = communicate()->createStateObject(fileInitStr.c_str());
 
         /* Reset the total acceptance information */
         movePtrVec[pIdx].front().resetTotAccept();
@@ -1006,112 +1294,99 @@ void PathIntegralMonteCarlo::loadState() {
         for (auto &cestimator : estimatorPtrVec[pIdx])
             cestimator.restart(0,0);
 
-        /* We first read the former total number of world lines */
-        int numWorldLines;
-        int numTimeSlices = pathPtrVec[pIdx].numTimeSlices;
-        communicate()->file(fileInitStr)->stream() >> numWorldLines;
+        // HDF5-based startup: use the returned StateObject to populate
+        // the in-memory path structures.
+        std::cout << "Loading from HDF5 state file for path " << pIdx << std::endl;
 
-        /* Now we skip through the input file until we find the beads matrix.  This
-         * is signalled by the appearance of an open bracket "(" */
-        while (!communicate()->file(fileInitStr)->stream().eof()) {
-            if (communicate()->file(fileInitStr)->stream().peek() != '(') 
-                getline (communicate()->file(fileInitStr)->stream(), tempString);
-            else
-                break;
+        /* We first read the former total number of world lines */
+        int numWorldLines = 0;
+        int numTimeSlices = pathPtrVec[pIdx].numTimeSlices;
+
+        // worldOrder should be scalar [1,1]
+        if (!newStateObject.worldOrder.data.empty()) {
+            numWorldLines = static_cast<int>(newStateObject.worldOrder.data[0]);
+            std::cout << "Number of worldlines from HDF5: " << numWorldLines << std::endl;
         }
 
-        /* Now we resize all path data members and read them from the init state file */
-        pathPtrVec[pIdx].beads.resize(numTimeSlices,numWorldLines);
-        pathPtrVec[pIdx].nextLink.resize(numTimeSlices,numWorldLines);
-        pathPtrVec[pIdx].prevLink.resize(numTimeSlices,numWorldLines);
-        pathPtrVec[pIdx].worm.beads.resize(numTimeSlices,numWorldLines);
+        /* Resize containers */
+        pathPtrVec[pIdx].beads.resize(numTimeSlices, numWorldLines);
+        pathPtrVec[pIdx].nextLink.resize(numTimeSlices, numWorldLines);
+        pathPtrVec[pIdx].prevLink.resize(numTimeSlices, numWorldLines);
+        pathPtrVec[pIdx].worm.beads.resize(numTimeSlices, numWorldLines);
 
-        /* A temporary container for the beads array */
-	blitz::Array <dVec,2> tempBeads;
+        // HDF5 loading branch
+        std::cout << "Reconstructing path data from HDF5..." << std::endl;
 
-        /* Get the worldline configuration */
-        communicate()->file(fileInitStr)->stream() >> tempBeads;
-
-        /* The temporary number of time slices */
-        int tempNumTimeSlices = tempBeads.rows();
-
-        if (tempNumTimeSlices == numTimeSlices) {
-        
-            /* Copy over the beads array */
-            pathPtrVec[pIdx].beads = tempBeads;
-
-            /* Get the link arrays */
-            communicate()->file(fileInitStr)->stream() >> pathPtrVec[pIdx].nextLink;
-            communicate()->file(fileInitStr)->stream() >> pathPtrVec[pIdx].prevLink;
-
-            /* Repeat for the worm file */
-            communicate()->file(fileInitStr)->stream() >> pathPtrVec[pIdx].worm.beads;
-
-        } // locBeads.rows() == numTimeSlices
-        else {
-
-            /* Initialize the links */
-	    blitz::firstIndex i1;
-	    blitz::secondIndex i2;
-            pathPtrVec[pIdx].prevLink[0] = i1-1;
-            pathPtrVec[pIdx].prevLink[1] = i2;
-            pathPtrVec[pIdx].nextLink[0] = i1+1;
-            pathPtrVec[pIdx].nextLink[1] = i2;
-        
-            /* Here we implement the initial periodic boundary conditions in 
-             * imaginary time */
-            pathPtrVec[pIdx].prevLink(0,blitz::Range::all())[0] = numTimeSlices-1;
-            pathPtrVec[pIdx].nextLink(numTimeSlices-1,blitz::Range::all())[0] = 0;
-
-            /* Reset the worm.beads array */
-            pathPtrVec[pIdx].worm.beads = 0;
-
-            /* Temporary containers for the links and worm beads */
-	    blitz::Array <beadLocator,2> tempNextLink;
-	    blitz::Array <beadLocator,2> tempPrevLink;
-	    blitz::Array <unsigned int,2> tempWormBeads;
-
-            /* Get the link arrays and worm file */
-            communicate()->file(fileInitStr)->stream() >> tempNextLink;
-            communicate()->file(fileInitStr)->stream() >> tempPrevLink;
-            communicate()->file(fileInitStr)->stream() >> tempWormBeads;
-
-            /* Load a classical (all time slice positions equal) from the input
-             * file */
-            loadClassicalState(tempBeads,tempWormBeads, numWorldLines);
-
-            /* Load a quantum initial state from a file */
-            //if (tempNumTimeSlices < numTimeSlices) {
-            //    loadQuantumState(tempBeads,tempNextLink,tempPrevLink,
-            //            numTimeSlices,int(sum(tempWormBeads)/tempNumTimeSlices));
-            //}
-
-            /* Now we make sure all empty beads are unlinked */
-            beadLocator beadIndex;
-            for (int slice = 0; slice < numTimeSlices; slice++) {
-                for (int ptcl = 0; ptcl < numWorldLines; ptcl++) {
-                    beadIndex = slice,ptcl;
-                    if (!pathPtrVec[pIdx].worm.beads(beadIndex)) {
-                        pathPtrVec[pIdx].nextLink(beadIndex) = XXX;
-                        pathPtrVec[pIdx].prevLink(beadIndex) = XXX;
+        // Load path data
+        if (!newStateObject.paths.data.empty() && newStateObject.paths.dims.size() == 3) {
+            hsize_t T = newStateObject.paths.dims[0];
+            hsize_t N = newStateObject.paths.dims[1];
+            hsize_t D = newStateObject.paths.dims[2];
+            
+            std::cout << "Path dimensions: [" << T << ", " << N << ", " << D << "]" << std::endl;
+            
+            const double *ptr = newStateObject.paths.data.data();
+            for (hsize_t i = 0; i < T; ++i) {
+                for (hsize_t j = 0; j < N; ++j) {
+                    dVec v;
+                    for (hsize_t k = 0; k < D; ++k) {
+                        v[k] = *ptr++;
                     }
+                    pathPtrVec[pIdx].beads(static_cast<int>(i), static_cast<int>(j)) = v;
                 }
             }
-
-            /* Free local memory */
-            tempPrevLink.free();
-            tempNextLink.free();
-            tempWormBeads.free();
-
-        } // locBeads.rows() != numTimeSlices
-
-        /* Load the state of the random number generator, only if we are restarting 
-         * the simulation */
-        if (constants()->restart()) {
-            uint32 randomState[random.SAVE];
-            for (int i = 0; i < random.SAVE; i++) 
-                communicate()->file(fileInitStr)->stream() >> randomState[i];
-            random.load(randomState);
+            std::cout << "Loaded path data successfully" << std::endl;
+        }
+        
+        // Load next/prev link data
+        if (!newStateObject.next.data.empty() && newStateObject.next.dims.size() == 3) {
+            const double *np = newStateObject.next.data.data();
+            int Td = static_cast<int>(newStateObject.next.dims[0]);
+            int Nd = static_cast<int>(newStateObject.next.dims[1]);
+            for (int i = 0; i < Td; ++i) {
+                for (int j = 0; j < Nd; ++j) {
+                    int a = static_cast<int>(*np++);
+                    int b = static_cast<int>(*np++);
+                    pathPtrVec[pIdx].nextLink(i,j)[0] = a;
+                    pathPtrVec[pIdx].nextLink(i,j)[1] = b;
+                }
+            }
+            std::cout << "Loaded next link data" << std::endl;
+        }
+        
+        if (!newStateObject.prev.data.empty() && newStateObject.prev.dims.size() == 3) {
+            const double *pp = newStateObject.prev.data.data();
+            int Tp = static_cast<int>(newStateObject.prev.dims[0]);
+            int Np = static_cast<int>(newStateObject.prev.dims[1]);
+            for (int i = 0; i < Tp; ++i) {
+                for (int j = 0; j < Np; ++j) {
+                    int a = static_cast<int>(*pp++);
+                    int b = static_cast<int>(*pp++);
+                    pathPtrVec[pIdx].prevLink(i,j)[0] = a;
+                    pathPtrVec[pIdx].prevLink(i,j)[1] = b;
+                }
+            }
+            std::cout << "Loaded prev link data" << std::endl;
+        }
+        
+        // Load worm data
+        if (!newStateObject.worm.data.empty() && newStateObject.worm.dims.size() == 2) {
+            const uint32 *wp = newStateObject.worm.data.data();
+            size_t cnt = static_cast<size_t>(newStateObject.worm.dims[0]) * static_cast<size_t>(newStateObject.worm.dims[1]);
+            for (size_t ii = 0; ii < cnt; ++ii) {
+                pathPtrVec[pIdx].worm.beads.data()[ii] = static_cast<unsigned int>(wp[ii]);
+            }
+            std::cout << "Loaded worm data" << std::endl;
+        }
+        
+        // Load RNG state
+        if (constants()->restart() && !newStateObject.randomState.data.empty()) {
+            std::vector<uint32> tmp(random.SAVE);
+            for (int i = 0; i < random.SAVE; i++) {
+                tmp[i] = newStateObject.randomState.data[i];
+            }
+            random.load(tmp.data());
+            std::cout << "Restored RNG state" << std::endl;
         }
 
         /* Reset the number of on beads */
@@ -1137,17 +1412,13 @@ void PathIntegralMonteCarlo::loadState() {
         pathPtrVec[pIdx].lookup.resizeList(numWorldLines);
         pathPtrVec[pIdx].lookup.updateGrid(path);
 
-        /* Reset the broken/closed worldline std::vectors */
+        /* Reset the broken/closed worldline vectors */
         pathPtrVec[pIdx].resetBrokenClosedVecs();
         
-        /* Close the file */
-        communicate()->file(fileInitStr)->close();
-        
-        /* Free up memory */
-        tempBeads.free();
-        
+        std::cout << "HDF5 state initialization completed" << std::endl;
     }
 }
+
 
 /**************************************************************************//**
  *  Output the worldline configuration to disk using PDB , suitable

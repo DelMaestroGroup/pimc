@@ -179,6 +179,9 @@ if (NOT Blitz_FOUND)
         "Please follow blitz++ install instructions found at https://github.com/blitzpp/blitz.")
 endif()
 
+# Find HDF5
+find_package(HDF5 REQUIRED COMPONENTS CXX HL)
+
 # Add include directories
 include_directories( ${Boost_INCLUDE_DIRS} )
 include_directories( ${Blitz_INCLUDE_DIRS} )
@@ -188,6 +191,8 @@ target_link_libraries (${exe} ${Boost_LIBRARIES} )
 if((CMAKE_BUILD_TYPE MATCHES Debug) OR (CMAKE_BUILD_TYPE MATCHES PIGSDebug))
     target_link_libraries (${exe} ${Blitz_LIBRARIES} )
 endif()
+
+target_link_libraries(${exe} HDF5::HDF5)
 
 # Link filesystem library -lstdc++fs for old compilers
 if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0))

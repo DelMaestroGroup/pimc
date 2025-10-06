@@ -57,6 +57,7 @@ class PathIntegralMonteCarlo {
 
         /* Save the PIMC state to disk */
         void saveState(const int finalSave = 0);
+        void saveStateHDF5(const int finalSave = 0);
 
         /* Output the world-line configurations in the protein databank format */
         void outputPDB();
@@ -115,6 +116,7 @@ class PathIntegralMonteCarlo {
         uint32 Npaths;                 // Number of paths
     
         std::vector<std::string> stateStrings; // A std::vector of state std::strings from the last bin
+		std::vector<StateObject> stateVector; // A std::vector of state objects from the last bin
 
         bool startWithState;        // Are we starting from a saved state
         bool success;               // Track move success/failure
