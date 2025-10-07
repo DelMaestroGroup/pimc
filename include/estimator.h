@@ -768,28 +768,6 @@ class PairCorrelationEstimator: public EstimatorBase {
 /** 
  * Compute the static structure factor S(q)
  */
-//class StaticStructureFactorEstimator: public EstimatorBase {
-//
-//    public:
-//        StaticStructureFactorEstimator(const Path &, ActionBase *, 
-//                const MTRand &, double, int _frequency=1, std::string _label="ssf");
-//        ~StaticStructureFactorEstimator();
-//    
-//        static const std::string name;
-//        std::string getName() const {return name;}
-//
-//    private:
-//        void accumulate();              // Accumulate values
-//        DynamicArray <double,1> sf;            // structure factor
-//        std::vector <std::vector<dVec> > q;       // the q-vectors
-//};
-
-// ========================================================================  
-// Static Structure Factor Estimator Class
-// ========================================================================  
-/** 
- * Compute the static structure factor S(q)
- */
 class StaticStructureFactorEstimator: public EstimatorBase {
 
     public:
@@ -804,7 +782,6 @@ class StaticStructureFactorEstimator: public EstimatorBase {
         void accumulate();              // Accumulate values
         DynamicArray <double,1> sf;            // structure factor
         std::vector<dVec> qValues;              // Vector of q values
-        DynamicArray<dVec,1> qValues_dVec;      // Vector of q values
 
 	int numq;
 };

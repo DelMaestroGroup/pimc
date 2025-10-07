@@ -438,6 +438,7 @@ void EstimatorBase::getQVectors(std::vector<dVec> &qValues) {
     std::string inputType = constants()->wavevectorType();
 
     // Tokenize input string into components
+    // NOTE: consider doing this in setup.cpp?
     std::istringstream iss(input);
     std::vector<std::string> tokens{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
     if (tokens.size() < 1) {
@@ -3223,172 +3224,6 @@ void PairCorrelationEstimator::accumulate() {
 // STATIC STRUCTURE FACTOR ESTIMATOR CLASS -----------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-//
-//StaticStructureFactorEstimator::StaticStructureFactorEstimator(
-//        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-//        double _maxR, int _frequency, std::string _label) :
-//    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
-//{
-//
-//    /* hard-coded number of wavevector magnitudes */
-//    numq = 20; 
-//
-//    /* initialize the number of std::vectors with each magnitude */
-//    numqVecs.resize(numq);               
-//    numqVecs = 0;
-//
-//    /* initialize the magnitude array */
-//    qMag.resize(numq);
-//    qMag = 0.0;
-//
-//    /* The maximum wavevector magnitude to consider (hard-coded for now) */
-//    double qmax = 4.0; // 1/A
-//    double dq = qmax/(numq-1);
-//
-//    /* Determine the set of magnitudes */
-//    Array <double, 1> qMag(numq);         // the wavevector magnitudes
-//    for (int nq = 0; nq < numq; nq++)
-//        qMag(nq) = nq*dq;
-//
-//    /* Determine the set of wavevectors that have these magintudes */
-//    for (int nq = 0; nq < numq; nq++)
-//    {
-//        double cq = qMag(nq);
-//        std::vector <dVec> qvecs;
-//
-//        int maxComp = ceil(cq*(*std::max_element(path.boxPtr->side.begin(), path.boxPtr->side.end())))/(2.0*M_PI))+1;
-//        int maxNumQ = ipow(2*maxComp + 1,NDIM);
-//        
-//        iVec qi;
-//        for (int n = 0; n < maxNumQ; n++) {
-//            for (int i = 0; i < NDIM; i++) {
-//                int scale = 1;
-//                for (int j = i+1; j < NDIM; j++) 
-//                    scale *= (2*maxComp + 1);
-//                qi[i] = (n/scale) % (2*maxComp + 1);
-//
-//                /* Wrap into the appropriate set of integers*/
-//                qi[i] -= (qi[i] > maxComp)*(2*maxComp + 1);
-//            }
-//
-//            dVec qd = 2.0*M_PI*qi/path.boxPtr->side;
-//
-//            /* Store the winding number */
-//            double cqMag = sqrt(dot(qd,qd));
-//            if ( ( (abs(cq) < EPS) && (cqMag < EPS) ) ||
-//                 ( (abs(cq) >= EPS) && (cqMag > (cq-dq)) && (cqMag <= cq) ) ) 
-//            {
-//                qvecs.push_back(qd);
-//                numqVecs(nq)++;
-//            }
-//        }
-//        
-//        q.push_back(qvecs);
-//    }
-//
-//
-
-/*************************************************************************//**
- *  Constructor.
- * 
- *  Compute the static structure factor for a fixed set of q std::vector magnitude.
-******************************************************************************/
-//StaticStructureFactorEstimator::StaticStructureFactorEstimator(
-//        const Path &_path, ActionBase *_actionPtr, const MTRand &_random, 
-//        double _maxR, int _frequency, std::string _label) :
-//    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label) 
-//{
-//
-//    /* The maximum wavevector magnitude to consider (hard-coded for now) */
-//    double qMax = 0.5; // 1/Å
-//
-//    /* We choose dq from the smallest possible wavevector, set by PBC */
-//    double dq = 2.0*M_PI/path.boxPtr->side[NDIM-1];
-//
-//    /* Get the desired wavevectors */
-//    int numq = 0;
-//    q = getQVectors2(dq,qMax,numq,"sphere");
-//
-//    /* Determine how many wavevector magnitudes  we have */
-//    numq = q.size();
-//
-//    /* Initialize the accumulator intermediate scattering function*/
-//    sf.resize(numq);
-//    sf.fill(0.0);
-//
-//    /* This is a diagonal estimator that gets its own file */
-//    initialize(numq);
-//
-//    /* The magnitude of q */
-//    header = str(format("#%15.6E") % 0.0);
-//    for (int nq = 1; nq < numq; nq++)  {
-//        double qMag = sqrt(std::inner_product(q[nq][0].begin(), q[nq][0].end(), q[nq][0].begin(), 0.0));
-//        header.append(str(format("%16.6E") % (qMag)));
-//    }
-//        /* header.append(str(format("%16.6E") % (qMag(nq)-0.5*dq))); */
-//
-//    /* Utilize imaginary time translational symmetry */
-//    norm.fill(1.0/constants()->numTimeSlices());
-//
-//    /* Normalize by the number of q-vecs (except when there are none) */
-//    //for (int nq = 0; nq < numq; nq++) {
-//    //    if (q[nq].size() > 0)
-//    //        norm(nq) /= q[nq].size();
-//    //}
-//}
-//
-///*************************************************************************//**
-// *  Destructor.
-//******************************************************************************/
-//StaticStructureFactorEstimator::~StaticStructureFactorEstimator() { 
-//}
-//
-///*************************************************************************//**
-// *  Measure the static structure factor for each value for each q-magnitude
-// *
-//******************************************************************************/
-//void StaticStructureFactorEstimator::accumulate() {
-//
-//    int numParticles = path.getTrueNumParticles();
-//    int numTimeSlices = constants()->numTimeSlices();
-//
-//    beadLocator bead1,bead2;  // The bead locator
-//    sf.fill(0.0); // initialize
-//
-//    /* q-magnitudes */
-//    for (auto [nq,cq] : enumerate(q)) {
-//
-//        /* wavevectors with that q-magnitude*/
-//        for (const auto &cqvec : cq) {
-//    
-//            /* Average over all time slices */
-//            for (bead1[0] = 0; bead1[0] < numTimeSlices; bead1[0]++) {
-//
-//                /* This is an equal imaginary time estimator */
-//                bead2[0] = bead1[0];
-//
-//                for (bead1[1] = 0; bead1[1] < path.numBeadsAtSlice(bead1[0]); bead1[1]++) {
-//
-//                    /* The bead1 = bead2 part */
-//                    sf(nq) += 1.0;
-//
-//                    for (bead2[1] = bead1[1]+1; bead2[1] < path.numBeadsAtSlice(bead2[0]); bead2[1]++) {
-//                        sf(nq) += 2*cos(dot(path.getSeparation(bead1,bead2),cqvec));
-//                    } // bead2[1]
-//                } // bead1[1]
-//            } //bead1[0]
-//
-//        } // wavevectors
-//    } // q-magnitudes
-//
-//    estimator += sf/numParticles; 
-//}
-
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// STATIC STRUCTURE FACTOR ESTIMATOR CLASS -----------------------------------
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
 /*************************************************************************//**
  *  Constructor.
  * 
@@ -3404,10 +3239,6 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
     getQVectors(qValues);
 
     numq = qValues.size();
-    qValues_dVec.resize(numq);
-    for (int nq = 0; nq < numq; nq++) {
-        qValues_dVec(nq) = qValues[nq];
-    }
 
     /* Initialize the accumulator for the static structure factor */
     sf.resize(numq);
@@ -3419,14 +3250,13 @@ StaticStructureFactorEstimator::StaticStructureFactorEstimator(
     /* The header consists of an extra line of the possible q-values */
     header = str(format("# ESTINF: num_q = %d; ") % numq);
     for (int n = 0; n < numq; n++)
-        header += dVecToString(qValues_dVec(n)) + " ";
+        header += dVecToString(qValues[n]) + " ";
     header += "\n";
 
     /* We index the wavevectors with an integer */
     header += str(format("#%15d") % 0);
     for (int n = 1; n < numq; n++) 
         header += str(format("%16d") % n);
-
 
     /* Utilize imaginary time translational symmetry */
     norm.fill(1.0/constants()->numTimeSlices());
@@ -3474,7 +3304,6 @@ void StaticStructureFactorEstimator::accumulate() {
          nq += 1;
      } // wavevectors
     
-
     estimator += sf/numParticles; 
 }
 
