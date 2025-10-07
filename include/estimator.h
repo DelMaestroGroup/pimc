@@ -772,7 +772,7 @@ class StaticStructureFactorEstimator: public EstimatorBase {
 
     public:
         StaticStructureFactorEstimator(const Path &, ActionBase *, 
-                const MTRand &, double, int _frequency=1, std::string _label="ssf");
+                const MTRand &, double, int _frequency=1, std::string _label="ssfq");
         ~StaticStructureFactorEstimator();
     
         static const std::string name;
