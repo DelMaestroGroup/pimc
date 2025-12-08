@@ -412,7 +412,9 @@ bool PathIntegralMonteCarlo::equilStepRelaxC0() {
     /* Print a message when starting the relaxation */
     if (!relaxC0Message) {
         relaxC0Message = true;
-        std::cout << format("[PIMCID: %s] - Relax Worm Constant.\n") % constants()->id() << std::endl;
+        std::cout << format("[PIMCID: %s] - Relax Worm Constant Cₒ.\n") % constants()->id() << std::endl;
+        std::cout << format("%-4s\t%-10s\t%-10s\t%-5s\t%-8s\n") % "Z/Z'" % "Cₒ before" % "Cₒ after" % "N" % "density";
+        std::cout << format("%-4s\t%-10s\t%-10s\t%-5s\t%-8s\n") % "────" % "──────────" % "──────────" % "─────" % "────────";
     }
 
     for (int n = 0; n < numUpdates; n++) {
@@ -442,7 +444,7 @@ bool PathIntegralMonteCarlo::equilStepRelaxC0() {
                 return true;
             }
             else {
-                std::cout << format("%4.2f\t%8.5f\t") % diagFrac % constants()->C0();
+                std::cout << format("%-4.2f\t%-10.5f\t") % diagFrac % constants()->C0();
 
                 /* Store the values of C0 and the diagonal fraciton */
                 C0Vals.push_back(constants()->C0());
@@ -452,7 +454,7 @@ bool PathIntegralMonteCarlo::equilStepRelaxC0() {
                  * value */
                 constants()->setC0(linearRegressionC0());
 
-                std::cout << format("%8.5f\t%5d\t%8.6f\n") % constants()->C0() 
+                std::cout << format("%-10.5f\t%-5d\t%-8.6f\n") % constants()->C0() 
                     % path.getTrueNumParticles() 
                     % (1.0*path.getTrueNumParticles()/path.boxPtr->volume);
 

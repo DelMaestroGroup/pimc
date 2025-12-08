@@ -267,15 +267,20 @@ void Communicator::updateNames() {
     for (auto const& [key, filePtr] : file_)
     {
 
-        std::string oldName(filePtr->name);
+        /* We don't want to update init or fixed files */
+        if ( (key.find("init") == std::string::npos)  && 
+             (key.find("fixed") == std::string::npos) )  {
 
-        /* Replace with the new data name, we need to do this for both name and
-         * backup name. */
-        filePtr->name.replace(filePtr->name.end()-dataName.length()-4,filePtr->name.end()-4,dataName);
-        filePtr->bakname.replace(filePtr->bakname.end()-dataName.length()-4,filePtr->bakname.end()-4,dataName);
+            std::string oldName(filePtr->name);
 
-        /* Perform the rename */
-        fs::rename(oldName.c_str(), filePtr->name.c_str());
+            /* Replace with the new data name, we need to do this for both name and
+             * backup name. */
+            filePtr->name.replace(filePtr->name.end()-dataName.length()-4,filePtr->name.end()-4,dataName);
+            filePtr->bakname.replace(filePtr->bakname.end()-dataName.length()-4,filePtr->bakname.end()-4,dataName);
+
+            /* Perform the rename */
+            fs::rename(oldName.c_str(), filePtr->name.c_str());
+        }
     }
 }
 /**************************************************************************//**

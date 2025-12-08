@@ -1166,7 +1166,7 @@ class FixedAzizPotential : public PotentialBase  {
 class FixedPositionLJPotential: public PotentialBase  {
 
     public:
-        FixedPositionLJPotential(const Container*);
+        FixedPositionLJPotential(const double, const double, const Container*);
         ~FixedPositionLJPotential();
 
         /* Return the sum of the Lennard-Jones potential between the supplied
@@ -1175,18 +1175,21 @@ class FixedPositionLJPotential: public PotentialBase  {
 
     private:
         const Container *boxPtr;
-        double Lz;
-        double Lx;
-        double Ly;
-        double Wallcz;
-        double Wallcy; 
-        double Wallcx;
-        double invWallWidth; 
+        // double Lz;
+        // double Lx;
+        // double Ly;
+        // double Wallcz;
+        // double Wallcy; 
+        // double Wallcx;
+        // double invWallWidth; 
 
-        DynamicArray <std::array<double,4>,1> fixedParticles; // The location of the fixed particles
-        DynamicArray <std::array<double,2>,1> atomArray;      // The interaction parameters for the fixed particles 
-        int numFixedParticles;                                // The total number of fixed particles
-        int typesofatoms;                                     // The various types of atom species
+        DynamicArray <dVec,1> fixedAtoms;     // The location of the fixed particles
+        DynamicArray <int,1> atomType;        // The atom types 
+        DynamicArray <double,1> sigma;        // The Lennard-Jones σ in Å
+        DynamicArray <double,1> epsilon;      // The Lennard-Jones ϵ in K
+                                                              
+        int numFixedAtoms;               // The total number of fixed particles
+        int numAtomTypes;                // The number of different atom types
 };      
 #endif
 
