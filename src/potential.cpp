@@ -172,17 +172,15 @@ DynamicArray<dVec,1> PotentialBase::initialConfig(const Container *boxPtr, MTRan
 /**************************************************************************//**
  * Ouptut the potential.
  *
- * For use during comparison and debugging, we output the potential out to
- * a supplied separation.
+ * For use during comparison and debugging, we output the potential for
+ * positions specified by the user in testPositions.
  *
- * @param maxSep the maximum separation
 ******************************************************************************/
-void PotentialBase::output(const double maxSep) {
-    dVec sep{};
-    for (double d = 0; d < maxSep; d+= (maxSep/1.0E6)) {
-        sep[0] = d;
-        communicate()->file("debug")->stream() 
-            << format("%16.12E\t%16.12E\n") % d % V(sep);
+void PotentialBase::output() {
+    for (auto& pos : testPositions) {
+        for (int i = 0; i < NDIM; ++i) 
+            communicate()->file("debug")->stream() << format("%16.12E\t") % pos[i];
+        communicate()->file("debug")->stream() << format("%16.12E\n") % V(pos);
     }
 }
 
@@ -811,21 +809,26 @@ FixedPositionLJPotential::FixedPositionLJPotential (const double _sigma, const d
         epsilon(n) = sqrt(epsilon(n) * _epsilon); // Berthalot
     }
 
-    // /* print out the potential to disk */
+    /* print out the potential to disk */
     // int numPoints = 200; 
+    // testPositions.resize(numPoints*numPoints);
+        
     // double dx = _boxPtr->side[0]/numPoints; 
     // double dy = _boxPtr->side[1]/numPoints; 
     // dVec pos;
 
-    // pos[2] = 0.0; //-0.0*_boxPtr->side[2] + 2.635; 
+    // pos[2] = -0.5;
+
+    // int n = 0;
     // for (int i = 0; i < numPoints; i++) { 
     //      pos[0] = -0.5*_boxPtr->side[0] + i*dx; 
     //      for (int j = 0; j < numPoints; j++) { 
     //          pos[1] = -0.5*_boxPtr->side[1] + j*dy; 
-    //          communicate()->file("debug")->stream() << format("%24.16e %24.16e %24.16e\n") % pos[0] % pos[1] % V(pos); 
+    //          testPositions(n) = pos;
+    //          ++n;
     //      } 
-    //  } 
-
+    // } 
+    // output();
     // exit(-1);
 }
 

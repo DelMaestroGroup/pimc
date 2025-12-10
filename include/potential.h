@@ -55,8 +55,8 @@ class PotentialBase {
         /** Default Initial configuration of particles*/
         virtual DynamicArray<dVec,1> initialConfig(const Container*, MTRand &, const int); 
 
-        /** A debug method that output's the potential to a supplied separation */
-        void output(const double);
+        /** A debug method that output's the potential based on user-supplied testPositions.  */
+        void output();
 
         double tailV;       ///< Tail correction factor.
 
@@ -65,6 +65,7 @@ class PotentialBase {
 
     protected:
         double deltaSeparation(double sep1,double sep2) const;
+        DynamicArray<dVec,1> testPositions;     // An array that can be used for debugging a potential.
 };
 
 // ========================================================================  

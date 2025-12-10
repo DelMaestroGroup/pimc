@@ -327,7 +327,19 @@ bool PathIntegralMonteCarlo::equilStepRelaxmu() {
 
             /* Compute the peak loation and average number of particles */
             int peakN = static_cast<int>(std::distance(PN.begin(), std::max_element(PN.begin(), PN.end())));
-            int aveN = round(weighted_average(PN));
+            double aveNd = weighted_average(PN);
+            int aveN = round(aveNd);
+
+            /* Compute the standard deviation √⟨ΔN²⟩ */  
+            double stdN = 0.0;
+            double totPN = 0.0;
+            for (auto [cn,cP] : enumerate(PN)) {
+                stdN += cn*cn*cP;
+                totPN += cP;
+            }
+            stdN /= totPN;
+            stdN = sqrt(stdN - aveNd*aveNd);
+
 
             /* If we have shifted the peak to the desired value, exit */
             if (peakN == N0) {
@@ -381,12 +393,16 @@ bool PathIntegralMonteCarlo::equilStepRelaxmu() {
                 }
 
                 /* Some optional debugging messages */
-                /* std::cout << format("Shifting %5s:%10.2f%10.2f%10d%10d%10d") % method % */ 
-                /*     constants()->mu() % mu % PN(N0-1) % PN(N0) % PN(N0+1); */
+                std::cout << format("μ  = %-10.2f\n") % constants()->mu();
+                std::cout << format("max P(N), ⟨N⟩, √⟨ΔN²⟩ = %4d,%4d,%4d\n") % peakN % aveN % std::round(stdN);
+                std::cout << format("μ' = %-10.2f\n") % mu;
+
+                // std::cout << format("Shifting %5s:%10.2f%10.2f%10d%10d%10d") % method % 
+                //     constants()->mu() % mu % PN(N0-1) % PN(N0) % PN(N0+1); 
 
                 constants()->setmu(mu);
 
-                /* std::cout << format("%12d%12d%12d\n") % peakN % aveN % path.getTrueNumParticles(); */
+                // std::cout << format("%12d%12d%12d\n") % peakN % aveN % path.getTrueNumParticles();
 
                 numNAttempted = 0;
                 PN.fill(0);
@@ -413,8 +429,8 @@ bool PathIntegralMonteCarlo::equilStepRelaxC0() {
     if (!relaxC0Message) {
         relaxC0Message = true;
         std::cout << format("[PIMCID: %s] - Relax Worm Constant Cₒ.\n") % constants()->id() << std::endl;
-        std::cout << format("%-4s\t%-10s\t%-10s\t%-5s\t%-8s\n") % "Z/Z'" % "Cₒ before" % "Cₒ after" % "N" % "density";
-        std::cout << format("%-4s\t%-10s\t%-10s\t%-5s\t%-8s\n") % "────" % "──────────" % "──────────" % "─────" % "────────";
+        std::cout << format("%-8s\t%-10s\t%-10s\t%-5s\t%-8s\n") % "Z/(Z+Z')" % "Cₒ before" % "Cₒ after" % "N" % "density";
+        std::cout << format("%-8s\t%-10s\t%-10s\t%-5s\t%-8s\n") % "────────" % "──────────" % "──────────" % "─────" % "────────";
     }
 
     for (int n = 0; n < numUpdates; n++) {
@@ -444,7 +460,7 @@ bool PathIntegralMonteCarlo::equilStepRelaxC0() {
                 return true;
             }
             else {
-                std::cout << format("%-4.2f\t%-10.5f\t") % diagFrac % constants()->C0();
+                std::cout << format("%-8.2f\t%-10.5f\t") % diagFrac % constants()->C0();
 
                 /* Store the values of C0 and the diagonal fraciton */
                 C0Vals.push_back(constants()->C0());
