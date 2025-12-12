@@ -812,12 +812,23 @@ FixedPositionLJPotential::FixedPositionLJPotential (const double _sigma, const d
     /* print out the potential to disk */
     // int numPoints = 200; 
     // testPositions.resize(numPoints*numPoints);
+    // testPositions.resize(numPoints);
         
     // double dx = _boxPtr->side[0]/numPoints; 
     // double dy = _boxPtr->side[1]/numPoints; 
+    // double dz = _boxPtr->side[2]/numPoints; 
     // dVec pos;
 
-    // pos[2] = -0.5;
+//     pos[0] = -3.01;
+//     pos[1] = -3.5324;
+//     int n = 0;
+//     for (int i = 0; i < numPoints; i++) { 
+//         pos[2] = -0.5*_boxPtr->side[2] + i*dz; 
+//         testPositions(n) = pos;
+//         ++n;
+//     } 
+//     output();
+    // exit(-1);
 
     // int n = 0;
     // for (int i = 0; i < numPoints; i++) { 
@@ -862,8 +873,8 @@ double FixedPositionLJPotential::V(const dVec &r) {
 
     for (int n = 0; n < numFixedAtoms; n++) {
         sep = fixedAtoms(n) - r;
-        x2 = dot(sep,sep); 
         boxPtr->putInBC(sep);
+        x2 = dot(sep,sep); 
 
         if (x2 >= EPS) {
             double ix2 = sigma(atomType(n))*sigma(atomType(n)) / x2;
