@@ -14,8 +14,10 @@
 #include <cstring>
 #include <fstream>
 
+#ifdef ENABLE_HDF5
 #include <hdf5.h>
 #include <vector>
+#endif
 
 // ========================================================================  
 // File Class
@@ -67,7 +69,7 @@ class File
 
 };
 
-
+#ifdef ENABLE_HDF5
 class H5File
 {
     public:
@@ -122,6 +124,7 @@ class H5File
         /* HDF5 type map — specialized in the .cpp */
         template <typename T> static hid_t h5type();
 };
+#endif
 
 // ========================================================================  
 // Communicator Class
@@ -149,13 +152,14 @@ class Communicator
             return &file_.at(type);
         }
 
+#ifdef ENABLE_HDF5
         // HDF5 accessor 
         H5File *h5file(std::string type) {
             if (!h5file_.count(type))
                 initH5File(type);
             return &h5file_.at(type);
         }
-
+#endif
 
         void updateNames();
 
@@ -178,12 +182,14 @@ class Communicator
         double tau;          // A local copy of the actual imaginary time step.
 
         boost::ptr_map<std::string,File> file_; // The file map
-        boost::ptr_map<std::string, H5File> h5file_;
-
 
         /* Initialize a input/output file */
         void initFile(std::string);
+
+#ifdef ENABLE_HDF5
         void initH5File(std::string);
+        boost::ptr_map<std::string, H5File> h5file_;
+#endif
 };
 
 

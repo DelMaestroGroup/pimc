@@ -293,6 +293,7 @@ Communicator* Communicator::getInstance ()
     return &inst;
 }
 
+#ifdef ENABLE_HDF5
 void Communicator::initH5File(std::string type) {
 
     if (type.find("init") != std::string::npos) {
@@ -458,3 +459,4 @@ template void   H5File::readArray<unsigned int>(const std::string&, unsigned int
 template void   H5File::readArray<double>(const std::string&, double*);
 template void   H5File::writeArray<unsigned long>(const std::string&, const unsigned long*, const std::vector<hsize_t>&);
 template void   H5File::readArray<unsigned long>(const std::string&, unsigned long*);
+#endif

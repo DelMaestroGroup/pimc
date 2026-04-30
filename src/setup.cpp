@@ -347,7 +347,9 @@ void Setup::initParameters() {
     params.add<std::string>("wall_clock,W","set wall clock limit in hours",oClass);
     params.add<std::string>("start_with_state,s", "start simulation with a supplied state file.",oClass,"");
     params.add<bool>("no_save_state","Only save a state file at the end of a simulation",oClass);
+#ifdef ENABLE_HDF5
     params.add<bool>("hdf5_state",     "Use HDF5 format for state save/load (default: text)",oClass);
+#endif
     params.add<bool>("estimator_list","Output a list of estimators in xml format.",oClass);
     params.add<bool>("update_list","Output a list of updates in xml format.",oClass);
     params.add<std::string>("label","a label to append to all estimator files.",oClass,"");

@@ -9,7 +9,11 @@
 #include "path.h"
 #include "lookuptable.h"
 #include "move.h"
+
+#ifdef ENABLE_HDF5
 #include <hdf5.h>
+#endif
+
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // PATH INTEGRAL MONTE CARLO CLASS -------------------------------------------
@@ -37,8 +41,10 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     estimatorPtrVec(_estimatorPtrVec),
     estimator(estimatorPtrVec.front())
 {
+#ifdef ENABLE_HDF5
     // Are we saving files in HDF5 format??
     useHDF5State = constants()->useHDF5State();
+#endif
 
     /* Are we starting from a saved state? */
     startWithState = _startWithState;
@@ -146,15 +152,18 @@ PathIntegralMonteCarlo::PathIntegralMonteCarlo (boost::ptr_vector<Path> &_pathPt
     attemptOffDiagProb.back() = 1.0 + EPS;
     
     /* If we are restarting, or loading a state from disk, do so now. */
-
+#if ENABLE_HDF5
     if(useHDF5State){
         if (startWithState || constants()->restart())
             loadStateHDF5();
     }
     else{
+#endif
         if (startWithState || constants()->restart())
             loadState();
+#if ENABLE_HDF5
     }
+#endif
     
 
 
@@ -825,6 +834,7 @@ void PathIntegralMonteCarlo::finalOutput() {
 }
 
 void PathIntegralMonteCarlo::saveState(const int finalSave) {
+#ifdef ENABLE_HDF5
     if (useHDF5State) {
         // std::cout<<"using HDF5 file"<<std::endl;
         /* Only write when explicitly requested (per-bin or final). */
@@ -911,6 +921,7 @@ void PathIntegralMonteCarlo::saveState(const int finalSave) {
         }
     }
     else {
+#endif
         std::stringstream stateStrStrm;
 
         /* We only update the std::string during the simulation */
@@ -985,7 +996,9 @@ void PathIntegralMonteCarlo::saveState(const int finalSave) {
                 communicate()->file(stateFileName.c_str())->rename();
             }
         }
+#ifdef ENABLE_HDF5
     }
+#endif
 }
 /**************************************************************************//**
  *  Load a classical ground state from file.
@@ -1271,6 +1284,7 @@ void PathIntegralMonteCarlo::loadState() {
     }
 }
 
+#ifdef ENABLE_HDF5
 void PathIntegralMonteCarlo::loadStateHDF5() {
 
     std::string fileInitStr = "init";
@@ -1440,6 +1454,7 @@ void PathIntegralMonteCarlo::loadStateHDF5() {
         h5->close();
     }
 }
+#endif
 
 /**************************************************************************//**
  *  Output the worldline configuration to disk using PDB , suitable

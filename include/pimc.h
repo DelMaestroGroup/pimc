@@ -119,8 +119,13 @@ class PathIntegralMonteCarlo {
         bool startWithState;        // Are we starting from a saved state
         bool success;               // Track move success/failure
 
+#ifdef ENABLE_HDF5
         //Are we using HDF5 format to save and load
         bool useHDF5State;
+
+        /* Load the PIMC state from disk (HDF5 files)*/
+        void loadStateHDF5();
+#endif
     
         boost::ptr_vector<Path> &pathPtrVec; // The std::vector of all paths
         Path &path;                          // A reference to the first path in the path std::vector
@@ -146,9 +151,6 @@ class PathIntegralMonteCarlo {
 
         /* Load the PIMC state from disk */
         void loadState();
-
-        /* Load the PIMC state from disk (HDF5 files)*/
-        void loadStateHDF5();
 
         /* Load classical or quantum initial states */
         void loadClassicalState(DynamicArray <dVec,2>&, DynamicArray <unsigned int, 2>&, int);

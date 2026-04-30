@@ -147,7 +147,9 @@ class ConstantParameters
         void shiftmu (double frac) { mu_ += frac; }                     ///< Shift the chemical potential
 
         bool saveStateFiles() { return saveStateFiles_;}                              ///< Are we saving states every MC bin?
+#ifdef ENABLE_HDF5
         bool useHDF5State()   const { return useHDF5State_; }
+#endif
 
     protected:
         ConstantParameters();
@@ -207,7 +209,9 @@ class ConstantParameters
         uint32 binSize_;               // The number of measurments per bin.
 
         bool saveStateFiles_;              // Are we saving a state file every MC bin?
+#ifdef ENABLE_HDF5
         bool useHDF5State_; 
+#endif
 
         std::string graphenelut3d_file_prefix_; // GrapheneLUT3D file prefix <prefix>_{V,gradV,grad2V}.npy 
         std::string wavevector_;                // Input for wavevectors 
