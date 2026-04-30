@@ -734,6 +734,61 @@ bool Setup::parseOptions() {
         return 1;
     }
 
+    if (params["external"].as<std::string>() == "gp_he_benzene") {
+	
+	// Check if the file exists
+    	std::ifstream ifs(params["gp_input"].as<std::string>());
+    	if (!ifs) {
+            std::cerr << "ERROR: Cannot open GP hyperparameter file: " << params["gp_input"].as<std::string>() << std::endl;
+            return 1;
+    	}
+
+        /* we read in gaussian process hyperparameters from a .ini file */
+	po::options_description desc("Allowed GP options");
+
+    	desc.add_options()
+            ("kernel.type", po::value<std::string>())
+            ("kernel.meanType", po::value<std::string>())
+            ("kernel.maternNu", po::value<std::vector<double>>()->multitoken())
+            ("kernel.ell", po::value<std::vector<double>>()->multitoken())
+            ("kernel.mean", po::value<double>())
+            ("kernel.sigma2", po::value<double>())
+            ("kernel.numTrainingPoints", po::value<uint32>())
+            ("kernel.trainingFileName", po::value<std::string>())
+            ("data.normOffset", po::value<std::vector<double>>()->multitoken())
+            ("data.normScale", po::value<std::vector<double>>()->multitoken())
+            ("data.standardMean", po::value<double>())
+            ("data.standardStd", po::value<double>());
+            
+	po::store(po::parse_config_file(ifs, desc, true), gp_params);
+    	po::notify(gp_params);
+
+
+
+        // !!AGDNB!! this validation should be reactivated
+	// // Check if Normalisation offset and scale have the correct dimensionsi
+	// if (gp_params["KernelDetails.KernelType"].as<std::string>()=="matern") {
+	//     if ((gp_params["Normalization.Offset"].as<std::vector<double>>().size() != NDIM + 1) || (gp_params["Normalization.Scale"].as<std::vector<double>>().size() != NDIM + 1)) {
+	//         std::cerr << "For multi-fidelity gp normalisation vectors must have size NDIM + 1\n";
+	//         return 1;
+	//     }
+            // std::cout << "inside GP hyperparameters validation" << std::endl;
+	// }	
+	// else if (gp_params["KernelDetails.KernelType"].as<std::string>()!="matern") {  
+	//     if ((gp_params["Normalization.Offset"].as<std::vector<double>>().size() != NDIM) || (gp_params["Normalization.Scale"].as<std::vector<double>>().size() != NDIM)) {
+	//     	std::cerr << "Normalisation vectors must have size NDIM\n";
+	//     	return 1;
+	//     }
+	// }
+
+	// // Check if ell is the correct length
+	// if (gp_params["KernelDetails.ell"].as<std::vector<double>>().size() != NDIM * gp_params["KernelDetails.MaternNu"].as<std::vector<double>>().size()) {
+	//     std::cerr << "Lengthscale vector must be of size NDIM * size(MaternNu)\n";
+	// }
+
+        // std::cout << "inside GP hyperparameters validation" << std::endl;
+    } 
+
     /* If a list of estimators has been supplied, we need to verify */
     for (std::string name : params["estimator"].as<std::vector<std::string>>()){
         if (std::find(estimatorName.begin(), estimatorName.end(), name) == estimatorName.end()) {
