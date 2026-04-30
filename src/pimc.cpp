@@ -1184,12 +1184,12 @@ void PathIntegralMonteCarlo::loadState() {
              * imaginary time */
             auto pLrow = pathPtrVec[pIdx].prevLink.slice<0>(0);
             for (std::size_t j = 0; j < pLrow.extent(0); ++j) {
-                pLrow(j) = { numTimeSlices - 1, static_cast<int>(j) };
+                pLrow[j] = { numTimeSlices - 1, static_cast<int>(j) };
             }
 
             auto nLrow = pathPtrVec[pIdx].nextLink.slice<0>(numTimeSlices - 1);
             for (std::size_t j = 0; j < nLrow.extent(0); ++j) {
-                nLrow(j) = { 0, static_cast<int>(j) };
+                nLrow[j] = { 0, static_cast<int>(j) };
             }
 
             /* Reset the worm.beads array */
@@ -1371,10 +1371,10 @@ void PathIntegralMonteCarlo::loadStateHDF5() {
             }
             auto pLrow = pathPtrVec[pIdx].prevLink.slice<0>(0);
             for (std::size_t j = 0; j < pLrow.extent(0); ++j)
-                pLrow(j) = { numTimeSlices - 1, static_cast<int>(j) };
+                pLrow[j] = { numTimeSlices - 1, static_cast<int>(j) };
             auto nLrow = pathPtrVec[pIdx].nextLink.slice<0>(numTimeSlices - 1);
             for (std::size_t j = 0; j < nLrow.extent(0); ++j)
-                nLrow(j) = { 0, static_cast<int>(j) };
+                nLrow[j] = { 0, static_cast<int>(j) };
 
             pathPtrVec[pIdx].worm.beads.fill(0);
 
