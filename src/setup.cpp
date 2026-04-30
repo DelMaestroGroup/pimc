@@ -396,9 +396,8 @@ void Setup::initParameters() {
     params.add<double>("poisson","Poisson's ratio for graphene",oClass,0.165);
     params.add<double>("carbon_carbon_dist,A","Carbon-Carbon distance for graphene",oClass,1.42);
     params.add<std::string>("graphenelut3d_file_prefix","GrapheneLUT3D file prefix <prefix>serialized.{dat|txt}",oClass,"");
-    params.add<std::string>("gp_training_file","GPPotential binary training vectors file",oClass,"testdata.dat");
-    params.add<std::string>("gp_coefficient_file","GPPotential binary coefficient vector file",oClass,"proddata.dat");
-
+    params.add<std::string>("gp_input","Gaussian Process hyperparamter input file",oClass,"");
+    
     /* Initialize the physical options */
     oClass = "physical";
     params.add<bool>("canonical","perform a canonical simulation",oClass);
@@ -450,13 +449,12 @@ void Setup::initParameters() {
     std::vector<std::string> movesToPerform;
     if (PIGS) {
         params.set<bool>("canonical",true);
-        estimatorsToMeasure = {EnergyEstimator::name, TimeEstimator::name};
+        estimatorsToMeasure = {EnergyEstimator::name};
         movesToPerform = {CenterOfMassMove::name, StagingMove::name, EndStagingMove::name,
             DisplaceMove::name};         
     }
     else {
-        estimatorsToMeasure = {EnergyEstimator::name, NumberParticlesEstimator::name,
-            TimeEstimator::name, DiagonalFractionEstimator::name};
+        estimatorsToMeasure = {EnergyEstimator::name, NumberParticlesEstimator::name, DiagonalFractionEstimator::name};
 
         movesToPerform = {CenterOfMassMove::name, BisectionMove::name, OpenMove::name,
             CloseMove::name, InsertMove::name, RemoveMove::name, AdvanceHeadMove::name, 
