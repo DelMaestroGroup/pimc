@@ -343,7 +343,7 @@ target_link_libraries (${exe} ${Boost_LIBRARIES} )
 
 set(POTENTIAL_BENCHMARK_SRC ${PIMC_SRC})
 list(REMOVE_ITEM POTENTIAL_BENCHMARK_SRC "${CMAKE_CURRENT_SOURCE_DIR}/src/pdrive.cpp")
-add_executable(potential_benchmark.e
+add_executable(potential_benchmark.e EXCLUDE_FROM_ALL
     ${POTENTIAL_BENCHMARK_SRC}
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/benchmarks/potential_benchmark.cpp)
 if (${GPU_BACKEND} STREQUAL "cuda")
