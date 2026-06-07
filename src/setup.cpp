@@ -16,6 +16,7 @@
 #include "action.h"
 #include "move.h"
 #include "estimator.h"
+#include "xyz_io.h"   
 
 /**************************************************************************//**
  * Create a comma separated list from a vector of std::strings
@@ -414,6 +415,12 @@ void Setup::initParameters() {
     params.add<double>("end_factor","end bead potential action multiplicatave factor",oClass,1.0);
     params.add<double>("chemical_potential,u","chemical potential [kelvin]",oClass,0.0);
     params.add<int>("number_paths","number of paths",oClass,1);
+    
+    // read .xyz file for particle positions
+    params.add<std::string>("xyz", 
+        "set particle positions w/ .xyz file",
+        oClass,
+        "");
 
     /* Initialize the algorithm options */
     oClass = "algorithm";
@@ -1123,6 +1130,17 @@ void Setup::setConstants() {
     if (params["action"].as<std::string>() == "pair_product" || 
             !params("potential_cutoff") )
         params.set<double>("potential_cutoff",params["side"].as<dVec>()[NDIM-1]);
+
+
+    /* If the user has supplied an XYZ file via --xyz, the atom count from
+     * the file overrides the value of --number_particles. We do this here,
+     * before initConstants() reads from params, so that the entire
+     * downstream code sees a single, consistent value of N. */
+    if (!params["xyz"].as<std::string>().empty()) 
+    {
+        const int nFromFile = peekXYZAtomCount(params["xyz"].as<std::string>());
+        params.set<int>("number_particles", nFromFile);
+    }
 
     /* Set the required constants */
     constants()->initConstants(params());
