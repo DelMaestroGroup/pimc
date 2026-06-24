@@ -762,6 +762,33 @@ class PairCorrelationEstimator: public EstimatorBase {
         double dR;                      // The discretization
 };
 
+// ========================================================================
+// Final State Effects Estimator Class
+// ========================================================================
+/**
+ * Compute final state effects in the additive approach.  Leading corrections
+ * are due to <\nabla^2 V> and <F^2>, where F = -\nabla V is the force. 
+ *
+ * @see G.J. Sears, Phys. Rev. B 30, 44 (1984).
+ *
+ */
+class FinalStateEffectsEstimator : public EstimatorBase {
+
+    public:
+        FinalStateEffectsEstimator(const Path &, ActionBase *,
+                const MTRand &, double, int _frequency=1,
+                std::string _label="fse");
+        ~FinalStateEffectsEstimator();
+
+        static const std::string name;
+        std::string getName() const { return name; }
+
+    private:
+        void accumulate();
+};
+
+
+
 // ========================================================================  
 // Static Structure Factor Estimator Class
 // ========================================================================  
