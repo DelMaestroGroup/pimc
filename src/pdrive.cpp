@@ -21,6 +21,8 @@
 
 #include "gpkernel.h"
 
+#include "xyz_io.h"
+
 /**
  * Main driver.
  * Read in all program options from the user using boost::program_options and setup the simulation
@@ -100,8 +102,20 @@ int main (int argc, char *argv[]) {
 
     /* Get the initial conditions associated with the external potential */
     /* Must use the copy constructor as we return a copy */
-    DynamicArray<dVec,1> initialPos = 
-        externalPotentialPtr->initialConfig(boxPtr,random,constants()->initialNumParticles());
+    //DynamicArray<dVec,1> initialPos = 
+    //    externalPotentialPtr->initialConfig(boxPtr,random,constants()->initialNumParticles());
+
+    DynamicArray<dVec,1> initialPos;
+    const std::string xyzFile = setup.params["xyz"].as<std::string>();
+    if (!xyzFile.empty()) 
+    {
+        initialPos = readXYZFile(xyzFile, boxPtr);
+    } 
+    else 
+    {
+        initialPos = externalPotentialPtr->initialConfig(boxPtr, random,
+                         constants()->initialNumParticles());
+    }
 
     /* Perform a classical canonical pre-equilibration to obtain a suitable
      * initial state if N > 0*/

@@ -779,6 +779,67 @@ class FinalStateEffectsEstimator : public EstimatorBase {
                 const MTRand &, double, int _frequency=1,
                 std::string _label="fse");
         ~FinalStateEffectsEstimator();
+  
+    private:
+        void accumulate();              // Accumulate the 8 quantities
+
+        // Number of nearest neighbors (12 for hcp, fcc).
+        static constexpr int kNN = 12;
+
+        // Spherical harmonics for one direction r-hat.
+        // Y_lm[m+l] holds Y_l^m, complex-valued.
+        // scipy phase convention is used, so Y_l^{-m} = (-1)^m Y_l^{m*}.
+        void Ylm_l4(const dVec &rhat, std::complex<double> Ylm[9]);
+        void Ylm_l6(const dVec &rhat, std::complex<double> Ylm[13]);
+
+        // For one input particle index p_self at the given slice, find
+        // the kNN nearest neighbors.
+        void findKNearestNeighbors(
+                int p_self,
+                const std::vector<dVec> &positions,
+                std::vector<int> &nbrs,
+                std::vector<dVec> &rhat);
+
+        // Given a configuration `positions` of N atoms in the
+        // simulation, compute the per-supercell averages of q_l and
+        // qbar_l for l = 4, 6. 
+        void computeQValues(
+                const std::vector<dVec> &positions,
+                double &q4_avg, double &q6_avg,
+                double &qbar4_avg, double &qbar6_avg);
+
+        // Centroid of the ring polymer starting at slice 0.
+        dVec computeCentroid(int p);
+};
+  
+  
+// ============================================================================
+//  Bond-Orientational-Order Estimator 
+// ----------------------------------------------------------------------------
+/**
+ * Computes Steinhardt q_l (l = 4, 6) and the Lechner-Dellago averaged
+ * qbar_l, both on the slice-by-slice configuration and on the imaginary-
+ * time-averaged centroid positions.  Eight scalars are written per bin:
+ *
+ *    q4_slice  q6_slice  qbar4_slice  qbar6_slice
+ *     q4_cent   q6_cent   qbar4_cent   qbar6_cent
+ *
+ * This is a *diagonal* estimator (only samples when the worm is closed),
+ *  so EstimatorBase::baseSample() automatically gates it.
+ *
+ *
+ * @see P.J. Steinhardt, D.R. Nelson, M. Ronchetti, Phys. Rev. B 28, 784
+ *      (1983).  Original q_l definition.
+ * @see W. Lechner, C. Dellago, J. Chem. Phys. 129, 114707 (2008).
+ *      Averaged qbar_l variant.
+ */
+class BondOrientationalOrderEstimator : public EstimatorBase {
+
+    public:
+        BondOrientationalOrderEstimator(const Path &, ActionBase *,
+                const MTRand &, double, int _frequency=1,
+                std::string _label="bondord");
+        ~BondOrientationalOrderEstimator();
 
         static const std::string name;
         std::string getName() const { return name; }
@@ -786,7 +847,6 @@ class FinalStateEffectsEstimator : public EstimatorBase {
     private:
         void accumulate();
 };
-
 
 
 // ========================================================================  
