@@ -60,6 +60,7 @@ REGISTER_ESTIMATOR("pair correlation function",PairCorrelationEstimator);
 REGISTER_ESTIMATOR("static structure factor",StaticStructureFactorEstimator);
 REGISTER_ESTIMATOR("intermediate scattering function",IntermediateScatteringFunctionEstimator);
 REGISTER_ESTIMATOR("radial density",RadialDensityEstimator);
+REGISTER_ESTIMATOR("final state effects", FinalStateEffectsEstimator);
 REGISTER_ESTIMATOR("bond orientational order", BondOrientationalOrderEstimator);
 #if NDIM > 1
 REGISTER_ESTIMATOR("radial area rhos/rho",RadialAreaSuperfluidDensityEstimator);
@@ -3247,6 +3248,88 @@ void PairCorrelationEstimator::accumulate() {
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
+// FINAL STATE EFFECTS ESTIMATOR CLASS ---------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+******************************************************************************/
+FinalStateEffectsEstimator::FinalStateEffectsEstimator(
+        const Path &_path, ActionBase *_actionPtr,
+        const MTRand &_random, double _maxR,
+        int _frequency, std::string _label) :
+    EstimatorBase(_path, _actionPtr, _random, _maxR,
+                  _frequency, _label)
+{
+    initialize(2);
+
+    header = str(format("#%15s%16s") % "F2" % "lapV");
+}
+
+FinalStateEffectsEstimator::~FinalStateEffectsEstimator() { }
+
+
+/*************************************************************************//**
+ *  Accumulate one measurement of <F^2> and <nabla^2 V>.
+ *
+ *  For each imaginary-time slice s and each particle i, form the
+ *  net force vector and the 3D Laplacian as explicit pair sums
+ *
+ *      F_i = sum_{j != i} gradV(r_ij)
+ *      L_i = sum_{j != i} [ d^2V/dr^2(r_ij) + 2/r_ij dV/dr(r_ij) ]
+ *
+ *  where gradV returns the gradient vector v'(r) * rhat and
+ *  grad2V returns the radial second derivative v''(r).  The
+ *  geometric piece 2 v'(r)/r is reconstructed using the identity
+ *
+ *      gradV . rij / r^2  =  v'(r) rhat . rij / r^2  =  v'(r)/r.
+ *
+ *  Complexity per measurement: O(N^2 M). 
+******************************************************************************/
+void FinalStateEffectsEstimator::accumulate()
+{
+    const int M = path.numTimeSlices;
+    const int N = path.getTrueNumParticles();
+    PotentialBase *vptr = actionPtr->interactionPtr;
+
+    double F2_sum  = 0.0;
+    double lap_sum = 0.0;
+
+    for (int s = 0; s < M; ++s) {
+        for (int i = 0; i < N; ++i) {
+            beadLocator bi = {s, i};
+            dVec   Fi{};       // net force on particle i (vector)
+            double Li = 0.0;   // 3D Laplacian at particle i
+
+            for (int j = 0; j < N; ++j) {
+                if (j == i) continue;
+                beadLocator bj = {s, j};
+                dVec rij = path.getSeparation(bi, bj);
+                dVec gV  = vptr->gradV(rij);    // = v'(r) * rhat
+
+                /* Full Laplacian = d^2V/dr^2 + 2 v'(r)/r.  The
+                 * radial second derivative is what grad2V() returns;
+                 * the geometric piece 2 v'(r)/r is recovered from
+                 * (gV . rij) / r^2 = v'(r) / r. */
+                double r2 = dot(rij, rij);
+                double lap_ij = vptr->grad2V(rij)
+                              + 2.0 * dot(gV, rij) / r2;
+
+                Fi += gV;
+                Li += lap_ij;
+            }
+
+            F2_sum  += dot(Fi, Fi);
+            lap_sum += Li;
+        }
+    }
+
+    const double denom = double(N) * double(M);
+    estimator(0) += F2_sum  / denom;
+    estimator(1) += lap_sum / denom;
+}
+
 // BOND-ORIENTATIONAL-ORDER ESTIMATOR CLASS ----------------------------------
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
