@@ -16,6 +16,7 @@
 #include "action.h"
 #include "move.h"
 #include "estimator.h"
+#include "xyz_io.h"   
 
 /**************************************************************************//**
  * Create a comma separated list from a vector of std::strings
@@ -347,6 +348,9 @@ void Setup::initParameters() {
     params.add<std::string>("wall_clock,W","set wall clock limit in hours",oClass);
     params.add<std::string>("start_with_state,s", "start simulation with a supplied state file.",oClass,"");
     params.add<bool>("no_save_state","Only save a state file at the end of a simulation",oClass);
+#ifdef ENABLE_HDF5
+    params.add<bool>("hdf5_state",     "Use HDF5 format for state save/load (default: text)",oClass);
+#endif
     params.add<bool>("estimator_list","Output a list of estimators in xml format.",oClass);
     params.add<bool>("update_list","Output a list of updates in xml format.",oClass);
     params.add<std::string>("label","a label to append to all estimator files.",oClass,"");
@@ -396,7 +400,7 @@ void Setup::initParameters() {
     params.add<double>("carbon_carbon_dist,A","Carbon-Carbon distance for graphene",oClass,1.42);
     params.add<std::string>("graphenelut3d_file_prefix","GrapheneLUT3D file prefix <prefix>serialized.{dat|txt}",oClass,"");
     params.add<std::string>("gp_input","Gaussian Process hyperparamter input file",oClass,"");
-
+    
     /* Initialize the physical options */
     oClass = "physical";
     params.add<bool>("canonical","perform a canonical simulation",oClass);
@@ -411,6 +415,12 @@ void Setup::initParameters() {
     params.add<double>("end_factor","end bead potential action multiplicatave factor",oClass,1.0);
     params.add<double>("chemical_potential,u","chemical potential [kelvin]",oClass,0.0);
     params.add<int>("number_paths","number of paths",oClass,1);
+    
+    // read .xyz file for particle positions
+    params.add<std::string>("xyz", 
+        "set particle positions w/ .xyz file",
+        oClass,
+        "");
 
     /* Initialize the algorithm options */
     oClass = "algorithm";
@@ -449,7 +459,8 @@ void Setup::initParameters() {
     if (PIGS) {
         params.set<bool>("canonical",true);
         estimatorsToMeasure = {EnergyEstimator::name};
-        movesToPerform = {CenterOfMassMove::name, StagingMove::name, EndStagingMove::name, DisplaceMove::name};         
+        movesToPerform = {CenterOfMassMove::name, StagingMove::name, EndStagingMove::name,
+            DisplaceMove::name};         
     }
     else {
         estimatorsToMeasure = {EnergyEstimator::name, NumberParticlesEstimator::name, DiagonalFractionEstimator::name};
@@ -730,7 +741,6 @@ bool Setup::parseOptions() {
         return 1;
     }
 
-    /* For a GP potential validate the hyperparameter input */
     if (params["external"].as<std::string>() == "gp_he_benzene") {
 	
 	// Check if the file exists
@@ -783,7 +793,6 @@ bool Setup::parseOptions() {
 
         // std::cout << "inside GP hyperparameters validation" << std::endl;
     } 
-
 
     /* If a list of estimators has been supplied, we need to verify */
     for (std::string name : params["estimator"].as<std::vector<std::string>>()){
@@ -1119,6 +1128,17 @@ void Setup::setConstants() {
     if (params["action"].as<std::string>() == "pair_product" || 
             !params("potential_cutoff") )
         params.set<double>("potential_cutoff",params["side"].as<dVec>()[NDIM-1]);
+
+
+    /* If the user has supplied an XYZ file via --xyz, the atom count from
+     * the file overrides the value of --number_particles. We do this here,
+     * before initConstants() reads from params, so that the entire
+     * downstream code sees a single, consistent value of N. */
+    if (!params["xyz"].as<std::string>().empty()) 
+    {
+        const int nFromFile = peekXYZAtomCount(params["xyz"].as<std::string>());
+        params.set<int>("number_particles", nFromFile);
+    }
 
     /* Set the required constants */
     constants()->initConstants(params());

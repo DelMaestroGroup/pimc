@@ -11,6 +11,9 @@
 #include "potential.h"
 #include "communicator.h"
 #include "factory.h"
+#include <complex>
+#include <queue>
+#include <array>
 #include <vector>
 #ifdef USE_HIP
     #include "estimator_gpu.hip.h"
@@ -57,6 +60,8 @@ REGISTER_ESTIMATOR("pair correlation function",PairCorrelationEstimator);
 REGISTER_ESTIMATOR("static structure factor",StaticStructureFactorEstimator);
 REGISTER_ESTIMATOR("intermediate scattering function",IntermediateScatteringFunctionEstimator);
 REGISTER_ESTIMATOR("radial density",RadialDensityEstimator);
+REGISTER_ESTIMATOR("final state effects", FinalStateEffectsEstimator);
+REGISTER_ESTIMATOR("bond orientational order", BondOrientationalOrderEstimator);
 #if NDIM > 1
 REGISTER_ESTIMATOR("radial area rhos/rho",RadialAreaSuperfluidDensityEstimator);
 REGISTER_ESTIMATOR("planar area rhos/rho",PlaneAreaSuperfluidDensityEstimator);
@@ -3239,6 +3244,405 @@ void PairCorrelationEstimator::accumulate() {
     else
         estimator += 0.0;
 }
+
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// FINAL STATE EFFECTS ESTIMATOR CLASS ---------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*************************************************************************//**
+ *  Constructor.
+******************************************************************************/
+FinalStateEffectsEstimator::FinalStateEffectsEstimator(
+        const Path &_path, ActionBase *_actionPtr,
+        const MTRand &_random, double _maxR,
+        int _frequency, std::string _label) :
+    EstimatorBase(_path, _actionPtr, _random, _maxR,
+                  _frequency, _label)
+{
+    initialize(2);
+
+    header = str(format("#%15s%16s") % "F2" % "lapV");
+}
+
+FinalStateEffectsEstimator::~FinalStateEffectsEstimator() { }
+
+
+/*************************************************************************//**
+ *  Accumulate one measurement of <F^2> and <nabla^2 V>.
+ *
+ *  For each imaginary-time slice s and each particle i, form the
+ *  net force vector and the 3D Laplacian as explicit pair sums
+ *
+ *      F_i = sum_{j != i} gradV(r_ij)
+ *      L_i = sum_{j != i} [ d^2V/dr^2(r_ij) + 2/r_ij dV/dr(r_ij) ]
+ *
+ *  where gradV returns the gradient vector v'(r) * rhat and
+ *  grad2V returns the radial second derivative v''(r).  The
+ *  geometric piece 2 v'(r)/r is reconstructed using the identity
+ *
+ *      gradV . rij / r^2  =  v'(r) rhat . rij / r^2  =  v'(r)/r.
+ *
+ *  Complexity per measurement: O(N^2 M). 
+******************************************************************************/
+void FinalStateEffectsEstimator::accumulate()
+{
+    const int M = path.numTimeSlices;
+    const int N = path.getTrueNumParticles();
+    PotentialBase *vptr = actionPtr->interactionPtr;
+
+    double F2_sum  = 0.0;
+    double lap_sum = 0.0;
+
+    for (int s = 0; s < M; ++s) {
+        for (int i = 0; i < N; ++i) {
+            beadLocator bi = {s, i};
+            dVec   Fi{};       // net force on particle i (vector)
+            double Li = 0.0;   // 3D Laplacian at particle i
+
+            for (int j = 0; j < N; ++j) {
+                if (j == i) continue;
+                beadLocator bj = {s, j};
+                dVec rij = path.getSeparation(bi, bj);
+                dVec gV  = vptr->gradV(rij);    // = v'(r) * rhat
+
+                /* Full Laplacian = d^2V/dr^2 + 2 v'(r)/r.  The
+                 * radial second derivative is what grad2V() returns;
+                 * the geometric piece 2 v'(r)/r is recovered from
+                 * (gV . rij) / r^2 = v'(r) / r. */
+                double r2 = dot(rij, rij);
+                double lap_ij = vptr->grad2V(rij)
+                              + 2.0 * dot(gV, rij) / r2;
+
+                Fi += gV;
+                Li += lap_ij;
+            }
+
+            F2_sum  += dot(Fi, Fi);
+            lap_sum += Li;
+        }
+    }
+
+    const double denom = double(N) * double(M);
+    estimator(0) += F2_sum  / denom;
+    estimator(1) += lap_sum / denom;
+}
+
+// BOND-ORIENTATIONAL-ORDER ESTIMATOR CLASS ----------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/*****************************************************************************
+ *  Constructor.
+******************************************************************************/
+BondOrientationalOrderEstimator::BondOrientationalOrderEstimator(
+        const Path &_path, ActionBase *_actionPtr,
+        const MTRand &_random, double _maxR,
+        int _frequency, std::string _label) :
+    EstimatorBase(_path,_actionPtr,_random,_maxR,_frequency,_label)
+{
+    initialize(8);
+
+    header = str(format("#%15s%16s%16s%16s%16s%16s%16s%16s")
+            % "q4_slice"  % "q6_slice"
+            % "qbar4_slice" % "qbar6_slice"
+            % "q4_cent"   % "q6_cent"
+            % "qbar4_cent"  % "qbar6_cent");
+}
+
+BondOrientationalOrderEstimator::~BondOrientationalOrderEstimator() { }
+
+
+/*************************************************************************//**
+ * Spherical harmonics helpers. 
+ *
+ *  Phase convention matches Arfken and Weber, and also scipy.
+******************************************************************************/
+void BondOrientationalOrderEstimator::Ylm_l4(
+        const dVec &rhat, std::complex<double> Ylm[9])
+{
+    const double x = rhat[0], y = rhat[1], z = rhat[2];
+    const double z2 = z*z, z3 = z2*z, z4 = z2*z2;
+    const std::complex<double> w(x, y);            // x + i y
+    const std::complex<double> w2 = w*w, w3 = w2*w, w4 = w2*w2;
+    const double invSqrtPi = 1.0 / std::sqrt(M_PI);
+
+    /* m = 0 */
+    Ylm[4] = (3.0/16.0) * invSqrtPi
+                    * (35.0*z4 - 30.0*z2 + 3.0);
+    /* m = +1 */
+    Ylm[5] = -(3.0/8.0) * std::sqrt(5.0/M_PI)
+                    * (7.0*z3 - 3.0*z) * w;
+    /* m = +2 */
+    Ylm[6] = (3.0/8.0) * std::sqrt(5.0/(2.0*M_PI))
+                    * (7.0*z2 - 1.0) * w2;
+    /* m = +3 */
+    Ylm[7] = -(3.0/8.0) * std::sqrt(35.0/M_PI) * z * w3;
+    /* m = +4 */
+    Ylm[8] = (3.0/16.0) * std::sqrt(35.0/(2.0*M_PI)) * w4;
+
+    /* m < 0 via Y_l^{-m} = (-1)^m conj(Y_l^{+m}) */
+    Ylm[3] = -std::conj(Ylm[5]);   // m = -1
+    Ylm[2] =  std::conj(Ylm[6]);   // m = -2
+    Ylm[1] = -std::conj(Ylm[7]);   // m = -3
+    Ylm[0] =  std::conj(Ylm[8]);   // m = -4
+}
+
+void BondOrientationalOrderEstimator::Ylm_l6(
+        const dVec &rhat, std::complex<double> Ylm[13])
+{
+    const double x = rhat[0], y = rhat[1], z = rhat[2];
+    const double z2 = z*z, z3 = z2*z, z4 = z2*z2;
+    const double z5 = z4*z, z6 = z3*z3;
+    const std::complex<double> w(x, y);
+    const std::complex<double> w2 = w*w, w3 = w2*w;
+    const std::complex<double> w4 = w2*w2, w5 = w4*w, w6 = w3*w3;
+
+    /* m = 0 */
+    Ylm[6]  = (1.0/32.0) * std::sqrt(13.0/M_PI)
+                    * (231.0*z6 - 315.0*z4 + 105.0*z2 - 5.0);
+    /* m = +1 */
+    Ylm[7]  = -(1.0/16.0) * std::sqrt(273.0/(2.0*M_PI))
+                    * (33.0*z5 - 30.0*z3 + 5.0*z) * w;
+    /* m = +2 */
+    Ylm[8]  = (1.0/64.0) * std::sqrt(1365.0/M_PI)
+                    * (33.0*z4 - 18.0*z2 + 1.0) * w2;
+    /* m = +3 */
+    Ylm[9]  = -(1.0/32.0) * std::sqrt(1365.0/M_PI)
+                    * z * (11.0*z2 - 3.0) * w3;
+    /* m = +4 */
+    Ylm[10] = (21.0/32.0) * std::sqrt(13.0/(14.0*M_PI))
+                    * (11.0*z2 - 1.0) * w4;
+    /* m = +5 */
+    Ylm[11] = -(3.0/32.0) * std::sqrt(1001.0/M_PI) * z * w5;
+    /* m = +6 */
+    Ylm[12] = (1.0/64.0) * std::sqrt(3003.0/M_PI) * w6;
+
+    /* m < 0 via Y_l^{-m} = (-1)^m conj(Y_l^{+m}); for l = 6, m = 1..6
+     * the signs alternate -, +, -, +, -, +. */
+    Ylm[5] = -std::conj(Ylm[7]);    // m = -1
+    Ylm[4] =  std::conj(Ylm[8]);    // m = -2
+    Ylm[3] = -std::conj(Ylm[9]);    // m = -3
+    Ylm[2] =  std::conj(Ylm[10]);   // m = -4
+    Ylm[1] = -std::conj(Ylm[11]);   // m = -5
+    Ylm[0] =  std::conj(Ylm[12]);   // m = -6
+}
+
+
+/*************************************************************************//**
+ *  Find the kNN nearest neighbors of `positions[p_self]` and write their 
+ *  unit-vector directions to `rhat`.
+******************************************************************************/
+void BondOrientationalOrderEstimator::findKNearestNeighbors(
+        int p_self,
+        const std::vector<dVec> &positions,
+        std::vector<int> &nbrs,
+        std::vector<dVec> &rhat)
+{
+    const int N = positions.size();
+    const dVec &r_i = positions[p_self];
+
+    // Max-heap of (d2, j) keeping the kNN smallest d2 values.
+    std::priority_queue<std::pair<double,int>> heap;
+
+    for (int j = 0; j < N; ++j) {
+        if (j == p_self) continue;
+        // Minimum-image displacement.  The expression
+        //     s -= L * floor(s/L + 0.5)
+        // subtracts the integer multiple of L closest to s, which is the
+        // branchless equivalent of "if s > L/2 subtract L; if s < -L/2 add L".
+        dVec dr;
+        for (int d = 0; d < NDIM; ++d) {
+            double s = positions[j][d] - r_i[d];
+            double L = path.boxPtr->side[d];
+            s -= L * std::floor(s / L + 0.5);
+            dr[d] = s;
+        }
+        double d2 = dot(dr, dr);
+        if ((int)heap.size() < kNN) {
+            heap.push({d2, j});
+        } else if (d2 < heap.top().first) {
+            heap.pop();
+            heap.push({d2, j});
+        }
+    }
+
+    // Drain heap and store the unit-vector directions.
+    nbrs.resize(kNN);
+    rhat.resize(kNN);
+    for (int n = kNN - 1; n >= 0; --n) {
+        double d2 = heap.top().first;
+        int j = heap.top().second;
+        heap.pop();
+        nbrs[n] = j;
+        const dVec &r_j = positions[j];
+        double inv_d = 1.0 / std::sqrt(d2);
+        for (int d = 0; d < NDIM; ++d) {
+            double s = r_j[d] - r_i[d];
+            double L = path.boxPtr->side[d];
+            s -= L * std::floor(s / L + 0.5);
+            rhat[n][d] = s * inv_d;
+        }
+    }
+}
+
+
+/*************************************************************************//**
+ *  Compute the supercell-averaged q_l and qbar_l for l = 4, 6, for one
+ *  configuration of N atomic positions (slice or centroid).
+******************************************************************************/
+void BondOrientationalOrderEstimator::computeQValues(
+        const std::vector<dVec> &positions,
+        double &q4_avg, double &q6_avg,
+        double &qbar4_avg, double &qbar6_avg)
+{
+    const int N = positions.size();
+
+    /* Storage for per-particle q_lm values (l = 4 -> 9 cmplx,
+     * l = 6 -> 13 cmplx). */
+    std::vector<std::array<std::complex<double>, 9>>  qlm4(N);
+    std::vector<std::array<std::complex<double>, 13>> qlm6(N);
+    std::vector<std::vector<int>> all_nbrs(N);
+
+    // Pass 1: for each i, find neighbors and accumulate q_lm(i).
+    std::vector<int> nbrs;
+    std::vector<dVec> rhat;
+    std::complex<double> Y4[9], Y6[13];
+    for (int i = 0; i < N; ++i) {
+        findKNearestNeighbors(i, positions, nbrs, rhat);
+        all_nbrs[i] = nbrs;
+        for (int m = 0; m < 9;  ++m) qlm4[i][m] = 0.0;
+        for (int m = 0; m < 13; ++m) qlm6[i][m] = 0.0;
+        for (int n = 0; n < kNN; ++n) {
+            Ylm_l4(rhat[n], Y4);
+            Ylm_l6(rhat[n], Y6);
+            for (int m = 0; m < 9;  ++m) qlm4[i][m] += Y4[m];
+            for (int m = 0; m < 13; ++m) qlm6[i][m] += Y6[m];
+        }
+        for (int m = 0; m < 9;  ++m) qlm4[i][m] /= (double)kNN;
+        for (int m = 0; m < 13; ++m) qlm6[i][m] /= (double)kNN;
+    }
+
+     // Pass 2: for each i, build qbar_lm(i) by averaging q_lm over
+     //            particle i and its kNN neighbors (N_b+1 = 13 terms).
+     //  Then sum the rotation-invariant magnitudes over the supercell and
+     //  divide by N to get the average q_l and qbar_l.
+    q4_avg = q6_avg = qbar4_avg = qbar6_avg = 0.0;
+    const double pf4 = 4.0*M_PI / 9.0;        // 4 pi / (2 l + 1) for l=4
+    const double pf6 = 4.0*M_PI / 13.0;       // 4 pi / (2 l + 1) for l=6
+    for (int i = 0; i < N; ++i) {
+        // qbar_lm: average q_lm over particle i AND its kNN neighbors
+        std::array<std::complex<double>, 9>  qb4{};
+        std::array<std::complex<double>, 13> qb6{};
+        for (int m = 0; m < 9;  ++m) qb4[m] = qlm4[i][m];
+        for (int m = 0; m < 13; ++m) qb6[m] = qlm6[i][m];
+        for (int n = 0; n < kNN; ++n) {
+            int j = all_nbrs[i][n];
+            for (int m = 0; m < 9;  ++m) qb4[m] += qlm4[j][m];
+            for (int m = 0; m < 13; ++m) qb6[m] += qlm6[j][m];
+        }
+        const double w = 1.0 / (double)(kNN + 1);
+        for (int m = 0; m < 9;  ++m) qb4[m] *= w;
+        for (int m = 0; m < 13; ++m) qb6[m] *= w;
+
+        // sum_m |q_lm|^2 -> rotation invariants
+        double s4 = 0, s6 = 0, sb4 = 0, sb6 = 0;
+        for (int m = 0; m < 9;  ++m) s4  += std::norm(qlm4[i][m]);
+        for (int m = 0; m < 13; ++m) s6  += std::norm(qlm6[i][m]);
+        for (int m = 0; m < 9;  ++m) sb4 += std::norm(qb4[m]);
+        for (int m = 0; m < 13; ++m) sb6 += std::norm(qb6[m]);
+
+        q4_avg    += std::sqrt(pf4 * s4 );
+        q6_avg    += std::sqrt(pf6 * s6 );
+        qbar4_avg += std::sqrt(pf4 * sb4);
+        qbar6_avg += std::sqrt(pf6 * sb6);
+    }
+    q4_avg    /= (double)N;
+    q6_avg    /= (double)N;
+    qbar4_avg /= (double)N;
+    qbar6_avg /= (double)N;
+}
+
+
+/*************************************************************************//**
+ *  Compute the centroid of the ring polymer that begins at slice 0,
+ *  particle p, by walking path.next() for numTimeSlices steps and
+ *  accumulating positions while unwrapping minimum-image jumps.
+******************************************************************************/
+dVec BondOrientationalOrderEstimator::computeCentroid(int p)
+{
+    const int M = path.numTimeSlices;
+    beadLocator bead = {0, p};
+    dVec abs_pos = path(bead);
+    dVec sum = abs_pos;
+    for (int s = 1; s < M; ++s) {
+        beadLocator bnext = path.next(bead);
+        /* getSeparation returns r(bnext) - r(bead) under min-image */
+        dVec dr = path.getSeparation(bnext, bead);
+        abs_pos += dr;
+        sum += abs_pos;
+        bead = bnext;
+    }
+    sum /= (double)M;
+    path.boxPtr->putInside(sum);   // wrap centroid back to [-L/2, L/2]
+    return sum;
+}
+
+
+/*************************************************************************//**
+ *  Accumulate one measurement of the 8 bond-orientational-order
+ *  quantities into the estimator array.
+******************************************************************************/
+void BondOrientationalOrderEstimator::accumulate()
+{
+    const int M = path.numTimeSlices;
+    const int N = path.getTrueNumParticles();
+
+    // PER-SLICE: average q_l, qbar_l over all M imaginary-time slices.
+    // For each slice s we build an N-vector of positions, compute the
+    // supercell-averaged q's, and accumulate.
+    std::vector<dVec> positions(N);
+    double q4_s = 0, q6_s = 0, qbar4_s = 0, qbar6_s = 0;
+    for (int s = 0; s < M; ++s) {
+        /* Gather positions at this slice.  In a closed-worm config
+         * the number of beads per slice equals N. */
+        for (int p = 0; p < N; ++p) {
+            beadLocator bead = {s, p};
+            positions[p] = path(bead);
+        }
+        double a4, a6, b4, b6;
+        computeQValues(positions, a4, a6, b4, b6);
+        q4_s    += a4;
+        q6_s    += a6;
+        qbar4_s += b4;
+        qbar6_s += b6;
+    }
+    q4_s    /= (double)M;
+    q6_s    /= (double)M;
+    qbar4_s /= (double)M;
+    qbar6_s /= (double)M;
+
+    // CENTROID: trace each ring polymer to get the imag-time-averaged
+    // position of each particle.
+    std::vector<dVec> centroids(N);
+    for (int p = 0; p < N; ++p)
+        centroids[p] = computeCentroid(p);
+    double q4_c, q6_c, qbar4_c, qbar6_c;
+    computeQValues(centroids, q4_c, q6_c, qbar4_c, qbar6_c);
+
+    // Push into the estimator array (8 columns).
+    estimator(0) += q4_s;
+    estimator(1) += q6_s;
+    estimator(2) += qbar4_s;
+    estimator(3) += qbar6_s;
+    estimator(4) += q4_c;
+    estimator(5) += q6_c;
+    estimator(6) += qbar4_c;
+    estimator(7) += qbar6_c;
+}
+
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

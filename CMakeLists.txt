@@ -232,7 +232,12 @@ endif()
 
 # Set default build flags
 if (NOT DEFAULT_CXX_FLAGS)
-    set(DEFAULT_CXX_FLAGS "-march=native -w -fno-math-errno -O3 -flto")
+    if (ENABLE_HDF5)
+        set(DEFAULT_CXX_FLAGS "-march=native -w -fno-math-errno -O3 -flto -lhdf5")
+        add_compile_definitions(ENABLE_HDF5)
+    else()
+        set(DEFAULT_CXX_FLAGS "-march=native -w -fno-math-errno -O3 -flto")
+    endif()
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEFAULT_CXX_FLAGS}")
 
@@ -324,7 +329,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Find Boost
-find_package( Boost 1.71.0 REQUIRED COMPONENTS program_options serialization )
+find_package( Boost 1.71.0 CONFIG REQUIRED COMPONENTS program_options serialization )
 
 # Add include directories
 include_directories( ${Boost_INCLUDE_DIRS} )
@@ -338,7 +343,7 @@ target_link_libraries (${exe} ${Boost_LIBRARIES} )
 
 set(POTENTIAL_BENCHMARK_SRC ${PIMC_SRC})
 list(REMOVE_ITEM POTENTIAL_BENCHMARK_SRC "${CMAKE_CURRENT_SOURCE_DIR}/src/pdrive.cpp")
-add_executable(potential_benchmark.e
+add_executable(potential_benchmark.e EXCLUDE_FROM_ALL
     ${POTENTIAL_BENCHMARK_SRC}
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/benchmarks/potential_benchmark.cpp)
 if (${GPU_BACKEND} STREQUAL "cuda")

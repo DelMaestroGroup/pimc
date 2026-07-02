@@ -1182,12 +1182,12 @@ class H2LJ : public PotentialBase, public TabulatedPotential<H2LJ>
 
          double d2Vatt(const double r)
          {
-             double term1 = 7*C6*r*r*r + 12*C8*r - 15*C9;
+             double term1 = 7.0*C6*r*r*r + 12.0*C8*r - 15.0*C9;
              double numerator = 3.0*r*term1 + 55*C10;
              double ir = 1.0/r;
              double ir4 = ir*ir*ir*ir;
              double ir12 = ir4*ir4*ir4;
-             return -1.0*numerator*ir12;
+             return -2.0*numerator*ir12;
          }
  };
 

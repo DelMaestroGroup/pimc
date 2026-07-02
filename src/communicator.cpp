@@ -292,3 +292,171 @@ Communicator* Communicator::getInstance ()
     static Communicator inst;
     return &inst;
 }
+
+#ifdef ENABLE_HDF5
+void Communicator::initH5File(std::string type) {
+
+    if (type.find("init") != std::string::npos) {
+        std::string stateName = "state";
+        if (type != "init") stateName += type.substr(4);
+        if (constants()->restart())
+            h5file_.insert(type, new H5File(stateName, dataName, ensemble, baseDir));
+        else
+            h5file_.insert(type, new H5File(initName));   // user-provided .h5 file
+        h5file_.at(type).open(H5F_ACC_RDONLY);
+    }
+    else {
+        std::string outDir = baseDir;
+        std::string ctype  = type;
+        if (type.find("cyl_") != std::string::npos) {
+            outDir = baseDir + "/CYLINDER";
+            ctype.erase(0, 4);
+        }
+        h5file_.insert(type, new H5File(ctype, dataName, ensemble, outDir));
+        /* note: don't open here — saveState() calls reset() to prep the bakfile */
+    }
+}
+
+
+// ---------------------------------------------------------------------------
+// H5File CLASS --------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/* Type mapping */
+template <> hid_t H5File::h5type<int>()           { return H5T_NATIVE_INT; }
+template <> hid_t H5File::h5type<unsigned int>()  { return H5T_NATIVE_UINT; }
+template <> hid_t H5File::h5type<long>()          { return H5T_NATIVE_LONG; }
+template <> hid_t H5File::h5type<unsigned long>() { return H5T_NATIVE_ULONG; }   
+template <> hid_t H5File::h5type<float>()         { return H5T_NATIVE_FLOAT; }
+template <> hid_t H5File::h5type<double>()        { return H5T_NATIVE_DOUBLE; }
+
+/**************************************************************************//**
+ *  Constructor with type/data/ensemble/outDir, mirroring File.
+******************************************************************************/
+H5File::H5File(std::string _type, std::string _data,
+               std::string ensemble, std::string outDir)
+{
+    name    = str(format("%s/%s-%s-%s.h5")     % outDir % ensemble % _type % _data);
+    bakname = str(format("%s/%s-%s-%s.bak.h5") % outDir % ensemble % _type % _data);
+    exists_ = fs::exists(name);
+}
+
+H5File::H5File(std::string _name) : name(_name), bakname() {
+    exists_ = fs::exists(name);
+}
+
+void H5File::close() {
+    if (file_id >= 0) {
+        H5Fclose(file_id);
+        file_id = -1;
+    }
+}
+
+void H5File::open(unsigned mode) {
+    close();
+    if (mode == H5F_ACC_TRUNC) {
+        file_id = H5Fcreate(name.c_str(), H5F_ACC_TRUNC,
+                            H5P_DEFAULT, H5P_DEFAULT);
+    } else {
+        file_id = H5Fopen(name.c_str(), mode, H5P_DEFAULT);
+    }
+    if (file_id < 0) {
+        std::cerr << "Unable to open HDF5 file: " << name << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+/* Open the .bak.h5 truncated, ready for a fresh write. */
+void H5File::reset() {
+    close();
+    file_id = H5Fcreate(bakname.c_str(), H5F_ACC_TRUNC,
+                        H5P_DEFAULT, H5P_DEFAULT);
+    if (file_id < 0) {
+        std::cerr << "Unable to create HDF5 backup: " << bakname << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+void H5File::rename() {
+    close();
+    fs::rename(bakname.c_str(), name.c_str());
+}
+
+void H5File::createGroup(const std::string& path) {
+    hid_t gid = H5Gcreate(file_id, path.c_str(),
+                          H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    if (gid >= 0) H5Gclose(gid);
+}
+
+bool H5File::hasObject(const std::string& path) {
+    return H5Lexists(file_id, path.c_str(), H5P_DEFAULT) > 0;
+}
+
+/* Scalar write/read */
+template <typename T>
+void H5File::writeScalar(const std::string& path, T value) {
+    hid_t space = H5Screate(H5S_SCALAR);
+    hid_t dset  = H5Dcreate(file_id, path.c_str(), h5type<T>(), space,
+                            H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    H5Dwrite(dset, h5type<T>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, &value);
+    H5Dclose(dset);
+    H5Sclose(space);
+}
+
+template <typename T>
+T H5File::readScalar(const std::string& path) {
+    T value{};
+    hid_t dset = H5Dopen(file_id, path.c_str(), H5P_DEFAULT);
+    H5Dread(dset, h5type<T>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, &value);
+    H5Dclose(dset);
+    return value;
+}
+
+/* Array write/read — caller supplies dims and a flat buffer */
+template <typename T>
+void H5File::writeArray(const std::string& path,
+                        const T* data,
+                        const std::vector<hsize_t>& dims)
+{
+    hid_t space = H5Screate_simple(static_cast<int>(dims.size()),
+                                   dims.data(), nullptr);
+    hid_t dset  = H5Dcreate(file_id, path.c_str(), h5type<T>(), space,
+                            H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    H5Dwrite(dset, h5type<T>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+    H5Dclose(dset);
+    H5Sclose(space);
+}
+
+template <typename T>
+void H5File::readArray(const std::string& path, T* data) {
+    hid_t dset = H5Dopen(file_id, path.c_str(), H5P_DEFAULT);
+    H5Dread(dset, h5type<T>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+    H5Dclose(dset);
+}
+
+std::vector<hsize_t> H5File::getDims(const std::string& path) {
+    hid_t dset  = H5Dopen(file_id, path.c_str(), H5P_DEFAULT);
+    hid_t space = H5Dget_space(dset);
+    int rank = H5Sget_simple_extent_ndims(space);
+    std::vector<hsize_t> dims(rank);
+    H5Sget_simple_extent_dims(space, dims.data(), nullptr);
+    H5Sclose(space);
+    H5Dclose(dset);
+    return dims;
+}
+
+/* Explicit instantiations for the types used in saveState/loadState */
+template void   H5File::writeScalar<int>(const std::string&, int);
+template void   H5File::writeScalar<unsigned int>(const std::string&, unsigned int);
+template void   H5File::writeScalar<double>(const std::string&, double);
+template int    H5File::readScalar<int>(const std::string&);
+template double H5File::readScalar<double>(const std::string&);
+template void   H5File::writeArray<int>(const std::string&, const int*, const std::vector<hsize_t>&);
+template void   H5File::writeArray<unsigned int>(const std::string&, const unsigned int*, const std::vector<hsize_t>&);
+template void   H5File::writeArray<double>(const std::string&, const double*, const std::vector<hsize_t>&);
+template void   H5File::readArray<int>(const std::string&, int*);
+template void   H5File::readArray<unsigned int>(const std::string&, unsigned int*);
+template void   H5File::readArray<double>(const std::string&, double*);
+template void   H5File::writeArray<unsigned long>(const std::string&, const unsigned long*, const std::vector<hsize_t>&);
+template void   H5File::readArray<unsigned long>(const std::string&, unsigned long*);
+#endif
