@@ -779,6 +779,9 @@ class FinalStateEffectsEstimator : public EstimatorBase {
                 const MTRand &, double, int _frequency=1,
                 std::string _label="fse");
         ~FinalStateEffectsEstimator();
+
+        static const std::string name;
+        std::string getname() const {return name;}
   
     private:
         void accumulate();              // Accumulate the 8 quantities
@@ -833,20 +836,20 @@ class FinalStateEffectsEstimator : public EstimatorBase {
  * @see W. Lechner, C. Dellago, J. Chem. Phys. 129, 114707 (2008).
  *      Averaged qbar_l variant.
  */
-class BondOrientationalOrderEstimator : public EstimatorBase {
+// class BondOrientationalOrderEstimator : public EstimatorBase {
 
-    public:
-        BondOrientationalOrderEstimator(const Path &, ActionBase *,
-                const MTRand &, double, int _frequency=1,
-                std::string _label="bondord");
-        ~BondOrientationalOrderEstimator();
+//     public:
+//         BondOrientationalOrderEstimator(const Path &, ActionBase *,
+//                 const MTRand &, double, int _frequency=1,
+//                 std::string _label="bondord");
+//         ~BondOrientationalOrderEstimator();
 
-        static const std::string name;
-        std::string getName() const { return name; }
+//         static const std::string name;
+//         std::string getName() const { return name; }
 
-    private:
-        void accumulate();
-};
+//     private:
+//         void accumulate();
+// };
 
 
 // ========================================================================  
