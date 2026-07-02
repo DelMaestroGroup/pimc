@@ -760,11 +760,9 @@ bool Setup::parseOptions() {
 	po::store(po::parse_config_file(ifs, desc, true), gp_params);
     	po::notify(gp_params);
 
-
-
         // !!AGDNB!! this validation should be reactivated
-	// // Check if Normalisation offset and scale have the correct dimensionsi
-	// if (gp_params["KernelDetails.KernelType"].as<std::string>()=="matern") {
+	// Check if Normalisation offset and scale have the correct dimensionsi
+	// if (gp_params["kernel.type"].as<std::string>()=="matern") {
 	//     if ((gp_params["Normalization.Offset"].as<std::vector<double>>().size() != NDIM + 1) || (gp_params["Normalization.Scale"].as<std::vector<double>>().size() != NDIM + 1)) {
 	//         std::cerr << "For multi-fidelity gp normalisation vectors must have size NDIM + 1\n";
 	//         return 1;

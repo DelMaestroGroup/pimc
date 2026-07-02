@@ -97,8 +97,8 @@ class EstimatorBase {
 
         std::map<std::string,int> estIndex;       ///< Map estimator labels to indices.
 
-    DynamicArray<double,1> estimator;      ///< The estimator array
-    DynamicArray<double,1> norm;           ///< The normalization factor for each estimator
+        DynamicArray<double,1> estimator;      ///< The estimator array
+        DynamicArray<double,1> norm;           ///< The normalization factor for each estimator
 
         int numEst;                     ///< The number of individual quantities measured
         int frequency;                  ///< The frequency at which we accumulate
