@@ -74,6 +74,7 @@ REGISTER_INTERACTION_POTENTIAL(    "delta1D",    Delta1DPotential, GET_SETUP(), 
 REGISTER_INTERACTION_POTENTIAL( "lorentzian", LorentzianPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
 REGISTER_INTERACTION_POTENTIAL(       "aziz",       AzizPotential, GET_SETUP(), setup.params["aziz_year"].as<int>(),setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(    "silvera",    SilveraPotential, GET_SETUP(), setup.get_cell())
+REGISTER_INTERACTION_POTENTIAL(  "patkowski",  PatkowskiPotential, GET_SETUP(), setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(       "H2LJ",                H2LJ, GET_SETUP(), setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(  "szalewicz",  SzalewiczPotential, GET_SETUP(), setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(   "harmonic",   HarmonicPotential, GET_SETUP(), setup.params["omega"].as<double>())
@@ -2044,7 +2045,7 @@ H2LJ::H2LJ(const Container *_boxPtr) : PotentialBase(), TabulatedPotential()
      // that is accurate to < 0.05% for 7 < x < 20.
      // TP 03/13/25.
 
-     double cutoff = L/2.0;
+     double cutoff = constants()->rc(); // Replaced L/2 with rc(). 26/06/30.
      double coeff[11] = {-6502.891909947514, 4179.6137878734, \
                          -1262.7540932141394, 231.31230978810987, \
                          -28.14200627626515, 2.3609501640706454, \
@@ -2138,6 +2139,186 @@ H2LJ::H2LJ(const Container *_boxPtr) : PotentialBase(), TabulatedPotential()
    return output;
  }
 
+
+//
+// Patkowski potential.
+// 
+
+// Constructor.
+PatkowskiPotential::PatkowskiPotential(const Container *_boxPtr)
+    : PotentialBase(), TabulatedPotential()
+{
+
+    cex[0] =  7.9181110538811;
+    cex[1] = -0.86728533815761;
+    csp[0] = -0.13759109019103;
+    csp[1] =  0.18174129593930;
+    csp[2] = -0.027161233180350;
+    csp[3] =  0.0010384349156326;
+
+    cdata[0] = -12.058168;   // C_6  ^000  (a.u.)
+    cdata[1] = -213.6;       // C_8  ^000  (a.u.)
+    cdata[2] = -4700.0;      // C_10 ^000  (a.u.)
+
+    // Unit conversions.
+    BohrPerAngstrom = 1.0 / 0.529177210544;
+    xK2au = 3.16669e-6;
+
+    // Parameters for the inner part of the potential.
+    r_inner_A = 0.7505;     // A
+    V_inner_K = 7.5528e+04; // K
+
+    // Placeholders.
+    extV.fill(0.0);
+    extdVdr.fill(0.0);
+    extd2Vdr2.fill(0.0);
+
+    // Lookup table.
+    const double Rm = 3.4623; // position of well minimum.
+    const double L = _boxPtr->maxSep;
+    initLookupTable(0.00005 * Rm, L);
+
+    // Tail correction.
+    const double rc = constants()->rc();
+    const double BPA = BohrPerAngstrom;
+
+    // C_n in K*A^n :  C_n^au is in Hartree*bohr^n (negative),
+    // divide by (xK2au*BPA^n) to get K*A^n (also negative).
+    const double C6_K  = cdata[0] / (xK2au * std::pow(BPA, 6.0));
+    const double C8_K  = cdata[1] / (xK2au * std::pow(BPA, 8.0));
+    const double C10_K = cdata[2] / (xK2au * std::pow(BPA, 10.0));
+
+    // int_{rc}^{inf} r^2*(C_n/r^n) dr = C_n/((n-3) rc^{n-3})
+    const double rc3 = rc*rc*rc;
+    const double rc5 = rc3*rc*rc;
+    const double rc7 = rc5*rc*rc;
+    tailV = 2.0 * M_PI * (C6_K/(3.0*rc3) + C8_K/(5.0*rc5) + C10_K/(7.0*rc7));
+}
+
+// Destructor.
+PatkowskiPotential::~PatkowskiPotential() { }
+
+inline __attribute__((always_inline))
+double PatkowskiPotential::valueV(const double r_A)
+{
+    // Handle the inner part of the potential.
+    if (r_A < EPS) return 0.0;
+    if (r_A < r_inner_A)  return V_inner_K;
+    
+    // Convert distance from A to Bohr radii.
+    const double R = r_A * BohrPerAngstrom;
+
+    // Short range part of potential.
+    const double vex = exp( 2.0 * (cex[0] + cex[1]*R) );
+    const double vsp = 2.0 * (csp[0] + R*(csp[1] + R*(csp[2] + R*csp[3])));
+    const double vshort = vex * vsp;
+
+    // Long range part of potential.
+    const double damp = -2.0 * cex[1];
+    const double dR   = damp * R;
+    const double iR  = 1.0 / R;
+    const double iR2 = iR * iR;
+    const double iR6 = iR2 * iR2 * iR2;
+    const double iR8 = iR6 * iR2;
+    const double iR10 = iR8 * iR2;
+    const double vlong_au = TT_f( 6, dR) * cdata[0] * iR6
+                          + TT_f( 8, dR) * cdata[1] * iR8
+                          + TT_f(10, dR) * cdata[2] * iR10;
+
+    return vshort + vlong_au / xK2au;
+}
+
+// First derivative.
+inline __attribute__((always_inline))
+double PatkowskiPotential::valuedVdr(const double r_A)
+{
+    // Handle the inner part of the potential.
+    if (r_A < EPS) return 0.0;
+    if (r_A < r_inner_A)  return 0.0;
+
+    const double R = r_A * BohrPerAngstrom;
+
+    // short-range value and first R-derivative
+    const double vex   = exp( 2.0 * (cex[0] + cex[1]*R) );
+    const double vsp   = 2.0 * (csp[0] + R*(csp[1] + R*(csp[2] + R*csp[3])));
+    const double vspp  = 2.0 * (csp[1] + R*(2.0*csp[2] + 3.0*csp[3]*R));
+    const double dvshort = vex * ( 2.0*cex[1] * vsp + vspp );
+
+    // long-range derivative (in a.u.)
+    const double damp = -2.0 * cex[1];
+    const double dR   = damp * R;
+    const double iR   = 1.0 / R;
+    const double iR6  = iR*iR*iR*iR*iR*iR;
+    const double iR7  = iR6*iR;
+    const double iR8  = iR7*iR;
+    const double iR9  = iR8*iR;
+    const double iR10 = iR9*iR;
+    const double iR11 = iR10*iR;
+
+    const double f6  = TT_f ( 6, dR);
+    const double f8  = TT_f ( 8, dR);
+    const double f10 = TT_f (10, dR);
+    const double df6  = TT_df( 6, dR);
+    const double df8  = TT_df( 8, dR);
+    const double df10 = TT_df(10, dR);
+
+    const double dvlong_au =
+          cdata[0] * (damp * df6  * iR6  -  6.0 * f6  * iR7 )
+        + cdata[1] * (damp * df8  * iR8  -  8.0 * f8  * iR9 )
+        + cdata[2] * (damp * df10 * iR10 - 10.0 * f10 * iR11);
+
+    // Convert at the end.
+    return ( dvshort + dvlong_au / xK2au ) * BohrPerAngstrom;
+}
+
+// Second derivative.
+inline __attribute__((always_inline))
+double PatkowskiPotential::valued2Vdr2(const double r_A)
+{
+    // Handle the inner part of the potential.
+    if (r_A < EPS) return 0.0;
+    if (r_A < r_inner_A)  return 0.0;
+
+    const double R = r_A * BohrPerAngstrom;
+
+    // short-range value and first two R-derivatives
+    const double vex    = exp( 2.0 * (cex[0] + cex[1]*R) );
+    const double vsp    = 2.0 * (csp[0] + R*(csp[1] + R*(csp[2] + R*csp[3])));
+    const double vspp   = 2.0 * (csp[1] + R*(2.0*csp[2] + 3.0*csp[3]*R));
+    const double vsppp  = 4.0*csp[2] + 12.0*csp[3]*R;       // vsp''(R)
+    const double a1     = 2.0 * cex[1];                     // exp argument's R-slope
+    const double d2vshort = vex * ( a1*a1 * vsp + 2.0*a1 * vspp + vsppp );
+
+    // long-range 2nd derivative (in a.u.)
+    const double damp  = -2.0 * cex[1];
+    const double damp2 = damp * damp;
+    const double dR    = damp * R;
+    const double iR    = 1.0 / R;
+    const double iR2   = iR * iR;
+    const double iR6   = iR2 * iR2 * iR2;
+    const double iR8   = iR6 * iR2;
+    const double iR10  = iR8 * iR2;
+    const double iR12  = iR10 * iR2;
+
+    auto longterm = [&](int n, double f, double df, double d2f, double iRnp2) {
+        // cdata_n / R^(n+2)  *  [ damp^2 * d2f - 2*n*damp * df + n(n+1) * f ]
+        double bracket = damp2 * d2f
+                       - 2.0 * static_cast<double>(n) * damp * df
+                       + static_cast<double>(n * (n + 1)) * f;
+        return bracket * iRnp2;
+    };
+
+    const double d2vlong_au =
+          cdata[0] * longterm( 6,
+              TT_f ( 6, dR), TT_df ( 6, dR), TT_d2f( 6, dR),  iR8 )
+        + cdata[1] * longterm( 8,
+              TT_f ( 8, dR), TT_df ( 8, dR), TT_d2f( 8, dR), iR10 )
+        + cdata[2] * longterm(10,
+              TT_f (10, dR), TT_df (10, dR), TT_d2f(10, dR), iR12 );
+
+    // K/bohr^2 -> K/A^2
+    return ( d2vshort + d2vlong_au / xK2au ) * BohrPerAngstrom * BohrPerAngstrom;
+}
 
 
 // ---------------------------------------------------------------------------

@@ -97,8 +97,8 @@ class EstimatorBase {
 
         std::map<std::string,int> estIndex;       ///< Map estimator labels to indices.
 
-        DynamicArray<double,1> estimator;      ///< The estimator array
-        DynamicArray<double,1> norm;           ///< The normalization factor for each estimator
+    DynamicArray<double,1> estimator;      ///< The estimator array
+    DynamicArray<double,1> norm;           ///< The normalization factor for each estimator
 
         int numEst;                     ///< The number of individual quantities measured
         int frequency;                  ///< The frequency at which we accumulate
@@ -762,27 +762,37 @@ class PairCorrelationEstimator: public EstimatorBase {
         double dR;                      // The discretization
 };
 
-// ========================================================================
-// Final State Effects Estimator Class
-// ========================================================================
+// ============================================================================
+//  Bond-Orientational-Order Estimator 
+// ----------------------------------------------------------------------------
 /**
- * Compute final state effects in the additive approach.  Leading corrections
- * are due to <\nabla^2 V> and <F^2>, where F = -\nabla V is the force. 
+ * Computes Steinhardt q_l (l = 4, 6) and the Lechner-Dellago averaged
+ * qbar_l, both on the slice-by-slice configuration and on the imaginary-
+ * time-averaged centroid positions.  Eight scalars are written per bin:
  *
- * @see G.J. Sears, Phys. Rev. B 30, 44 (1984).
+ *    q4_slice  q6_slice  qbar4_slice  qbar6_slice
+ *     q4_cent   q6_cent   qbar4_cent   qbar6_cent
  *
+ * This is a *diagonal* estimator (only samples when the worm is closed),
+ *  so EstimatorBase::baseSample() automatically gates it.
+ *
+ *
+ * @see P.J. Steinhardt, D.R. Nelson, M. Ronchetti, Phys. Rev. B 28, 784
+ *      (1983).  Original q_l definition.
+ * @see W. Lechner, C. Dellago, J. Chem. Phys. 129, 114707 (2008).
+ *      Averaged qbar_l variant.
  */
-class FinalStateEffectsEstimator : public EstimatorBase {
+class BondOrientationalOrderEstimator : public EstimatorBase {
 
     public:
-        FinalStateEffectsEstimator(const Path &, ActionBase *,
+        BondOrientationalOrderEstimator(const Path &, ActionBase *,
                 const MTRand &, double, int _frequency=1,
-                std::string _label="fse");
-        ~FinalStateEffectsEstimator();
+                std::string _label="bondord");
+        ~BondOrientationalOrderEstimator();
 
         static const std::string name;
-        std::string getname() const {return name;}
-  
+        std::string getName() const { return name; }
+
     private:
         void accumulate();              // Accumulate the 8 quantities
 
@@ -814,42 +824,32 @@ class FinalStateEffectsEstimator : public EstimatorBase {
         // Centroid of the ring polymer starting at slice 0.
         dVec computeCentroid(int p);
 };
-  
-  
-// ============================================================================
-//  Bond-Orientational-Order Estimator 
-// ----------------------------------------------------------------------------
+
+// ========================================================================
+// Final State Effects Estimator Class
+// ========================================================================
 /**
- * Computes Steinhardt q_l (l = 4, 6) and the Lechner-Dellago averaged
- * qbar_l, both on the slice-by-slice configuration and on the imaginary-
- * time-averaged centroid positions.  Eight scalars are written per bin:
+ * Compute final state effects in the additive approach.  Leading corrections
+ * are due to <\nabla^2 V> and <F^2>, where F = -\nabla V is the force. 
  *
- *    q4_slice  q6_slice  qbar4_slice  qbar6_slice
- *     q4_cent   q6_cent   qbar4_cent   qbar6_cent
+ * @see G.J. Sears, Phys. Rev. B 30, 44 (1984).
  *
- * This is a *diagonal* estimator (only samples when the worm is closed),
- *  so EstimatorBase::baseSample() automatically gates it.
- *
- *
- * @see P.J. Steinhardt, D.R. Nelson, M. Ronchetti, Phys. Rev. B 28, 784
- *      (1983).  Original q_l definition.
- * @see W. Lechner, C. Dellago, J. Chem. Phys. 129, 114707 (2008).
- *      Averaged qbar_l variant.
  */
-// class BondOrientationalOrderEstimator : public EstimatorBase {
+class FinalStateEffectsEstimator : public EstimatorBase {
 
-//     public:
-//         BondOrientationalOrderEstimator(const Path &, ActionBase *,
-//                 const MTRand &, double, int _frequency=1,
-//                 std::string _label="bondord");
-//         ~BondOrientationalOrderEstimator();
+    public:
+        FinalStateEffectsEstimator(const Path &, ActionBase *,
+                const MTRand &, double, int _frequency=1,
+                std::string _label="fse");
+        ~FinalStateEffectsEstimator();
 
-//         static const std::string name;
-//         std::string getName() const { return name; }
+        static const std::string name;
+        std::string getName() const { return name; }
 
-//     private:
-//         void accumulate();
-// };
+    private:
+        void accumulate();
+};
+
 
 
 // ========================================================================  

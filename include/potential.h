@@ -1213,6 +1213,101 @@ class H2LJ : public PotentialBase, public TabulatedPotential<H2LJ>
      return g2V;
  }
 
+// ========================================================================
+// PatkowskiPotential Class
+// ========================================================================
+//
+//  Spherically-averaged (isotropic) H2-H2 pair potential of
+//  K. Patkowski, W. Cencek, P. Jankowski, K. Szalewicz, J. B. Mehl,
+//  G. Garberoglio, A. H. Harvey,  J. Chem. Phys. 129, 094304 (2008).
+//
+//  The supplementary material contains Fortran source code for the isotropic 
+// potential, which is used here to implement the PatkowskiPotential class. 
+
+class PatkowskiPotential : public PotentialBase,
+                           public TabulatedPotential<PatkowskiPotential> {
+    public:
+        PatkowskiPotential (const Container *);
+        ~PatkowskiPotential ();
+
+        inline __attribute__((always_inline)) double V(const dVec &);
+        inline __attribute__((always_inline)) dVec gradV(const dVec &);
+
+        // Radial 2nd derivative d^2V/dr^2 (NOT the 3D Laplacian), K/A^2.
+        inline __attribute__((always_inline)) double grad2V(const dVec &);
+
+        inline __attribute__((always_inline)) double valueV     (const double);
+        inline __attribute__((always_inline)) double valuedVdr  (const double);
+        inline __attribute__((always_inline)) double valued2Vdr2(const double);
+
+    private:
+        // All parameters preserved as they appear in the EPAPS
+        // Fortran block-data (isoH2H2.f / fit_param.txt).
+        double cex[2];      // short-range exp prefactor params
+        double csp[4];      // short-range polynomial coeffs (K, K/bohr, ...)
+        double cdata[3];    // long-range C_n^000 for n=6,8,10  (a.u., negative)
+
+        // Inner hard-wall plateau r < 0.75 A
+        double r_inner_A;     // Angstroms
+        double V_inner_K;     // Kelvin
+
+        // Unit conversions.
+        double BohrPerAngstrom;     // R[bohr] = r[A] * BohrPerAngstrom
+        double xK2au;               // 1 K = xK2au atomic units
+
+        // Tang-Toennies damping function.
+        double TT_f (const int n, const double x) const 
+        {
+            double term = 1.0, sum = 1.0;
+            for (int k = 1; k <= n; ++k) 
+            {
+                term *= x / static_cast<double>(k);
+                sum  += term;
+            }
+            return 1.0 - exp(-x) * sum;
+        }
+
+        double TT_df(const int n, const double x) const 
+        {
+            double xn_over_nfact = 1.0;
+            for (int k = 1; k <= n; ++k)
+                xn_over_nfact *= x / static_cast<double>(k);
+            return exp(-x) * xn_over_nfact;
+        }
+
+        double TT_d2f(const int n, const double x) const 
+        {
+            if (x == 0.0) return 0.0;
+            return TT_df(n, x) * (static_cast<double>(n) - x) / x;
+        }
+};
+
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+// INLINE FUNCTION DEFINITIONS
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+inline __attribute__((always_inline))
+double PatkowskiPotential::V(const dVec &r)
+{
+    return direct(lookupV, extV, sqrt(dot(r,r)));
+}
+
+inline __attribute__((always_inline))
+dVec PatkowskiPotential::gradV(const dVec &r)
+{
+    double rnorm = sqrt(dot(r,r));
+    dVec gV;
+    gV = (direct(lookupdVdr, extdVdr, rnorm) / rnorm) * r;
+    return gV;
+}
+
+inline __attribute__((always_inline))
+double PatkowskiPotential::grad2V(const dVec &r)
+{
+    double rnorm = sqrt(dot(r,r));
+    return direct(lookupd2Vdr2, extd2Vdr2, rnorm);
+}
 
 // ========================================================================  
 // Szalewicz Potential Class
