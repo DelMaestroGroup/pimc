@@ -2300,11 +2300,13 @@ double PatkowskiPotential::valued2Vdr2(const double r_A)
     const double iR10  = iR8 * iR2;
     const double iR12  = iR10 * iR2;
 
-    auto longterm = [&](int n, double f, double df, double d2f, double iRnp2) {
-        // cdata_n / R^(n+2)  *  [ damp^2 * d2f - 2*n*damp * df + n(n+1) * f ]
-        double bracket = damp2 * d2f
-                       - 2.0 * static_cast<double>(n) * damp * df
-                       + static_cast<double>(n * (n + 1)) * f;
+    auto longterm = [&](int n, double f, double df, double d2f,
+                        double iRnp2) {
+        // cdata_n / R^(n+2) * [ damp^2 R^2 d2f - 2 n damp R df + n(n+1) f ]
+        const double nn = static_cast<double>(n);
+        double bracket = damp2 * R * R * d2f
+                       - 2.0 * nn * damp * R * df
+                       + nn * (nn + 1.0) * f;
         return bracket * iRnp2;
     };
 
