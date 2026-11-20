@@ -1018,6 +1018,162 @@ inline __attribute__((always_inline)) double AzizPotential::grad2V(const dVec &r
 }
 
 // ========================================================================
+// Aziz tair Potential Class
+// ========================================================================
+/**
+ * 
+ * Author: Sutirtha Paul
+ * Computes the effective potential from the exact two-body density matrix
+ * for the Aziz potential based on dimension
+ *       
+ */
+class AzizPairPotential : public PotentialBase  {
+public:
+    AzizPairPotential (const Container *_boxPtr, const po::variables_map &);
+    ~AzizPairPotential ();
+    
+    /** The classical potential */
+    inline __attribute__((always_inline)) double V(const dVec &r) {
+        return (0.0);
+    }
+    
+    /** The effective potential */
+    inline __attribute__((always_inline)) double V(const dVec &, const dVec &);
+    inline __attribute__((always_inline)) double dVdlambda(const dVec &, const dVec &);
+    inline __attribute__((always_inline)) double dVdtau(const dVec &, const dVec &);
+    
+private:
+    
+    std::string path;
+    double lam_rel;   //lambda for the relative density matrix
+    int n;            //The order of expansion
+    int n_t;          //The order of expansion for the tau derivative
+    double s_max;     //The maximum s-value fitted
+    std::vector<double> bs;   //Basis
+    std::vector<double> q;      //q-grid
+    std::vector<double> r;      //r-grid	    
+    std::vector<double> ud;      //ud
+    std::vector<double> ud_lam;      //ud_lam
+    std::vector<double> ud_tau;      //ud_tau
+    DynamicArray<double,2> ukj;         //ukj
+    DynamicArray<double,2> ukj_lam;     //ukj_lam
+    DynamicArray<double,2> ukj_tau;     //ukj_tau
+   
+    std::vector<double> intval; 
+    void load(const std::string &, std::vector<double> &, std::vector<double> &);          //Function for loading files into matrices
+    void load(const std::string &, std::vector<double> &, DynamicArray<double,2> &);          //Function for loading files into matrices
+    int searchsorted2(double, const std::vector<double> &); //This is the equivalent of the numpy function and searches by bisection 
+    int searchsorted(double, const std::vector<double> &); //This utilises the uniform grid spacing and searches in O(1) time 
+    void basis(double, double, int);                           //Forming the basis based on the division 
+    double interp(double, const std::vector<double> &, const std::vector<double> &);    //Interpolates between two r-points in the array and evaluates at the given r-value
+    void interp(double, const std::vector<double> &, const DynamicArray<double,2> &);    //Interpolates between two q-points in the array and evaluates at the given q-value
+
+};
+inline __attribute__((always_inline)) void AzizPairPotential::load(const std::string &fname, std::vector<double> &grid, std::vector<double> &uarr) {
+    grid.clear();
+    std::ifstream f(fname);
+    std::string line;
+    while (std::getline(f, line)) {
+        if (line.empty() || line[0] == '#')
+            continue;
+        std::istringstream ss(line);
+        double x;
+        ss >> x;
+        grid.push_back(x);
+        ss >> x;
+        uarr.push_back(x);
+    }
+}
+inline __attribute__((always_inline)) void AzizPairPotential::load(const std::string &fname, std::vector<double> &grid, DynamicArray<double,2> &uarr) { 
+    grid.clear();
+    std::ifstream f(fname);
+    std::string line;
+    std::vector<std::vector<double>> rows;
+    while (std::getline(f, line)) {
+        if (line.empty() || line[0] == '#')
+            continue;
+        std::istringstream ss(line);
+        double x;
+        ss >> x;
+        grid.push_back(x);
+        std::vector<double> row;
+        while (ss >> x)
+            row.push_back(x);
+        rows.push_back(row);
+    }
+    uarr.resize(rows.size(), rows[0].size());
+    for (std::size_t i = 0; i < rows.size(); i++)
+        for (std::size_t c = 0; c < rows[i].size(); c++)
+            uarr(i, c) = rows[i][c];
+}
+inline __attribute__((always_inline)) int AzizPairPotential::searchsorted2(double x, const std::vector<double> &grid) {
+    int lo = 0;
+    int hi = grid.size();
+    while (lo < hi) {
+        int mid = (lo + hi)/2;
+        if (grid[mid] < x)
+            lo = mid + 1;
+        else
+            hi = mid;
+    }
+    return lo;
+}
+inline __attribute__((always_inline)) int AzizPairPotential::searchsorted(double x, const std::vector<double> &grid) {
+    // O(1) for a uniform grid: first index i with grid[i] >= x
+    int last = grid.size() - 1;
+    int i = (int)std::ceil((x - grid[0]) * last / (grid[last] - grid[0]));
+    return std::min(std::max(i, 1), last);
+}
+inline __attribute__((always_inline)) void AzizPairPotential::basis(double s, double z, int ord_exp) {
+#if NDIM == 1
+    intval.resize(ord_exp);
+    bs.resize(ord_exp);
+    double s2k = 1.0;
+    for (int k = 1; k <= ord_exp; k++) {
+        s2k *= s*s;                 // s^(2k)
+        bs[k-1] = s2k;
+    }
+#else
+    intval.resize(ord_exp*(ord_exp+3)/2);
+    bs.resize(ord_exp*(ord_exp+3)/2);
+    double sp[16], zp[16];               
+    sp[0] = zp[0] = 1.0;
+    for (int m = 1; m <= ord_exp; m++) {
+        sp[m] = sp[m-1]*s*s;
+        zp[m] = zp[m-1]*z*z;
+    }
+    for (int k = 1; k <= ord_exp; k++)
+        for (int j = 0; j <= k; j++)
+            bs[j + (k-1)*(k+2)/2] = zp[j]*sp[k-j]; 
+#endif
+}
+
+inline __attribute__((always_inline)) double AzizPairPotential::interp(double evalVal, const std::vector<double> &grid, const std::vector<double> &uarr) {
+    if (evalVal <= grid.front())
+        return uarr.front();
+    if (evalVal >= grid.back())
+        return uarr.back();
+    int i = searchsorted(evalVal, grid);
+    double t = (evalVal - grid[i-1]) / (grid[i] - grid[i-1]);
+    return (1 - t)*uarr[i-1] + t*uarr[i];
+}
+inline __attribute__((always_inline)) void AzizPairPotential::interp(double evalVal, const std::vector<double> &grid, const DynamicArray<double,2> &uarr) {
+    std::size_t last = grid.size() - 1;
+    int i = 1;
+    double t = 0.0;
+    if (evalVal <= grid.front()) {
+        i = 1; t = 0.0;                    // use row 0
+    } else if (evalVal >= grid.back()) {
+        i = last; t = 1.0;                 // use the last row
+    } else {
+        i = searchsorted(evalVal, grid);
+        t = (evalVal - grid[i-1]) / (grid[i] - grid[i-1]);
+    }
+    for (std::size_t c = 0; c < intval.size(); c++)
+        intval[c] = (1 - t)*uarr(i-1, c) + t*uarr(i, c);
+}
+
+// ========================================================================
 // Hydrogen Potential Class
 // ========================================================================
 

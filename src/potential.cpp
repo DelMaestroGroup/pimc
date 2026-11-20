@@ -13,7 +13,7 @@
 #include "dynamic_array_serialization.h"
 #include "factory.h"
 #include "gpkernel.h"
-
+#include <complex>
 #include <boost/math/special_functions/ellint_1.hpp>
 #include <boost/math/special_functions/ellint_2.hpp>
 
@@ -73,6 +73,7 @@ REGISTER_INTERACTION_POTENTIAL(   "hard_rod",    HardRodPotential, GET_SETUP(), 
 REGISTER_INTERACTION_POTENTIAL(    "delta1D",    Delta1DPotential, GET_SETUP(), setup.params["delta_strength"].as<double>())
 REGISTER_INTERACTION_POTENTIAL( "lorentzian", LorentzianPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
 REGISTER_INTERACTION_POTENTIAL(       "aziz",       AzizPotential, GET_SETUP(), setup.params["aziz_year"].as<int>(),setup.get_cell())
+REGISTER_INTERACTION_POTENTIAL(   "azizpair",   AzizPairPotential, GET_SETUP(), setup.get_cell(), setup.pair_params)
 REGISTER_INTERACTION_POTENTIAL(    "silvera",    SilveraPotential, GET_SETUP(), setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(  "patkowski",  PatkowskiPotential, GET_SETUP(), setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(       "H2LJ",                H2LJ, GET_SETUP(), setup.get_cell())
@@ -1717,7 +1718,7 @@ DynamicArray<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr
             pos[0] = r*cos(theta);
             pos[1] = r*sin(theta);
 
-            boxPtr->putInside(pos);
+	    boxPtr->putInside(pos);
 
             initialPos(n) = pos;
     }
@@ -1726,6 +1727,129 @@ DynamicArray<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr
 }
 #endif
 
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Aziz Pair Potential Class -----------------------------------------------
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+/**************************************************************************//**
+*  Constructor.
+******************************************************************************/
+AzizPairPotential::AzizPairPotential(const Container *_boxPtr, const po::variables_map &pair_params)  : PotentialBase() {
+    path = pair_params["Data.parent"].as<std::string>();
+    std::vector<double> grid;
+    load(path + "/ud.dat", r, ud);
+    load(path + "/ud_dlam.dat", grid, ud_lam);
+    load(path + "/ud_dtau.dat", grid, ud_tau);
+    load(path + "/ukj.dat", q, ukj);
+    load(path + "/ukj_dlam.dat", grid, ukj_lam);
+    load(path + "/ukj_dtau.dat", grid, ukj_tau);   
+    lam_rel = 2*constants()->lambda();
+    n = pair_params["Simulation Parameters.n"].as<uint32>();
+    n_t = pair_params["Simulation Parameters.n_tau"].as<uint32>();
+    s_max = 4*sqrt(2*lam_rel*constants()->tau());
+}
+
+/**************************************************************************//**
+*  Destructor.
+******************************************************************************/
+AzizPairPotential::~AzizPairPotential() {
+    // empty deconstructor
+}
+
+/**************************************************************************//**
+ *  The effective potential.
+ *
+ *  Computes the non-local two-body effective pair potential.
+ **
+ *  @param sep1 The first separation
+ *  @param sep2 The second separation
+ *  @return the two-body effective pair potential
+ ******************************************************************************/
+inline __attribute__((always_inline)) double AzizPairPotential::V(const dVec &sep1, const dVec &sep2)
+{
+    double a = sqrt(dot(sep1,sep1));
+    double b = sqrt(dot(sep2,sep2));
+    if (a < r.front() || b < r.front()) 
+    	return LBIG;  
+    double qq = (a + b)/2;
+    double s = sqrt(dot(sep1 - sep2,sep1 - sep2));
+    if (s > s_max)                               
+    	return 0.5*(interp(a, r, ud) + interp(b, r, ud));
+    double z = a - b;
+    double val = 0;
+    //Perform a lookup on ud based on sep1 and sep2
+    val += 0.5*(interp(a, r, ud) + interp(b, r, ud));
+    //Form the basis
+    basis(s, z, n);
+    interp(qq, q, ukj);
+    for (std::size_t i = 0; i < bs.size(); i++)
+        val += intval[i]*bs[i];
+    return val;
+}
+
+/**************************************************************************//**
+*  The derivative of the effective potential with respect to lambda.
+*
+*  Computes the non-local two-body effective pair potential.
+*
+*  @param sep1 the first separation
+*  @param sep2 the second separation
+*  @return the derivative of the effective potential with respect to lambda
+******************************************************************************/
+inline __attribute__((always_inline)) double AzizPairPotential::dVdlambda(const dVec &sep1, const dVec &sep2)
+{
+    double a = sqrt(dot(sep1,sep1));
+    double b = sqrt(dot(sep2,sep2));
+    if (a < r.front() || b < r.front()) 
+    	return 0.0;  
+    double qq = (a + b)/2;
+    double s = sqrt(dot(sep1 - sep2,sep1 - sep2));
+    if (s > s_max)                               
+    	return interp(a, r, ud_lam) + interp(b, r, ud_lam);
+    double z = a - b;
+    double val = 0;
+    //Perform a lookup on ud based on sep1 and sep2
+    val += 0.5*(interp(a, r, ud_lam) + interp(b, r, ud_lam));
+    //Form the basis
+    basis(s, z, n);
+    interp(qq, q, ukj_lam);
+    for (std::size_t i = 0; i < bs.size(); i++)
+        val += intval[i]*bs[i];
+    return 2*val;
+}
+
+/**************************************************************************//**
+ *  The derivative of the effective potential with respect to tau.
+ *
+ *  Computes the non-local two-body effective pair potential.
+ *
+ *  @param sep1 the first separation
+ *  @param sep2 the second separation
+ *  @return the derivative of the effective potential with respect to lambda
+ ******************************************************************************/
+inline __attribute__((always_inline)) double AzizPairPotential::dVdtau(const dVec &sep1, const dVec &sep2)
+{
+    double a = sqrt(dot(sep1,sep1));
+    double b = sqrt(dot(sep2,sep2));
+    if (a < r.front() || b < r.front()) 
+    	return 0;  
+    double qq = (a + b)/2;
+    double s = sqrt(dot(sep1 - sep2,sep1 - sep2));
+    if (s > s_max)                               
+    	return 0.5*(interp(a, r, ud_tau) + interp(b, r, ud_tau));
+    double z = a - b;
+    double val = 0;
+    //Perform a lookup on ud based on sep1 and sep2
+    val += 0.5*(interp(a, r, ud_tau) + interp(b, r, ud_tau));
+    //Form the basis
+    basis(s, z, n_t);
+    interp(qq, q, ukj_tau);
+    for (std::size_t i = 0; i < bs.size(); i++)
+        val += intval[i]*bs[i];
+    return val;
+}
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // AZIZ POTENTIAL CLASS ------------------------------------------------------

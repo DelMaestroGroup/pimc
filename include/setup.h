@@ -315,8 +315,9 @@ class Setup {
 
         Parameters params;                          ///< All simulation parameters
                                                     
-	/* INI file map */
+	/* INI file maps */
    	po::variables_map gp_params;
+   	po::variables_map pair_params;
 
     private:
         Setup();
