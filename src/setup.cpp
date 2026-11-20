@@ -375,6 +375,10 @@ void Setup::initParameters() {
     params.add<double>("delta_strength,c","delta function potential integrated strength",oClass,10.0);
     params.add<double>("interaction_strength,g","interaction parameter",oClass,1.0);
     params.add<double>("omega","harmonic interaction potential frequency",oClass,1.0);
+    params.add<double>("sms_dipole_debye","SMS permanent dipole moment [Debye]",oClass);
+    params.add<double>("sms_omega_mhz","SMS Omega/(2*pi) [MHz], positive",oClass);
+    params.add<double>("sms_delta_mhz","SMS blue detuning delta/(2*pi) [MHz], non-negative",oClass);
+    params.add<double>("sms_xi_fraction","SMS ellipticity xi/(pi/4), in [0,1)",oClass);
     params.add<double>("lj_sigma","Lennard-Jones hard-core radius [angstroms]",oClass,2.74);
     params.add<double>("lj_epsilon","Lennard-Jones energy scale [kelvin]",oClass,16.2463);
     params.add<double>("lj_width","Radial with of LJ plated cylinder material [angstroms]",oClass);
@@ -679,6 +683,41 @@ bool Setup::parseOptions() {
         std::cout << std::endl << std::endl;
         std::cerr << "Action: change the action to pair_product." << std::endl;
         return 1;
+    }
+
+    if (params["interaction"].as<std::string>() == "sms") {
+#ifdef USE_GPU
+        std::cerr << "ERROR: SMS currently supports CPU builds only." << std::endl;
+        return true;
+#endif
+        if (NDIM != 3 || PIGS || params["action"].as<std::string>() != "primitive") {
+            std::cerr << "ERROR: SMS requires 3D finite-temperature PIMC with --action=primitive." << std::endl;
+            return true;
+        }
+        for (const char *key : {"sms_dipole_debye", "sms_omega_mhz",
+                               "sms_delta_mhz", "sms_xi_fraction"}) {
+            if (!params(key)) {
+                std::cerr << "ERROR: SMS requires --" << key << std::endl;
+                return true;
+            }
+        }
+        try {
+            sms::couplingsFromLab({params["sms_dipole_debye"].as<double>(),
+                params["sms_omega_mhz"].as<double>(), params["sms_delta_mhz"].as<double>(),
+                params["sms_xi_fraction"].as<double>()});
+            if (params("potential_cutoff")) {
+                const double cutoff = params["potential_cutoff"].as<double>();
+                if (!std::isfinite(cutoff*cutoff) || cutoff <= 0 || cutoff*cutoff == 0)
+                    throw std::invalid_argument("SMS cutoff must be finite and positive");
+            }
+        } catch (const std::exception &error) {
+            std::cerr << "ERROR: " << error.what() << std::endl;
+            return true;
+        }
+        if (isStringInVector("virial",params["estimator"].as<std::vector<std::string>>())) {
+            std::cerr << "ERROR: The radial virial estimator is not supported for anisotropic SMS; use energy." << std::endl;
+            return true;
+        }
     }
 
     /* We can only use the cylinder potentials for a 3D system */
@@ -1624,6 +1663,20 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
             % params["delta_width"].as<double>();
         communicate()->file("log")->stream() << format("%-24s\t:\t%-7.2f\n") % "Delta Strength"
             % params["delta_strength"].as<double>();
+    }
+
+    if (params["interaction"].as<std::string>() == "sms") {
+        const auto c = sms::couplingsFromLab({params["sms_dipole_debye"].as<double>(),
+            params["sms_omega_mhz"].as<double>(), params["sms_delta_mhz"].as<double>(),
+            params["sms_xi_fraction"].as<double>()});
+        auto &log = communicate()->file("log")->stream();
+        for (const char *key : {"sms_dipole_debye", "sms_omega_mhz",
+                               "sms_delta_mhz", "sms_xi_fraction"})
+            log << format("%-24s\t:\t%.16e\n") % key % params[key].as<double>();
+        log << format("%-24s\t:\t%.16e\n") % "SMS xi [rad]" % c.xi_radians;
+        log << format("%-24s\t:\t%.16e\n") % "SMS C3 [K A^3]" % c.c3_kelvin_angstrom3;
+        log << format("%-24s\t:\t%.16e\n") % "SMS C6 [K A^6]" % c.c6_kelvin_angstrom6;
+        log << "SMS boundary treatment  : minimum image, radial cutoff; no images or tail correction\n";
     }
 
     /* Ouptut a possible sutherland model interaction strength*/

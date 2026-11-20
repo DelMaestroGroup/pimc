@@ -17,6 +17,9 @@ The design philosophy included the goal of abstracting the actual implementation
 
 If you have questions, bug reports or plan to use this code for scientific research, please contact me at Adrian.DelMaestro@utk.edu.
 
+For the optional single-microwave-shielded molecular interaction, see
+[SMS model, units, supported modes and tests](docs/sms.md).
+
 ## Installation
 
 This program has been successfully compiled and run on both Intel and AMD systems using clang, g++, pathscale and icpc. Before installing, one needs to ensure that all dependencies are met.  We recommend that the required library (boost) is installed in a `local` folder inside your home directory: `$HOME/local`.

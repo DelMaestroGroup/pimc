@@ -383,3 +383,15 @@ export(TARGETS ${exe} FILE ${exe}Config.cmake)
 # Unit tests
 # We need to make some of these
 enable_testing()
+
+add_executable(sms_physics_test tests/sms_physics_test.cpp src/sms_physics.cpp)
+target_include_directories(sms_physics_test PRIVATE include)
+add_test(NAME sms_physics COMMAND sms_physics_test)
+
+find_package(Python3 QUIET COMPONENTS Interpreter)
+if(Python3_Interpreter_FOUND AND NDIM EQUAL 3 AND GPU_BACKEND STREQUAL "none"
+        AND NOT CMAKE_BUILD_TYPE MATCHES "[Pp][Ii][Gg][Ss]")
+    add_test(NAME sms_integration COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/sms_integration.py $<TARGET_FILE:${exe}>)
+    set_tests_properties(sms_integration PROPERTIES TIMEOUT 120)
+endif()

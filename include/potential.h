@@ -12,6 +12,7 @@
 #include "common.h"
 #include "constants.h"
 #include "gpkernel.h"
+#include "sms_physics.h"
 #include <boost/program_options.hpp>
 
 #ifdef USE_GPU
@@ -115,6 +116,21 @@ class PotentialBase {
         inline __attribute__((always_inline)) double deltaSeparation(double sep1,double sep2) const;
         DynamicArray<dVec,1> testPositions;     // An array that can be used for debugging a potential.
 };
+
+#if NDIM == 3
+/** Single-microwave shielding; see docs/sms.md for units and supported modes. */
+class SMSPotential : public PotentialBase {
+    public:
+        SMSPotential(double dipole, double omega, double delta, double xi);
+        using PotentialBase::V;
+        double V(const dVec &) override;
+        dVec gradV(const dVec &) override;
+        double grad2V(const dVec &) override;
+    private:
+        sms::Couplings couplings;
+        double cutoffSquared;
+};
+#endif
 
 // ========================================================================  
 // TabulatedPotential Class
