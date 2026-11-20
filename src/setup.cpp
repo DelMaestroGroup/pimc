@@ -435,6 +435,10 @@ void Setup::initParameters() {
     params.add<double>("com_delta,D", "center of mass update radius[angstroms]",oClass);
     params.add<double>("displace_delta,d", "displace update radius [angstroms]",oClass);
     params.add<int>("update_length,M", "non-local update length, (Mbar), -1 sets maximal value",oClass);
+    params.add<double>("move_common_prob", "total probability assigned to diagonal and center of mass moves",oClass,0.20);
+    params.add<double>("move_com_share", "center of mass share of the common move probability",oClass,0.05);
+    params.add<double>("move_close_share", "close/remove share of the off-diagonal worm move probability",oClass,0.375);
+    params.add<double>("move_advance_share", "advance/recede share after allocating close/remove moves",oClass,0.60);
     params.add<std::string>("action", str(format("action type:\n%s") % actionNames).c_str(),oClass,"gsf");
     params.add<bool>("full_updates", "perform full staging updates",oClass);
     params.add<bool>("var_updates", "perform variable length diagonal updates",oClass);

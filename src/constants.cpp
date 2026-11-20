@@ -188,18 +188,46 @@ void ConstantParameters::initConstants(po::variables_map &params) {
         attemptProb_["swap break"] = 0.0;
     }
     else {
-        attemptProb_["open"] = 0.4;
-        attemptProb_["insert"] = 0.4;
-        attemptProb_["close"] = 0.15;
-        attemptProb_["advance head"] = 0.075 + 0.05*BOLTZMANNONS;
-        attemptProb_["recede head"] = 0.075 + 0.05*BOLTZMANNONS;
-        attemptProb_["advance tail"] = 0.075 + 0.05*BOLTZMANNONS;
-        attemptProb_["recede tail"] = 0.075 + 0.05*BOLTZMANNONS;
-        attemptProb_["swap head"] = 0.1*(1-BOLTZMANNONS);
-        attemptProb_["swap tail"] = 0.1*(1-BOLTZMANNONS);
-        attemptProb_["remove"] = 0.15;
-        attemptProb_["diagonal"] = 0.19;
-        attemptProb_["center of mass"] = 0.01;
+        const double commonProb = params["move_common_prob"].as<double>();
+        const double comShare = params["move_com_share"].as<double>();
+        const double closeShare = params["move_close_share"].as<double>();
+        const double advanceShare = params["move_advance_share"].as<double>();
+
+        if (!(commonProb > 0.0 && commonProb < 1.0) ||
+            !(comShare > 0.0 && comShare < 1.0) ||
+            !(closeShare > 0.0 && closeShare < 1.0) ||
+            !(advanceShare > 0.0 && advanceShare < 1.0)) {
+            std::cerr << "Move parameters move_common_prob, move_com_share, "
+                      << "move_close_share, and move_advance_share must all "
+                      << "lie strictly between 0 and 1." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        const double wormProb = 1.0 - commonProb;
+        attemptProb_["diagonal"] = commonProb*(1.0-comShare);
+        attemptProb_["center of mass"] = commonProb*comShare;
+        attemptProb_["open"] = 0.5*wormProb;
+        attemptProb_["insert"] = 0.5*wormProb;
+        attemptProb_["close"] = 0.5*wormProb*closeShare;
+        attemptProb_["remove"] = 0.5*wormProb*closeShare;
+
+        double advanceProb;
+        double swapProb;
+        if (BOLTZMANNONS) {
+            advanceProb = 0.25*wormProb*(1.0-closeShare);
+            swapProb = 0.0;
+        }
+        else {
+            advanceProb = 0.25*wormProb*(1.0-closeShare)*advanceShare;
+            swapProb = 0.5*wormProb*(1.0-closeShare)*(1.0-advanceShare);
+        }
+
+        attemptProb_["advance head"] = advanceProb;
+        attemptProb_["recede head"] = advanceProb;
+        attemptProb_["advance tail"] = advanceProb;
+        attemptProb_["recede tail"] = advanceProb;
+        attemptProb_["swap head"] = swapProb;
+        attemptProb_["swap tail"] = swapProb;
         attemptProb_["displace"] = 0.0;
         attemptProb_["end staging"] = 0.0;
         attemptProb_["swap break"] = 0.0;
