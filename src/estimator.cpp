@@ -3612,7 +3612,7 @@ void FinalStateEffectsEstimator::accumulate()
     double F2_sum  = 0.0;
     double lap_sum = 0.0;
 
-    for (int s = 0; s < M; ++s) {
+    for (int s = 0; s < M; s += actionPtr->period) {
         for (int i = 0; i < N; ++i) {
             beadLocator bi = {s, i};
             dVec   Fi{};       // net force on particle i (vector)
@@ -3641,7 +3641,7 @@ void FinalStateEffectsEstimator::accumulate()
         }
     }
 
-    const double denom = double(N) * double(M);
+    const double denom = double(N) * double(M / actionPtr->period);
     estimator(0) += F2_sum  / denom;
     estimator(1) += lap_sum / denom;
 }
