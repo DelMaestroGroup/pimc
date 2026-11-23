@@ -73,7 +73,7 @@ REGISTER_INTERACTION_POTENTIAL(   "hard_rod",    HardRodPotential, GET_SETUP(), 
 REGISTER_INTERACTION_POTENTIAL(    "delta1D",    Delta1DPotential, GET_SETUP(), setup.params["delta_strength"].as<double>())
 REGISTER_INTERACTION_POTENTIAL( "lorentzian", LorentzianPotential, GET_SETUP(), setup.params["delta_width"].as<double>(), setup.params["delta_strength"].as<double>())
 REGISTER_INTERACTION_POTENTIAL(       "aziz",       AzizPotential, GET_SETUP(), setup.params["aziz_year"].as<int>(),setup.get_cell())
-REGISTER_INTERACTION_POTENTIAL(   "azizpair",   AzizPairPotential, GET_SETUP(), setup.get_cell(), setup.pair_params)
+REGISTER_INTERACTION_POTENTIAL(   "int_pair",   IntPairPotential, GET_SETUP(), setup.get_cell(), setup.pair_params)
 REGISTER_INTERACTION_POTENTIAL(    "silvera",    SilveraPotential, GET_SETUP(), setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(  "patkowski",  PatkowskiPotential, GET_SETUP(), setup.get_cell())
 REGISTER_INTERACTION_POTENTIAL(       "H2LJ",                H2LJ, GET_SETUP(), setup.get_cell())
@@ -1736,7 +1736,7 @@ DynamicArray<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr
 /**************************************************************************//**
 *  Constructor.
 ******************************************************************************/
-AzizPairPotential::AzizPairPotential(const Container *_boxPtr, const po::variables_map &pair_params)  : PotentialBase() {
+IntPairPotential::IntPairPotential(const Container *_boxPtr, const po::variables_map &pair_params)  : PotentialBase() {
     path = pair_params["Data.parent"].as<std::string>();
     std::vector<double> grid;
     load(path + "/ud.dat", r, ud);
@@ -1754,7 +1754,7 @@ AzizPairPotential::AzizPairPotential(const Container *_boxPtr, const po::variabl
 /**************************************************************************//**
 *  Destructor.
 ******************************************************************************/
-AzizPairPotential::~AzizPairPotential() {
+IntPairPotential::~IntPairPotential() {
     // empty deconstructor
 }
 
@@ -1767,7 +1767,7 @@ AzizPairPotential::~AzizPairPotential() {
  *  @param sep2 The second separation
  *  @return the two-body effective pair potential
  ******************************************************************************/
-inline __attribute__((always_inline)) double AzizPairPotential::V(const dVec &sep1, const dVec &sep2)
+inline __attribute__((always_inline)) double IntPairPotential::V(const dVec &sep1, const dVec &sep2)
 {
     double a = sqrt(dot(sep1,sep1));
     double b = sqrt(dot(sep2,sep2));
@@ -1798,7 +1798,7 @@ inline __attribute__((always_inline)) double AzizPairPotential::V(const dVec &se
 *  @param sep2 the second separation
 *  @return the derivative of the effective potential with respect to lambda
 ******************************************************************************/
-inline __attribute__((always_inline)) double AzizPairPotential::dVdlambda(const dVec &sep1, const dVec &sep2)
+inline __attribute__((always_inline)) double IntPairPotential::dVdlambda(const dVec &sep1, const dVec &sep2)
 {
     double a = sqrt(dot(sep1,sep1));
     double b = sqrt(dot(sep2,sep2));
@@ -1829,7 +1829,7 @@ inline __attribute__((always_inline)) double AzizPairPotential::dVdlambda(const 
  *  @param sep2 the second separation
  *  @return the derivative of the effective potential with respect to lambda
  ******************************************************************************/
-inline __attribute__((always_inline)) double AzizPairPotential::dVdtau(const dVec &sep1, const dVec &sep2)
+inline __attribute__((always_inline)) double IntPairPotential::dVdtau(const dVec &sep1, const dVec &sep2)
 {
     double a = sqrt(dot(sep1,sep1));
     double b = sqrt(dot(sep2,sep2));

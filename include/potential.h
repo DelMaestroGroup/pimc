@@ -1018,19 +1018,19 @@ inline __attribute__((always_inline)) double AzizPotential::grad2V(const dVec &r
 }
 
 // ========================================================================
-// Aziz tair Potential Class
+// General Interaction Pair Potential Class
 // ========================================================================
 /**
  * 
  * Author: Sutirtha Paul
  * Computes the effective potential from the exact two-body density matrix
- * for the Aziz potential based on dimension
+ * for any centrosymmetric pair potential based on dimension
  *       
  */
-class AzizPairPotential : public PotentialBase  {
+class IntPairPotential : public PotentialBase  {
 public:
-    AzizPairPotential (const Container *_boxPtr, const po::variables_map &);
-    ~AzizPairPotential ();
+    IntPairPotential (const Container *_boxPtr, const po::variables_map &);
+    ~IntPairPotential ();
     
     /** The classical potential */
     inline __attribute__((always_inline)) double V(const dVec &r) {
@@ -1069,7 +1069,7 @@ private:
     void interp(double, const std::vector<double> &, const DynamicArray<double,2> &);    //Interpolates between two q-points in the array and evaluates at the given q-value
 
 };
-inline __attribute__((always_inline)) void AzizPairPotential::load(const std::string &fname, std::vector<double> &grid, std::vector<double> &uarr) {
+inline __attribute__((always_inline)) void IntPairPotential::load(const std::string &fname, std::vector<double> &grid, std::vector<double> &uarr) {
     grid.clear();
     std::ifstream f(fname);
     std::string line;
@@ -1084,7 +1084,7 @@ inline __attribute__((always_inline)) void AzizPairPotential::load(const std::st
         uarr.push_back(x);
     }
 }
-inline __attribute__((always_inline)) void AzizPairPotential::load(const std::string &fname, std::vector<double> &grid, DynamicArray<double,2> &uarr) { 
+inline __attribute__((always_inline)) void IntPairPotential::load(const std::string &fname, std::vector<double> &grid, DynamicArray<double,2> &uarr) { 
     grid.clear();
     std::ifstream f(fname);
     std::string line;
@@ -1106,7 +1106,7 @@ inline __attribute__((always_inline)) void AzizPairPotential::load(const std::st
         for (std::size_t c = 0; c < rows[i].size(); c++)
             uarr(i, c) = rows[i][c];
 }
-inline __attribute__((always_inline)) int AzizPairPotential::searchsorted2(double x, const std::vector<double> &grid) {
+inline __attribute__((always_inline)) int IntPairPotential::searchsorted2(double x, const std::vector<double> &grid) {
     int lo = 0;
     int hi = grid.size();
     while (lo < hi) {
@@ -1118,13 +1118,13 @@ inline __attribute__((always_inline)) int AzizPairPotential::searchsorted2(doubl
     }
     return lo;
 }
-inline __attribute__((always_inline)) int AzizPairPotential::searchsorted(double x, const std::vector<double> &grid) {
+inline __attribute__((always_inline)) int IntPairPotential::searchsorted(double x, const std::vector<double> &grid) {
     // O(1) for a uniform grid: first index i with grid[i] >= x
     int last = grid.size() - 1;
     int i = (int)std::ceil((x - grid[0]) * last / (grid[last] - grid[0]));
     return std::min(std::max(i, 1), last);
 }
-inline __attribute__((always_inline)) void AzizPairPotential::basis(double s, double z, int ord_exp) {
+inline __attribute__((always_inline)) void IntPairPotential::basis(double s, double z, int ord_exp) {
 #if NDIM == 1
     intval.resize(ord_exp);
     bs.resize(ord_exp);
@@ -1148,7 +1148,7 @@ inline __attribute__((always_inline)) void AzizPairPotential::basis(double s, do
 #endif
 }
 
-inline __attribute__((always_inline)) double AzizPairPotential::interp(double evalVal, const std::vector<double> &grid, const std::vector<double> &uarr) {
+inline __attribute__((always_inline)) double IntPairPotential::interp(double evalVal, const std::vector<double> &grid, const std::vector<double> &uarr) {
     if (evalVal <= grid.front())
         return uarr.front();
     if (evalVal >= grid.back())
@@ -1157,7 +1157,7 @@ inline __attribute__((always_inline)) double AzizPairPotential::interp(double ev
     double t = (evalVal - grid[i-1]) / (grid[i] - grid[i-1]);
     return (1 - t)*uarr[i-1] + t*uarr[i];
 }
-inline __attribute__((always_inline)) void AzizPairPotential::interp(double evalVal, const std::vector<double> &grid, const DynamicArray<double,2> &uarr) {
+inline __attribute__((always_inline)) void IntPairPotential::interp(double evalVal, const std::vector<double> &grid, const DynamicArray<double,2> &uarr) {
     std::size_t last = grid.size() - 1;
     int i = 1;
     double t = 0.0;

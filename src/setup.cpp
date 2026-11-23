@@ -685,10 +685,10 @@ bool Setup::parseOptions() {
 
     /* Make sure we use the pair product approximation for the pair helium
      * potential */
-    if ((params["interaction"].as<std::string>() == "azizpair") &&
+    if ((params["interaction"].as<std::string>() == "int_pair") &&
         (params["action"].as<std::string>() != "pair_product") ) {
         std::cout << std::endl;
-        std::cerr << "ERROR: Need to use the pair product approximation with Aziz pair!"; 
+        std::cerr << "ERROR: Need to use the pair product approximation with Interaction pair potentials!"; 
         std::cout << std::endl << std::endl;
         std::cerr << "Action: change the action to pair_product." << std::endl;
         return 1;
@@ -806,19 +806,20 @@ bool Setup::parseOptions() {
         // std::cout << "inside GP hyperparameters validation" << std::endl;
     } 
     
-    if (params["interaction"].as<std::string>() == "azizpair") {
+    if (params["interaction"].as<std::string>() == "int_pair") {
 	
 	// Check if the file exists
     	std::ifstream ifs(params["pair_input"].as<std::string>());
     	if (!ifs) {
-            std::cerr << "ERROR: Cannot open Aziz hyperparameter file: " << params["pair_input"].as<std::string>() << std::endl;
+            std::cerr << "ERROR: Cannot open Pair hyperparameter file: " << params["pair_input"].as<std::string>() << std::endl;
             return 1;
     	}
 
         /* we read in gaussian process hyperparameters from a .ini file */
-	po::options_description desc("Allowed Aziz options");
+	po::options_description desc("Allowed Pair options");
 
     	desc.add_options()
+	    ("Simulation Parameters.potential", po::value<std::string>())
             ("Simulation Parameters.dim", po::value<uint32>())
             ("Simulation Parameters.tau", po::value<double>())
             ("Simulation Parameters.box", po::value<std::vector<double>>()->multitoken())
@@ -837,16 +838,17 @@ bool Setup::parseOptions() {
 	if (pair_params["Simulation Parameters.dim"].as<uint32>() != NDIM) {
 		std::cerr << "Pair table generated with wrong dimensions" << std::endl;
 	}
-        /*	
+        /* 	
 	const auto& box = gp_params["Simulation Parameters.box"].as<std::vector<double>>();
 
 	for (int i = 0; i < NDIM; ++i) {
-    		const double L = boxPtr->side[i];
+    		const double L = side[i];
     		if (L - box[i] > 0) {
     			std::cerr << "Box dimensions don't match, please run a bigger box!" << std::endl;
 		}
-	} 
-	*/
+	}
+       */	
+	
     } 
 
     /* If a list of estimators has been supplied, we need to verify */
@@ -1669,6 +1671,12 @@ void Setup::outputOptions(int argc, char *argv[], const uint32 _seed,
     communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Interaction Potential" % 
         params["interaction"].as<std::string>();
 
+    if ((params["interaction"].as<std::string>() == "int_pair") &&
+        (params["action"].as<std::string>() == "pair_product") ) {
+    	
+	communicate()->file("log")->stream() << format("%-24s\t:\t%s\n") % "Pair Potential Type" % 
+        pair_params["Simulation Parameters.potential"].as<std::string>(); 
+    }
     if (params["interaction"].as<std::string>().find("aziz") != std::string::npos)
         communicate()->file("log")->stream() << format("%-24s\t:\t%d\n") % "Aziz Year" % params["aziz_year"].as<int>();
 
