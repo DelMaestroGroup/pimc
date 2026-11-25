@@ -1736,7 +1736,18 @@ DynamicArray<dVec,1> LJHourGlassPotential::initialConfig(const Container *boxPtr
 /**************************************************************************//**
 *  Constructor.
 ******************************************************************************/
-IntPairPotential::IntPairPotential(const Container *_boxPtr, const po::variables_map &pair_params)  : PotentialBase() {
+IntPairPotential::IntPairPotential(const Container *boxPtr, const po::variables_map &pair_params)  : PotentialBase() {
+    
+    const auto& box = pair_params["Simulation Parameters.box"].as<std::vector<double>>();
+	
+    for (int i = 0; i < NDIM; ++i) {
+        const double L = boxPtr->side[i];
+    	if (L - box[i] > 0.1) {
+    	    std::cerr << "Pair potential box smaller than simulation box, may affect results - consider generating a table with a bigger box!" << std::endl;
+            break;
+	}
+    }
+    
     path = pair_params["Data.parent"].as<std::string>();
     std::vector<double> grid;
     load(path + "/ud.dat", r, ud);
@@ -1745,6 +1756,7 @@ IntPairPotential::IntPairPotential(const Container *_boxPtr, const po::variables
     load(path + "/ukj.dat", q, ukj);
     load(path + "/ukj_dlam.dat", grid, ukj_lam);
     load(path + "/ukj_dtau.dat", grid, ukj_tau);   
+	
     lam_rel = 2*constants()->lambda();
     n = pair_params["Simulation Parameters.n"].as<uint32>();
     n_t = pair_params["Simulation Parameters.n_tau"].as<uint32>();

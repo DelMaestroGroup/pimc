@@ -838,17 +838,6 @@ bool Setup::parseOptions() {
 	if (pair_params["Simulation Parameters.dim"].as<uint32>() != NDIM) {
 		std::cerr << "Pair table generated with wrong dimensions" << std::endl;
 	}
-        /* 	
-	const auto& box = gp_params["Simulation Parameters.box"].as<std::vector<double>>();
-
-	for (int i = 0; i < NDIM; ++i) {
-    		const double L = side[i];
-    		if (L - box[i] > 0) {
-    			std::cerr << "Box dimensions don't match, please run a bigger box!" << std::endl;
-		}
-	}
-       */	
-	
     } 
 
     /* If a list of estimators has been supplied, we need to verify */
